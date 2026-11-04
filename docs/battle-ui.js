@@ -10,6 +10,7 @@
 //   battle.html?stagione=S&showdown=ID&match=N&locale=1  -> stessi team, stesso schermo (prove)
 //   battle.html?cpu=1&team=ID                            -> prova del proprio team (dal Box) contro la CPU
 //   battle.html?cpu=1&random=gen9randombattle            -> Random Battle di Showdown contro la CPU: team a caso per tutti e due
+//   battle.html?cpu=1&palestra=ID&tappa=0&team=ID_TEAM   -> una tappa della palestra di un allenatore (palestra.js): il tuo team contro il suo, con il suo vantaggio
 //   battle.html?amichevole=ID                            -> partita amichevole tra due giocatori (niente punti, niente salvataggi)
 //   battle.html                                           -> team di prova (sviluppo)
 // =====================================================
@@ -19,7 +20,7 @@ import {
     bersagliScegliibili, candidatiCambio, mossaEffettiva, sceltaCasuale, setDaTeam
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
-import { caricaMatch, caricaPerProva, caricaAmichevole } from './team-sito.js';
+import { caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra } from './team-sito.js';
 import { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro } from './cpu-partita.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
@@ -104,6 +105,7 @@ if (!PS || !PS.Battle || !jq) {
         else preparaOnline(chiavi);
     } else if (parametri.get('cpu')) {
         if (parametri.get('random')) preparaCpuRandom(parametri.get('random'), parametri.get('nome'));
+        else if (parametri.get('palestra')) preparaPalestra(parametri.get('palestra'), parseInt(parametri.get('tappa'), 10) || 0, parametri.get('team'));
         else preparaCpu(parametri.get('team'));
     } else {
         config = CONFIG_PROVA;
@@ -453,6 +455,7 @@ function riepilogoFineCpu() {
 
 function mostraFineCpu(vincitore) {
     cpu.ultimoVincitore = vincitore;
+    if (cpu.palestra) return mostraFinePalestra(vincitore);
     const vinto = !!vincitore && vincitore === config.p1.nome;
     const titolo = !vincitore ? "It's a tie!" : vinto ? 'You win!' : 'The CPU wins!';
     mostraEsito(titolo, { sotto: riepilogoFineCpu(), azioni: azioniCpu() });
@@ -1294,6 +1297,84 @@ function mostraFineSet() {
 
 
 // -----------------------------------------------------
+// Palestra di un allenatore (palestra.js): una tappa contro la CPU
+// -----------------------------------------------------
+// Il team dello sfidante (dal suo Box) contro quello della palestra (dal Box di chi la tiene, com'è adesso), sempre in doppio con 6 portati e 4 scelti. Il vantaggio della
+// tappa parte prima del turno 1 (motore-battaglia.js). Vinta la tappa si passa alla successiva; persa (o pareggiata) la palestra riparte dalla prima. La CPU sceglie la lead
+// guardando i sei Pokémon dello sfidante, come nelle altre prove contro la CPU. I progressi stanno nel browser di chi sfida (Palestra.leggiSfida).
+async function preparaPalestra(idGym, numeroTappa, chiaveTeam) {
+    $('opzione-bot').hidden = true;
+    const ritorno = $('link-hub');
+    ritorno.href = `palestra.html?player=${encodeURIComponent(idGym)}`;
+    ritorno.textContent = '← Gym';
+    mostraMessaggioCampo('Loading the gym…');
+
+    let dati, gym;
+    try {
+        if (!window.firebase) throw new Error('Firebase did not load: check the scripts in battle.html.');
+        await new Promise(ok => { const stop = firebase.auth().onAuthStateChanged(() => { stop(); ok(); }); });
+        const utente = firebase.auth().currentUser;
+        if (!utente) throw new Error('Log in on the site to challenge a gym.');
+        if (!chiaveTeam) throw new Error('No team selected: pick your teams from the gym page.');
+        const db = firebase.database();
+        [dati, gym] = await Promise.all([caricaPerProva(db, utente, chiaveTeam), caricaTappaPalestra(db, idGym, numeroTappa)]);
+        if (String(dati.categoria || '').toLowerCase().trim() !== String(gym.categoria || '').toLowerCase().trim()) throw new Error(`That team is not for ${gym.categoria}.`);
+        if (dati.id === gym.id) throw new Error("You can't challenge your own gym.");
+        if (!DexSim.formats.get(dati.formato).exists) throw new Error(`The simulator format "${dati.formato}" doesn't exist.`);
+        if (dati.problemi.length) throw new Error(`Your team can't be used in ${dati.categoria}: ${dati.problemi.join('; ')}`);
+    } catch (errore) {
+        console.error(errore);
+        return mostraMessaggioCampo(`Couldn't start the gym battle: ${errore.message}`);
+    }
+
+    const specie = setDaTeam(gym.team.testo).map(x => x.species);
+    scaldaGif(gym.team.testo); scaldaGif(dati.team && dati.team.testo);
+    document.body.classList.add('prova-cpu');
+    cpu = {
+        cerebro: null, team: { testo: gym.team.testo, specie, piano: null, numero: 1 }, giocatore: dati, errori: 0, rqid: null,
+        chiaveTeam, modificabile: false, avviso: '', problemi: [], ultimoVincitore: null, generando: false,
+        palestra: { id: gym.id, nome: gym.nome, tappa: numeroTappa, categoria: gym.categoria, vantaggio: gym.vantaggio }
+    };
+    config = {
+        formato: dati.formato,
+        etichetta: `${gym.nome}'s gym · stage ${numeroTappa + 1}/${self.Palestra.TAPPE} · ${gym.categoria}`,
+        p1: { nome: dati.nome, id: dati.id, team: dati.team.testo, nomeTeam: dati.team.nome, avatar: dati.avatar },
+        p2: { nome: gym.nome, team: gym.team.testo, nomeTeam: 'Gym team' }
+    };
+    if (dati.colore) document.documentElement.style.setProperty('--colore-p1', dati.colore);
+    impostaPannelli();
+    schedeCpu();
+    avviaBattaglia();
+}
+
+/** Alla fine di una tappa: si salvano i progressi e si propone cosa fare (la tappa dopo, o ricominciare) */
+function mostraFinePalestra(vincitore) {
+    const P = self.Palestra, g = cpu.palestra;
+    const vinto = !!vincitore && vincitore === config.p1.nome;
+    const chiave = P.chiaveSfida(config.p1.id, g.id);
+    let sfida = P.leggiSfida(localStorage, chiave) || P.nuovaSfida([cpu.chiaveTeam]);
+    const alla = (testo, href, primario) => el('a', { class: `btn ${primario ? 'primario' : 'secondario'}`, href }, testo);
+    const paginaPalestra = `palestra.html?player=${encodeURIComponent(g.id)}`;
+    if (vinto) {
+        sfida = { ...sfida, vinte: Math.max(sfida.vinte, g.tappa + 1) };
+        P.salvaSfida(localStorage, chiave, sfida);
+        if (P.finita(sfida)) return mostraEsito('Gym cleared!', { sotto: `You beat all ${P.TAPPE} stages of ${g.nome}'s gym.`, azioni: [alla('Back to the gym', paginaPalestra, true)] });
+        const prossima = g.tappa + 1;
+        const squadra = sfida.squadre[prossima];
+        return mostraEsito(`Stage ${g.tappa + 1} won!`, {
+            sotto: `${g.categoria} done · ${P.TAPPE - sfida.vinte} to go`,
+            azioni: [squadra ? alla('Next stage', `battle.html?cpu=1&palestra=${encodeURIComponent(g.id)}&tappa=${prossima}&team=${encodeURIComponent(squadra)}`, true) : null, alla('Back to the gym', paginaPalestra, !squadra)].filter(Boolean)
+        });
+    }
+    sfida = P.azzera(sfida);
+    P.salvaSfida(localStorage, chiave, sfida);
+    mostraEsito(!vincitore ? "It's a tie!" : `${g.nome}'s gym wins!`, {
+        sotto: 'A defeat sends you back to the first stage: the gym starts over.',
+        azioni: [alla('Start over', sfida.squadre[0] ? `battle.html?cpu=1&palestra=${encodeURIComponent(g.id)}&tappa=0&team=${encodeURIComponent(sfida.squadre[0])}` : paginaPalestra, true), alla('Back to the gym', paginaPalestra, false)]
+    });
+}
+
+// -----------------------------------------------------
 // Avvio di una battaglia (un set)
 // -----------------------------------------------------
 function avviaBattaglia() {
@@ -1308,7 +1389,7 @@ function avviaBattaglia() {
         cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento) });
         cpu.errori = 0; cpu.rqid = null;
     }
-    battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2 });
+    battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2, vantaggio: cpu && cpu.palestra && cpu.palestra.vantaggio ? { id: cpu.palestra.vantaggio.id, lato: 'p2' } : null });
     collegaEventi(battaglia);
     battaglia.avvia();
 }

@@ -294,3 +294,29 @@ export async function caricaAmichevole(db, info, mioLato) {
     }
     return { openSheet: false, giocatori };
 }
+
+
+// -----------------------------------------------------
+// 6. PALESTRA: LA TAPPA DI UN ALLENATORE (palestra.js)
+// -----------------------------------------------------
+// I team della palestra seguono il Box di chi la tiene: si legge il team di adesso. Ritorna { nome (dell'allenatore), id, tappa, vantaggio, team: { nome, testo }, regolamento, categoria }
+export async function caricaTappaPalestra(db, idGym, numeroTappa) {
+    const id = String(idGym || '').toLowerCase().trim();
+    if (!id) throw new Error('No gym selected.');
+    const [configSnap, nomeSnap, regolamentiSnap] = await Promise.all([
+        db.ref(`players/${id}/info/palestra`).once('value'),
+        db.ref(`players/${id}/info/name`).once('value'),
+        db.ref('regolamenti').once('value')
+    ]);
+    const tappe = self.Palestra ? self.Palestra.tappeDi(configSnap.val()) : [];
+    const tappa = tappe[numeroTappa];
+    if (!tappa) throw new Error("This gym isn't set up (or this stage doesn't exist).");
+    const regolamento = (regolamentiSnap.val() || {})[tappa.formato];
+    if (!regolamento) throw new Error("The gym's format was not found.");
+    const team = (await db.ref(`players/${id}/teams/${tappa.team}`).once('value')).val();
+    if (!team) throw new Error("The gym leader's team is not in their Box anymore.");
+    const testo = testoShowdownDaTeam(team, livelloFormato(regolamento));
+    if (!testo) throw new Error("The gym leader's team is empty.");
+    const vantaggio = self.Palestra.perId(tappa.vantaggio);
+    return { nome: String(nomeSnap.val() || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria };
+}
