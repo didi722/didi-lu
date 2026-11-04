@@ -262,7 +262,7 @@ test('cablaggio del tema: pagina di battaglia, stili, vantaggio sempre in vista 
     assert.match(ts, /players\/\$\{id\}\/info`/);
     assert.match(ts, /const aspetto = \{ colore: info\.color, avatar: info\.avatar, pagina: info\.pagina, aura: info\.aura, effettoNome: info\.effettoNome, effettoPalco: info\.effettoPalco \};/);
     const css = leggi('docs', 'style-palestra-battaglia.css');
-    for (const re of [/body\.palestra \{ background: var\(--pp-sfondo\); \}/, /body\.palestra \.cab-insegna/, /body\.palestra #campo \.backdrop/, /\.pal-annuncio \{/, /\.ins-vantaggio \{/, /\.pal-effetto \{/, /prefers-reduced-motion/, /max-width: 720px/]) assert.match(css, re);
+    for (const re of [/body\.palestra \{ background: var\(--pp-sfondo\); \}/, /body\.palestra \.cab-insegna/, /\.pal-annuncio \{/, /\.ins-vantaggio \{/, /\.pal-effetto \{/, /prefers-reduced-motion/, /max-width: 720px/]) assert.match(css, re);
     // il nero ha ombre scure semitrasparenti (regola del sito)
     assert.match(css, /\.pal-annuncio \{[^}]*box-shadow: 8px 8px 0 rgba\(0, 0, 0, \.55\)/);
 });

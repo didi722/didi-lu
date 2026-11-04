@@ -4,7 +4,7 @@
    Si attiva solo con body.palestra (battle-ui.js, vestiPalestra). I colori, lo sfondo e il font sono quelli della pagina pubblica del capopalestra: le variabili
    --pp-* arrivano da PaginaPubblica.variabiliCss, quelle --pal-* da Palestra.temaPalestra (cielo, pavimento, colore firma). Gli effetti del nome e del palco sono
    quelli del negozio (effetti-pagina.css), l'aura è il bagliore intorno alla sua faccia.
-   Cosa cambia: lo sfondo della pagina, l'insegna, lo sfondo dello schermo (muro + pavimento al posto del paesaggio di Showdown), il cartello del vantaggio e quello di fine tappa.
+   Cosa cambia: lo sfondo della pagina, l'insegna, il cartello del vantaggio e quello di fine tappa.
    ===================================================================== */
 
 /* ---------- Lo sfondo della pagina: quello della pagina pubblica del capopalestra ---------- */
@@ -110,31 +110,7 @@ html:not(.app) body.palestra .ins-formato { background: var(--pp-ink); color: va
 .ins-vantaggio-testi b { font-size: .95rem; white-space: nowrap; }
 @keyframes pal-vantaggio-pulsa { 0%, 100% { transform: rotate(1.2deg) scale(1); } 50% { transform: rotate(1.2deg) scale(1.08); } }
 
-/* ---------- Lo schermo: muro e pavimento della palestra al posto del paesaggio di Showdown ---------- */
-/* Il .backdrop di Showdown è 700x500 e sporge dallo schermo (640x360): l'orizzonte sta al 36% della sua altezza, dietro al Pokémon avversario. */
-body.palestra #campo .backdrop {
-    opacity: 1 !important;
-    background-color: var(--pal-cielo-a);
-    background-image:
-        linear-gradient(to bottom, transparent calc(100% - 4px), rgba(0, 0, 0, .55) calc(100% - 4px)),
-        repeating-linear-gradient(90deg, rgba(255, 255, 255, .1) 0 58px, transparent 58px 116px),
-        linear-gradient(to bottom, var(--pal-cielo-a), var(--pal-cielo-b)),
-        repeating-linear-gradient(to bottom, rgba(0, 0, 0, .12) 0 3px, transparent 3px 52px),
-        linear-gradient(to bottom, var(--pal-pavimento-a), var(--pal-pavimento-b)) !important;
-    background-size: 100% 36%, 100% 36%, 100% 36%, 100% 64%, 100% 64% !important;
-    background-position: 0 0, 0 0, 0 0, 0 100%, 0 100% !important;
-    background-repeat: no-repeat !important;
-}
-/* il motivo scelto dal capopalestra (punti, stelle, onde...) sul muro e sul pavimento */
-body.palestra #campo .backdrop::before {
-    content: '';
-    position: absolute; inset: 0;
-    background-image: var(--pp-sfondo-img);
-    background-size: var(--pp-sfondo-dim);
-    background-position: var(--pp-sfondo-pos);
-    opacity: .7;
-}
-body.palestra #campo .battle { background: var(--pal-cielo-a); }
+/* Lo schermo di Showdown resta com'è: il suo paesaggio, non quello della palestra. */
 
 /* l'effetto del palco del suo allenatore, davanti al campo (le regole degli effetti sono in effetti-pagina.css) */
 .pal-effetto {
