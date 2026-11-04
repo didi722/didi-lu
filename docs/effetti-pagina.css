@@ -8,7 +8,7 @@
    ===================================================================== */
 
 /* ---------- Il nome ----------
-   Neon: il nome resta del colore del giocatore (--pp-nome) e brilla. Le altre tinte (oro, fuoco, arcobaleno, laguna) cambiano il colore: sotto resta il nome nero con il suo contorno
+   Neon: il nome resta del colore del giocatore (--pp-nome) e brilla. Le altre tinte (oro, fuoco, arcobaleno, ghiaccio, galassia, smeraldo, tramonto, argento) cambiano il colore: sotto resta il nome nero con il suo contorno
    (così lo spessore del contorno è quello di sempre) e sopra si ridisegna lo stesso testo, preso da data-testo, con uno sfumato al posto del colore. */
 [data-effetto-nome] { position: relative; }
 
@@ -23,12 +23,20 @@
     [data-effetto-nome="nome-oro"][data-testo],
     [data-effetto-nome="nome-fuoco"][data-testo],
     [data-effetto-nome="nome-arcobaleno"][data-testo],
-    [data-effetto-nome="nome-laguna"][data-testo] { color: #000; }
+    [data-effetto-nome="nome-ghiaccio"][data-testo],
+    [data-effetto-nome="nome-viola"][data-testo],
+    [data-effetto-nome="nome-smeraldo"][data-testo],
+    [data-effetto-nome="nome-tramonto"][data-testo],
+    [data-effetto-nome="nome-argento"][data-testo] { color: #000; }
 
     [data-effetto-nome="nome-oro"][data-testo]::after,
     [data-effetto-nome="nome-fuoco"][data-testo]::after,
     [data-effetto-nome="nome-arcobaleno"][data-testo]::after,
-    [data-effetto-nome="nome-laguna"][data-testo]::after {
+    [data-effetto-nome="nome-ghiaccio"][data-testo]::after,
+    [data-effetto-nome="nome-viola"][data-testo]::after,
+    [data-effetto-nome="nome-smeraldo"][data-testo]::after,
+    [data-effetto-nome="nome-tramonto"][data-testo]::after,
+    [data-effetto-nome="nome-argento"][data-testo]::after {
         content: attr(data-testo);
         position: absolute;
         inset: 0;
@@ -68,12 +76,40 @@
     [data-effetto-nome="nome-arcobaleno"][data-testo]::after { animation: ef-scorri 7s linear infinite; }
     @keyframes ef-scorri { from { background-position: 0 0; } to { background-position: 100% 0; } }
 
-    /* laguna: acqua verde-azzurra che scivola verso l'oro del tramonto */
-    [data-effetto-nome="nome-laguna"][data-testo] {
-        --ef-sfumato: linear-gradient(90deg, #0fb5a8, #7be8dd, #f2c94c, #7be8dd, #0fb5a8, #7be8dd, #f2c94c, #7be8dd, #0fb5a8);
+    /* ghiaccio: azzurro e bianco che scorrono */
+    [data-effetto-nome="nome-ghiaccio"][data-testo] {
+        --ef-sfumato: linear-gradient(90deg, #4fc3ff, #e8f9ff, #8fe0ff, #ffffff, #4fc3ff, #e8f9ff, #8fe0ff, #ffffff, #4fc3ff);
         --ef-dim: 200% 100%;
     }
-    [data-effetto-nome="nome-laguna"][data-testo]::after { animation: ef-scorri 9s linear infinite; }
+    [data-effetto-nome="nome-ghiaccio"][data-testo]::after { animation: ef-scorri 8s linear infinite; }
+
+    /* galassia: viola, rosa e blu che scorrono */
+    [data-effetto-nome="nome-viola"][data-testo] {
+        --ef-sfumato: linear-gradient(90deg, #7a3cff, #ff4fd8, #3ba8ff, #7a3cff, #ff4fd8, #3ba8ff, #7a3cff);
+        --ef-dim: 200% 100%;
+    }
+    [data-effetto-nome="nome-viola"][data-testo]::after { animation: ef-scorri 6s linear infinite; }
+
+    /* smeraldo: verdi che scorrono */
+    [data-effetto-nome="nome-smeraldo"][data-testo] {
+        --ef-sfumato: linear-gradient(90deg, #0a9b4a, #7dffb0, #1fd16b, #d4ffe4, #0a9b4a, #7dffb0, #1fd16b, #d4ffe4, #0a9b4a);
+        --ef-dim: 200% 100%;
+    }
+    [data-effetto-nome="nome-smeraldo"][data-testo]::after { animation: ef-scorri 8s linear infinite; }
+
+    /* tramonto: arancio, rosa e viola che scorrono */
+    [data-effetto-nome="nome-tramonto"][data-testo] {
+        --ef-sfumato: linear-gradient(90deg, #ff9a2e, #ff4f7b, #9b4dff, #ff9a2e, #ff4f7b, #9b4dff, #ff9a2e);
+        --ef-dim: 200% 100%;
+    }
+    [data-effetto-nome="nome-tramonto"][data-testo]::after { animation: ef-scorri 9s linear infinite; }
+
+    /* argento: grigi lucidi con un lampo che attraversa il nome */
+    [data-effetto-nome="nome-argento"][data-testo] {
+        --ef-sfumato: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.95) 50%, transparent 58%), linear-gradient(180deg, #f4f6fa 0%, #b8bfca 45%, #7e8794 62%, #e3e7ee 100%);
+        --ef-dim: 300% 100%, 100% 100%;
+    }
+    [data-effetto-nome="nome-argento"][data-testo]::after { animation: ef-oro 5s ease-in-out infinite; }
 }
 
 /* ---------- Il palco ----------
@@ -177,27 +213,6 @@
         radial-gradient(circle at 12% 84%, #fff6a8 0 calc(0.4 * var(--ef-u)), rgba(255, 255, 255, 0.5) calc(0.8 * var(--ef-u)), transparent calc(1.5 * var(--ef-u)));
     background-size: 43cqw 50cqh;
     animation: ef-brilla 3.1s ease-in-out -1.5s infinite alternate;
-}
-
-/* laguna (edizione limitata): bolle che salgono e riflessi dorati che brillano */
-[data-effetto-palco="palco-laguna"]::before {
-    background-image:
-        radial-gradient(circle at 16% 28%, transparent 0 calc(0.6 * var(--ef-u)), rgba(210, 255, 252, 0.75) calc(1 * var(--ef-u)), transparent calc(1.5 * var(--ef-u))),
-        radial-gradient(circle at 58% 66%, transparent 0 calc(0.8 * var(--ef-u)), rgba(210, 255, 252, 0.75) calc(1.3 * var(--ef-u)), transparent calc(1.9 * var(--ef-u))),
-        radial-gradient(circle at 84% 22%, transparent 0 calc(0.5 * var(--ef-u)), rgba(210, 255, 252, 0.75) calc(0.9 * var(--ef-u)), transparent calc(1.3 * var(--ef-u))),
-        radial-gradient(circle at 34% 90%, transparent 0 calc(0.7 * var(--ef-u)), rgba(210, 255, 252, 0.75) calc(1.1 * var(--ef-u)), transparent calc(1.6 * var(--ef-u)));
-    background-size: 37cqw 50cqh;
-    animation: ef-sale 14s linear infinite;
-}
-[data-effetto-palco="palco-laguna"]::after {
-    top: 0;
-    height: 100%;
-    background-image:
-        radial-gradient(circle at 22% 34%, #fff6c4 0 calc(0.4 * var(--ef-u)), rgba(242, 201, 76, 0.65) calc(0.8 * var(--ef-u)), transparent calc(1.5 * var(--ef-u))),
-        radial-gradient(circle at 70% 18%, #fff6c4 0 calc(0.4 * var(--ef-u)), rgba(242, 201, 76, 0.65) calc(0.8 * var(--ef-u)), transparent calc(1.5 * var(--ef-u))),
-        radial-gradient(circle at 48% 78%, #fff6c4 0 calc(0.4 * var(--ef-u)), rgba(242, 201, 76, 0.65) calc(0.8 * var(--ef-u)), transparent calc(1.5 * var(--ef-u)));
-    background-size: 47cqw 50cqh;
-    animation: ef-brilla 2.8s ease-in-out infinite alternate;
 }
 
 @media (prefers-reduced-motion: reduce) {
