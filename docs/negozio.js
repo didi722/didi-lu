@@ -5,7 +5,7 @@
 // da test/negozio.test.js) e le chiamate al server; la pagina li mette insieme.
 //
 //   Negozio.catalogoHtml(stato)   le edizioni limitate in cima e i gruppi del catalogo (cosmetici.js): stato = { saldo, posseduti, info, pagina, anteprime, stagioni, nomiStagioni, occupato, provando }
-//   Negozio.notaPremi() / guidaHtml() / movimentiHtml(movimenti)    come si guadagna, dove si spende il resto, gli ultimi movimenti
+//   Negozio.premiHtml() / movimentiHtml(movimenti)    l'elenco di quanto si guadagna e da cosa, gli ultimi movimenti
 //   Negozio.shinyTeamHtml(stato)  i Pokémon di un team con fascia e prezzo dello shiny: stato = { pokemon: [{ nome, shiny, normale, brillante }], saldo, occupato, armato }
 //   Negozio.frasiAcquisto / frasiRilascio   le frasi della conferma di un acquisto (a quota piena si rilascia un altro) o di un rilascio di avatar, colore o canzone
 //   Negozio.chiama / cambia (indossa) / frase / creaAnteprime / STILE
@@ -28,6 +28,9 @@
 .ng-testa{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 40px 12px 0}
 .ng-testa h2{margin:0;font:900 1.4rem 'Josefin Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase}
 .ng-saldo{padding:5px 12px 3px;background:#ffbd44;border:3px solid #000;box-shadow:3px 3px 0 #000;font:900 1.05rem 'Josefin Sans',sans-serif}
+.ng-premi{list-style:disc;margin:8px 0 6px;padding:0 0 0 22px;display:grid;gap:4px;max-width:420px}
+.ng-premi li{display:list-item;font:600 .85rem/1.3 'Montserrat',sans-serif}
+.ng-premi li span{display:inline-block;min-width:170px}
 .ng-nota{margin:0 0 12px;font:600 .78rem/1.4 'Montserrat',sans-serif;opacity:.75}
 .ng-msg{margin:0 0 12px;padding:8px 10px;border:3px solid #000;background:#fff6d6;font:700 .82rem/1.3 'Montserrat',sans-serif}
 .ng-gruppo h3{margin:16px 0 4px;font:900 .95rem 'Josefin Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase}
@@ -73,17 +76,17 @@
 .ng-movimenti li{display:flex;justify-content:space-between;gap:10px}
 .ng-movimenti .ng-piu{color:#0a7d2a;font-weight:800}.ng-movimenti .ng-meno{color:#b3261e;font-weight:800}`;
 
-    /** "200–1200": dal prezzo dello shiny di una specie comune a quello di una leggendaria */
-    function intervalloShiny() {
-        const prezzi = Cosmetici.fasceShiny().map(f => f.prezzo);
-        return `${Math.min(...prezzi)}–${Math.max(...prezzi)}`;
-    }
-
-    /** Il paragrafo sui guadagni: i numeri vengono da PREMI (cosmetici.js), così non si disallineano */
-    function notaPremi() {
+    /** L'elenco dei guadagni (puro): quanto si prende e da cosa; i numeri vengono da PREMI (cosmetici.js), così non si disallineano */
+    function premiHtml() {
         const P = Cosmetici.PREMI, o = P.set.ufficiale, a = P.set.amichevole;
-        return `Earn coins by playing: a season set pays ${o.giocato}, or ${o.giocato + o.vinto} if you win it; a friendly pays ${a.giocato} or ${a.giocato + a.vinto} (up to ${P.tettoAmichevoliGiorno} a day). `
-            + `A new bronze/silver/gold badge pays ${P.badge[1]}/${P.badge[2]}/${P.badge[3]}, winning a season ${P.stagioneVinta} and an MVP ${P.mvp}.`;
+        const voci = [
+            ['Season set played', o.giocato], ['Season set won', o.giocato + o.vinto],
+            ['Friendly set played', a.giocato], ['Friendly set won', a.giocato + a.vinto],
+            ['New bronze badge', P.badge[1]], ['New silver badge', P.badge[2]], ['New gold badge', P.badge[3]],
+            ['Season won', P.stagioneVinta], ['Season MVP', P.mvp]
+        ];
+        return `<ul class="ng-premi">${voci.map(([testo, n]) => `<li><span>${esc(testo)}</span><b>+${n} 🪙</b></li>`).join('')}</ul>`
+            + `<p class="ng-nota">Friendly sets pay up to ${P.tettoAmichevoliGiorno} 🪙 a day in total.</p>`;
     }
 
     /**
@@ -151,13 +154,6 @@
     }
 
     /** Dove si spende il resto, e come funzionano i cambi di avatar, colore e canzone (puro) */
-    function guidaHtml() {
-        const L = Cosmetici.LIMITI, Z = Cosmetici.PREZZI;
-        return `<p class="ng-guida"><b>How it works.</b> Avatars (${Z.avatar} 🪙), colours (${Z.colore} 🪙) and songs (${Z.canzone} 🪙) are in the <b>Trainer</b> tab. Your first one of each is free, and each one belongs to a single trainer. `
-            + `You can have ${L.avatar} avatars, ${L.colore} colours and ${L.canzone} songs at most: to get another one you release one of yours (free) and it goes back to the pool for everyone. Wearing one you already have is always free. `
-            + `Shiny Pokémon (${intervalloShiny()} 🪙, the rarer the species the more it costs) are in the <b>Pokémon</b> tab; they work on locked teams too.</p>`;
-    }
-
     /** Gli ultimi movimenti, i più recenti prima (puro) */
     function movimentiHtml(movimenti) {
         const mov = (movimenti || []).slice(-8).reverse().map(m => `<li><span>${esc(data(m.t))} · ${esc(m.motivo)}</span><b class="${num(m.importo) >= 0 ? 'ng-piu' : 'ng-meno'}">${num(m.importo) === 0 ? 'free' : `${num(m.importo) > 0 ? '+' : ''}${num(m.importo)}`}</b></li>`).join('');
@@ -253,5 +249,5 @@
         return fuori;
     }
 
-    return { catalogoHtml, guidaHtml, movimentiHtml, notaPremi, shinyTeamHtml, frasiAcquisto, frasiRilascio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
+    return { catalogoHtml, movimentiHtml, premiHtml, shinyTeamHtml, frasiAcquisto, frasiRilascio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
 });
