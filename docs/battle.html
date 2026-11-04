@@ -22,6 +22,8 @@
     <link rel="stylesheet" href="https://play.pokemonshowdown.com/style/battle.css">
     <link rel="stylesheet" href="https://play.pokemonshowdown.com/style/utilichart.css">
     <link rel="stylesheet" href="style-battle.css">
+    <link rel="stylesheet" href="effetti-pagina.css">
+    <link rel="stylesheet" href="style-palestra-battaglia.css">
     <link rel="stylesheet" href="note-team.css">
     <link rel="stylesheet" href="badge-team.css">
     <link rel="stylesheet" href="nome-scorrevole.css">
@@ -135,12 +137,16 @@
                     <div class="palco-box">
                         <section class="palco" id="palco" aria-label="Battle field">
                             <div id="campo"></div>
+                            <!-- Solo in una palestra: l'effetto del palco del suo allenatore (neve, scintille...) davanti al campo -->
+                            <div class="pal-effetto" id="pal-effetto" aria-hidden="true" hidden></div>
                             <!-- Le reazioni di chi guarda salgono qui (reazioni-live.js) -->
                             <div class="rz-volo" id="reazioni-volo" aria-hidden="true"></div>
                             <div class="velo" id="messaggio-palco">
                                 <p id="testo-palco">Loading the battle engine…</p>
                             </div>
                             <div class="velo lobby" id="lobby" hidden></div>
+                            <!-- Solo in una palestra: il cartello che dice quale vantaggio ha (battle-ui.js, mostraAnnuncioPalestra) -->
+                            <div class="pal-annuncio" id="pal-annuncio" role="status" aria-live="polite" hidden></div>
                             <div class="esito" id="vittoria" aria-live="polite" hidden>
                                 <div class="esito-card">
                                     <h2 id="testo-vittoria"></h2>
@@ -239,6 +245,7 @@
     <script src="badge-team.js"></script>
     <script src="titoli.js"></script>
     <script src="badge-allenatore.js"></script>
+    <script src="cosmetici.js"></script>
     <script src="pagina-pubblica.js"></script>
     <script src="scheda-battaglia.js"></script>
     <script src="tooltip.js" defer></script>

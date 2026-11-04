@@ -299,16 +299,17 @@ export async function caricaAmichevole(db, info, mioLato) {
 // -----------------------------------------------------
 // 6. PALESTRA: LA TAPPA DI UN ALLENATORE (palestra.js)
 // -----------------------------------------------------
-// I team della palestra seguono il Box di chi la tiene: si legge il team di adesso. Ritorna { nome (dell'allenatore), id, tappa, vantaggio, team: { nome, testo }, regolamento, categoria }
+// I team della palestra seguono il Box di chi la tiene: si legge il team di adesso. Ritorna { nome (dell'allenatore), id, tappa, vantaggio, team: { nome, testo }, regolamento, categoria, aspetto }
+// (aspetto: colore, avatar, pagina, aura ed effetti del capopalestra, con cui il simulatore veste la palestra: Palestra.temaPalestra)
 export async function caricaTappaPalestra(db, idGym, numeroTappa) {
     const id = String(idGym || '').toLowerCase().trim();
     if (!id) throw new Error('No gym selected.');
-    const [configSnap, nomeSnap, regolamentiSnap] = await Promise.all([
-        db.ref(`players/${id}/info/palestra`).once('value'),
-        db.ref(`players/${id}/info/name`).once('value'),
+    const [infoSnap, regolamentiSnap] = await Promise.all([
+        db.ref(`players/${id}/info`).once('value'),
         db.ref('regolamenti').once('value')
     ]);
-    const tappe = self.Palestra ? self.Palestra.tappeDi(configSnap.val()) : [];
+    const info = infoSnap.val() || {};
+    const tappe = self.Palestra ? self.Palestra.tappeDi(info.palestra) : [];
     const tappa = tappe[numeroTappa];
     if (!tappa) throw new Error("This gym isn't set up (or this stage doesn't exist).");
     const regolamento = (regolamentiSnap.val() || {})[tappa.formato];
@@ -318,5 +319,7 @@ export async function caricaTappaPalestra(db, idGym, numeroTappa) {
     const testo = testoShowdownDaTeam(team, livelloFormato(regolamento));
     if (!testo) throw new Error("The gym leader's team is empty.");
     const vantaggio = self.Palestra.perId(tappa.vantaggio);
-    return { nome: String(nomeSnap.val() || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria };
+    // com'è fatta la sua pagina pubblica (colore, sfondo, aura, effetti): il simulatore ne veste la palestra (Palestra.temaPalestra)
+    const aspetto = { colore: info.color, avatar: info.avatar, pagina: info.pagina, aura: info.aura, effettoNome: info.effettoNome, effettoPalco: info.effettoPalco };
+    return { nome: String(info.name || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria, aspetto };
 }

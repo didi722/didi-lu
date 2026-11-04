@@ -16,7 +16,9 @@
 //   Palestra.problemi(config, { regolamenti, teams })   cosa non va nella configurazione ([] se è a posto)
 //   Palestra.nuovaSfida(squadre) / avanza(sfida) / azzera(sfida) / finita(sfida)   lo stato di chi sfida (puro)
 //   Palestra.chiaveSfida / leggiSfida / salvaSfida   i progressi di chi sfida, nel suo browser (localStorage passato da fuori)
-//   Palestra.applica(battle, vantaggio)    applica il vantaggio a una battaglia del simulatore appena iniziata (prima del turno 1)
+//   Palestra.applica(battle, vantaggio)    applica il vantaggio a una battaglia del simulatore appena iniziata (prima del turno 1), annunciandolo nel log
+//   Palestra.testoAnnuncio(vantaggio, gen) il testo che avvisa chi sfida del vantaggio
+//   Palestra.temaPalestra(aspetto, PaginaPubblica, Cosmetici)   colori, sfondo ed effetti della palestra in battaglia (dalla pagina pubblica del capopalestra)
 //
 // Niente DOM, niente Firebase: si prova in Node (test/palestra.test.js).
 // =====================================================
@@ -31,22 +33,29 @@
     // Un vantaggio di campo mette un effetto per `turni` turni, senza che nessuno l'abbia attivato; uno di boost alza le statistiche dei due Pokémon in campo all'inizio.
     // `cond`: l'id della condizione del simulatore; `dove`: 'meteo' | 'terreno' | 'campo' (effetto che vale per tutti) | 'lato' (solo per la palestra); `gen`: generazione minima.
     const VANTAGGI = [
-        { id: 'tailwind', tipo: 'campo', nome: 'Tailwind', descr: 'Tailwind on the gym side for 3 turns', cond: 'tailwind', dove: 'lato', turni: 3, gen: 4 },
-        { id: 'rain', tipo: 'campo', nome: 'Rain', descr: 'Rain for 5 turns', cond: 'raindance', dove: 'meteo', turni: 5, gen: 2 },
-        { id: 'sun', tipo: 'campo', nome: 'Sun', descr: 'Harsh sunlight for 5 turns', cond: 'sunnyday', dove: 'meteo', turni: 5, gen: 2 },
-        { id: 'sand', tipo: 'campo', nome: 'Sandstorm', descr: 'A sandstorm for 5 turns', cond: 'sandstorm', dove: 'meteo', turni: 5, gen: 2 },
-        { id: 'snow', tipo: 'campo', nome: 'Snow / Hail', descr: 'Snow (Hail before Gen 9) for 5 turns', cond: 'snowscape', condAntica: 'hail', dove: 'meteo', turni: 5, gen: 3 },
-        { id: 'electric', tipo: 'campo', nome: 'Electric Terrain', descr: 'Electric Terrain for 5 turns', cond: 'electricterrain', dove: 'terreno', turni: 5, gen: 6 },
-        { id: 'grassy', tipo: 'campo', nome: 'Grassy Terrain', descr: 'Grassy Terrain for 5 turns', cond: 'grassyterrain', dove: 'terreno', turni: 5, gen: 6 },
-        { id: 'psychic', tipo: 'campo', nome: 'Psychic Terrain', descr: 'Psychic Terrain for 5 turns', cond: 'psychicterrain', dove: 'terreno', turni: 5, gen: 7 },
-        { id: 'misty', tipo: 'campo', nome: 'Misty Terrain', descr: 'Misty Terrain for 5 turns', cond: 'mistyterrain', dove: 'terreno', turni: 5, gen: 6 },
-        { id: 'trickroom', tipo: 'campo', nome: 'Trick Room', descr: 'Trick Room for 5 turns', cond: 'trickroom', dove: 'campo', turni: 5, gen: 4 },
-        { id: 'boost-att', tipo: 'boost', nome: '+2 Attack & Sp. Atk', descr: '+2 Attack and Special Attack to the gym leads', boost: { atk: 2, spa: 2 }, gen: 1 },
-        { id: 'boost-dif', tipo: 'boost', nome: '+2 Defense & Sp. Def', descr: '+2 Defense and Special Defense to the gym leads', boost: { def: 2, spd: 2 }, gen: 1 },
-        { id: 'boost-vel', tipo: 'boost', nome: '+2 Speed', descr: '+2 Speed to the gym leads', boost: { spe: 2 }, gen: 1 }
+        { id: 'tailwind', tipo: 'campo', icona: '🌪️', nome: 'Tailwind', descr: 'Tailwind on the gym side for 3 turns', annuncio: "A roaring tailwind blows behind the gym's team: its Pokémon are twice as fast for 3 turns!", cond: 'tailwind', dove: 'lato', turni: 3, gen: 4 },
+        { id: 'rain', tipo: 'campo', icona: '🌧️', nome: 'Rain', descr: 'Rain for 5 turns', annuncio: 'Rain hammers the arena for 5 turns. Water moves get stronger, Fire moves get soaked!', cond: 'raindance', dove: 'meteo', turni: 5, gen: 2 },
+        { id: 'sun', tipo: 'campo', icona: '☀️', nome: 'Sun', descr: 'Harsh sunlight for 5 turns', annuncio: 'The sun blazes over the arena for 5 turns. Fire moves get stronger, Water moves fizzle!', cond: 'sunnyday', dove: 'meteo', turni: 5, gen: 2 },
+        { id: 'sand', tipo: 'campo', icona: '🏜️', nome: 'Sandstorm', descr: 'A sandstorm for 5 turns', annuncio: 'A sandstorm sweeps the arena for 5 turns. Everyone except Rock, Ground and Steel gets battered every turn!', cond: 'sandstorm', dove: 'meteo', turni: 5, gen: 2 },
+        { id: 'snow', tipo: 'campo', icona: '❄️', nome: 'Snow / Hail', descr: 'Snow (Hail before Gen 9) for 5 turns', annuncio: 'A blizzard rolls over the arena for 5 turns. Ice types toughen up, and Blizzard never misses!', annuncioAntica: 'A hailstorm pelts the arena for 5 turns. Everyone except Ice types gets battered every turn, and Blizzard never misses!', cond: 'snowscape', condAntica: 'hail', dove: 'meteo', turni: 5, gen: 3 },
+        { id: 'electric', tipo: 'campo', icona: '⚡', nome: 'Electric Terrain', descr: 'Electric Terrain for 5 turns', annuncio: 'The floor crackles with Electric Terrain for 5 turns: grounded Electric moves hit harder and nobody can fall asleep!', cond: 'electricterrain', dove: 'terreno', turni: 5, gen: 6 },
+        { id: 'grassy', tipo: 'campo', icona: '🌿', nome: 'Grassy Terrain', descr: 'Grassy Terrain for 5 turns', annuncio: 'Grass sprouts across the arena for 5 turns: grounded Grass moves hit harder and grounded Pokémon heal a little each turn!', cond: 'grassyterrain', dove: 'terreno', turni: 5, gen: 6 },
+        { id: 'psychic', tipo: 'campo', icona: '🔮', nome: 'Psychic Terrain', descr: 'Psychic Terrain for 5 turns', annuncio: 'A strange aura fills the arena for 5 turns: grounded Psychic moves hit harder and priority moves are blocked!', cond: 'psychicterrain', dove: 'terreno', turni: 5, gen: 7 },
+        { id: 'misty', tipo: 'campo', icona: '🌫️', nome: 'Misty Terrain', descr: 'Misty Terrain for 5 turns', annuncio: 'A soft mist covers the arena for 5 turns: grounded Pokémon cannot be put into a status condition and Dragon moves are weakened!', cond: 'mistyterrain', dove: 'terreno', turni: 5, gen: 6 },
+        { id: 'trickroom', tipo: 'campo', icona: '🌀', nome: 'Trick Room', descr: 'Trick Room for 5 turns', annuncio: 'The arena twists into a Trick Room for 5 turns: the slowest Pokémon move first!', cond: 'trickroom', dove: 'campo', turni: 5, gen: 4 },
+        { id: 'boost-att', tipo: 'boost', icona: '🗡️', nome: '+2 Attack & Sp. Atk', descr: '+2 Attack and Special Attack to the gym leads', annuncio: "The gym's lead Pokémon step in fired up: +2 Attack and +2 Sp. Atk from the very first turn!", boost: { atk: 2, spa: 2 }, gen: 1 },
+        { id: 'boost-dif', tipo: 'boost', icona: '🛡️', nome: '+2 Defense & Sp. Def', descr: '+2 Defense and Special Defense to the gym leads', annuncio: "The gym's lead Pokémon step in armoured up: +2 Defense and +2 Sp. Def from the very first turn!", boost: { def: 2, spd: 2 }, gen: 1 },
+        { id: 'boost-vel', tipo: 'boost', icona: '💨', nome: '+2 Speed', descr: '+2 Speed to the gym leads', annuncio: "The gym's lead Pokémon step in at full tilt: +2 Speed from the very first turn!", boost: { spe: 2 }, gen: 1 }
     ];
     const perId = id => VANTAGGI.find(v => v.id === id) || null;
     const vantaggiPer = gen => VANTAGGI.filter(v => v.gen <= (Number(gen) || 9));
+
+    /** Il testo che avvisa chi sfida del vantaggio (`gen`: la generazione del format, per la neve che prima era grandine) */
+    function testoAnnuncio(vantaggio, gen) {
+        const v = typeof vantaggio === 'string' ? perId(vantaggio) : vantaggio;
+        if (!v) return '';
+        return v.annuncioAntica && (Number(gen) || 9) < 9 ? v.annuncioAntica : v.annuncio;
+    }
 
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
@@ -123,20 +132,60 @@
     }
     function salvaSfida(storage, chiave, sfida) { try { storage.setItem(chiave, JSON.stringify(sfida)); } catch (e) { /* senza: si riparte dalla prima tappa */ } }
 
+    // ---- l'aspetto della palestra in battaglia -------------------------------------------------------
+    /**
+     * Come deve sembrare la palestra di un allenatore nel simulatore: i colori, lo sfondo e gli effetti della sua pagina pubblica (players/<id>/info: color, pagina, aura,
+     * effettoNome, effettoPalco). `PaginaPubblica` e `Cosmetici` sono i moduli del sito (passati da fuori: questo file non dipende da loro). Ritorna
+     *   { variabili: { '--pp-*': ..., '--pal-*': ... } (da scrivere sul <html>), colore, avatar, aura: {id, colore} | null, effettoNome, effettoPalco, scritta (testo del nome gigante o ''), scorre }
+     * Qualunque cosa ci sia nel database passa dalle liste di scelte ammesse di PaginaPubblica.normalizza e dal catalogo dei cosmetici: niente testo libero arriva al CSS.
+     */
+    function temaPalestra(aspetto, PaginaPubblica, Cosmetici) {
+        const a = aspetto || {};
+        const P = PaginaPubblica;
+        const colore = P.esadecimale(a.colore, '#ff7b6b');
+        const config = P.normalizza(a.pagina);
+        const sf = P.sfondoCss(config.sfondo, colore);
+        const variabili = Object.assign({}, P.variabiliCss(config, colore), {
+            '--pal-colore': colore,
+            '--pal-colore-ink': P.inchiostroSu(colore),
+            '--pal-cielo-a': P.mescola(sf.colore, P.luminanza(sf.colore) < 0.3 ? 0.14 : -0.1),
+            '--pal-cielo-b': P.mescola(sf.colore, P.luminanza(sf.colore) < 0.3 ? 0.3 : 0.55),
+            '--pal-pavimento-a': P.mescola(sf.colore, P.luminanza(sf.colore) < 0.3 ? 0.12 : -0.2),
+            '--pal-pavimento-b': P.mescola(sf.colore, P.luminanza(sf.colore) < 0.3 ? -0.2 : -0.5)
+        });
+        const cosmetico = (id, tipo) => { const c = Cosmetici && Cosmetici.perId ? Cosmetici.perId(id) : null; return c && c.tipo === tipo ? c : null; };
+        const aura = cosmetico(a.aura, 'aura');
+        const nome = cosmetico(a.effettoNome, 'nome');
+        const palco = cosmetico(a.effettoPalco, 'palco');
+        return {
+            variabili, colore,
+            avatar: typeof a.avatar === 'string' ? a.avatar : '',
+            aura: aura ? { id: aura.id, colore: aura.colore || colore } : null,
+            effettoNome: nome ? nome.id : null,
+            effettoPalco: palco ? palco.id : null,
+            scritta: config.sfondo.scritta ? 'on' : '',
+            scorre: !!config.sfondo.animato && sf.periodo > 0,
+            inchiostro: P.inchiostroSu(sf.colore)
+        };
+    }
+
     // ---- il simulatore -----------------------------------------------------------------------------
     /**
      * Applica il vantaggio a una battaglia del simulatore (Battle di @pkmn/sim) i cui Pokémon sono già in campo ma il turno 1 non è ancora cominciato.
      * Il lato della palestra è `lato` ('p2' di solito). Ritorna { ok, righe? } (niente se il vantaggio non esiste in quella generazione).
      * Gli effetti di campo partono come se nessuno li avesse attivati (si vede nel log come un effetto "naturale"); i boost vanno ai Pokémon in campo della palestra.
+     * Prima dell'effetto scrive nel log una riga che lo annuncia ("GYM ADVANTAGE: ..."), così chi sfida non se lo perde: `nome` è il nome della palestra.
      */
-    function applica(battle, vantaggio, lato = 'p2') {
+    function applica(battle, vantaggio, lato = 'p2', nome = '') {
         const v = typeof vantaggio === 'string' ? perId(vantaggio) : vantaggio;
         if (!battle || !v) return { ok: false };
         const side = battle.sides.find(s => s.id === lato);
         const attivi = side ? side.active.filter(p => p && !p.fainted) : [];
         const fonte = attivi[0];
         if (!fonte) return { ok: false };
+        const annuncia = () => battle.add('-message', `${v.icona || '🏟️'} GYM ADVANTAGE${nome ? ` · ${String(nome).replace(/[|\r\n]+/g, ' ')}'s gym` : ''}: ${v.nome}! ${testoAnnuncio(v, battle.gen)}`);
         if (v.tipo === 'boost') {
+            annuncia();
             for (const p of attivi) battle.boost(v.boost, p, p, null, true, true);
             return { ok: true };
         }
@@ -145,6 +194,7 @@
         const cond = v.condAntica && gen < 9 ? v.condAntica : v.cond;
         const esiste = battle.dex.conditions.get(cond);
         if (!esiste || !esiste.exists) return { ok: false };
+        annuncia();
         if (v.dove === 'meteo') {
             battle.field.setWeather(cond, fonte);
             if (battle.field.weatherState) battle.field.weatherState.duration = v.turni;
@@ -163,5 +213,5 @@
         return { ok: true };
     }
 
-    return { TAPPE, VANTAGGI, perId, vantaggiPer, generazioneDi, eDoppio, tappeDi, problemi, nuovaSfida, avanza, azzera, finita, chiaveSfida, leggiSfida, salvaSfida, applica };
+    return { TAPPE, VANTAGGI, perId, vantaggiPer, generazioneDi, eDoppio, tappeDi, problemi, nuovaSfida, avanza, azzera, finita, chiaveSfida, leggiSfida, salvaSfida, applica, testoAnnuncio, temaPalestra };
 });
