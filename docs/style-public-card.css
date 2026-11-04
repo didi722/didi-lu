@@ -536,6 +536,7 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
     width: auto;
     max-width: calc(224 * var(--d));   /* a destra dell'allenatore: un Pokémon largo si rimpicciolisce invece di coprirlo */
     object-fit: contain;
+    object-position: center bottom;      /* rimpicciolito dal max-width resta appoggiato a terra, non a mezz'aria */
     filter: var(--pp-adesivo-sprite);
 }
 
