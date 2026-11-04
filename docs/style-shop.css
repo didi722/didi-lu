@@ -177,3 +177,8 @@ html.app-shell { --shop-testo: #fff; }
 .shop-edit-card[hidden] { display: none; }
 .shop-edit-card:hover { transform: translate(-3px, -3px) rotate(-1deg); box-shadow: var(--nb-sh-m, 8px 8px 0 #000); }
 .shop-edit-card:active { transform: translate(3px, 3px); box-shadow: none; }
+
+/* gli avatar da prendere: compatti (tre righe), il resto si espande */
+.shop-avatar-griglia { grid-template-columns: repeat(auto-fill, 58px); justify-content: start; max-height: 204px; overflow: hidden; }
+.shop-avatar-griglia.aperta { max-height: 440px; overflow: auto; }
+.shop-espandi { margin: 4px 0 6px; }

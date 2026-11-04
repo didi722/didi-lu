@@ -28,7 +28,7 @@
 
     const S = {
         uid: '', giocatore: '', saldo: 0, posseduti: {}, casa: {}, info: {}, pagina: {}, movimenti: [], stagioni: {}, nomiStagioni: {}, registro: {}, teams: [],
-        tutti: null, shinyPkm: {}, scelta: null, canzoni: null, ricerca: '', anteprime: {}, tab: 'pagina', occupato: false, prova: {}, provando: '', squadra: '', armato: null
+        tutti: null, avatarAperti: false, shinyPkm: {}, scelta: null, canzoni: null, ricerca: '', anteprime: {}, tab: 'pagina', occupato: false, prova: {}, provando: '', squadra: '', armato: null
     };
     let ascolto = null;          // l'audio dell'anteprima di una canzone
 
@@ -183,7 +183,7 @@
             const titolo = altro ? `Avatar ${n} · taken${presoDa(id) ? ` by ${bello(presoDa(id))}` : ' by another trainer'}` : `Avatar ${n} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} coins`}`;
             return `<button type="button" class="shop-av${altro ? ' is-preso' : ''}${S.scelta && S.scelta.id === id ? ' is-prova' : ''}" data-ng="prendi" data-tipo="avatar" data-id="${id}" data-nome="Avatar ${n}" data-img="immagini/profile/${f}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}><img src="immagini/profile/${f}" alt="" loading="lazy"></button>`;
         }).join('');
-        return `<section class="ng-gruppo"><h3>Avatar ${conta('avatar')}</h3><p>${notaCollezione('avatar')}</p>${htmlMiei('avatar')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4>${barraScelta('avatar')}<div class="shop-avatar-griglia">${bottoni}</div></section>`;
+        return `<section class="ng-gruppo"><h3>Avatar ${conta('avatar')}</h3><p>${notaCollezione('avatar')}</p>${htmlMiei('avatar')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4>${barraScelta('avatar')}<div class="shop-avatar-griglia${S.avatarAperti ? ' aperta' : ''}">${bottoni}</div><button type="button" class="ng-bottone shop-espandi" data-ng="avatar-tutti" aria-expanded="${S.avatarAperti}">${S.avatarAperti ? 'Show fewer' : 'Show all avatars'}</button></section>`;
     }
 
     function htmlColore(presi) {
@@ -396,6 +396,7 @@
         }
         const dati = () => ({ tipo: b.dataset.tipo, id: b.dataset.id, nome: b.dataset.nome, immagine: b.dataset.img, colore: b.dataset.c, extra: b.dataset.url ? { url: b.dataset.url, nome: b.dataset.nome } : null });
         if (ng === 'prendi') { if (ascolto) { ascolto.pause(); ascolto = null; } return dati().tipo === 'canzone' ? chiediAcquisto(dati()) : scegli(dati()); }
+        if (ng === 'avatar-tutti') { S.avatarAperti = !S.avatarAperti; return disegna(true); }
         if (ng === 'compra-scelta') return S.scelta && chiediAcquisto(S.scelta);
         if (ng === 'annulla-scelta') return azzeraProva();
         if (ng === 'rilascia') return chiediRilascio(dati());
