@@ -160,3 +160,8 @@ html.app-shell { --shop-testo: #fff; }
 .shop-pagina .ng-bottone.ng-compra:hover:not(:disabled), .shop-conferma .ng-bottone.ng-compra:hover:not(:disabled) { background-color: #7dff97; }
 .shop-pagina .ng-bottone:active:not(:disabled), .shop-conferma .ng-bottone:active:not(:disabled), .shop-reset:active, .shop-squadra:active, .shop-ascolta:active, .shop-scelta:active:not(:disabled) { translate: 2px 2px; box-shadow: none; }
 .shop-squadra:not(.attiva):hover { background-color: var(--nb-giallo, #ffbd44); }
+
+/* gli elementi neri hanno l'ombra scura semitrasparente, non nera (come nel resto del sito) */
+.shop-saldo { box-shadow: var(--nb-sh-m-scuro, 5px 5px 0 rgba(0, 0, 0, .35)); }
+.shop-scheda.attiva, .shop-squadra.attiva, .shop-miio-su { box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
+.shop-scheda.attiva:hover, .shop-scheda.attiva:focus-visible { box-shadow: var(--nb-sh-m-scuro, 5px 5px 0 rgba(0, 0, 0, .35)); }
