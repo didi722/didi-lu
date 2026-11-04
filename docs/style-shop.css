@@ -182,3 +182,6 @@ html.app-shell { --shop-testo: #fff; }
 .shop-avatar-griglia { grid-template-columns: repeat(auto-fill, 58px); justify-content: start; max-height: 204px; overflow: hidden; }
 .shop-avatar-griglia.aperta { max-height: 440px; overflow: auto; }
 .shop-espandi { margin: 4px 0 6px; }
+
+/* gli ultimi movimenti: stretti, così il numero sta vicino alla descrizione */
+.shop-pagina .ng-movimenti { max-width: 440px; }
