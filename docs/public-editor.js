@@ -236,8 +236,27 @@
             return i.musicaPreferita && window.Cosmetici && window.Cosmetici.idCanzone(i.musicaPreferita) === id ? { url: i.musicaPreferita, nome: i.musicName || 'Song' } : null;
         },
         frase: motivo => (motivo === 'loading' ? 'Still loading what you have: try again in a moment.' : window.Negozio ? window.Negozio.frase(motivo) : "Couldn't do that."),
+        /** Le voci del catalogo di quel tipo (aura, nome, palco, shiny) che hai (comprate o in uso) */
+        catalogo: tipo => (window.Cosmetici ? window.Cosmetici.CATALOGO.filter(c => c.tipo === tipo && window.Cosmetici.possiede(c.id, contestoCosmetici())) : []),
+        /** Quella voce è addosso adesso? */
+        attivo: c => { const i = infoSalvata(); return c.tipo === 'shiny' ? !!i.pkmShiny : i[c.campo] === c.id; },
+        /**
+         * Mette (attivo) o toglie un'aura, un effetto del nome o del palco, o il compagno shiny che hai. Lo scrive il server (come per avatar e canzone): la carta si aggiorna subito, fuori da SAVE.
+         * Ritorna { ok } oppure { ok: false, motivo }.
+         */
+        async equipa(c, attivo) {
+            if (!cosmetici.pronto()) return { ok: false, motivo: 'loading' };
+            await caricaNegozio();
+            const r = await window.Negozio.chiama(window, 'equipaCosmetico', { id: c.id, attivo });
+            if (r.ok) {
+                C.provaCosmetici(c.tipo === 'shiny' ? { pkmShiny: attivo } : { [c.campo]: attivo ? c.id : null });
+                await leggiPortafoglio(true);
+                disegnaPannello();
+            }
+            return r;
+        },
         /** Lo Shop, sulla scheda Trainer: per averne altri */
-        vaiAlloShop: () => vaiAlloShop('tab=allenatore'),
+        vaiAlloShop: (dove = 'tab=allenatore') => vaiAlloShop(dove),
         /**
          * Indossa uno di quelli che hai (gratis): avatar (id avatar-<n>), colore (id colore-<rrggbb>) o canzone (id canzone-<impronta>, con url e nome; id '' = nessuna canzone).
          * Lo scrive il server: qui si aggiorna la carta, che conta già come salvata. Ritorna { ok, ... } oppure { ok: false, motivo }.
