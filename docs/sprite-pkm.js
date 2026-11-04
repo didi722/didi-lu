@@ -74,9 +74,7 @@
         return null;
     }
     // `shiny` (un cosmetico del negozio, cosmetici.js): i colori alternativi; le immagini del sito sono solo normali, quelle shiny si chiedono a Showdown
-    // Specie la cui GIF shiny di Showdown è rimasta uguale alla normale (ma nel gioco è diversa): per lo shiny si usa il render di Pokémon HOME (PokéAPI, id della forma)
-    const SHINY_ALTERNATIVO = { 'calyrex-shadow': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/shiny/10194.png' };
-    const gif = (specie, shiny) => (shiny && SHINY_ALTERNATIVO[id(specie)] ? SHINY_ALTERNATIVO[id(specie)] : shiny ? `${SD}/ani-shiny/${id(specie)}.gif` : (locale(specie) || `${SD}/ani/${id(specie)}.gif`));
+    const gif = (specie, shiny) => (shiny ? `${SD}/ani-shiny/${id(specie)}.gif` : (locale(specie) || `${SD}/ani/${id(specie)}.gif`));
     const dex = specie => `${SD}/dex/${id(specie)}.png`;
     const pokeapi = specie => senzaAccenti(pulisciSpecie(specie)).toLowerCase().replace(/[.'’:%]/g, '').trim().replace(/\s+/g, '-');
 
@@ -101,7 +99,6 @@
     /** Gli indirizzi da provare, in ordine, per l'immagine animata di un Pokémon (le stesse strade di stats.js, senza la Poké Ball): la GIF, la GIF in stile Gen 5, il PNG del Pokédex; poi la GIF della specie base */
     function catena(specie, shiny) {
         const { completo, base } = idSprite(specie);
-        if (shiny && SHINY_ALTERNATIVO[completo]) return [SHINY_ALTERNATIVO[completo], `${SD}/dex-shiny/${completo}.png`];
         if (shiny) return [`${SD}/ani-shiny/${completo}.gif`, `${SD}/gen5ani-shiny/${completo}.gif`, `${SD}/dex-shiny/${completo}.png`].concat(base && base !== completo ? [`${SD}/ani-shiny/${base}.gif`] : []);
         const per = id => [`${SD}/ani/${id}.gif`, `${SD}/gen5ani/${id}.gif`, `${SD}/dex/${id}.png`];
         const lista = per(completo);
@@ -138,5 +135,5 @@
         return true;
     }
 
-    return { SD, POKEBALL, SHINY_ALTERNATIVO, locale, FORME_DI_PARTENZA, BASI_CON_TRATTINO, ATTESA_RITENTA_MS, pulisciSpecie, idSprite, id, gif, dex, pokeapi, catena, riserva, ritenta };
+    return { SD, POKEBALL, locale, FORME_DI_PARTENZA, BASI_CON_TRATTINO, ATTESA_RITENTA_MS, pulisciSpecie, idSprite, id, gif, dex, pokeapi, catena, riserva, ritenta };
 });
