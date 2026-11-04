@@ -102,11 +102,6 @@
             const stile = `background-color:${a.colore};background-image:${a.immagine};background-size:${a.dimensione};background-position:${a.posizione}`;
             return `<span class="ng-anteprima" style="${esc(stile)}"></span>`;
         }
-        if (c.tipo === 'shiny') {
-            return a && a.sprite
-                ? `<span class="ng-anteprima"><img src="${esc(a.sprite)}" alt="" loading="lazy" onerror="this.parentNode.classList.add('ng-scintilla');this.remove()"></span>`
-                : '<span class="ng-anteprima ng-scintilla"></span>';
-        }
         return `<span class="ng-anteprima" style="--ng-c:${colore}"></span>`;
     }
 
@@ -115,13 +110,11 @@
         const saldo = num(s.saldo), info = s.info || {};
         const mio = Cosmetici.possiede(c.id, contesto);
         const disp = Cosmetici.disponibilita(c, s.stagioni);
-        const attivo = c.tipo === 'shiny' ? !!info.pkmShiny : c.campo ? info[c.campo] === c.id : false;
-        // il compagno shiny vale solo per un compagno generico: se viene dal Box è shiny come quel Pokémon (stato.compagnoBox = il suo nome)
-        const delBox = c.tipo === 'shiny' && !!s.compagnoBox;
+        const attivo = c.campo ? info[c.campo] === c.id : false;
         const bottone = mio
-            ? (c.campo ? `<button type="button" class="ng-bottone" data-ng="equipa" data-id="${esc(c.id)}" data-attivo="${attivo ? '0' : '1'}"${s.occupato || (delBox && !attivo) ? ' disabled' : ''}>${attivo ? 'Take off' : 'Put on'}</button>` : '<span class="ng-bottone" style="opacity:.6;box-shadow:none">Owned</span>')
-            : `<button type="button" class="ng-bottone ng-compra" data-ng="compra" data-id="${esc(c.id)}"${s.occupato || saldo < c.prezzo || disp !== 'si' || delBox ? ' disabled' : ''}>${disp === 'si' ? `${c.prezzo} 🪙` : disp === 'presto' ? 'Soon' : 'Ended'}</button>`;
-        const nota = delBox ? `Your companion comes from your Box: make ${esc(s.compagnoBox)} shiny in the Pokémon tab. This one is for a companion picked from the list.` : mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : c.tipo === 'shiny' ? esc(c.descr) : '';
+            ? (c.campo ? `<button type="button" class="ng-bottone" data-ng="equipa" data-id="${esc(c.id)}" data-attivo="${attivo ? '0' : '1'}"${s.occupato ? ' disabled' : ''}>${attivo ? 'Take off' : 'Put on'}</button>` : '<span class="ng-bottone" style="opacity:.6;box-shadow:none">Owned</span>')
+            : `<button type="button" class="ng-bottone ng-compra" data-ng="compra" data-id="${esc(c.id)}"${s.occupato || saldo < c.prezzo || disp !== 'si' ? ' disabled' : ''}>${disp === 'si' ? `${c.prezzo} 🪙` : disp === 'presto' ? 'Soon' : 'Ended'}</button>`;
+        const nota = mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : c.tipo === 'shiny' ? esc(c.descr) : '';
         return `<li class="ng-voce${mio ? ' ng-mio' : ''}${s.provando === c.id ? ' ng-prova' : ''}" data-tipo="${esc(c.tipo)}" data-id="${esc(c.id)}" data-ng="prova" title="Tap to see it on your page">${anteprima(c, (s.anteprime || {})[c.id], info.color)}<span><b>${esc(c.nome)}</b>${nota ? `<small>${nota}</small>` : ''}</span>${bottone}</li>`;
     }
 
@@ -242,8 +235,6 @@
                     const r = PP.sfondoCss({ motivo: c.motivo, colore: '#ffd966', forza: 3 }, '#31c489');
                     fuori[c.id] = Object.assign({}, r, { dimensione: met(r.dimensione), posizione: met(r.posizione) });
                 } catch (e) { /* senza anteprima */ }
-            } else if (c.tipo === 'shiny' && SP && SP.gif && info && info.pkmPreferito) {
-                try { fuori[c.id] = { sprite: SP.gif(info.pkmPreferito, true) }; } catch (e) { /* senza anteprima */ }
             }
         }
         return fuori;

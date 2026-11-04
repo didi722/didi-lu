@@ -98,7 +98,7 @@ test('acquista: sconosciuto, già posseduto, troppo poche monete, e quello andat
     assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'non-esiste' }), { ok: false, motivo: 'unknown' });
     assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'aura-arcobaleno' }), { ok: true, saldo: 0 });
     assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'aura-arcobaleno' }), { ok: false, motivo: 'owned' });
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'shiny' }), { ok: false, motivo: 'poor' });
+    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'aura-ghiaccio' }), { ok: false, motivo: 'poor' });
     assert.ok(db.albero.wallet.u1.posseduti['aura-arcobaleno']);
     assert.equal(saldo(db, 'u1'), 0);
 });
@@ -112,8 +112,8 @@ test('acquista: due richieste insieme per lo stesso oggetto lo pagano una volta 
     assert.equal(movimenti(db, 'u1').filter(m => m.importo < 0).length, 1);
 
     const povero = dbFinto({ wallet: { u2: { saldo: 5 } } });
-    assert.deepEqual(await M.acquista({ db: povero, uid: 'u2', id: 'shiny' }), { ok: false, motivo: 'poor' });
-    assert.equal((povero.albero.wallet.u2.posseduti || {}).shiny, undefined, 'la prenotazione è tornata indietro');
+    assert.deepEqual(await M.acquista({ db: povero, uid: 'u2', id: 'aura-ghiaccio' }), { ok: false, motivo: 'poor' });
+    assert.equal((povero.albero.wallet.u2.posseduti || {})['aura-ghiaccio'], undefined, 'la prenotazione è tornata indietro');
     assert.equal(saldo(povero, 'u2'), 5);
 });
 
@@ -570,7 +570,7 @@ test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a sta
     const per = id => C.perId(id).prezzo;
     for (const id of ['sfondo-raggi', 'sfondo-pokeball', 'sfondo-anelli', 'sfondo-stelle', 'sfondo-onde']) assert.ok(per(id) >= media * 0.25 && per(id) <= media * 0.40, `${id} ${per(id)}`);
     for (const id of ['aura-oro', 'aura-fiamma', 'aura-ghiaccio']) assert.ok(per(id) >= media * 0.45 && per(id) <= media * 0.60, `${id} ${per(id)}`);
-    for (const id of ['aura-arcobaleno', 'shiny']) assert.ok(per(id) >= media * 0.75 && per(id) <= media * 1.1, `${id} ${per(id)}`);
+    for (const id of ['aura-arcobaleno']) assert.ok(per(id) >= media * 0.75 && per(id) <= media * 1.1, `${id} ${per(id)}`);
     // gli effetti del nome come le aure; quelli del palco, animati, un po' di più
     for (const id of ['nome-oro', 'nome-neon', 'nome-fuoco']) assert.ok(per(id) >= media * 0.45 && per(id) <= media * 0.60, `${id} ${per(id)}`);
     assert.ok(per('nome-arcobaleno') >= media * 0.75 && per('nome-arcobaleno') <= media * 1.1, `nome-arcobaleno ${per('nome-arcobaleno')}`);
@@ -580,54 +580,38 @@ test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a sta
     assert.ok(fisso >= media * 8 && fisso <= media * 24, `catalogo permanente ${fisso} = ${(fisso / media).toFixed(1)} stagioni`);
     // gli shiny sono la cosa più cara: quello di un team costa più di due cambi di canzone e più di un motivo; il compagno shiny è al massimo del catalogo
     assert.ok(P.shinyPokemon > P.canzone * 2 && P.shinyPokemon > per('sfondo-onde'), 'lo shiny di un team pesa più dei cambi e dei motivi');
-    assert.equal(per('shiny'), Math.max(...C.CATALOGO.map(c => c.prezzo)), 'il compagno shiny è tra i più cari del catalogo');
 });
 
-test('equipa: solo ciò che si possiede; shiny e aura finiscono nel profilo pubblico, togliere li pulisce', async () => {
-    const db = dbFinto({ users: { u1: { name: 'Didi' } }, wallet: { u1: { saldo: 0, posseduti: { shiny: 1, 'aura-oro': 1 } } }, players: { didi: { info: {} } } });
-    assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'shiny', attivo: true }), { ok: true });
-    assert.equal(db.albero.players.didi.info.pkmShiny, true);
+test('equipa: solo ciò che si possiede; l\'aura finisce nel profilo pubblico, togliere la pulisce', async () => {
+    const db = dbFinto({ users: { u1: { name: 'Didi' } }, wallet: { u1: { saldo: 0, posseduti: { 'aura-oro': 1 } } }, players: { didi: { info: {} } } });
     assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'aura-oro', attivo: true }), { ok: true });
     assert.equal(db.albero.players.didi.info.aura, 'aura-oro');
     assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'aura-fiamma', attivo: true }), { ok: false, motivo: 'not-owned' });
-    await M.equipa({ db, uid: 'u1', id: 'shiny', attivo: false });
-    assert.equal(db.albero.players.didi.info.pkmShiny, undefined);
+    await M.equipa({ db, uid: 'u1', id: 'aura-oro', attivo: false });
+    assert.equal(db.albero.players.didi.info.aura, undefined);
+    assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'shiny', attivo: true }), { ok: false, motivo: 'unknown' }, 'il compagno shiny non esiste più');
     assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'sfondo-raggi', attivo: true }), { ok: false, motivo: 'unknown' }, 'i motivi non si equipaggiano da qui');
-    assert.deepEqual(await M.equipa({ db: dbFinto({ wallet: { u2: { posseduti: { shiny: 1 } } } }), uid: 'u2', id: 'shiny', attivo: true }), { ok: false, motivo: 'no-profile' });
+    assert.deepEqual(await M.equipa({ db: dbFinto({ wallet: { u2: { posseduti: { 'aura-oro': 1 } } } }), uid: 'u2', id: 'aura-oro', attivo: true }), { ok: false, motivo: 'no-profile' });
 });
 
-test('compagno shiny: se il compagno viene dal Box è shiny come quel Pokémon del Box; se è generico, se si ha il compagno shiny; il negozio non lo vende né lo mette a chi ha un compagno del Box', async () => {
+test('compagno shiny: solo se il compagno viene dal Box ed è shiny quel Pokémon; un compagno generico non è mai shiny e il negozio non lo vende', () => {
     const teams = [{ id: 'T1', pokemon: [{ nome: 'Garchomp', shiny: true }, { nome: 'Mr. Mime', shiny: false }] }];
     // dal Box: conta il Pokémon del Box, qualunque cosa dica pkmShiny
     assert.equal(C.compagnoShiny({ pkmPreferito: 'garchomp', pkmBox: 'T1|0', pkmShiny: false }, teams), true);
-    assert.equal(C.compagnoShiny({ pkmPreferito: 'mr-mime', pkmBox: 'T1|1', pkmShiny: true }, teams), false, 'il compagno shiny comprato non lo rende shiny');
+    assert.equal(C.compagnoShiny({ pkmPreferito: 'mr-mime', pkmBox: 'T1|1', pkmShiny: true }, teams), false, 'un vecchio pkmShiny non rende shiny');
     assert.equal(C.compagnoDelBox({ pkmPreferito: 'mr-mime', pkmBox: 'T1|1' }, teams).nome, 'Mr. Mime', 'nomi con spazi e punti');
     // il Box è cambiato (un altro Pokémon in quel posto, il team non c'è più, indirizzo storto): è come generico
     for (const pkmBox of ['T1|1', 'T9|0', 'T1|7', 'T1', '', '|0', 'T1|-1', 'T1|x']) assert.equal(C.compagnoDelBox({ pkmPreferito: 'garchomp', pkmBox }, teams), null, pkmBox);
-    assert.equal(C.compagnoShiny({ pkmPreferito: 'garchomp', pkmBox: 'T9|0', pkmShiny: true }, teams), true);
-    // generico: vale il compagno shiny
-    assert.equal(C.compagnoShiny({ pkmPreferito: 'pikachu', pkmShiny: true }, teams), true);
+    // generico: mai shiny, anche con un vecchio pkmShiny nel profilo
+    assert.equal(C.compagnoShiny({ pkmPreferito: 'garchomp', pkmBox: 'T9|0', pkmShiny: true }, teams), false);
+    assert.equal(C.compagnoShiny({ pkmPreferito: 'pikachu', pkmShiny: true }, teams), false);
     assert.equal(C.compagnoShiny({ pkmPreferito: 'pikachu' }, teams), false);
     assert.equal(C.compagnoShiny(null, null), false);
     // i team come arrivano dal database: oggetto id → team, Pokémon in un oggetto
     assert.equal(C.compagnoShiny({ pkmPreferito: 'garchomp', pkmBox: 'T1|0' }, { T1: { pokemon: { 0: { nome: 'Garchomp', shiny: true } } } }), true);
-    // il server: a chi ha un compagno del Box non vende né mette il compagno shiny (niente monete sprecate)
-    const base = pkmBox => ({ users: { u1: { name: 'Didi' } }, wallet: { u1: { saldo: 2000, posseduti: { shiny: 1 } } }, players: { didi: { info: { pkmPreferito: 'garchomp', pkmBox }, teams: { T1: { id: 'T1', pokemon: [{ nome: 'Garchomp', shiny: false }] } } } } });
-    const dalBox = dbFinto(base('T1|0'));
-    assert.deepEqual(await M.equipa({ db: dalBox, uid: 'u1', id: 'shiny', attivo: true }), { ok: false, motivo: 'box-companion' });
-    assert.equal(dalBox.albero.players.didi.info.pkmShiny, undefined);
-    const senzaCompra = dbFinto({ ...base('T1|0'), wallet: { u1: { saldo: 2000 } } });
-    assert.deepEqual(await M.acquista({ db: senzaCompra, uid: 'u1', id: 'shiny' }), { ok: false, motivo: 'box-companion' });
-    assert.equal(saldo(senzaCompra, 'u1'), 2000);
-    assert.equal((senzaCompra.albero.wallet.u1.posseduti || {}).shiny, undefined, 'e nessuna prenotazione');
-    // togliere il compagno shiny si può sempre; un compagno generico (o con il Box cambiato) lo compra e lo mette
-    assert.deepEqual(await M.equipa({ db: dalBox, uid: 'u1', id: 'shiny', attivo: false }), { ok: true });
-    for (const pkmBox of ['', 'T9|0']) {
-        const generico = dbFinto({ ...base(pkmBox), wallet: { u1: { saldo: 2000 } } });
-        assert.deepEqual(await M.acquista({ db: generico, uid: 'u1', id: 'shiny' }), { ok: true, saldo: 2000 - C.perId('shiny').prezzo }, pkmBox);
-        assert.deepEqual(await M.equipa({ db: generico, uid: 'u1', id: 'shiny', attivo: true }), { ok: true });
-        assert.equal(generico.albero.players.didi.info.pkmShiny, true);
-    }
+    // il catalogo non ha più il compagno shiny
+    assert.equal(C.perId('shiny'), null);
+    assert.ok(!C.CATALOGO.some(c => c.tipo === 'shiny' || c.campo === 'pkmShiny'));
 });
 
 test('equipa: gli effetti del nome e del palco vanno nei loro campi del profilo (uno per campo: il nuovo prende il posto del vecchio); togliere una voce che non si porta non cancella quella che si porta', async () => {
@@ -670,9 +654,6 @@ test('catalogo: effetti del nome e del palco e edizioni sono coerenti: campo e p
 });
 
 test('cosmetici: possesso per acquisto o per uso (chi usava un motivo ora a pagamento lo tiene); motivi bloccati', () => {
-    assert.equal(C.possiede('shiny', {}), false);
-    assert.equal(C.possiede('shiny', { wallet: { posseduti: { shiny: 5 } } }), true);
-    assert.equal(C.possiede('shiny', { info: { pkmShiny: true } }), true, 'in uso');
     assert.equal(C.possiede('aura-oro', { info: { aura: 'aura-oro' } }), true);
     assert.equal(C.possiede('aura-oro', { info: { aura: 'aura-fiamma' } }), false);
     assert.equal(C.possiede('sfondo-raggi', { pagina: { sfondo: { motivo: 'raggi' } } }), true, 'il motivo che usi lo tieni');
@@ -680,7 +661,7 @@ test('cosmetici: possesso per acquisto o per uso (chi usava un motivo ora a paga
     assert.equal(C.motivoBloccato('raggi', { wallet: { posseduti: { 'sfondo-raggi': 1 } } }), false);
     assert.equal(C.motivoBloccato('punti', {}), false, 'i motivi gratuiti non sono nel catalogo');
     assert.equal(C.possiede('boh', {}), false);
-    assert.deepEqual([...C.possedutiDa({ info: { pkmShiny: true, aura: 'aura-oro' } })].sort(), ['aura-oro', 'shiny']);
+    assert.deepEqual([...C.possedutiDa({ info: { pkmShiny: true, aura: 'aura-oro' } })].sort(), ['aura-oro'], 'un vecchio pkmShiny non conta');
     for (const c of C.CATALOGO) assert.ok(c.prezzo > 0 && C.TIPI[c.tipo] && (c.campo || c.motivo), c.id);
     assert.equal(new Set(C.CATALOGO.map(c => c.id)).size, C.CATALOGO.length, 'id unici');
 });

@@ -54,7 +54,7 @@ test('replay: come lo showdown con set, esito, turni e link; il testo porta il l
 test('allenatore: le quattro caselle dalle statistiche già pronte della pagina, formato e punti in più; testo breve', () => {
     const riepilogo = { rank: { grande: '#2', piccolo: 'ELO 1043' }, match: { grande: '71.4%', piccolo: '5W · 2L' }, sd: { grande: '60%', piccolo: '3W · 2L' }, set: { grande: '66.7%', piccolo: '10W · 5L' },
         punti: { grande: '59', piccolo: 'league points' }, formato: { grande: 'VGC Gen 8', piccolo: '4W · 1L' } };
-    const a = S.allenatore({ nome: 'Didi', colore: '#123456', avatar: 'x.png', info: { motto: 'Vamos', pkmPreferito: 'Garchomp', pkmShiny: true }, riepilogo });
+    const a = S.allenatore({ nome: 'Didi', colore: '#123456', avatar: 'x.png', info: { motto: 'Vamos', pkmPreferito: 'Garchomp' }, riepilogo, compagnoShiny: true });
     assert.deepEqual(a.numeri.map(n => [n.et, n.val, n.sub]), [['Rank', '#2', 'ELO 1043'], ['Matches', '71.4%', '5W · 2L'], ['Showdowns', '60%', '3W · 2L'], ['Sets', '66.7%', '10W · 5L']]);
     assert.deepEqual(a.extra, ['Main format: VGC Gen 8 (4W · 1L)', 'League points: 59']);
     assert.deepEqual([a.motto, a.compagno, a.compagnoShiny], ['Vamos', 'Garchomp', true]);

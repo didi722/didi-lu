@@ -212,9 +212,9 @@
         /** Le voci del catalogo di quel tipo (aura, nome, palco, shiny) che hai (comprate o in uso) */
         catalogo: tipo => (window.Cosmetici ? window.Cosmetici.CATALOGO.filter(c => c.tipo === tipo && window.Cosmetici.possiede(c.id, contestoCosmetici())) : []),
         /** Quella voce è addosso adesso? */
-        attivo: c => { const i = infoSalvata(); return c.tipo === 'shiny' ? !!i.pkmShiny : i[c.campo] === c.id; },
+        attivo: c => infoSalvata()[c.campo] === c.id,
         /**
-         * Mette (attivo) o toglie un'aura, un effetto del nome o del palco, o il compagno shiny che hai. Lo scrive il server (come per avatar e canzone): la carta si aggiorna subito, fuori da SAVE.
+         * Mette (attivo) o toglie un'aura, un effetto del nome o del palco che hai. Lo scrive il server (come per avatar e canzone): la carta si aggiorna subito, fuori da SAVE.
          * Ritorna { ok } oppure { ok: false, motivo }.
          */
         async equipa(c, attivo) {
@@ -222,7 +222,7 @@
             await caricaNegozio();
             const r = await window.Negozio.chiama(window, 'equipaCosmetico', { id: c.id, attivo });
             if (r.ok) {
-                C.provaCosmetici(c.tipo === 'shiny' ? { pkmShiny: attivo } : { [c.campo]: attivo ? c.id : null });
+                C.provaCosmetici({ [c.campo]: attivo ? c.id : null });
                 await leggiPortafoglio(true);
                 disegnaPannello();
             }

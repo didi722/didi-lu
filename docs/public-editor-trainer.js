@@ -94,24 +94,22 @@
 
     // ---- Scheda Items: tutto quello che hai preso nello Shop ------------------------------------
 
-    /** Aura, effetto del nome, effetto del palco o compagno shiny: solo quelli che hai; un tocco li mette, un altro tocco li toglie (lo fa il server) */
+    /** Aura, effetto del nome o effetto del palco: solo quelli che hai; un tocco li mette, un altro tocco li toglie (lo fa il server) */
     function sezioneEffetti(ctx, titolo, tipo, descrizione) {
-        const { C, h, sezione, avvisa, cosmetici } = ctx;
+        const { h, sezione, avvisa, cosmetici } = ctx;
         const voci = cosmetici.catalogo(tipo);
         const metti = async (c, attivo) => {
             let r;
             try { r = await cosmetici.equipa(c, attivo); } catch (e) { r = { ok: false, motivo: 'error' }; }
             avvisa(r.ok ? (attivo ? `${c.nome}: on.` : `${c.nome}: off.`) : cosmetici.frase(r.motivo), !r.ok);
         };
-        const delBox = tipo === 'shiny' && !!C.profilo().pkmBox;
         const corpo = !voci.length ? h('p', { class: 'pe-nota', testo: `You have none yet. ${descrizione}` })
             : h('div', { class: 'pe-scorri', 'data-effetti': tipo }, voci.map(c => {
                 const su = cosmetici.attivo(c);
                 return h('button', { type: 'button', class: `pe-scelta${su ? ' is-on' : ''}`, 'aria-pressed': String(su), title: su ? `${c.nome} · tap to take it off` : `${c.nome} · tap to put it on`,
                     onclick: () => metti(c, !su) }, h('span', { testo: c.nome }), su ? h('small', { class: 'pe-prezzo', testo: 'on now' }) : null);
             }));
-        return sezione(titolo, corpo,
-            delBox && voci.length ? h('p', { class: 'pe-nota', testo: 'Your companion comes from your Box, so it is shiny or not like that Pokémon (make it shiny in the Shop). This one is for a companion picked from the list.' }) : null);
+        return sezione(titolo, corpo);
     }
 
     function disegnaItems(ctx) {
@@ -123,8 +121,7 @@
             ...sezioniMie(ctx),
             sezioneEffetti(ctx, 'Aura', 'aura', 'A glow around your trainer.'),
             sezioneEffetti(ctx, 'Name effect', 'nome', 'Make your name stand out.'),
-            sezioneEffetti(ctx, 'Stage effect', 'palco', 'Something falling or rising on your stage.'),
-            sezioneEffetti(ctx, 'Shiny companion', 'shiny', 'Your favourite Pokémon in its shiny colours.')
+            sezioneEffetti(ctx, 'Stage effect', 'palco', 'Something falling or rising on your stage.')
         ];
     }
 

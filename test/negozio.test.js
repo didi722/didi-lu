@@ -1,5 +1,5 @@
 'use strict';
-// negozio.js: la finestra delle monete (markup puro) e il cablaggio dei cosmetici nelle pagine (compagno shiny, aure, motivi dello sfondo a pagamento).
+// negozio.js: la finestra delle monete (markup puro) e il cablaggio dei cosmetici nelle pagine (aure, effetti, motivi dello sfondo a pagamento).
 //   npm test        (dalla cartella principale)
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -15,10 +15,10 @@ const leggi = (...p) => fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8'
 const pagina = s => N.catalogoHtml(s) + N.movimentiHtml((s || {}).movimenti);
 
 test('html: saldo, le tre categorie, compra con il prezzo (spento se mancano monete), "Put on"/"Take off" per ciò che si ha, i movimenti più recenti prima; testo protetto', () => {
-    const h = pagina({ saldo: 650, posseduti: { 'aura-oro': 1 }, info: { aura: 'aura-oro', pkmShiny: false }, movimenti: [{ t: Date.UTC(2026, 10, 2), importo: 20, motivo: 'Season set won' }, { t: Date.UTC(2026, 10, 3), importo: -150, motivo: '<b>Bought</b>' }] });
-    for (const t of ['Shiny companion', 'Trainer aura', 'Page patterns']) assert.ok(h.includes(t), t);
+    const h = pagina({ saldo: 650, posseduti: { 'aura-oro': 1 }, info: { aura: 'aura-oro' }, movimenti: [{ t: Date.UTC(2026, 10, 2), importo: 20, motivo: 'Season set won' }, { t: Date.UTC(2026, 10, 3), importo: -150, motivo: '<b>Bought</b>' }] });
+    for (const t of ['Trainer aura', 'Page patterns']) assert.ok(h.includes(t), t);
     assert.match(h, new RegExp(`data-ng="compra" data-id="aura-fiamma">${C.perId('aura-fiamma').prezzo} 🪙`), '650 monete: l\'aura da 400 si può comprare');
-    assert.match(h, new RegExp(`data-ng="compra" data-id="shiny" disabled>${C.perId('shiny').prezzo} 🪙`), 'il compagno shiny (800) no');
+    assert.doesNotMatch(h, /Shiny companion|data-id="shiny"/, 'il compagno shiny non si vende più');
     assert.match(h, new RegExp(`data-ng="compra" data-id="aura-arcobaleno" disabled>${C.perId('aura-arcobaleno').prezzo} 🪙`), 'e nemmeno l\'arcobaleno');
     assert.match(h, /data-ng="equipa" data-id="aura-oro" data-attivo="0">Take off/, 'l\'aura in uso si toglie');
     assert.match(h, /On now/);
@@ -57,16 +57,13 @@ test('html: un motivo dello sfondo in uso nella pagina resta di chi lo usa; i mo
     assert.doesNotMatch(h, /data-ng="equipa" data-id="sfondo/);
 });
 
-test('anteprime: aure con il loro colore, sfondi con il motivo vero, shiny con lo sprite del compagno; senza dati restano semplici e il testo ostile non esce dal tag', () => {
+test('anteprime: aure con il loro colore, sfondi con il motivo vero, senza dati restano semplici e il testo ostile non esce dal tag', () => {
     const sfondo = P.sfondoCss({ motivo: 'stelle', colore: '#ffd966', forza: 3 }, '#31c489');
-    const h = pagina({ saldo: 0, anteprime: { 'sfondo-stelle': sfondo, shiny: { sprite: Sprite.gif('Garchomp', true) } } });
+    const h = pagina({ saldo: 0, anteprime: { 'sfondo-stelle': sfondo } });
     assert.match(h, /data-id="sfondo-stelle"[^>]*><span class="ng-anteprima" style="background-color:#ffd966;background-image:url\(&quot;data:image\/svg\+xml,/);
-    assert.match(h, /<img src="https:\/\/play\.pokemonshowdown\.com\/sprites\/ani-shiny\/garchomp\.gif"/);
     const senza = pagina({ saldo: 0 });
-    assert.match(senza, /data-id="shiny"[^>]*><span class="ng-anteprima ng-scintilla"><\/span>/, 'senza sprite: la scintilla');
     assert.match(senza, /data-id="aura-oro"[^>]*><span class="ng-anteprima" style="--ng-c:#ffcc33"><\/span>/);
     assert.match(senza, /data-id="sfondo-raggi"[^>]*><span class="ng-anteprima" style="--ng-c:#d9dde6"><\/span>/, 'senza motivo: un quadrato semplice');
-    assert.doesNotMatch(N.anteprima({ tipo: 'shiny' }, { sprite: '"><script>x</script>' }), /<script>/);
     assert.doesNotMatch(N.anteprima({ tipo: 'sfondo' }, { colore: '"><b>', immagine: 'url(x)', dimensione: '1px', posizione: '0 0' }), /<b>/);
     // la variabile dell'aura non deve toccare quelle del resto del sito
     assert.doesNotMatch(N.STILE.replace(/--ng-c/g, ''), /--c\b/);
@@ -91,12 +88,12 @@ test('i due motivi nuovi (Stars, Waves) esistono, si disegnano e passano la vali
     assert.equal(P.normalizza({ sfondo: { motivo: 'boh' } }).sfondo.motivo, P.predefinita().sfondo.motivo);
 });
 
-test('cablaggio: lo Shop è una pagina (non sta più nella campanella); shiny nella pagina, nell\'app e nelle schede; aure nella pagina e nella scheda; nell\'editor niente voci bloccate', () => {
+test('cablaggio: lo Shop è una pagina (non sta più nella campanella); compagno shiny solo dal Box (pagina, app e schede); aure nella pagina e nella scheda; nell\'editor niente voci bloccate', () => {
     const sf = leggi('docs', 'sfide.js');
     assert.doesNotMatch(sf, /pieNegozio|apriNegozio|apri-negozio|Negozio\.apri/, 'nella campanella non c\'è più niente da comprare');
     assert.doesNotMatch(sf, /wallet\/\$\{P\.uid\}\/saldo/);
     const pc = leggi('docs', 'public-card.js');
-    assert.match(pc, /const brillante = !!\(stato\.dati && stato\.dati\.info && \(window\.Cosmetici \? window\.Cosmetici\.compagnoShiny\(stato\.dati\.info, stato\.dati\.teams\) : stato\.dati\.info\.pkmShiny\)\)/, 'lo shiny del compagno: del Box segue il suo Pokémon, il generico quello comprato');
+    assert.match(pc, /const brillante = !!\(stato\.dati && stato\.dati\.info && \(window\.Cosmetici \? window\.Cosmetici\.compagnoShiny\(stato\.dati\.info, stato\.dati\.teams\) : false\)\)/, 'lo shiny del compagno: solo se viene dal Box (segue il suo Pokémon); il generico mai');
     assert.match(pc, /'data-aura': cosmeticoDi\(d\.info\.aura, 'aura'\)/);
     assert.match(pc, /const cosmeticoDi = \(id, tipo\) => \{ const c = window\.Cosmetici && window\.Cosmetici\.perId\(id\); return c && c\.tipo === tipo \? id : null; \};/, 'un id vale solo se è di quel tipo');
     assert.match(pc, /'data-effetto-palco': cosmeticoDi\(d\.info\.effettoPalco, 'palco'\)/);
@@ -107,7 +104,7 @@ test('cablaggio: lo Shop è una pagina (non sta più nella campanella); shiny ne
     assert.match(pc, /aura: window\.Cosmetici && window\.Cosmetici\.perId\(info\.aura\)/);
     assert.match(leggi('docs', 'public.html'), /<script src="cosmetici\.js"><\/script>\s*<script src="public-card\.js">/);
     assert.match(leggi('docs', 'matches.html'), /pkmShiny: window\.Cosmetici \? Cosmetici\.compagnoShiny\(g, teamBox\)|pkmShiny: window\.Cosmetici \? Cosmetici\.compagnoShiny\(infoPlayer, teamBox\)/, 'nei match il compagno è shiny come lo decide Cosmetici.compagnoShiny');
-    assert.match(leggi('docs', 'players.html'), /pkmShiny: window\.Cosmetici \? Cosmetici\.compagnoShiny\(info, player\.teams\) : !!info\.pkmShiny/, 'nei profili il compagno del Box è shiny come quel Pokémon');
+    assert.match(leggi('docs', 'players.html'), /pkmShiny: window\.Cosmetici \? Cosmetici\.compagnoShiny\(info, player\.teams\) : false/, 'nei profili il compagno del Box è shiny come quel Pokémon');
     assert.match(leggi('docs', 'app-matches.js'), /gif\(l\.pkm, l\.pkmShiny\)/);
     assert.match(leggi('docs', 'app-classifica.js'), /gif\(p\.pkm, p\.pkmShiny\)/);
     assert.match(leggi('docs', 'app-trainers.js'), /gif\(g\.pkm, g\.pkmShiny\)/);
@@ -216,9 +213,9 @@ test('cablaggio: avatar, colore e canzone si comprano nello Shop (massimo per ti
     assert.match(ed, /C\.profiloDalServer\(valori\)/);
     assert.match(ed, /for \(const f of storia\) Object\.assign\(f\.profilo, valori\)/, '"undo" non riporta indietro quello che ha già fatto il server');
     assert.match(ed, /vaiAlloShop: \(dove = 'tab=allenatore'\) => vaiAlloShop\(dove\)/);
-    // aure, effetti e compagno shiny: solo quelli che hai, li mette il server
+    // aure ed effetti: solo quelli che hai, li mette il server
     assert.match(ed, /window\.Negozio\.chiama\(window, 'equipaCosmetico', \{ id: c\.id, attivo \}\)/);
-    assert.match(ed, /C\.provaCosmetici\(c\.tipo === 'shiny' \? \{ pkmShiny: attivo \} : \{ \[c\.campo\]: attivo \? c\.id : null \}\)/);
+    assert.match(ed, /C\.provaCosmetici\(\{ \[c\.campo\]: attivo \? c\.id : null \}\)/);
     assert.match(ed, /catalogo: tipo => .*window\.Cosmetici\.possiede\(c\.id, contestoCosmetici\(\)\)/);
     assert.doesNotMatch(ed, /acquistaCosmetico|rilasciaCosmetico|prezzoAcquisto|leggiRegistro|cosmeticiPresi/, 'dall\'editor non si compra né si rilascia');
     // SAVE non scrive mai avatar, colore e canzone
@@ -236,7 +233,7 @@ test('cablaggio: avatar, colore e canzone si comprano nello Shop (massimo per ti
     assert.match(tr, /indossa\('canzone', '', '', null\)/, '"No song" toglie la canzone e resta tua');
     assert.match(tr, /Get more in the Shop →/);
     assert.match(tr, /window\.PublicEditor\.estendi\(\{ id: 'oggetti', nome: 'Items', disegna: disegnaItems \}\)/, 'una scheda per quello che hai preso nello Shop');
-    for (const [titolo, tipo] of [['Aura', 'aura'], ['Name effect', 'nome'], ['Stage effect', 'palco'], ['Shiny companion', 'shiny']]) assert.match(tr, new RegExp(`sezioneEffetti\\(ctx, '${titolo}', '${tipo}'`), titolo);
+    for (const [titolo, tipo] of [['Aura', 'aura'], ['Name effect', 'nome'], ['Stage effect', 'palco']]) assert.match(tr, new RegExp(`sezioneEffetti\\(ctx, '${titolo}', '${tipo}'`), titolo);
     assert.match(tr, /Your first one is free: get it in the Shop\./);
     assert.doesNotMatch(tr, /elencoAvatar|PALETTE_FIRMA|canzoni === |caricaCanzoni|Negozio|prezzoCambio|chiediCambio/, 'nessun elenco di tutti gli avatar, colori o canzoni nell\'editor');
 
@@ -282,7 +279,7 @@ test('Shop: la pagina, le schede, l\'anteprima della tua pagina, il menu del sit
     const pc = leggi('docs', 'public-card.js');
     assert.match(pc, /new URLSearchParams\(window\.location\.search\)\.get\('anteprima'\) === '1' && window\.parent !== window/);
     assert.match(pc, /if \(e\.origin !== window\.location\.origin \|\| !e\.data \|\| e\.data\.tipo !== 'shop-prova'\) return;/);
-    assert.match(pc, /const COSMETICI_IN_PROVA = \['aura', 'effettoNome', 'effettoPalco', 'pkmShiny'\];/);
+    assert.match(pc, /const COSMETICI_IN_PROVA = \['aura', 'effettoNome', 'effettoPalco'\];/);
     assert.match(leggi('docs', 'style-public-card.css'), /html\.pp-anteprima \.top-auth-bar/);
     // le voci della pagina si comprano e si mettono dal server; lo shiny dei Pokémon pure; tutto da qui
     assert.match(sh, /N\.chiama\(window, 'equipaCosmetico'/);

@@ -79,7 +79,7 @@
     const mostraSaldo = () => { $('shop-saldo').innerHTML = conMoneta(`🪙 ${S.saldo}`); };
 
     const base = () => ({
-        aura: S.info.aura || null, effettoNome: S.info.effettoNome || null, effettoPalco: S.info.effettoPalco || null, pkmShiny: !!S.info.pkmShiny,
+        aura: S.info.aura || null, effettoNome: S.info.effettoNome || null, effettoPalco: S.info.effettoPalco || null,
         sfondoMotivo: null, avatar: S.info.avatar || '', color: S.info.color || ''
     });
     // la pagina nel riquadro è larga 1100 pixel (com'è sul PC): si rimpicciolisce per stare nella colonna
@@ -103,9 +103,9 @@
     function provaVoce(id) {
         const c = C.perId(id);
         if (!c) return;
-        const campo = c.tipo === 'shiny' ? 'pkmShiny' : c.tipo === 'aura' ? 'aura' : c.tipo === 'nome' ? 'effettoNome' : c.tipo === 'palco' ? 'effettoPalco' : c.tipo === 'sfondo' ? 'sfondoMotivo' : '';
+        const campo = c.tipo === 'aura' ? 'aura' : c.tipo === 'nome' ? 'effettoNome' : c.tipo === 'palco' ? 'effettoPalco' : c.tipo === 'sfondo' ? 'sfondoMotivo' : '';
         if (!campo) return;
-        const valore = c.tipo === 'shiny' ? true : c.tipo === 'sfondo' ? c.motivo : c.id;
+        const valore = c.tipo === 'sfondo' ? c.motivo : c.id;
         // una prova alla volta: sceglierne un'altra toglie la precedente
         S.scelta = null;
         if (S.provando === id) { S.prova = {}; S.provando = ''; } else { S.prova = { [campo]: valore }; S.provando = id; }
@@ -114,8 +114,7 @@
     function azzeraProva() { S.prova = {}; S.provando = ''; S.scelta = null; aggiornaAnteprima(); disegna(true); }
 
     // ---------------------------------------------------------------- Your page
-    const compagnoBox = () => { const b = C.compagnoDelBox(S.info, S.teams); return b ? String(b.nome || b.name || 'that Pokémon') : ''; };
-    const statoCatalogo = () => ({ saldo: S.saldo, posseduti: S.posseduti, info: S.info, pagina: S.pagina, anteprime: S.anteprime, stagioni: S.stagioni, nomiStagioni: S.nomiStagioni, occupato: S.occupato, provando: S.provando, compagnoBox: compagnoBox() });
+    const statoCatalogo = () => ({ saldo: S.saldo, posseduti: S.posseduti, info: S.info, pagina: S.pagina, anteprime: S.anteprime, stagioni: S.stagioni, nomiStagioni: S.nomiStagioni, occupato: S.occupato, provando: S.provando });
     const htmlPagina = () => `<p class="shop-aiuto">Tap anything to see it on your page.</p>${N.catalogoHtml(statoCatalogo())}`;
 
     // ---------------------------------------------------------------- Trainer: avatar, colore, canzone
