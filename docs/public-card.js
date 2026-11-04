@@ -53,6 +53,12 @@
         versioneTarghe: 0      // cresce quando cambia qualcosa da cui dipendono le targhette (il titolo): così si rifanno
     };
 
+    // ---- Anteprima per lo Shop ----------------------------------------------------------------
+    // public.html?player=<id>&anteprima=1 dentro un riquadro dello Shop: solo la carta (niente menu, pulsanti, musica). Lo Shop manda { tipo: 'shop-prova', valori } e la pagina
+    // mostra quello che si sta guardando (un'aura, un effetto, il compagno shiny, un avatar, un colore, un motivo dello sfondo) senza salvare niente; quando è pronta avvisa con 'shop-pronta'.
+    const ANTEPRIMA = (() => { try { return new URLSearchParams(window.location.search).get('anteprima') === '1' && window.parent !== window; } catch (e) { return false; } })();
+    if (ANTEPRIMA) document.documentElement.classList.add('pp-anteprima');
+
     // ---- Utilità ------------------------------------------------------------------------------
 
     /** Crea un elemento. I figli stringa diventano nodi di testo: niente HTML dal database. */
@@ -988,6 +994,30 @@
         applica();
     }
 
+    /** Prova dei cosmetici dello Shop (anteprima): i campi del negozio si impostano in memoria e i blocchi che li mostrano si rifanno; avatar e colore passano da impostaProfilo; `sfondoMotivo` prova un motivo (null = quello salvato) */
+    const COSMETICI_IN_PROVA = ['aura', 'effettoNome', 'effettoPalco', 'pkmShiny'];
+    function provaCosmetici(valori) {
+        if (!stato.dati) return;
+        const v = valori || {}, info = stato.dati.info;
+        let rifare = false;
+        for (const k of COSMETICI_IN_PROVA) {
+            if (!(k in v)) continue;
+            const nuovo = k === 'pkmShiny' ? !!v[k] : (v[k] ? String(v[k]) : null);
+            if ((k === 'pkmShiny' ? !!info[k] : (info[k] || null)) === nuovo) continue;
+            if (nuovo) info[k] = nuovo; else delete info[k];
+            rifare = true;
+        }
+        if (rifare) { ricostruisci('palco'); ricostruisci('identita'); applica(); }
+        const profilo = {};
+        for (const k of ['avatar', 'color']) if (k in v) profilo[k] = v[k];
+        if (Object.keys(profilo).length) impostaProfilo(profilo);
+        if ('sfondoMotivo' in v) { const c = P.copia(stato.salvata); if (v.sfondoMotivo) c.sfondo.motivo = v.sfondoMotivo; stato.config = P.normalizza(c); applica(); }
+    }
+    if (ANTEPRIMA) window.addEventListener('message', e => {
+        if (e.origin !== window.location.origin || !e.data || e.data.tipo !== 'shop-prova') return;
+        provaCosmetici(e.data.valori);
+    });
+
     /** Il tasto SHARE in alto: la scheda dell'allenatore come immagine da mandare in chat (scheda-condivisione.js). Per tutti, non solo per il proprietario. */
     function montaTastoCondividi(d) {
         const nav = document.getElementById('pp-nav');
@@ -1025,6 +1055,7 @@
         controllaProprietario();
         window.addEventListener('load', adattaSubito);
         setTimeout(adattaSubito, 900);
+        if (ANTEPRIMA) window.parent.postMessage({ tipo: 'shop-pronta' }, window.location.origin);
     }
 
     function mostraMessaggio(testo) {
@@ -1043,7 +1074,7 @@
         salvata(config) { stato.salvata = P.normalizza(config); },
         /** I campi del profilo di adesso (avatar, color, bio, pkmPreferito, title, musicName, musicaPreferita) */
         profilo: profiloAttuale,
-        impostaProfilo,
+        impostaProfilo, provaCosmetici,
         /** Dopo un salvataggio riuscito: questi valori diventano quelli salvati (e la nuova canzone parte, se può) */
         profiloSalvato(valori) {
             const prima = stato.infoSalvata;

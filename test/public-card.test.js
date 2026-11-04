@@ -170,25 +170,29 @@ test('musica: il tasto del volume in alto non c\'è più; la musica va dal widge
     assert.match(card, /window\.toggleMusic\(\)/);
 });
 
-test('scheda Trainer: si carica con l\'editor, copre i sette campi del profilo e segna in grigio (non selezionabili) le scelte degli altri', () => {
+test('scheda Trainer: si carica con l\'editor, copre i sette campi del profilo (avatar, colore e canzone rimandano allo Shop) e segna in grigio (non selezionabili) le scelte degli altri', () => {
     assert.match(card, /public-editor\.js'\)\.then\(\(\) => caricaScript\('public-editor-trainer\.js'\)/);
     assert.match(trainer, /PublicEditor\.estendi\(\{ id: 'trainer'/);
     assert.doesNotMatch(trainer, /innerHTML|insertAdjacentHTML|outerHTML/);
     for (const campo of P.CAMPI_PROFILO) assert.match(trainer + card + editor, new RegExp(`\\b${campo}\\b`), campo);
     // le liste partono da quello che hanno già gli altri
     assert.match(trainer, /P\.scelteDegliAltri\(/);
-    for (const insieme of ['presi.avatar', 'presi.colori', 'presi.pokemon', 'presi.canzoniUrl', 'presi.canzoniNomi']) assert.ok(trainer.includes(insieme), insieme);
-    // il colore di chi sceglie resta sempre tra le scelte
-    assert.match(trainer, /colori\.unshift\(attuale\)/);
-    // le scelte degli altri restano in lista ma disabilitate e grigie: tutte e quattro le liste passano da comePresa()
+    assert.ok(trainer.includes('presi.pokemon'), 'presi.pokemon');
+    // avatar, colore e canzone si cambiano nello Shop (shop.js), che parte da quello che hanno già gli altri e tiene sempre il colore di chi sceglie
+    const shop = fs.readFileSync(path.join(__dirname, '..', 'docs', 'shop.js'), 'utf8');
+    assert.match(shop, /P\.scelteDegliAltri\(/);
+    for (const insieme of ['presi.avatar', 'presi.colori', 'presi.canzoniUrl', 'presi.canzoniNomi']) assert.ok(shop.includes(insieme), insieme);
+    assert.match(shop, /colori\.unshift\(attuale\)/);
+    // le scelte degli altri restano in lista ma disabilitate e grigie (nell'editor: i Pokémon, passano da comePresa(); nello Shop: avatar, colori e canzoni, is-preso)
     assert.match(trainer, /function comePresa\(bottone, titolo, motivo\) \{[^}]*bottone\.disabled = true;[^}]*classList\.add\('is-preso'\)/);
-    assert.equal((trainer.match(/comePresa\(/g) || []).length, 9, 'definizione + avatar, colori e canzoni (portati o riservati da un altro: due chiamate ciascuno), Pokémon, Pokémon del Box');
+    assert.equal((trainer.match(/comePresa\(/g) || []).length, 3, 'definizione + Pokémon, Pokémon del Box');
+    assert.ok((shop.match(/is-preso/g) || []).length >= 3, 'avatar, colori e canzoni presi sono grigi');
     assert.doesNotMatch(trainer, /\.filter\(p => \(p\.name === mio \|\| !presi\.pokemon/, 'i Pokémon presi non si tolgono dalla lista');
     assert.doesNotMatch(trainer, /P\.PALETTE_FIRMA\.filter\(/, 'i colori presi non si tolgono dalla palette');
     assert.match(cssEditor, /\.is-preso, \.is-preso:hover \{[^}]*cursor: not-allowed/);
     assert.match(cssEditor, /\.pe-campione\.is-preso \{[^}]*grayscale/);
     // e la palette del colore firma è quella senza neutri
-    assert.match(trainer, /P\.PALETTE_FIRMA/);
+    assert.match(shop, /P\.PALETTE_FIRMA/);
 });
 
 test('salvataggio: un\'unica scrittura su info, e le scelte uniche si ricontrollano sui dati di adesso', () => {

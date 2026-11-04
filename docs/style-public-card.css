@@ -1446,3 +1446,7 @@ body.pp-fisso .pp-coppa-gruppo .pp-coppa { width: 52px; height: 52px; }
     to   { filter: drop-shadow(0 0 6px #f2c94c) drop-shadow(0 0 18px #19c5b5); }
 }
 @media (prefers-reduced-motion: reduce) { .pp-allenatore[data-aura="aura-laguna"] img { animation: none; filter: drop-shadow(0 0 6px #19c5b5) drop-shadow(0 0 18px #f2c94c); } }
+
+/* ---------- Anteprima dello Shop (public.html?anteprima=1): solo la carta, senza menu, pulsanti, pubblicità né musica ---------- */
+html.pp-anteprima .top-auth-bar, html.pp-anteprima #menu-overlay, html.pp-anteprima #pp-nav, html.pp-anteprima .ads-sidebar, html.pp-anteprima .music-btn,
+html.pp-anteprima .sfide-btn, html.pp-anteprima .sfide-dropdown, html.pp-anteprima #pp-modifica-btn { display: none !important; }

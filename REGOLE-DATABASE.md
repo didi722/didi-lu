@@ -136,8 +136,9 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
 2. Da **giocatore**: salvare un colore/avatar, iscriversi a una stagione, sfidare, accettare, giocare un set, votare l'MVP, aprire il campanello (anche **Send a test**).
 3. Da **admin**: creare/chiudere/eliminare una stagione, creare un formato, aggiungere un giocatore.
 4. Una partita **in diretta** guardata da un secondo account.
-5. Negozio: comprare un cosmetico (anche un effetto del nome o del palco), metterlo e toglierlo (passa dalle Functions; l'edizione limitata in cima si compra finché la stagione `s1` esiste e non è chiusa, prima compare "Soon"); poi **Customize → Save** sulla propria pagina: deve salvare anche con un motivo comprato. Se compare "permission_denied" su `players/…/info/pagina/sfondo/motivo`, c'è un motivo a pagamento non nel portafoglio.
-6. **Customize → Trainer**: cambiare avatar, colore e canzone (passa dalle Functions, non da Save). Se compare "permission_denied" su `players/…/info/avatar` o `info/color`, c'è ancora una versione vecchia del sito in cache: svuotarla.
+5. **SHOP** (voce del menu del sito, e tessera nel menu dell'app): comprare un cosmetico (anche un effetto del nome o del palco), metterlo e toglierlo (passa dalle Functions; l'edizione limitata in cima si compra finché la stagione `s1` esiste e non è chiusa, prima compare "Soon"). Toccando una voce la si prova sulla propria pagina, nel riquadro a destra. Poi **Customize → Save** sulla propria pagina: deve salvare anche con un motivo comprato. Se compare "permission_denied" su `players/…/info/pagina/sfondo/motivo`, c'è un motivo a pagamento non nel portafoglio. Nel Customize i motivi bloccati portano allo Shop.
+6. **SHOP → Trainer**: cambiare avatar, colore e canzone (passa dalle Functions, non da Save). Se compare "permission_denied" su `players/…/info/avatar` o `info/color`, c'è ancora una versione vecchia del sito in cache: svuotarla. Lo Shop legge `cosmeticiPresi` e `players` (per mostrare in grigio quello che hanno gli altri) e `seasons/<id>/info` (per le edizioni).
+7. **SHOP → Pokémon** (o ✨ su un team del Box): rendere shiny un Pokémon.
 
 Se qualcosa smette di funzionare, rimetti le regole vecchie (tienine una copia) e dimmi quale azione ha fallito: nella console del browser compare "permission_denied" col percorso.
 

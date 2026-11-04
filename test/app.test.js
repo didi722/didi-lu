@@ -78,10 +78,10 @@ test('dentroUnaApp: i browser incorporati (Instagram, Facebook, WebView) non pos
     assert.equal(A.dentroUnaApp(undefined), false);
 });
 
-test('le tessere del menù (VOCI): quattro (Play riunisce Practice e Matches), con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
-    assert.deepEqual(A.VOCI.map(v => v.id), ['play', 'box', 'trainers', 'stats']);
-    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 4, 'nomi diversi');
-    assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 4, 'colori diversi: ogni schermata ha il suo');
+test('le tessere del menù (VOCI): cinque (Play riunisce Practice e Matches; Shop è lo shop delle monete), con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
+    assert.deepEqual(A.VOCI.map(v => v.id), ['play', 'box', 'trainers', 'stats', 'shop']);
+    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 5, 'nomi diversi');
+    assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 5, 'colori diversi: ogni schermata ha il suo');
     assert.deepEqual(A.VOCI[0].pagine, ['practice.html', 'matches.html'], 'Play tiene accese le sue due pagine: l\'hub e showdown e classifica');
     const viste = [];
     for (const v of A.VOCI) {

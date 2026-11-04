@@ -188,118 +188,33 @@
 
     // ---- Scheda: sfondo -----------------------------------------------------------------------
 
-    // ---- I cosmetici a pagamento (cosmetici.js): motivi dello sfondo, e il cambio di avatar e canzone --------------
-    // Il portafoglio (wallet/{uid}) si legge una volta; si paga dal server (negozio.js, caricato solo quando serve). I motivi dello sfondo bloccati si comprano dal negozio. Avatar e canzone non si
-    // comprano: si CAMBIANO, e il server fa subito il cambio e scrive il profilo (fuori da SAVE/Cancel/undo): costa sempre, tranne la prima volta per chi ha ancora quello di partenza; il primo
-    // resta tuo per sempre ("di casa"), quello che porti è tuo finché lo porti e poi torna libero.
-    let portafoglio = null;          // null finché non si legge; poi { saldo, posseduti, casa, pronto }
+    // ---- I cosmetici a pagamento (cosmetici.js): i motivi dello sfondo ---------------------------------------------
+    // Si comprano nello Shop (shop.html), non qui: il portafoglio (wallet/{uid}) si legge una volta solo per sapere quali motivi sono bloccati, e toccarne uno porta allo Shop su quella voce
+    // (che si prova sulla tua pagina). Avatar, colore e canzone si cambiano nello Shop, scheda Trainer.
+    let portafoglio = null;          // null finché non si legge; poi { posseduti }
     function leggiPortafoglio(forza) {
         if ((portafoglio && !forza) || !window.firebase || !window.firebase.auth) return Promise.resolve();
         const u = window.firebase.auth().currentUser;
         if (!u) return Promise.resolve();
-        if (!portafoglio) portafoglio = { saldo: 0, posseduti: {}, casa: {}, pronto: false };
+        if (!portafoglio) portafoglio = { posseduti: {} };
         return window.firebase.database().ref(`wallet/${u.uid}`).once('value')
-            .then(snap => { const w = snap.val() || {}; portafoglio = { saldo: Number(w.saldo) || 0, posseduti: w.posseduti || {}, casa: w.casa || {}, pronto: true }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
-            .catch(() => { /* senza: resta bloccato ciò che non usi già, e non si compra */ });
-    }
-    // Avatar e canzoni sono unici: cosmeticiPresi/{id} = l'allenatore che li tiene riservati (quello di casa e quello che porta; lo scrive il server). Si legge una volta; si rilegge dopo un cambio
-    // e se il server dice "taken" (qualcuno ti ha preceduto).
-    let registro = null;             // null finché non si legge; poi { <id>: <allenatore> }
-    function leggiRegistro(forza) {
-        if ((registro && !forza) || !window.firebase || !window.firebase.database) return Promise.resolve();
-        return window.firebase.database().ref('cosmeticiPresi').once('value')
-            .then(snap => { registro = snap.val() || {}; if (typeof disegnaPannello === 'function') disegnaPannello(); })
-            .catch(() => { registro = registro || {}; /* senza: si vede solo ciò che gli altri usano adesso, e il server rifiuta il resto */ });
+            .then(snap => { const w = snap.val() || {}; portafoglio = { posseduti: w.posseduti || {} }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
+            .catch(() => { /* senza: resta bloccato ciò che non usi già */ });
     }
 
     // quello che si usa nella pagina SALVATA (non l'anteprima di una scelta ancora da salvare)
     const infoSalvata = () => ({ ...C.stato.dati.info, ...C.stato.infoSalvata });
     const contestoCosmetici = () => ({ wallet: portafoglio || {}, info: infoSalvata(), pagina: C.stato.salvata });
     const motivoBloccato = motivo => !!window.Cosmetici && window.Cosmetici.motivoBloccato(motivo, contestoCosmetici());
-    const apriNegozio = () => window.dispatchEvent(new CustomEvent('apri-negozio'));     // lo ascolta il campanello (sfide.js)
-
-    function caricaNegozio() {
-        if (window.Negozio) return Promise.resolve();
-        const mio = Array.from(document.scripts).find(x => /(^|\/)public-editor\.js(\?|#|$)/.test(x.getAttribute('src') || ''));
-        const base = mio ? mio.getAttribute('src').replace(/public-editor\.js.*$/, '') : '';
-        const carica = nome => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = `${base}${nome}`; sc.onload = ok; sc.onerror = no; document.head.append(sc); });
-        return carica('negozio.js');
-    }
-    const tipoDi = id => (String(id).startsWith('avatar-') ? 'avatar' : 'canzone');
-
-    const idCorrente = tipo => (window.Cosmetici ? window.Cosmetici.idCorrente(tipo, infoSalvata()) : '');
-
-    /** Quello che le schede (Trainer) usano per il cambio di avatar e di canzone */
-    const cosmetici = {
-        pronto: () => !!(portafoglio && portafoglio.pronto),
-        saldo: () => (portafoglio ? portafoglio.saldo : 0),
-        /** Carica negozio.js (le frasi della conferma e la chiamata al server) se non c'è già */
-        negozio: caricaNegozio,
-        /** Quanto costa cambiare oggi: { prezzo, gratis, ritorno } (`id`: quello a cui si vuole passare; tornare a quello di casa non costa) */
-        prezzo: (tipo, id) => (window.Cosmetici && window.Cosmetici.prezzoCambio(tipo, contestoCosmetici(), id)) || { prezzo: 0, gratis: false },
-        /** L'id di quello che porti adesso ('' se è quello di partenza) */
-        corrente: idCorrente,
-        /** L'id di quello "di casa" (il primo, tuo per sempre): quello registrato, o per chi non ha ancora cambiato niente quello che porta (diventerà di casa al primo cambio) */
-        casa: tipo => {
-            const registrato = portafoglio && portafoglio.casa && portafoglio.casa[tipo];
-            if (registrato) return String(registrato);
-            return window.Cosmetici && !window.Cosmetici.eDiDefault(tipo, infoSalvata()) ? idCorrente(tipo) : '';
-        },
-        /** L'id dell'allenatore che tiene riservato questo avatar o questa canzone, se non sei tu; '' se è libero o è tuo */
-        presoDa: id => { const o = registro && registro[id]; return o && o !== C.stato.dati.chiave ? String(o) : ''; },
-        /** Il nome da mostrare di un allenatore (dal profilo, se c'è) */
-        nomeDi: g => { const i = ((C.stato.dati.tutti || {})[g] || {}).info; return (i && i.name) || String(g); },
-        frase: motivo => (motivo === 'loading' ? 'Still loading your coins: try again in a moment.' : window.Negozio ? window.Negozio.frase(motivo) : "Couldn't do that."),
-        /**
-         * Cambia l'avatar (id avatar-<n>), il colore (id colore-<rrggbb>) o la canzone (id canzone-<impronta>, con url e nome; id '' = nessuna canzone). Il server paga e scrive il profilo: qui si aggiorna la carta, che
-         * conta già come salvata, e si rilegge portafoglio e registro. Ritorna { ok, ... } oppure { ok: false, motivo }.
-         */
-        async cambia(tipo, id, extra) {
-            if (!cosmetici.pronto()) return { ok: false, motivo: 'loading' };
-            await caricaNegozio();
-            const r = await window.Negozio.cambia(window, { tipo, id, ...(extra || {}) });
-            if (r.ok) {
-                const valori = tipo === 'avatar' ? { avatar: r.avatar } : tipo === 'colore' ? { color: r.color } : { musicaPreferita: r.musicaPreferita, musicName: r.musicName };
-                C.profiloDalServer(valori);
-                for (const f of storia) Object.assign(f.profilo, valori);          // "undo" non deve riportare indietro quello che il server ha già cambiato
-                await Promise.all([leggiPortafoglio(true), leggiRegistro(true)]);
-                disegnaPannello();
-            } else if (r.motivo === 'taken') await leggiRegistro(true);                // qualcuno ti ha preceduto: ora si vede
-            return r;
-        }
+    /** Lo Shop su quel motivo (o sulla scheda Trainer): chiede conferma se ci sono modifiche non salvate, perché lascia la pagina */
+    const vaiAlloShop = (dove = '') => {
+        const url = `shop.html?${dove || 'tab=pagina'}`;
+        if (typeof window !== 'undefined' && window.location) window.location.href = url;
     };
-
-    /**
-     * Compra un motivo dello sfondo senza uscire dall'editor: una finestra con il prezzo e le monete che hai; il server paga (acquistaCosmetico), il motivo si sblocca e viene messo
-     * nell'anteprima (come ogni modifica, si tiene con SAVE). `metti` applica il motivo.
-     */
-    async function chiediAcquisto(motivo, nome, stile, metti) {
-        const c = window.Cosmetici && window.Cosmetici.CATALOGO.find(x => x.tipo === 'sfondo' && x.motivo === motivo);
-        if (!c) return apriNegozio();
-        try { await caricaNegozio(); } catch (e) { avvisa("The shop didn't load: check your connection and try again.", true); return; }
-        const pronto = !!(portafoglio && portafoglio.pronto), saldo = pronto ? portafoglio.saldo : 0;
-        const chiudi = () => { velo.remove(); document.removeEventListener('keydown', tasto); };
-        const tasto = e => { if (e.key === 'Escape') chiudi(); };
-        const conferma = h('button', { type: 'button', class: 'pe-bottone pe-primario', testo: `Buy · ${c.prezzo} 🪙`, onclick: async () => {
-            conferma.disabled = true; conferma.textContent = 'Buying…';
-            let r;
-            try { r = await window.Negozio.chiama(window, 'acquistaCosmetico', { id: c.id }); } catch (e) { r = { ok: false, motivo: 'error' }; }
-            chiudi();
-            await leggiPortafoglio(true);
-            if (r.ok || r.motivo === 'owned') { metti(); avvisa(`${nome} is yours! Press SAVE to keep it on your page.`); }
-            else avvisa(window.Negozio.frase(r.motivo), true);
-        } });
-        if (!pronto || saldo < c.prezzo) conferma.disabled = true;
-        const velo = h('div', { class: 'pe-conferma-velo', onclick: e => { if (e.target === velo) chiudi(); } },
-            h('div', { class: 'pe-conferma', role: 'dialog', 'aria-modal': 'true', 'aria-label': `Buy ${nome}` },
-                h('span', { class: 'pe-conferma-colore', stile }),
-                h('b', { testo: nome }),
-                h('p', { class: 'pe-nota', testo: pronto ? `It costs ${c.prezzo} 🪙 and you have ${saldo} 🪙.${saldo < c.prezzo ? ' Play some sets to earn more coins.' : ''}` : 'Loading your coins…' }),
-                h('p', { class: 'pe-nota', testo: 'It stays yours for good.' }),
-                h('div', { class: 'pe-conferma-azioni' }, h('button', { type: 'button', class: 'pe-bottone', onclick: chiudi, testo: 'Cancel' }), conferma)));
-        document.addEventListener('keydown', tasto);
-        document.body.append(velo);
-    }
+    const cosmetici = {
+        /** Lo Shop, sulla scheda Trainer: avatar, colore e canzone si cambiano lì */
+        vaiAlloShop: () => vaiAlloShop('tab=allenatore')
+    };
 
     function schedaSfondo() {
         leggiPortafoglio();
@@ -317,8 +232,8 @@
         return [
             sezione('Pattern', h('div', { class: 'pe-motivi' }, Object.entries(P.MOTIVI).map(([id, nome]) =>
                 h('button', { type: 'button', class: `pe-motivo${s.motivo === id ? ' is-on' : ''}${motivoBloccato(id) ? ' pe-bloccato' : ''}`, 'aria-pressed': String(s.motivo === id),
-                    title: motivoBloccato(id) ? `${nome}: tap to buy it` : null,
-                    onclick: () => (motivoBloccato(id) ? chiediAcquisto(id, nome, anteprima(id), () => cambia(c => { c.sfondo.motivo = id; return c; })) : cambia(c => { c.sfondo.motivo = id; return c; })) },
+                    title: motivoBloccato(id) ? `${nome}: get it in the Shop` : null,
+                    onclick: () => (motivoBloccato(id) ? vaiAlloShop(`tab=pagina&item=sfondo-${id}`) : cambia(c => { c.sfondo.motivo = id; return c; })) },
                     h('span', { class: 'pe-motivo-prova', stile: anteprima(id) }), h('small', { testo: motivoBloccato(id) ? `🔒 ${nome}` : nome }))))),
             sezione('Colour', h('div', { class: 'pe-campioni pe-campioni-fitti' },
                 campione(proprio, s.colore === 'giocatore', 'My signature colour', () => cambia(c => { c.sfondo.colore = 'giocatore'; return c; }), h('span', { class: 'pe-campione-etichetta', testo: 'ME' })),
@@ -1143,8 +1058,6 @@
         C.stato.dopoAdatta = () => { aggiornaManiglie(); aggiornaNotaPalco(); };
         C.modifica(true);
         leggiPortafoglio();
-        leggiRegistro();
-        caricaNegozio().catch(() => { /* si riprova quando serve */ });
         installaBarre();
         costruisciPannello();
         disegnaPannello();

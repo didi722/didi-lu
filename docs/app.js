@@ -65,7 +65,8 @@
         { id: 'play', et: 'Play', href: 'practice.html', colore: '#ffbd44', pagine: ['practice.html', 'matches.html'] },
         { id: 'box', et: 'Box', href: 'box.html', colore: '#6fa8ff', pagine: ['box.html'] },
         { id: 'trainers', et: 'Trainers', href: 'players.html', colore: '#ff7b6b', pagine: ['players.html'] },
-        { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] }
+        { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] },
+        { id: 'shop', et: 'Shop', href: 'shop.html', colore: '#47ea6a', pagine: ['shop.html'] }
     ];
 
     // ---------- parti pure ----------
