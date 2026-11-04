@@ -215,6 +215,119 @@
     animation: ef-brilla 3.1s ease-in-out -1.5s infinite alternate;
 }
 
+/* ----- palchi più elaborati: oltre a cadere e salire, ondeggiano, lampeggiano, scoppiano ----- */
+@keyframes ef-ondeggia-cade { 0% { transform: translate(0, 0); } 25% { transform: translate(3cqw, 12.5%); } 50% { transform: translate(0, 25%); } 75% { transform: translate(-3cqw, 37.5%); } 100% { transform: translate(0, 50%); } }
+@keyframes ef-ondeggia-sale { 0% { transform: translate(0, 50%); } 25% { transform: translate(-2.5cqw, 37.5%); } 50% { transform: translate(0, 25%); } 75% { transform: translate(2.5cqw, 12.5%); } 100% { transform: translate(0, 0); } }
+
+/* temporale: pioggia fitta di due velocità e, ogni tanto, un lampo che illumina il palco */
+[data-effetto-palco="palco-temporale"]::before {
+    background-image:
+        radial-gradient(ellipse calc(0.34 * var(--ef-u)) calc(2.6 * var(--ef-u)) at 8% 20%, rgba(200, 222, 255, 0.85) 0 60%, transparent 100%),
+        radial-gradient(ellipse calc(0.34 * var(--ef-u)) calc(2.2 * var(--ef-u)) at 31% 70%, rgba(200, 222, 255, 0.8) 0 60%, transparent 100%),
+        radial-gradient(ellipse calc(0.34 * var(--ef-u)) calc(2.8 * var(--ef-u)) at 57% 35%, rgba(200, 222, 255, 0.85) 0 60%, transparent 100%),
+        radial-gradient(ellipse calc(0.34 * var(--ef-u)) calc(2.4 * var(--ef-u)) at 76% 85%, rgba(200, 222, 255, 0.8) 0 60%, transparent 100%),
+        radial-gradient(ellipse calc(0.34 * var(--ef-u)) calc(2.6 * var(--ef-u)) at 92% 50%, rgba(200, 222, 255, 0.85) 0 60%, transparent 100%);
+    background-size: 19cqw 25cqh;
+    animation: ef-cade 0.9s linear infinite;
+}
+[data-effetto-palco="palco-temporale"]::after {
+    top: 0;
+    height: 100%;
+    background-image: radial-gradient(ellipse 70% 90% at 55% 0%, rgba(255, 255, 255, 0.95), rgba(190, 205, 255, 0.35) 45%, transparent 75%);
+    animation: ef-lampo 7s linear infinite;
+}
+@keyframes ef-lampo { 0%, 86% { opacity: 0; } 87% { opacity: 0.95; } 89% { opacity: 0.15; } 91% { opacity: 0.8; } 96%, 100% { opacity: 0; } }
+
+/* aurora: due veli di luce verdi, azzurri e viola che ondeggiano in alto e sfumano verso il basso */
+[data-effetto-palco="palco-aurora"]::before,
+[data-effetto-palco="palco-aurora"]::after {
+    top: 0; left: -15%; right: -15%; height: 75%;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+    mix-blend-mode: screen;
+}
+[data-effetto-palco="palco-aurora"]::before {
+    background-image: linear-gradient(100deg, transparent 8%, rgba(60, 255, 160, 0.6) 28%, rgba(80, 210, 255, 0.5) 48%, rgba(170, 90, 255, 0.55) 68%, transparent 92%);
+    animation: ef-aurora 11s ease-in-out infinite alternate;
+}
+[data-effetto-palco="palco-aurora"]::after {
+    background-image: linear-gradient(80deg, transparent 12%, rgba(170, 90, 255, 0.45) 32%, rgba(60, 255, 190, 0.55) 55%, rgba(80, 180, 255, 0.4) 75%, transparent 94%);
+    animation: ef-aurora 15s ease-in-out -6s infinite alternate-reverse;
+}
+@keyframes ef-aurora { from { transform: translateX(-9%) skewX(-10deg) scaleY(0.85); opacity: 0.5; } to { transform: translateX(9%) skewX(10deg) scaleY(1.1); opacity: 1; } }
+
+/* sakura: petali rosa che cadono ondeggiando, grandi e lenti davanti, piccoli e veloci dietro */
+[data-effetto-palco="palco-sakura"]::before {
+    background-image:
+        radial-gradient(ellipse calc(2.72 * var(--ef-u)) calc(1.60 * var(--ef-u)) at 12% 22%, #ffb7d0 0 70%, transparent 100%),
+        radial-gradient(ellipse calc(2.24 * var(--ef-u)) calc(1.36 * var(--ef-u)) at 49% 60%, #ffd0e0 0 70%, transparent 100%),
+        radial-gradient(ellipse calc(2.88 * var(--ef-u)) calc(1.68 * var(--ef-u)) at 80% 38%, #ff9fc0 0 70%, transparent 100%),
+        radial-gradient(ellipse calc(2.08 * var(--ef-u)) calc(1.28 * var(--ef-u)) at 30% 90%, #ffc2d8 0 70%, transparent 100%);
+    background-size: 41cqw 50cqh;
+    animation: ef-ondeggia-cade 15s linear infinite;
+}
+[data-effetto-palco="palco-sakura"]::after {
+    background-image:
+        radial-gradient(ellipse calc(1.60 * var(--ef-u)) calc(0.96 * var(--ef-u)) at 24% 30%, #ffd0e0 0 70%, transparent 100%),
+        radial-gradient(ellipse calc(1.44 * var(--ef-u)) calc(0.88 * var(--ef-u)) at 66% 14%, #ffb7d0 0 70%, transparent 100%),
+        radial-gradient(ellipse calc(1.60 * var(--ef-u)) calc(0.96 * var(--ef-u)) at 82% 76%, #ffc2d8 0 70%, transparent 100%);
+    background-size: 27cqw 25cqh;
+    animation: ef-ondeggia-cade 8.5s linear -3s infinite;
+}
+
+/* fuochi d'artificio: due raggiere che si aprono, una calda e una fredda, sfasate. Il raggio dell'anello si anima (@property); dove non è supportato non si vede nulla */
+@property --ef-r { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@keyframes ef-scoppia { 0% { --ef-r: 0cqh; opacity: 1; } 65% { opacity: 1; } 100% { --ef-r: 26cqh; opacity: 0; } }
+[data-effetto-palco="palco-fuochi"]::before,
+[data-effetto-palco="palco-fuochi"]::after {
+    top: 0; height: 100%;
+    -webkit-mask-image: radial-gradient(circle at var(--ef-x) var(--ef-y), transparent calc(var(--ef-r) - 3.4cqh), #000 calc(var(--ef-r) - 3.4cqh), #000 var(--ef-r), transparent calc(var(--ef-r) + 0.5px));
+    mask-image: radial-gradient(circle at var(--ef-x) var(--ef-y), transparent calc(var(--ef-r) - 3.4cqh), #000 calc(var(--ef-r) - 3.4cqh), #000 var(--ef-r), transparent calc(var(--ef-r) + 0.5px));
+    animation: ef-scoppia 3.6s ease-out infinite;
+}
+[data-effetto-palco="palco-fuochi"]::before {
+    --ef-x: 27%; --ef-y: 36%;
+    background-image: repeating-conic-gradient(from 5deg at var(--ef-x) var(--ef-y), #ffd23f 0 4deg, transparent 4deg 10deg, #ff4d6d 10deg 14deg, transparent 14deg 20deg);
+}
+[data-effetto-palco="palco-fuochi"]::after {
+    --ef-x: 73%; --ef-y: 30%;
+    background-image: repeating-conic-gradient(from 12deg at var(--ef-x) var(--ef-y), #5ff0ff 0 4deg, transparent 4deg 10deg, #b04dff 10deg 14deg, transparent 14deg 20deg);
+    animation-delay: -1.8s;
+}
+
+/* bolle: anelli trasparenti che salgono dondolando, di misure diverse */
+[data-effetto-palco="palco-bolle"]::before {
+    background-image:
+        radial-gradient(circle at 16% 26%, transparent 0 calc(1.5 * var(--ef-u)), rgba(205, 240, 255, 0.8) calc(1.8 * var(--ef-u)), rgba(205, 240, 255, 0.12) calc(2.1 * var(--ef-u)), transparent calc(2.4 * var(--ef-u))),
+        radial-gradient(circle at 62% 64%, transparent 0 calc(1 * var(--ef-u)), rgba(205, 240, 255, 0.8) calc(1.25 * var(--ef-u)), rgba(205, 240, 255, 0.12) calc(1.5 * var(--ef-u)), transparent calc(1.7 * var(--ef-u))),
+        radial-gradient(circle at 86% 20%, transparent 0 calc(2 * var(--ef-u)), rgba(205, 240, 255, 0.8) calc(2.3 * var(--ef-u)), rgba(205, 240, 255, 0.12) calc(2.6 * var(--ef-u)), transparent calc(2.9 * var(--ef-u)));
+    background-size: 43cqw 50cqh;
+    animation: ef-ondeggia-sale 13s linear infinite;
+}
+[data-effetto-palco="palco-bolle"]::after {
+    background-image:
+        radial-gradient(circle at 30% 40%, transparent 0 calc(0.6 * var(--ef-u)), rgba(205, 240, 255, 0.85) calc(0.85 * var(--ef-u)), transparent calc(1.2 * var(--ef-u))),
+        radial-gradient(circle at 74% 78%, transparent 0 calc(0.5 * var(--ef-u)), rgba(205, 240, 255, 0.85) calc(0.75 * var(--ef-u)), transparent calc(1.1 * var(--ef-u))),
+        radial-gradient(circle at 52% 12%, transparent 0 calc(0.7 * var(--ef-u)), rgba(205, 240, 255, 0.85) calc(0.95 * var(--ef-u)), transparent calc(1.3 * var(--ef-u)));
+    background-size: 29cqw 25cqh;
+    animation: ef-ondeggia-sale 7s linear -2s infinite;
+}
+
+/* synthwave: una griglia rosa e azzurra che scorre verso di te e una riga di luce che scende */
+[data-effetto-palco="palco-synthwave"]::before {
+    background-image:
+        linear-gradient(rgba(255, 60, 200, 0.6) calc(0.35 * var(--ef-u)), transparent calc(0.35 * var(--ef-u))),
+        linear-gradient(90deg, rgba(60, 230, 255, 0.55) calc(0.25 * var(--ef-u)), transparent calc(0.25 * var(--ef-u)));
+    background-size: 100% 12.5cqh, 8cqw 100%;
+    animation: ef-cade 7s linear infinite;
+}
+[data-effetto-palco="palco-synthwave"]::after {
+    top: 0; height: 24cqh;
+    background-image: linear-gradient(180deg, transparent, rgba(255, 80, 220, 0.3) 60%, rgba(80, 240, 255, 0.5) 97%, transparent);
+    animation: ef-scansione 5s linear infinite;
+}
+@keyframes ef-scansione { from { transform: translateY(-100%); } to { transform: translateY(420%); } }
+
 @media (prefers-reduced-motion: reduce) {
     [data-effetto-nome],
     [data-effetto-nome]::after,
