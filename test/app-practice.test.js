@@ -21,7 +21,7 @@ test('elencoTeam: i team del giocatore in ordine di nome, con formato e le speci
     });
     assert.deepEqual(l.map(t => t.id), ['a', 'b', 'c']);
     assert.deepEqual(l[0].specie, ['Pikachu', 'a', 'b', 'c', 'd', 'e'], 'sei al massimo');
-    assert.deepEqual(l[1], { id: 'b', nome: 'beta', formato: 'OU', specie: ['Garchomp', 'Corviknight'] });
+    assert.deepEqual(l[1], { id: 'b', nome: 'beta', formato: 'OU', specie: ['Garchomp', 'Corviknight'], shiny: [false, false] });
     assert.equal(l[2].nome, 'Team', 'senza nome si chiama Team');
     assert.deepEqual(P.elencoTeam(null), []);
 });
@@ -220,7 +220,7 @@ test('Practice non scorre in verticale: pagina ferma, i team e i Random Battle s
     assert.match(css, /html\.app-shell:has\(body\.pg-practice\), html\.app-shell body\.pg-practice \{ overflow: hidden !important; \}/);
     assert.match(css, /body\.pg-practice \.pr-griglia \{ display: flex; flex-wrap: nowrap;[^}]*overflow-x: auto; overflow-y: hidden;/);
     assert.match(css, /body\.pg-practice \.pr-chips \{ display: flex; flex-wrap: nowrap;[^}]*overflow-x: auto;/);
-    assert.match(docs('app-practice.js'), /typeof win\.SpritePkm\.gif === 'function' \? win\.SpritePkm\.gif\(s\)/);
+    assert.match(docs('app-practice.js'), /typeof win\.SpritePkm\.gif === 'function' \? win\.SpritePkm\.gif\(s, sh\)/);
 });
 
 test('practice.html: solo nell\'app (dal browser si torna alla home), con Firebase, l\'accesso e gli script delle sfide; gli id che servono ci sono', () => {

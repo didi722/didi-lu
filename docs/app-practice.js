@@ -43,7 +43,8 @@
                 id,
                 nome: String(t.nome || 'Team').trim() || 'Team',
                 formato: String(t.categoria || '').trim(),
-                specie: lista.map(p => (p && p.nome) || '').filter(Boolean).slice(0, 6)
+                specie: lista.filter(p => p && p.nome).slice(0, 6).map(p => p.nome),
+                shiny: lista.filter(p => p && p.nome).slice(0, 6).map(p => !!p.shiny)
             });
         }
         return fuori.sort((a, b) => a.nome.toLowerCase().localeCompare(b.nome.toLowerCase()) || a.id.localeCompare(b.id));
@@ -157,7 +158,7 @@
             <h2>${esc(titolo)}</h2>${sotto ? `<span class="pr-sotto">${esc(sotto)}</span>` : ''}
         </header>`;
 
-    const mini = (specie, dex) => specie.map(s => `<img class="pr-mini" src="${esc(dex ? dex(s) : '')}" alt="" onerror="this.style.visibility='hidden'">`).join('');
+    const mini = (specie, dex, shiny = []) => specie.map((s, i) => `<img class="pr-mini" src="${esc(dex ? dex(s, !!shiny[i]) : '')}" alt="" onerror="this.style.visibility='hidden'">`).join('');
 
     // ----- l'HTML: ranked -----
 
@@ -253,7 +254,7 @@
     function htmlCpu({ team, random, dex } = {}) {
         const carte = (team || []).map((t, i) => `<button type="button" class="pr-carta" data-team="${esc(t.id)}" style="--c:${COLORI_TEAM[i % 6]}" data-suono="ok">
                 <b class="pr-nome">${esc(t.nome)}</b>${t.formato ? `<span class="pr-tag">${esc(t.formato)}</span>` : ''}
-                <span class="pr-mini-riga">${mini(t.specie, dex)}</span>
+                <span class="pr-mini-riga">${mini(t.specie, dex, t.shiny)}</span>
             </button>`).join('');
         const vuoto = !(team || []).length
             ? '<p class="pr-vuoto">You have no teams yet. <a href="box.html">Build one in the Box</a>, or try a Random Battle.</p>' : '';
@@ -287,7 +288,7 @@
         const pagina = doc && doc.getElementById('practice');
         if (!pagina || !doc.documentElement.classList.contains('app-shell')) return null;
         const db = () => win.firebase.database();
-        const dex = win.SpritePkm ? s => (typeof win.SpritePkm.gif === 'function' ? win.SpritePkm.gif(s) : win.SpritePkm.dex(s)) : null;      // i Pokémon si muovono (GIF), non figurine ferme
+        const dex = win.SpritePkm ? (s, sh) => (typeof win.SpritePkm.gif === 'function' ? win.SpritePkm.gif(s, sh) : win.SpritePkm.dex(s)) : null;      // i Pokémon si muovono (GIF), non figurine ferme
         const stato = { vista: 'home', io: null, utente: false, pronto: false, team: null, giocatori: null, players: null, stagioni: null, sfide: {}, ranked: null, stagione: null };
         let ascolti = [];
 
