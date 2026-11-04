@@ -30,6 +30,8 @@
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const coloreSicuro = (c, vuoto) => (/^#[0-9a-f]{3,8}$/i.test(String(c || '').trim()) ? String(c).trim() : vuoto);
     const dataIt = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : String(iso || ''); };
+    /** La data di un record, con un punto in cui andare a capo (dopo il mese) se lo spazio tra il nome e il numero è poco: gg/mm/ sopra, aaaa sotto */
+    const dataRecord = iso => { const t = esc(dataIt(iso)); return t.replace(/^(\d{1,2}\/\d{1,2}\/)(?=\d)/, '$1<wbr>'); };
     const pagina = nome => `public.html?player=${encodeURIComponent(nome)}`;
 
     // ---------------------------------------------------------------- i record
@@ -113,8 +115,8 @@
                 titolo: e.titolo, intervallo: e.intervallo, quanti: w.quanti, scelto: s,
                 p1: s.giocatori.p1, p2: s.giocatori.p2, vincitore: s.vincitore, formato: s.categoria, stagione: s.nomeStagione,
                 motivi: s.motivi || [], protagonista: s.protagonista ? s.protagonista.specie : '',
-                // senza ?da=home (che riporta alla home): chiudendo il replay si resta nella pagina dei match della stagione
-                link: `matches.html?id=${encodeURIComponent(s.stagione)}&replay=${encodeURIComponent(s.showdown)}~${encodeURIComponent(s.match)}~${encodeURIComponent(s.set)}`
+                // da=hall-of-fame: chiudendo il replay si torna alla Hall of Fame, sul Match of the week (matches.html)
+                link: `matches.html?id=${encodeURIComponent(s.stagione)}&replay=${encodeURIComponent(s.showdown)}~${encodeURIComponent(s.match)}~${encodeURIComponent(s.set)}&da=hall-of-fame`
             };
         });
     }
@@ -136,7 +138,8 @@
                     const testa = v.specie ? medaglione(gif, v.specie) : (v.avatar !== '' || av ? avatarDi(av) : '');
                     const nome = v.link ? `<a class="hof-nome" href="${esc(v.link)}">${esc(v.nome)}</a>` : `<span class="hof-nome">${esc(v.nome)}</span>`;
                     return `<li class="hof-voce${i === 0 ? ' hof-primo' : ''}" style="--c:${esc(v.colore)}"><span class="hof-pos">${i + 1}</span>${testa}`
-                        + `<span class="hof-chi">${nome}${v.sotto ? `<small>${esc(v.sotto)}</small>` : ''}${v.quando ? `<small>${esc(dataIt(v.quando))}</small>` : ''}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
+                        + `<span class="hof-chi">${nome}${v.sotto ? `<small>${esc(v.sotto)}</small>` : ''}</span>`
+                        + `<span class="hof-quando">${v.quando ? `<time datetime="${esc(v.quando)}">${dataRecord(v.quando)}</time>` : ''}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
                 }).join('') + '</ol></article>').join('') + '</div></section>').join('');
     }
 
@@ -155,13 +158,13 @@
             + '</article>').join('');
     }
 
-    /** Le settimane: lo stesso banner della home (MatchSettimana.html) una volta per settimana, senza frecce; chiudendo il replay si resta nei match della stagione */
+    /** Le settimane: lo stesso banner della home (MatchSettimana.html) una volta per settimana, senza frecce; chiudendo il replay si torna qui (da=hall-of-fame) */
     function htmlSettimane(lista, { gif, giocatori = {}, MatchSettimana } = {}) {
         if (!lista || !lista.length) return '<p class="hof-vuoto">No Match of the week yet.</p>';
         if (!MatchSettimana) return '';
         const info = {};
         for (const [id, g] of Object.entries(giocatori)) info[id] = { colore: g.color || '', avatar: g.avatar || '' };
-        return `<ol class="hof-settimane">${lista.map(w => `<li class="ms hof-ms">${MatchSettimana.html(w.scelto, { giocatori: info, gif, settimana: { titolo: w.titolo, intervallo: w.intervallo }, totale: 1, daHome: false })}</li>`).join('')}</ol>`;
+        return `<ol class="hof-settimane">${lista.map(w => `<li class="ms hof-ms">${MatchSettimana.html(w.scelto, { giocatori: info, gif, settimana: { titolo: w.titolo, intervallo: w.intervallo }, totale: 1, da: 'hall-of-fame' })}</li>`).join('')}</ol>`;
     }
 
     return { records, stagioni, settimane, htmlRecords, htmlStagioni, htmlSettimane, DEFINIZIONI, MIN_MATCH_ALLENATORE, MIN_MATCH_TEAM, MIN_SET_POKEMON };

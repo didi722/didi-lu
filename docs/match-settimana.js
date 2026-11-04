@@ -246,9 +246,12 @@
         return { ...w.scelto, corrente: w.corrente, quanti: w.quanti, settimana: { inizio: w.inizio, fine: w.fine, numero: w.numero, anno: w.anno } };
     }
 
-    /** Il link che apre il replay di quel set: matches.html?id=<stagione>&replay=<showdown>~<match>~<set> (matches.html lo apre da solo); da=home: chiudendo il replay si torna alla home */
-    function linkReplay(s, daHome = true) {
-        return `matches.html?id=${encodeURIComponent(s.stagione)}&replay=${encodeURIComponent(s.showdown)}~${encodeURIComponent(s.match)}~${encodeURIComponent(s.set)}${daHome ? '&da=home' : ''}`;
+    /**
+     * Il link che apre il replay di quel set: matches.html?id=<stagione>&replay=<showdown>~<match>~<set> (matches.html lo apre da solo).
+     * `da`: la pagina da cui si arriva, perché chiudendo il replay ci si torni (matches.html: home | hall-of-fame); '' = si resta nei match della stagione.
+     */
+    function linkReplay(s, da = 'home') {
+        return `matches.html?id=${encodeURIComponent(s.stagione)}&replay=${encodeURIComponent(s.showdown)}~${encodeURIComponent(s.match)}~${encodeURIComponent(s.set)}${da ? `&da=${encodeURIComponent(da)}` : ''}`;
     }
 
     // -----------------------------------------------------
@@ -277,9 +280,9 @@
      *   settimana   { titolo, intervallo } (etichettaSettimana)
      *   indice, totale  quale settimana è e quante sono: con più di una compaiono le frecce
      *   animazione  'dx' | 'sx': da che parte entra il contenuto passando da una settimana all'altra
-     *   daHome      false: il link del replay non riporta alla home (la Hall of Fame)
+     *   da          la pagina a cui riporta la chiusura del replay: 'home' (predefinito) o 'hall-of-fame'; '' = nessuna
      */
-    function html(s, { giocatori = {}, gif, settimana, indice = 0, totale = 1, animazione = '', daHome = true } = {}) {
+    function html(s, { giocatori = {}, gif, settimana, indice = 0, totale = 1, animazione = '', da = 'home' } = {}) {
         if (!s) return '';
         const sprite = (p, classe) => (gif && p.specie
             ? `<img class="${classe}${p.svenuto ? ' ms-ko' : ''}" src="${esc(gif(p.specie))}" alt="${esc(p.specie)}" title="${esc(p.specie)}${p.svenuto ? ' (fainted)' : ''}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)">` : '');
@@ -312,7 +315,7 @@
         return `<span class="ms-t">MATCH OF THE WEEK</span>${pager}`
             + `<div class="ms-corpo${animazione ? ` ms-in-${animazione === 'sx' ? 'sx' : 'dx'}` : ''}" aria-live="polite"><div class="ms-scontro">${lato('p1', 1)}`
             + `${lato('p2', 2)}</div>${medaglione}`
-            + `<div class="ms-azione"><a class="ms-replay" href="${esc(linkReplay(s, daHome))}" title="${esc(['Watch the replay', [s.categoria, `Set ${s.numeroSet} · Match ${s.numeroMatch}`, quando, s.nomeStagione, `Match ${s.punteggioMatch}`].filter(Boolean).join(' · ')].join('\n'))}" aria-label="Watch the replay">&#9654; Replay</a></div></div>`;
+            + `<div class="ms-azione"><a class="ms-replay" href="${esc(linkReplay(s, da))}" title="${esc(['Watch the replay', [s.categoria, `Set ${s.numeroSet} · Match ${s.numeroMatch}`, quando, s.nomeStagione, `Match ${s.punteggioMatch}`].filter(Boolean).join(' · ')].join('\n'))}" aria-label="Watch the replay">&#9654; Replay</a></div></div>`;
     }
 
     /**

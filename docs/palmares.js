@@ -101,16 +101,38 @@
             mvp: async () => HoF.htmlStagioni(HoF.stagioni(await carica(), { Statistiche: window.Statistiche, Mvp: window.Mvp }), { gif, giocatori }),
             settimane: async () => HoF.htmlSettimane(HoF.settimane(window.MatchSettimana.settimane((await carica()).seasons).elenco, window.MatchSettimana), { gif, giocatori, MatchSettimana: window.MatchSettimana })
         };
+        // I nomi dei team troppo lunghi scorrono, come nella home: si misurano quando la sezione è pronta e ogni volta che lo spazio cambia (il font e le immagini arrivano dopo,
+        // la finestra si ridimensiona, si torna alla sezione), non una volta sola.
+        let attesaNomi = null;
+        const misuraNomi = () => { if (window.NomeScorrevole) window.NomeScorrevole.applicaTutti('.ms-nome'); };
+        const rifaiNomi = () => { clearTimeout(attesaNomi); attesaNomi = setTimeout(misuraNomi, 120); };
+        window.addEventListener('resize', rifaiNomi);
+        if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', rifaiNomi);
+        document.addEventListener('load', rifaiNomi, true);
+        // Aprendo un replay (matches.html, da=hall-of-fame) si ricorda a che punto della pagina si era: chiudendolo si torna qui, sulla stessa sezione, e si riparte da lì.
+        const CHIAVE_SCORRIMENTO = 'hof-scorrimento';
+        let daRiprendere = 0;
+        try { daRiprendere = Number(sessionStorage.getItem(CHIAVE_SCORRIMENTO)) || 0; sessionStorage.removeItem(CHIAVE_SCORRIMENTO); } catch (e) { /* niente */ }
+        document.addEventListener('click', e => {
+            if (e.target.closest && e.target.closest('.ms-replay')) { try { sessionStorage.setItem(CHIAVE_SCORRIMENTO, String(Math.round(window.scrollY))); } catch (err) { /* niente */ } }
+        });
+        // la sezione aperta sta nell'indirizzo (?sezione=settimane): è dove si torna da un replay
+        const ricordaSezione = vista => {
+            try { const u = new URL(window.location.href); if (vista === 'stagioni') u.searchParams.delete('sezione'); else u.searchParams.set('sezione', vista); window.history.replaceState(null, '', u.toString()); } catch (e) { /* niente */ }
+        };
         const mostra = async vista => {
             nav.querySelectorAll('.palm-sezione').forEach(b => { const su = b.dataset.vista === vista; b.classList.toggle('attiva', su); b.setAttribute('aria-selected', String(su)); });
             for (const v of viste) { const el = document.getElementById(`palm-vista-${v}`); if (el) el.hidden = v !== vista; }
-            if (vista === 'stagioni' || pronte[vista]) return;
+            ricordaSezione(vista);
+            if (vista === 'stagioni') return;
+            if (pronte[vista]) { misuraNomi(); return; }
             const el = document.getElementById(`palm-vista-${vista}`);
             el.innerHTML = '<p class="hof-vuoto">Loading…</p>';
             try {
                 el.innerHTML = await costruisci[vista](); pronte[vista] = true;
                 if (window.MedaglionePkm) window.MedaglionePkm.coloraMedaglioni(window, el);       // il colore del tipo, appena PokeAPI risponde
-                if (window.NomeScorrevole) window.NomeScorrevole.applicaTutti('.ms-nome');
+                misuraNomi();
+                if (daRiprendere > 0 && vista === scelta) { window.scrollTo(0, daRiprendere); daRiprendere = 0; }
             } catch (e) { console.warn('Hall of Fame:', e); el.innerHTML = '<p class="hof-vuoto">Couldn\'t load this section. Try again later.</p>'; }
         };
         nav.addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) mostra(b.dataset.vista); });

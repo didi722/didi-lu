@@ -1,0 +1,136 @@
+/* =====================================================================
+   SHOP (shop.html, shop.js): una pagina del sito come le altre, nello stile neubrutalista (colori, ombre, angoli e rotazioni del tema scelto: --nb-*).
+   A sinistra quello che si compra, a destra la TUA pagina in anteprima (public.html?anteprima=1): toccando una voce la si prova prima di comprarla.
+   Le righe del catalogo (.ng-voce...) sono di negozio.js: qui si rivestono con i colori del tema.
+   ===================================================================== */
+/* il modello di base blocca lo scorrimento della pagina: qui si scorre normalmente */
+body.pg-shop { overflow-x: hidden; overflow-y: auto; }
+body.pg-shop .shop-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); max-width: 1180px; margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px); padding: 34px 26px 90px; box-sizing: border-box; font-family: var(--nb-font-testo, 'Montserrat', sans-serif); }
+@media (max-width: 900px) { body.pg-shop .ads-sidebar { display: none; } body.pg-shop .shop-pagina { width: 100%; margin-left: 0; padding: 22px 14px 80px; } }
+
+.shop-testa { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 20px; }
+.shop-saldo {
+    padding: 8px 18px 5px; background: var(--nb-giallo, #ffbd44); color: #000; border: 4px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-m, 5px 5px 0 #000);
+    font: 900 1.5rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); rotate: calc(var(--nb-rot, 1) * -1.2deg);
+}
+
+/* le schede */
+.shop-schede { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 22px; }
+.shop-scheda {
+    box-sizing: border-box; padding: 9px 16px 7px; cursor: pointer; color: var(--nb-ink, #000); background: var(--nb-carta, #fff);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .9rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .06em); text-transform: uppercase;
+    rotate: calc(var(--nb-rot, 1) * -.6deg); transition: translate .1s ease, box-shadow .1s ease;
+}
+.shop-scheda:nth-child(even) { rotate: calc(var(--nb-rot, 1) * .6deg); }
+.shop-scheda:hover, .shop-scheda:focus-visible { translate: -2px -2px; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); outline: none; }
+.shop-scheda.attiva { background: var(--nb-ink, #000); color: #fff; }
+
+.shop-pagina .ng-msg { margin: 0 0 18px; padding: 10px 12px; color: #000; background: #fff6d6; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 700 .85rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.shop-pagina .ng-msg.shop-errore { background: #ffd9d6; }
+.shop-accedi { font: 700 1rem var(--nb-font-testo, 'Montserrat', sans-serif); }
+.shop-aiuto { margin: 0 0 6px; font: 700 .8rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .8; }
+.shop-aiuto a { color: inherit; }
+
+/* due colonne: quello che si compra e la tua pagina */
+.shop-corpo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 520px); gap: 28px; align-items: start; }
+.shop-corpo[hidden] { display: none; }
+.shop-corpo.senza-anteprima { grid-template-columns: minmax(0, 1fr); }
+.shop-corpo.senza-anteprima .shop-anteprima { display: none; }
+.shop-anteprima {
+    position: sticky; top: 14px; box-sizing: border-box; padding: 26px 10px 10px; background: radial-gradient(rgba(0, 0, 0, .08) 1.3px, transparent 1.6px) 0 0 / 14px 14px, var(--nb-carta, #fff);
+    border: 4px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+}
+.shop-anteprima-testa { position: absolute; top: -19px; left: 14px; right: 14px; display: flex; align-items: center; gap: 10px; pointer-events: none; }
+.shop-anteprima-testa b { padding: 6px 14px 3px; background: var(--nb-ink, #000); color: #fff; font: 900 13px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * -2deg); box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
+.shop-anteprima-testa span { flex: 1; min-width: 0; font: 700 .7rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--nb-carta, #fff); padding: 2px 6px; }
+.shop-reset { pointer-events: auto; padding: 4px 10px 2px; cursor: pointer; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 900 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
+.shop-reset[hidden] { display: none; }
+/* la tua pagina come la vede chi ha lo schermo grande (1100 x 640), rimpicciolita per starci: shop.js calcola --k */
+.shop-schermo { position: relative; width: 100%; height: calc(var(--k, .4) * 640px); overflow: hidden; }
+.shop-schermo iframe { position: absolute; left: 0; top: 0; width: 1100px; height: 640px; border: 0; background: transparent; transform: scale(var(--k, .4)); transform-origin: 0 0; }
+@media (max-width: 900px) {
+    .shop-corpo { grid-template-columns: minmax(0, 1fr); gap: 34px; }
+    .shop-anteprima { order: -1; top: 0; z-index: 6; padding-top: 24px; }
+}
+
+/* telefono in orizzontale: lo schermo è basso, quindi la tua pagina sta di fianco (non sopra) */
+@media (max-width: 900px) and (max-height: 520px) {
+    .shop-corpo { grid-template-columns: minmax(0, 1fr) minmax(200px, 38%); gap: 18px; }
+    .shop-anteprima { order: 0; top: 8px; }
+}
+
+/* il catalogo: le righe di negozio.js nei colori del tema */
+.shop-pagina .ng-gruppo h3 { margin: 22px 0 4px; color: var(--shop-testo, var(--nb-ink, #000)); font: 900 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .06em); text-transform: uppercase; }
+.shop-pagina .ng-gruppo > p, .shop-pagina .ng-nota, .shop-pagina .shop-aiuto, .shop-pagina .shop-attuale, .shop-pagina .shop-accedi { color: var(--shop-testo, var(--nb-ink, #000)); }
+.shop-pagina .ng-guida { color: #000; }
+.shop-pagina .ng-voce { background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); cursor: pointer; }
+.shop-pagina .ng-voce.ng-mio { background: #e9ffe9; }
+.shop-pagina .ng-voce.ng-prova { outline: 4px solid var(--nb-giallo, #ffbd44); outline-offset: 2px; }
+.shop-pagina .ng-voce.ng-pkm { cursor: default; }
+.shop-pagina .ng-edizione { background: #fff6d6; color: #000; border-radius: var(--nb-raggio, 0); }
+.shop-pagina .ng-edizione h3, .shop-pagina .ng-edizione > p { color: #000; }
+.shop-pagina .ng-bottone { color: #000; border-radius: var(--nb-raggio, 0); }
+.shop-pagina .ng-guida { background: var(--nb-carta, #fff); border-radius: var(--nb-raggio, 0); }
+.shop-pagina .ng-movimenti { color: var(--shop-testo, var(--nb-ink, #000)); }
+/* nell'app lo sfondo è scuro: il testo fuori dalle carte è chiaro */
+html.app-shell { --shop-testo: #fff; }
+@media (max-width: 560px) { .shop-pagina .ng-voce { grid-template-columns: 52px minmax(0, 1fr) auto; gap: 8px; } .shop-pagina .ng-voce[data-tipo=pokemon] { grid-template-columns: 72px minmax(0, 1fr) auto; } }
+
+/* Trainer: avatar, colori, canzoni */
+.shop-avatar-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 9px; max-height: 440px; overflow: auto; padding: 8px 6px 10px; }
+.shop-av { position: relative; box-sizing: border-box; aspect-ratio: 1; padding: 3px; cursor: pointer; background: var(--nb-carta, #fff); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.shop-av img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.shop-av:hover:not(:disabled) { translate: -2px -2px; }
+.shop-av.is-on { background: var(--nb-giallo, #ffbd44); cursor: default; }
+.shop-av.is-preso, .shop-col.is-preso, .shop-canzone.is-preso { opacity: .35; filter: grayscale(1); cursor: not-allowed; box-shadow: none; }
+.shop-colori { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 9px; padding: 8px 6px 10px; }
+.shop-col { position: relative; box-sizing: border-box; aspect-ratio: 1; cursor: pointer; background: var(--c, #ccc); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.shop-col:hover:not(:disabled) { translate: -2px -2px; }
+.shop-col.is-on { outline: 4px solid #fff; outline-offset: -7px; cursor: default; }
+.shop-ricerca { box-sizing: border-box; width: 100%; margin: 0 0 8px; padding: 9px 12px; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); font: 600 .9rem var(--nb-font-testo, 'Montserrat', sans-serif); }
+.shop-canzoni { display: grid; gap: 7px; max-height: 380px; overflow: auto; padding: 4px 6px 8px; }
+.shop-canzone { display: flex; gap: 7px; }
+.shop-scelta { flex: 1; min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px 5px; cursor: pointer; text-align: left; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 800 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.shop-scelta span { overflow-wrap: anywhere; }
+.shop-scelta small { flex: none; font: 700 .7rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
+.shop-canzone.is-on .shop-scelta { background: var(--nb-giallo, #ffbd44); }
+.shop-ascolta { flex: none; width: 38px; cursor: pointer; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 900 .8rem sans-serif; }
+
+/* quelli che hai (avatar, colori, canzoni): si indossano o si rilasciano */
+.shop-conta { display: inline-block; margin-left: 6px; padding: 2px 8px 1px; vertical-align: middle; background: var(--nb-giallo, #ffbd44); color: #000; border: 2px solid var(--nb-ink, #000); font: 900 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; }
+.shop-sotto { margin: 14px 0 2px; font: 900 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; color: var(--shop-testo, var(--nb-ink, #000)); }
+.shop-miei { list-style: none; display: grid; gap: 8px; margin: 8px 0 4px; padding: 0; }
+.shop-miio { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 9px; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.shop-miio.is-on { background: var(--nb-giallo, #ffbd44); }
+.shop-miio-img { flex: none; width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; border: 2px solid var(--nb-ink, #000); background: #f3f4f8; }
+.shop-miio-col { flex: none; width: 44px; height: 44px; background: var(--c, #ccc); border: 2px solid var(--nb-ink, #000); }
+.shop-miio-nota { flex: none; display: grid; place-items: center; width: 44px; height: 44px; font: 900 1.3rem sans-serif; border: 2px solid var(--nb-ink, #000); background: #f3f4f8; }
+.shop-miio-nome { flex: 1; min-width: 90px; display: grid; gap: 1px; overflow-wrap: anywhere; }
+.shop-miio-nome b { font: 800 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.shop-miio-nome small { font: 600 .7rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .7; }
+.shop-miio-su { flex: none; padding: 3px 9px 2px; background: #000; color: #fff; font: 900 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .05em; }
+.shop-miio .ng-bottone { flex: none; padding: 6px 12px 4px; font-size: .75rem; }
+.shop-miio .shop-ascolta { width: 34px; height: 34px; }
+
+/* Pokémon */
+.shop-squadre { display: flex; flex-wrap: wrap; gap: 9px; margin: 8px 0 12px; }
+.shop-squadra { padding: 7px 14px 5px; cursor: pointer; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 800 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
+.shop-squadra.attiva { background: var(--nb-ink, #000); color: #fff; }
+
+/* la conferma di un cambio */
+.shop-conferma-velo { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .6); }
+.shop-conferma { box-sizing: border-box; width: min(360px, 100%); padding: 18px; display: grid; gap: 10px; justify-items: center; text-align: center; background: var(--nb-carta, #fff); color: #000; border: 4px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: 6px 6px 0 var(--nb-ink, #000); }
+.shop-conferma img { width: 76px; height: 76px; object-fit: contain; image-rendering: pixelated; border: 3px solid var(--nb-ink, #000); background: #f3f4f8; }
+.shop-conferma-colore { display: block; width: 76px; height: 76px; background: var(--c, #ccc); border: 3px solid var(--nb-ink, #000); }
+.shop-conferma b { font: 900 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .05em; }
+.shop-conferma p { margin: 0; font: 600 .8rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.shop-rilascia { width: 100%; display: grid; gap: 6px; text-align: left; }
+.shop-rilascia label { display: block; cursor: pointer; }
+.shop-rilascia input { position: absolute; opacity: 0; pointer-events: none; }
+.shop-rilascia span { display: flex; align-items: center; gap: 9px; padding: 6px 9px; background: #fff; border: 3px solid var(--nb-ink, #000); font: 800 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.shop-rilascia input:checked + span { background: var(--nb-giallo, #ffbd44); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.shop-rilascia input:focus-visible + span { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+.shop-conferma .shop-rilascia img { width: 34px; height: 34px; border-width: 2px; }
+.shop-rilascia i { flex: none; width: 34px; height: 34px; background: var(--c, #ccc); border: 2px solid var(--nb-ink, #000); }
+.shop-conferma-azioni { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 4px; }

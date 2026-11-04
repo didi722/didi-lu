@@ -35,6 +35,7 @@
 <script src="nome-scorrevole.js"></script>
 <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
+<script src="cosmetici.js"></script>
 <script src="ordine-showdown.js"></script>
 <script src="filtro-showdown.js"></script>
 <script src="scheda-condivisione.js"></script>
@@ -149,6 +150,7 @@
     <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
     <a href="stats.html" class="menu-item"><i class="fas fa-chart-bar"></i> STATS</a>
     <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> HALL OF FAME</a>
+        <a href="shop.html" class="menu-item"><i class="fas fa-store"></i> SHOP</a>
     <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
     <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> RULEBOOK</a>
     <a href="admin.html" id="admin-menu-item" class="menu-item" style="display: none;"><i class="fas fa-user-shield"></i> ADMIN</a>
@@ -906,7 +908,7 @@ async function inizializzaPaginaArchivio() {
         container.appendChild(sdCard);
         schedeFiltro.set(sdId, sdCard);
         if (window.FiltroShowdown) vociFiltro.push(FiltroShowdown.voce(sdId, sd, chiVince));
-        const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', pkmShiny: !!g.pkmShiny, vinti }; };
+        const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(g, dataPlayers[String(nome || '').toLowerCase().trim()]?.teams) : !!g.pkmShiny, vinti }; };
         perAppSd.push({ id: sdId, formato: info.categoria || '', data: info.data || '', partite: Object.keys(matches).length, vince: chiVince, p1: latoApp(p1Name, vintiP1), p2: latoApp(p2Name, vintiP2), apri: () => apriModaleShowdown(sdId, sd) });
     });
     if (window.AppSito) AppSito.pubblica('showdowns', { stagione: stagioneAttiva, lista: perAppSd, riepilogo: !!riepilogoIniziale });
@@ -1059,14 +1061,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let replayDaLinkAperto = false;
+const PAGINE_DI_RITORNO = { home: 'index.html', 'hall-of-fame': 'palmares.html?sezione=settimane' };
 /** Apre da solo il replay chiesto nell'indirizzo (una volta sola per apertura della pagina): il set indicato, con i suoi due team e il punteggio del match */
 function apriReplayDaLink(showdowns) {
     if (replayDaLinkAperto) return;
     const richiesto = new URLSearchParams(window.location.search).get('replay');
     if (!richiesto) return;
     replayDaLinkAperto = true;
-    // aperto dal banner "Match of the week" della home (da=home): chiudendo il replay si torna lì, non all'elenco dei match
-    window.replayTornaAllaHome = new URLSearchParams(window.location.search).get('da') === 'home';
+    // aperto dal banner "Match of the week" della home (da=home) o dalla Hall of Fame (da=hall-of-fame): chiudendo il replay si torna lì, non all'elenco dei match
+    window.replayTornaA = PAGINE_DI_RITORNO[new URLSearchParams(window.location.search).get('da')] || '';
     const [sdId, matchKey, setKey] = richiesto.split('~');
     // ?turno=12: il replay parte da quel turno (lo si manda al replay appena si fa vivo: vedi "replay-stato")
     const turnoRichiesto = parseInt(new URLSearchParams(window.location.search).get('turno'), 10);
@@ -1133,6 +1136,10 @@ async function renderRankings(leaderboardData) {
         const nameClean = player.name.toLowerCase().trim();
         const snapInfo = await db.ref(`players/${nameClean}/info`).once('value');
         const infoPlayer = snapInfo.val() || {};
+        // un compagno scelto dal Box è shiny come quel Pokémon: si legge solo quel team
+        let teamBox = [];
+        const idTeamBox = String(infoPlayer.pkmBox || '').split('|')[0];
+        if (idTeamBox && window.Cosmetici) { try { const t = (await db.ref(`players/${nameClean}/teams/${idTeamBox}`).once('value')).val(); if (t) teamBox = [{ id: idTeamBox, ...t }]; } catch (e) { /* senza: si vale come compagno generico */ } }
         const color = String(infoPlayer.color || "#31c489").replace(/[^#0-9a-zA-Z(),.%\s-]/g, '');
         const avatarHtml = infoPlayer.avatar
             ? `<img src="${escClassifica(infoPlayer.avatar)}" class="cl-avatar" alt="" loading="lazy">`
@@ -1141,7 +1148,7 @@ async function renderRankings(leaderboardData) {
         const sdWon = player.sdWon || 0;
         const sdLost = player.sdLost || 0;
         const playerUrlParam = encodeURIComponent(player.name.trim());
-        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', pkmShiny: !!infoPlayer.pkmShiny, sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
+        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(infoPlayer, teamBox) : !!infoPlayer.pkmShiny, sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
 
         return `
        <div class="rank-riga">
@@ -2965,11 +2972,12 @@ window.chiudiReplay = function() {
     }
     if (window.nascondiComandiReplay) window.nascondiComandiReplay();
 
-    // replay aperto dalla home (link del Match of the week): si torna alla home (la musica la gestisce lei)
-    if (window.replayTornaAllaHome) {
-        window.replayTornaAllaHome = false;
+    // replay aperto dalla home o dalla Hall of Fame (link del Match of the week): si torna lì (la musica la gestisce quella pagina)
+    if (window.replayTornaA) {
+        const dove = window.replayTornaA;
+        window.replayTornaA = '';
         window.AppMusicaPausa = false;
-        window.location.replace('index.html');
+        window.location.replace(dove);
         return;
     }
 

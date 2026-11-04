@@ -40,9 +40,7 @@
 <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
     <script src="scheda-condivisione.js"></script>
-    <script src="rarita-pkm.js"></script>
     <script src="cosmetici.js"></script>
-    <script src="negozio.js"></script>
 <script src="controllo-team.js"></script>
 <script src="formato-random.js"></script>
 <link rel="stylesheet" href="tooltip.css">
@@ -163,6 +161,7 @@
     <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
     <a href="stats.html" class="menu-item"><i class="fas fa-chart-bar"></i> STATS</a>
     <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> HALL OF FAME</a>
+        <a href="shop.html" class="menu-item"><i class="fas fa-store"></i> SHOP</a>
     <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
     <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> RULEBOOK</a>
     <a href="admin.html" id="admin-menu-item" class="menu-item" style="display: none;"><i class="fas fa-user-shield"></i> ADMIN</a>
@@ -944,7 +943,7 @@ async function renderizza(lista) {
                     title="Notes on this team: what to fix or try">📝 <b>${numeroNote}</b></button>`;
         const htmlShiny = `
                 <button type="button" class="card-azione azione-shiny" onclick="event.stopPropagation(); apriShinyTeam('${team.id}')"
-                        title="Make a Pokémon of this team shiny" aria-label="Make a Pokémon of this team shiny">✨</button>`;
+                        title="Make a Pokémon of this team shiny (in the Shop)" aria-label="Make a Pokémon of this team shiny, in the Shop">✨</button>`;
         const htmlCondividi = `
                 <button type="button" class="card-azione azione-condividi" onclick="event.stopPropagation(); condividiTeam('${team.id}')"
                         title="Share this team as an image" aria-label="Share this team">📤</button>`;
@@ -1149,16 +1148,9 @@ function provaControCpu(id) {
 }
 
 /** Il team come immagine da mandare in chat (scheda-condivisione.js): nome, formato, i Pokémon con strumento e mosse, il record */
-// ✨ Lo shiny di un Pokémon del team (negozio.js): costa monete e cambia solo i colori, quindi vale anche per i team bloccati. Il server aggiorna il Box e le iscrizioni alle stagioni in corso.
+// ✨ Lo shiny di un Pokémon del team si compra nello Shop (monete): si apre sulla scheda Pokémon, già sul team giusto
 function apriShinyTeam(id) {
-    const team = tuttiITeam.find(t => t.id === id);
-    if (!team) return;
-    if (!window.Negozio) { alert("The shop didn't load: check your connection and reload the page."); return; }
-    const pokemon = Array.isArray(team.pokemon) ? team.pokemon : Object.values(team.pokemon || {});
-    window.Negozio.apriShinyTeam(window, {
-        id: team.id, nome: team.nome || 'Team', pokemon,
-        alFatto: indice => { if (pokemon[indice]) pokemon[indice].shiny = true; applicaFiltri(); }      // le card si ridisegnano subito, senza aspettare il database
-    });
+    window.location.href = `shop.html?tab=pokemon&team=${encodeURIComponent(id)}`;
 }
 
 async function condividiTeam(id) {

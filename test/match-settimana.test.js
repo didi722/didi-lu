@@ -482,9 +482,10 @@ test('matches.html: ?replay=showdown~match~set apre da solo il replay di quel se
     assert.match(m, /get\('replay'\)/);
     assert.match(m, /richiesto\.split\('~'\)/);
     assert.match(m, /if \(replayDaLinkAperto\) return;/);
-    // da=home (link del banner): chiudendo il replay si torna alla home, una volta sola
-    assert.match(m, /window\.replayTornaAllaHome = new URLSearchParams\(window\.location\.search\)\.get\('da'\) === 'home';/);
-    assert.match(m, /if \(window\.replayTornaAllaHome\) \{\s*window\.replayTornaAllaHome = false;[\s\S]*?window\.location\.replace\('index\.html'\);\s*return;/);
+    // da=home (link del banner) o da=hall-of-fame (la Hall of Fame): chiudendo il replay si torna lì, una volta sola
+    assert.match(m, /const PAGINE_DI_RITORNO = \{ home: 'index\.html', 'hall-of-fame': 'palmares\.html\?sezione=settimane' \};/);
+    assert.match(m, /window\.replayTornaA = PAGINE_DI_RITORNO\[new URLSearchParams\(window\.location\.search\)\.get\('da'\)\] \|\| '';/);
+    assert.match(m, /if \(window\.replayTornaA\) \{\s*const dove = window\.replayTornaA;\s*window\.replayTornaA = '';[\s\S]*?window\.location\.replace\(dove\);\s*return;/);
     assert.match(m, /<script src="medaglione-pkm\.js"><\/script>\s*\n<script src="riepilogo-stagione\.js"><\/script>/, 'il medaglione prima del riepilogo');
 });
 

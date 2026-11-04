@@ -32,6 +32,7 @@
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
 <script src="badge-allenatore.js"></script>
+<script src="cosmetici.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -73,6 +74,7 @@
     <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
     <a href="stats.html" class="menu-item"><i class="fas fa-chart-bar"></i> STATS</a>
     <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> HALL OF FAME</a>
+        <a href="shop.html" class="menu-item"><i class="fas fa-store"></i> SHOP</a>
     <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
     <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> RULEBOOK</a>
     <a href="admin.html" id="admin-menu-item" class="menu-item" style="display: none;"><i class="fas fa-user-shield"></i> ADMIN</a>
@@ -318,7 +320,7 @@ async function initTrainersPage() {
                 badgesHTML: generaHTMLBadge(serieBadges, key) + badgeAllenatoreHTML,
                 // per l'app: il Pokémon preferito, il titolo e i badge presi (prima le serie e il fondatore, poi quelli del catalogo)
                 pkmPreferito: info.pkmPreferito || '',
-                pkmShiny: !!info.pkmShiny,
+                pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(info, player.teams) : !!info.pkmShiny,      // un compagno del Box è shiny come quel Pokémon
                 titolo: info.title && info.title !== 'No Title' ? info.title : '',
                 badgeApp: Titoli.badgeSbloccati(serieBadges, key).map(b => ({ img: b.img, nome: b.label, livello: b.livello, icona: b.livello === 'founder' ? '👑' : '🏅', descrizione: b.descrizione }))
                     .concat(guadagnatiApp.map(b => ({ img: b.immagine, nome: b.nome, livello: b.classeLivello, icona: b.icona, descrizione: b.descrizione })))
