@@ -152,8 +152,7 @@
         let nome = String(nomeGrezzo).toLowerCase().trim();
         if (FORME_SPECIALI[nome]) nome = FORME_SPECIALI[nome];
 
-        // il cosmetico "Shiny companion" (cosmetici.js): lo stesso Pokémon con i colori alternativi
-        // (vale solo per il compagno generico: uno scelto dal Box è shiny o no come quel Pokémon del Box)
+        // il compagno scelto dal Box è shiny se lo è quel Pokémon del team (cosmetici.js, compagnoShiny): lo stesso Pokémon con i colori alternativi
         const brillante = !!(stato.dati && stato.dati.info && (window.Cosmetici ? window.Cosmetici.compagnoShiny(stato.dati.info, stato.dati.teams) : false));
         let gif = null, altezzaM = 1.2, vola = false;
         try {
@@ -161,10 +160,11 @@
             if (!r.ok) throw new Error('Pokémon not found');
             const j = await r.json();
             const show = j.sprites && j.sprites.other && j.sprites.other.showdown;
-            gif = (brillante && show && show.front_shiny)
-                || (!brillante && show && show.front_default)
-                || (j.sprites && j.sprites.other && j.sprites.other['official-artwork'] && j.sprites.other['official-artwork'].front_default)
-                || null;
+            // shiny: la GIF shiny, e se PokeAPI non ce l'ha quella di Showdown (mai l'immagine normale: il compagno shiny deve restare shiny)
+            gif = brillante ? ((show && show.front_shiny) || null)
+                : ((show && show.front_default)
+                    || (j.sprites && j.sprites.other && j.sprites.other['official-artwork'] && j.sprites.other['official-artwork'].front_default)
+                    || null);
             altezzaM = j.height / 10;
             vola = (j.types.some(t => t.type.name === 'flying')
                 || j.abilities.some(a => a.ability.name === 'levitate')
