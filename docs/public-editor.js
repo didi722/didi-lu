@@ -269,6 +269,38 @@
         }
     };
 
+    /**
+     * Compra un motivo dello sfondo senza uscire dall'editor: una finestra con il prezzo e le monete che hai; il server paga (acquistaCosmetico), il motivo si sblocca e viene messo
+     * nell'anteprima (come ogni modifica, si tiene con SAVE). `metti` applica il motivo.
+     */
+    async function chiediAcquisto(motivo, nome, stile, metti) {
+        const c = window.Cosmetici && window.Cosmetici.CATALOGO.find(x => x.tipo === 'sfondo' && x.motivo === motivo);
+        if (!c) return apriNegozio();
+        try { await caricaNegozio(); } catch (e) { avvisa("The shop didn't load: check your connection and try again.", true); return; }
+        const pronto = !!(portafoglio && portafoglio.pronto), saldo = pronto ? portafoglio.saldo : 0;
+        const chiudi = () => { velo.remove(); document.removeEventListener('keydown', tasto); };
+        const tasto = e => { if (e.key === 'Escape') chiudi(); };
+        const conferma = h('button', { type: 'button', class: 'pe-bottone pe-primario', testo: `Buy · ${c.prezzo} 🪙`, onclick: async () => {
+            conferma.disabled = true; conferma.textContent = 'Buying…';
+            let r;
+            try { r = await window.Negozio.chiama(window, 'acquistaCosmetico', { id: c.id }); } catch (e) { r = { ok: false, motivo: 'error' }; }
+            chiudi();
+            await leggiPortafoglio(true);
+            if (r.ok || r.motivo === 'owned') { metti(); avvisa(`${nome} is yours! Press SAVE to keep it on your page.`); }
+            else avvisa(window.Negozio.frase(r.motivo), true);
+        } });
+        if (!pronto || saldo < c.prezzo) conferma.disabled = true;
+        const velo = h('div', { class: 'pe-conferma-velo', onclick: e => { if (e.target === velo) chiudi(); } },
+            h('div', { class: 'pe-conferma', role: 'dialog', 'aria-modal': 'true', 'aria-label': `Buy ${nome}` },
+                h('span', { class: 'pe-conferma-colore', stile }),
+                h('b', { testo: nome }),
+                h('p', { class: 'pe-nota', testo: pronto ? `It costs ${c.prezzo} 🪙 and you have ${saldo} 🪙.${saldo < c.prezzo ? ' Play some sets to earn more coins.' : ''}` : 'Loading your coins…' }),
+                h('p', { class: 'pe-nota', testo: 'It stays yours for good.' }),
+                h('div', { class: 'pe-conferma-azioni' }, h('button', { type: 'button', class: 'pe-bottone', onclick: chiudi, testo: 'Cancel' }), conferma)));
+        document.addEventListener('keydown', tasto);
+        document.body.append(velo);
+    }
+
     function schedaSfondo() {
         leggiPortafoglio();
         const s = cfg().sfondo;
@@ -285,8 +317,8 @@
         return [
             sezione('Pattern', h('div', { class: 'pe-motivi' }, Object.entries(P.MOTIVI).map(([id, nome]) =>
                 h('button', { type: 'button', class: `pe-motivo${s.motivo === id ? ' is-on' : ''}${motivoBloccato(id) ? ' pe-bloccato' : ''}`, 'aria-pressed': String(s.motivo === id),
-                    title: motivoBloccato(id) ? `${nome}: buy it in the Shop (bell menu)` : null,
-                    onclick: () => (motivoBloccato(id) ? apriNegozio() : cambia(c => { c.sfondo.motivo = id; return c; })) },
+                    title: motivoBloccato(id) ? `${nome}: tap to buy it` : null,
+                    onclick: () => (motivoBloccato(id) ? chiediAcquisto(id, nome, anteprima(id), () => cambia(c => { c.sfondo.motivo = id; return c; })) : cambia(c => { c.sfondo.motivo = id; return c; })) },
                     h('span', { class: 'pe-motivo-prova', stile: anteprima(id) }), h('small', { testo: motivoBloccato(id) ? `🔒 ${nome}` : nome }))))),
             sezione('Colour', h('div', { class: 'pe-campioni pe-campioni-fitti' },
                 campione(proprio, s.colore === 'giocatore', 'My signature colour', () => cambia(c => { c.sfondo.colore = 'giocatore'; return c; }), h('span', { class: 'pe-campione-etichetta', testo: 'ME' })),

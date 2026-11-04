@@ -153,7 +153,8 @@ test('cablaggio: il campanello apre il negozio; shiny nella pagina, nell\'app e 
     for (const id of ['aura-oro', 'aura-fiamma', 'aura-ghiaccio', 'aura-arcobaleno']) assert.ok(leggi('docs', 'style-public-card.css').includes(`data-aura="${id}"`), id);
     const ed = leggi('docs', 'public-editor.js');
     assert.match(ed, /const motivoBloccato = motivo => !!window\.Cosmetici && window\.Cosmetici\.motivoBloccato\(motivo,/);
-    assert.match(ed, /motivoBloccato\(id\) \? apriNegozio\(\) : cambia/);
+    assert.match(ed, /motivoBloccato\(id\) \? chiediAcquisto\(id, nome, anteprima\(id\), \(\) => cambia/, 'un motivo bloccato si compra da qui, con una conferma');
+    assert.match(ed, /async function chiediAcquisto\(motivo, nome, stile, metti\)[\s\S]*?'acquistaCosmetico', \{ id: c\.id \}[\s\S]*?await leggiPortafoglio\(true\);\s*if \(r\.ok \|\| r\.motivo === 'owned'\) \{ metti\(\)/);
     assert.match(ed, /dispatchEvent\(new CustomEvent\('apri-negozio'\)\)/);
     assert.match(leggi('docs', 'sfide.js'), /addEventListener\('apri-negozio'/);
     assert.ok(leggi('docs', 'style-public-editor.css').includes('.pe-motivo.pe-bloccato'));

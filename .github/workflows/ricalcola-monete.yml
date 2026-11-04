@@ -1,0 +1,29 @@
+name: Ricalcola monete
+
+# Si lancia a mano da GitHub (Actions → Ricalcola monete → Run workflow). Di default è una prova: stampa quante monete spettano a ognuno senza scrivere niente.
+on:
+  workflow_dispatch:
+    inputs:
+      applica:
+        description: 'Scrivi davvero le monete (false = solo prova)'
+        type: boolean
+        default: false
+      senza_badge:
+        description: 'Non pagare i badge già presi (solo set, stagioni vinte e MVP)'
+        type: boolean
+        default: false
+
+jobs:
+  ricalcola:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Installa firebase-admin
+        run: npm install firebase-admin
+      - name: Ricalcola
+        run: node .github/workflows/ricalcola-monete.js ${{ inputs.applica && '--applica' || '' }} ${{ inputs.senza_badge && '--senza-badge' || '' }}
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

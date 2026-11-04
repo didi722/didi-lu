@@ -783,3 +783,32 @@ test('le due copie di cosmetici.js sono identiche e il server ha i collegamenti 
     assert.match(i, /chiave: `mvp-\$\{evento\.params\.stagione\}/);
     assert.match(leggi('.github', 'workflows', 'novita.js'), /monete\.premiaBadge\(\{ db, uid: push\.uidDelGiocatore\(utenti, b\.giocatore\)/);
 });
+
+test('ricalcolo delle monete: set dai punteggi dei match, badge, stagioni vinte e MVP; la beta non conta; rilanciandolo non si paga due volte', async () => {
+    const R = require('../.github/workflows/ricalcola-monete.js');
+    const match = (p1, p2, s1, s2) => ({ player1Id: p1, player2Id: p2, p1score: s1, p2score: s2 });
+    const dati = {
+        seasons: {
+            s0: { info: { name: 'Uno', status: 'closed', winner: 'Lu' }, showdowns: { a: { matches: { m1: match('didi', 'lu', 1, 2), m2: match('didi', 'lu', 0, 3), m3: { player1Id: 'didi', player2Id: 'lu' } } } }, mvp: { risultato: { vincitori: { x: { chiave: 'k1', player: 'Didi', specie: 'Garchomp' } } } } },
+            sbeta: { info: { status: 'closed' }, showdowns: { a: { matches: { m1: match('didi', 'lu', 3, 0) } } } }
+        },
+        players: {}
+    };
+    const c = R.calcola(dati, { badge: false });
+    const O = C.PREMI.set.ufficiale;
+    assert.deepEqual(c.didi.sets.s0, { giocati: 6, vinti: 1, monete: 6 * O.giocato + 1 * O.vinto });
+    assert.deepEqual(c.lu.sets.s0, { giocati: 6, vinti: 5, monete: 6 * O.giocato + 5 * O.vinto });
+    assert.equal(c.didi.sets.sbeta, undefined, 'la beta non conta');
+    assert.equal(R.totale(c.lu), c.lu.sets.s0.monete + C.PREMI.stagioneVinta);
+    assert.equal(R.totale(c.didi), c.didi.sets.s0.monete + C.PREMI.mvp);
+    const db = dbFinto({ users: { u1: { name: 'Didi' }, u2: { name: 'Lu' } } });
+    await R.applica(db, dati, { u1: { name: 'Didi' }, u2: { name: 'Lu' } }, { log: () => {}, badge: false });
+    assert.equal(saldo(db, 'u1'), R.totale(c.didi));
+    assert.equal(saldo(db, 'u2'), R.totale(c.lu));
+    await R.applica(db, dati, { u1: { name: 'Didi' }, u2: { name: 'Lu' } }, { log: () => {}, badge: false });
+    assert.equal(saldo(db, 'u1'), R.totale(c.didi), 'rilanciato: niente di nuovo, niente doppio');
+    // un set in più dopo: paga solo la differenza
+    dati.seasons.s0.showdowns.a.matches.m4 = match('didi', 'lu', 2, 0);
+    await R.applica(db, dati, { u1: { name: 'Didi' }, u2: { name: 'Lu' } }, { log: () => {}, badge: false });
+    assert.equal(saldo(db, 'u1'), R.totale(R.calcola(dati, { badge: false }).didi));
+});
