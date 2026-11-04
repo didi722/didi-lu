@@ -1382,8 +1382,8 @@ async function vestiVersus(nomeP1, nomeP2) {
         const db = firebase.database();
         const [a1, a2] = await Promise.all([caricaAspetto(db, nomeP1), caricaAspetto(db, nomeP2)]);
         const lato = (a, nome, classe) => {
-            // lo sfondo è il colore principale dell'allenatore (con i puntini), non lo sfondo della sua pagina pubblica
-            const t = self.Palestra.temaPalestra({ ...a, pagina: null }, self.PaginaPubblica, self.Cosmetici);
+            // lo sfondo è il colore principale dell'allenatore con il motivo che ha scelto per la sua pagina (non il colore di sfondo della pagina)
+            const t = self.Palestra.temaPalestra({ ...a, pagina: { sfondo: { ...((a.pagina && typeof a.pagina.sfondo === 'object' && a.pagina.sfondo) || {}), colore: 'giocatore' } } }, self.PaginaPubblica, self.Cosmetici);
             const box = el('div', { class: `vs-lato ${classe}` });
             for (const [k, v] of Object.entries(t.variabili)) box.style.setProperty(k, v);
             const testo = String(nome || a.nome || '').toUpperCase();
