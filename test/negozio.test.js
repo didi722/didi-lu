@@ -125,8 +125,8 @@ test('negozio: i guadagni nel testo vengono da PREMI, la guida dice dove si spen
     const P = C.PREMI;
     assert.match(h, new RegExp(`a season set pays ${P.set.ufficiale.giocato}, or ${P.set.ufficiale.giocato + P.set.ufficiale.vinto} if you win it`));
     assert.match(h, new RegExp(`a friendly pays ${P.set.amichevole.giocato} or ${P.set.amichevole.giocato + P.set.amichevole.vinto} \\(up to ${P.tettoAmichevoliGiorno} a day\\)`));
-    assert.match(h, new RegExp(`Changing your avatar \\(${C.PREZZI.avatar} 🪙\\) or your song \\(${C.PREZZI.canzone} 🪙\\) is in <b>Customize → Trainer</b>`));
-    assert.match(h, /Your first avatar and first song are free and stay yours for good; the one you wear is yours while you wear it, then it goes back to the pool for everyone/);
+    assert.match(h, new RegExp(`Changing your avatar \\(${C.PREZZI.avatar} 🪙\\), colour \\(${C.PREZZI.colore} 🪙\\) or song \\(${C.PREZZI.canzone} 🪙\\) is in <b>Customize → Trainer</b>`));
+    assert.match(h, /Your first avatar, colour and song are free and stay yours for good, and coming back to them is always free; the one you wear is yours while you wear it, then it goes back to the pool for everyone/);
     assert.match(h, new RegExp(`Shiny Pokémon \\(${C.PREZZI.shinyPokemon} 🪙 each\\): the ✨ button on a team in your <b>Box</b>`));
     assert.match(h, /Free: Avatar 12<\/span><b class="ng-piu">free<\/b>/);
     for (const m of ['busy', 'already', 'cannot-apply', 'poor', 'owned']) assert.match(N.frase(m), /\w{4}/, m);
@@ -172,12 +172,14 @@ test('cablaggio: avatar e canzone si cambiano dal server (fuori da SAVE), con co
     assert.doesNotMatch(ed, /possedutiMotivi|leggiPossedutiMotivi|cosmetici\.compra|Unlock your new/, 'niente più acquisto permanente di avatar e canzoni');
     // il cambio: il server paga e scrive; qui si aggiorna la carta (già "salvata"), la cronologia dell'undo, il portafoglio e il registro
     assert.match(ed, /window\.Negozio\.cambia\(window, \{ tipo, id, \.\.\.\(extra \|\| \{\}\) \}\)/);
+    assert.match(ed, /tipo === 'colore' \? \{ color: r\.color \}/);
+    assert.match(ed, /prezzo: \(tipo, id\) => \(window\.Cosmetici && window\.Cosmetici\.prezzoCambio\(tipo, contestoCosmetici\(\), id\)\)/, 'tornare a quello di casa non costa'); 
     assert.match(ed, /C\.profiloDalServer\(valori\)/);
     assert.match(ed, /for \(const f of storia\) Object\.assign\(f\.profilo, valori\)/);
     assert.match(ed, /await Promise\.all\(\[leggiPortafoglio\(true\), leggiRegistro\(true\)\]\)/);
     assert.match(ed, /else if \(r\.motivo === 'taken'\) await leggiRegistro\(true\)/);
     // SAVE non scrive mai avatar e canzone
-    assert.match(ed, /CAMPI_DEL_SERVER = \['avatar', 'musicName', 'musicaPreferita'\]/);
+    assert.match(ed, /CAMPI_DEL_SERVER = \['avatar', 'color', 'musicName', 'musicaPreferita'\]/);
     assert.match(ed, /const cambiati = P\.CAMPI_PROFILO\.filter\(k => !CAMPI_DEL_SERVER\.includes\(k\) && profilo\[k\] !== salvato\[k\]\)/);
     assert.match(ed, /P\.CAMPI_PROFILO\.some\(k => !CAMPI_DEL_SERVER\.includes\(k\) && ora\[k\] !== salvato\[k\]\)/);
     // il registro dei riservati
@@ -187,8 +189,13 @@ test('cablaggio: avatar e canzone si cambiano dal server (fuori da SAVE), con co
 
     const tr = leggi('docs', 'public-editor-trainer.js');
     assert.match(tr, /async function chiediCambio\(ctx,/);
-    assert.match(tr, /window\.Negozio\.frasiCambio\(\{ tipo, id, prezzo: p\.prezzo, gratis: p\.gratis, saldo: cosmetici\.saldo\(\), corrente, casa: cosmetici\.casa\(tipo\), nomeCorrente \}\)/);
+    assert.match(tr, /window\.Negozio\.frasiCambio\(\{ tipo, id, prezzo: p\.prezzo, gratis: p\.gratis, ritorno: p\.ritorno, saldo: cosmetici\.saldo\(\), corrente, casa: cosmetici\.casa\(tipo\), nomeCorrente \}\)/);
     assert.match(tr, /chiediCambio\(ctx, \{ tipo: 'avatar', id, nome: `Avatar \$\{n\}`/);
+    assert.match(tr, /chiediCambio\(ctx, \{ tipo: 'colore', id, nome: `Colour \$\{C0\}`, colore: C0 \}\)/, 'il colore passa dal server come l\'avatar e la canzone');
+    assert.match(tr, /casaMio = !!id && id === casaCo/);
+    assert.match(tr, /if \(casaMio\) b\.classList\.add\('is-casa'\)/);
+    assert.match(tr, /cosmetici\.presoDa\(id\)/, 'i colori riservati da altri sono grigi');
+    assert.match(leggi('docs', 'style-public-editor.css'), /\.pe-campione\.is-casa::before \{ content: '★'/);
     assert.match(tr, /chiediCambio\(ctx, \{ tipo: 'canzone', id, nome: c\.nome, extra: \{ url: c\.url, nome: c\.nome \} \}\)/);
     assert.match(tr, /chiediCambio\(ctx, \{ tipo: 'canzone', id: '', nome: 'No song', extra: \{\} \}\)/, 'togliere la canzone passa dal server e libera quella di prima');
     assert.doesNotMatch(tr, /chiediSblocco|pe-bloccato|🔒|cosmetici\.possiede|cosmetici\.compra/, 'niente lucchetti: ogni cambio costa, non ci sono voci "bloccate"');
@@ -211,12 +218,19 @@ test('frasiCambio: gratis la prima volta; poi quanto costa, che fine fa quello c
     assert.deepEqual(f.righe, ['Changing your avatar costs 40 🪙, and you have 220 🪙.', 'The new one is yours while you wear it.', 'Avatar 9 goes back to the pool: anyone can take it.']);
     assert.deepEqual([f.conferma, f.ok], ['Change · 40 🪙', true]);
     assert.ok(N.frasiCambio({ ...base, corrente: 'avatar-7', nomeCorrente: 'Avatar 7' }).righe.includes('Avatar 7 stays yours for good.'), 'quello di casa resta tuo');
-    assert.ok(N.frasiCambio({ ...base, id: 'avatar-7' }).righe.includes('It is your first avatar: yours for good.'), 'tornare al primo');
+    // tornare al primo (quello di casa) non costa mai: lo dice, e quello che portavi torna libero
+    const ritorno = N.frasiCambio({ ...base, id: 'avatar-7', prezzo: 0, ritorno: true });
+    assert.deepEqual(ritorno, { righe: ['It is your first avatar: coming back to it is free, and it stays yours for good.', 'Avatar 9 goes back to the pool: anyone can take it.'], conferma: 'Go back for free', ok: true });
+    assert.equal(N.frasiCambio({ ...base, id: 'avatar-7', prezzo: 0, ritorno: true, saldo: 0 }).ok, true, 'senza monete si può tornare al primo');
+    // il colore parla di "colour"
+    const colore = N.frasiCambio({ tipo: 'colore', id: 'colore-ff8800', prezzo: 100, gratis: false, saldo: 220, corrente: 'colore-6b93b0', casa: 'colore-6b93b0', nomeCorrente: 'Colour #6B93B0' });
+    assert.deepEqual(colore.righe, ['Changing your colour costs 100 🪙, and you have 220 🪙.', 'The new one is yours while you wear it.', 'Colour #6B93B0 stays yours for good.']);
+    assert.match(N.frasiCambio({ tipo: 'colore', id: 'colore-ff8800', prezzo: 0, gratis: true, saldo: 0, corrente: '', casa: '' }).righe[0], /Your first colour is free, and it stays yours for good: nobody else can take it, even when you wear another one later, and coming back to it is always free\./);
     const povero = N.frasiCambio({ ...base, saldo: 39 });
     assert.equal(povero.ok, false);
     assert.match(povero.righe[0], /you have 39 🪙\. Play some sets to earn more coins\.$/);
     const primo = N.frasiCambio({ tipo: 'avatar', id: 'avatar-5', prezzo: 0, gratis: true, saldo: 0, corrente: '', casa: '' });
-    assert.deepEqual(primo, { righe: ['Your first avatar is free, and it stays yours for good: nobody else can take it, even when you wear another one later.'], conferma: 'Choose for free', ok: true });
+    assert.deepEqual(primo, { righe: ['Your first avatar is free, and it stays yours for good: nobody else can take it, even when you wear another one later, and coming back to it is always free.'], conferma: 'Choose for free', ok: true });
     // senza nessuna canzone: gratis, e dice che fine fa quella di adesso
     assert.deepEqual(N.frasiCambio({ tipo: 'canzone', id: '', prezzo: 0, gratis: false, saldo: 0, corrente: 'canzone-aaaaaaaa', casa: 'canzone-bbbbbbbb' }),
         { righe: ['You will have no song.', 'Your current song goes back to the pool: anyone can take it.'], conferma: 'Remove it', ok: true });

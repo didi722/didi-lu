@@ -3,24 +3,26 @@
 //
 // Cose che si comprano con le monete (wallet/{uid}) e cambiano solo l'aspetto.
 //   - Il catalogo fisso (CATALOGO): il Pokémon compagno shiny, l'aura dell'allenatore, i motivi dello sfondo della pagina pubblica. Aggiungere una voce basta a metterla in vendita.
-//   - Le famiglie: avatar (avatar-<n>) e canzoni (canzone-<impronta dell'indirizzo>) non si comprano, si CAMBIANO (functions/monete.js: cambia). Ogni cambio costa (PREZZI) e il server lo fa
-//     subito, scrivendo il profilo. Il primo avatar e la prima canzone sono "di casa": quello che si sceglie gratis (chi ha ancora l'avatar o la canzone di partenza) o, per chi ne aveva già
-//     uno, quello che aveva, resta suo PER SEMPRE e nessun altro lo può prendere. Quello che si porta è riservato finché lo si porta: cambiando di nuovo torna libero per tutti.
-//     Così l'unicità, com'è sempre stata, non si rompe e non si paga mai qualcosa che poi non si può usare.
+//   - Le famiglie: avatar (avatar-<n>), colore firma (colore-<rrggbb>) e canzoni (canzone-<impronta dell'indirizzo>) non si comprano, si CAMBIANO (functions/monete.js: cambia). Ogni cambio costa
+//     (PREZZI) e il server lo fa subito, scrivendo il profilo. Il primo avatar, il primo colore e la prima canzone sono "di casa", l'unica cosa personale: si scelgono gratis (chi ha ancora quello
+//     di partenza) o, per chi ne aveva già uno, è quello che aveva; restano suoi PER SEMPRE, nessun altro li può prendere e tornarci non costa mai. Quello che si porta, invece, è riservato
+//     solo finché lo si porta: cambiando di nuovo torna libero per tutti. Così l'unicità, com'è sempre stata, non si rompe e non si paga mai qualcosa che poi non si può usare.
 //   - Lo shiny di un Pokémon di un team: costa PREZZI.shinyPokemon e si compra dal Box (non ha un id: il segno sta nel team, vedi functions/monete.js).
 //   - L'economia: PREMI (quanto si guadagna) e PREZZI (quanto costano le famiglie), calibrati sulla stagione tipo con stimaStagione().
 // ATTENZIONE: questo file esiste in due copie identiche, functions/cosmetici.js (il server controlla prezzi e acquisti) e docs/cosmetici.js (il sito).
 // Modificane una e copiala sull'altra (lo controlla test/monete.test.js).
 //
 //   Cosmetici.CATALOGO, Cosmetici.perId(id), Cosmetici.TIPI, Cosmetici.PREMI, Cosmetici.PREZZI
-//   Cosmetici.possiede(id, { wallet, info, pagina })   comprato, oppure già in uso (chi usava un motivo che ora è a pagamento lo tiene); per avatar e canzoni: quello che porti o quello di casa
+//   Cosmetici.possiede(id, { wallet, info, pagina })   comprato, oppure già in uso (chi usava un motivo che ora è a pagamento lo tiene); per avatar, colori e canzoni: quello che porti o quello di casa
 //   Cosmetici.possedutiDa({ wallet, info, pagina })    l'insieme degli id posseduti del catalogo fisso
 //   Cosmetici.motivoBloccato(motivo, contesto)         true se quel motivo dello sfondo è a pagamento e non è posseduto
-//   Cosmetici.idAvatar(testo), Cosmetici.idCanzone(url) l'id di un avatar (da "…/profile/12.png") o di una canzone (dal suo indirizzo)
-//   Cosmetici.eDiDefault(tipo, info)                   ha ancora l'avatar / la canzone di partenza?
-//   Cosmetici.idCorrente(tipo, info)                   l'id dell'avatar / della canzone che porta adesso ('' se è quello di partenza o nessuno)
-//   Cosmetici.prezzoCambio(tipo, { wallet, info })     { prezzo, gratis }: quanto costa cambiare avatar o canzone, oggi (0 la prima volta, se ha ancora quello di partenza)
-//   Cosmetici.prezzoPer(id, { wallet, info })          { prezzo, gratis }: quanto costa un cosmetico del catalogo, o un cambio per gli id degli avatar e delle canzoni
+//   Cosmetici.idAvatar(testo), idColore(testo), idCanzone(url)   l'id di un avatar (da "…/profile/12.png"), di un colore (da "#FF8800") o di una canzone (dal suo indirizzo)
+//   Cosmetici.COLORI_FIRMA, coloreDaId(id)             i colori che si possono scegliere (gli stessi di PALETTE_FIRMA in pagina-pubblica.js) e il colore di un id
+//   Cosmetici.eDiDefault(tipo, info)                   ha ancora l'avatar / il colore / la canzone di partenza?
+//   Cosmetici.idCorrente(tipo, info)                   l'id dell'avatar / del colore / della canzone che porta adesso ('' se è quello di partenza o nessuno)
+//   Cosmetici.prezzoCambio(tipo, { wallet, info }, id) { prezzo, gratis, ritorno }: quanto costa cambiare avatar, colore o canzone, oggi (0 la prima volta, se ha ancora quello di partenza; 0 anche
+//                                                      tornando a quello di casa)
+//   Cosmetici.prezzoPer(id, { wallet, info })          { prezzo, gratis, ritorno }: quanto costa un cosmetico del catalogo, o un cambio per gli id degli avatar, dei colori e delle canzoni
 //   Cosmetici.stimaStagione({ ... })                   quante monete fa una stagione, per tarare i prezzi
 //   Cosmetici.testoConShiny(testo, indice, nome, specie)  il testo Showdown di un team con "Shiny: Yes" nel Pokémon indicato (lo scrive il server dopo l'acquisto)
 //   Cosmetici.senzaShinyAbusivi(testo, teamPrecedente)    toglie "Shiny: Yes" ai Pokémon che non erano già shiny: lo shiny si compra, non si scrive (il Box lo usa al salvataggio)
@@ -45,9 +47,9 @@
     };
 
     // ---- Quanto costa -------------------------------------------------------------------------
-    // Rispetto alla stagione tipo (~780 monete di soli set): un cambio di avatar è il 13%, di canzone il 19%, uno shiny di un Pokémon di un team il 51% (mezza stagione: uno shiny è un trofeo, e
+    // Rispetto alla stagione tipo (~780 monete di soli set): un cambio di avatar o di colore è il 13%, di canzone il 19%, uno shiny di un Pokémon di un team il 51% (mezza stagione: uno shiny è un trofeo, e
     // una squadra intera ne costa tre di stagioni). Il catalogo fisso (qui sotto) vale circa cinque stagioni: un motivo il 32%, un'aura il 51%; l'aura arcobaleno e il compagno shiny una stagione intera.
-    const PREZZI = { avatar: 100, canzone: 150, shinyPokemon: 400 };
+    const PREZZI = { avatar: 100, colore: 100, canzone: 150, shinyPokemon: 400 };
 
     const TIPI = {
         shiny: { nome: 'Shiny companion', frase: 'Your favourite Pokémon in its shiny colours.' },
@@ -77,11 +79,33 @@
 
     const objOr = x => (x && typeof x === 'object' ? x : {});
 
+    // Il colore firma di un allenatore (players/{id}/info/color): il suo, unico, scelto tra questi. ATTENZIONE: è la stessa lista di PALETTE_FIRMA in pagina-pubblica.js (lo controlla test/monete.test.js).
+    const COLORI_FIRMA = [
+        '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAFFF0', '#BAE1FF', '#D6CAFF', '#E8CAFF', '#FFCAFF', '#FFC2D1',
+        '#C25959', '#D48C5F', '#D9B462', '#8F9E6C', '#699E98', '#6B93B0', '#7A89A8', '#9582A3', '#B07D9A', '#C7889B',
+        '#FF3333', '#FF8800', '#FFDD00', '#33CC66', '#00BFA5', '#3399FF', '#0055FF', '#7A29FF', '#D11A7A', '#FF4D8D',
+        '#FF1744', '#FF5E00', '#FFEA00', '#00FF66', '#00FFCC', '#00F0FF', '#0066FF', '#7B00FF', '#CC00FF', '#FF0099',
+        '#FF7B6B', '#F28C28', '#F4C430', '#A7C957', '#2A9D8F', '#1D7874', '#118AB2', '#264653',
+        '#5E60CE', '#6A0572', '#AB4E68', '#8D5524', '#5B3A29', '#0B3D2E', '#1B2A49', '#4A1942'
+    ];
+    const COLORE_DEFAULT = '#31C489';        // quello degli account nuovi (admin.html): finché c'è, il colore è "di partenza"
+
     /** "https://x.io/immagini/profile/12.png?v=2", "profile/12.png" -> "avatar-12"; '' se non è un avatar della lista (il segnaposto, un'immagine qualunque) */
     function idAvatar(testo) {
         const m = /(?:^|\/)profile\/(\d{1,3})\.png$/i.exec(String(testo == null ? '' : testo).split('?')[0].split('#')[0].trim());
         const n = m ? Number(m[1]) : 0;
         return avatarValido(n) ? `avatar-${n}` : '';
+    }
+
+    /** "#FF8800" (o "ff8800") -> "colore-ff8800"; '' se non è un colore a sei cifre */
+    function idColore(testo) {
+        const m = /^#?([0-9a-f]{6})$/i.exec(String(testo == null ? '' : testo).trim());
+        return m ? `colore-${m[1].toLowerCase()}` : '';
+    }
+    /** "colore-ff8800" -> "#FF8800"; '' se non è l'id di un colore */
+    function coloreDaId(id) {
+        const m = /^colore-([0-9a-f]{6})$/.exec(String(id == null ? '' : id));
+        return m ? `#${m[1].toUpperCase()}` : '';
     }
 
     /** L'impronta (FNV-1a a 32 bit, in esadecimale) dell'indirizzo di una canzone: stabile e uguale nel sito e nel server */
@@ -103,22 +127,29 @@
         const a = /^avatar-(\d{1,3})$/.exec(sid);
         if (a && avatarValido(Number(a[1]))) return { id: sid, tipo: 'avatar', nome: `Avatar ${Number(a[1])}`, prezzo: PREZZI.avatar };
         if (/^canzone-[0-9a-f]{8}$/.test(sid)) return { id: sid, tipo: 'canzone', nome: 'Song', prezzo: PREZZI.canzone };
+        const col = coloreDaId(sid);
+        if (col && COLORI_FIRMA.includes(col)) return { id: sid, tipo: 'colore', nome: `Colour ${col}`, prezzo: PREZZI.colore };
         return null;
     };
 
-    /** Ha ancora quello di partenza? Avatar: nessuno, il segnaposto dell'account nuovo o un'immagine fuori dalla lista. Canzone: nessuna scelta. */
+    /** Ha ancora quello di partenza? Avatar: nessuno, il segnaposto dell'account nuovo o un'immagine fuori dalla lista. Colore: nessuno o il verde degli account nuovi. Canzone: nessuna scelta. */
     function eDiDefault(tipo, info) {
         const i = objOr(info);
         if (tipo === 'avatar') return !idAvatar(i.avatar);
+        if (tipo === 'colore') return !idColore(i.color) || String(i.color).trim().toUpperCase() === COLORE_DEFAULT;
         if (tipo === 'canzone') return !String(i.musicaPreferita == null ? '' : i.musicaPreferita).trim();
         return false;
     }
 
-    /** L'id dell'avatar o della canzone che porta adesso; '' se è quello di partenza o nessuno */
+    /** L'id dell'avatar, del colore o della canzone che porta adesso; '' se è quello di partenza o nessuno */
     function idCorrente(tipo, info) {
         const i = objOr(info);
+        if (tipo === 'colore') return eDiDefault('colore', i) ? '' : idColore(i.color);
         return tipo === 'avatar' ? idAvatar(i.avatar) : tipo === 'canzone' ? idCanzone(i.musicaPreferita) : '';
     }
+
+    /** I tipi che si cambiano a pagamento (famiglie) */
+    const FAMIGLIE = ['avatar', 'colore', 'canzone'];
 
     /** Comprato (wallet.posseduti), oppure già in uso: chi usava un motivo che ora è a pagamento, ha già il compagno shiny o l'aura di adesso, li tiene. Avatar e canzoni non si comprano: vedi sotto */
     function possiede(id, { wallet, info, pagina } = {}) {
@@ -129,8 +160,8 @@
         if (c.tipo === 'shiny') return !!i.pkmShiny;
         if (c.tipo === 'aura') return i.aura === id;
         if (c.tipo === 'sfondo') return objOr(objOr(pagina).sfondo).motivo === c.motivo;
-        // avatar e canzoni: quello che porti, o quello di casa (il primo, tuo per sempre)
-        if (c.tipo === 'avatar' || c.tipo === 'canzone') return idCorrente(c.tipo, i) === id || objOr(objOr(wallet).casa)[c.tipo] === id;
+        // avatar, colori e canzoni: quello che porti, o quello di casa (il primo, tuo per sempre)
+        if (FAMIGLIE.includes(c.tipo)) return idCorrente(c.tipo, i) === id || objOr(objOr(wallet).casa)[c.tipo] === id;
         return false;
     }
 
@@ -144,17 +175,22 @@
         return !!c && !possiede(c.id, contesto);
     }
 
-    /** Quanto costa cambiare avatar o canzone, oggi: sempre PREZZI, tranne la prima volta per chi ha ancora quello di partenza (e non ha ancora un "di casa"): quella è gratis */
-    function prezzoCambio(tipo, { wallet, info } = {}) {
-        if (!objOr(objOr(wallet).casa)[tipo] && eDiDefault(tipo, info)) return { prezzo: 0, gratis: true };
+    /**
+     * Quanto costa cambiare avatar, colore o canzone, oggi: sempre PREZZI, tranne la prima volta per chi ha ancora quello di partenza (e non ha ancora un "di casa"): quella è gratis.
+     * Tornare a quello di casa (`id`) non costa mai: è l'unica cosa personale, e resta sempre tua.
+     */
+    function prezzoCambio(tipo, { wallet, info } = {}, id = '') {
+        const casa = objOr(objOr(wallet).casa)[tipo];
+        if (!casa && eDiDefault(tipo, info)) return { prezzo: 0, gratis: true };
+        if (id && casa === id) return { prezzo: 0, gratis: false, ritorno: true };
         return { prezzo: PREZZI[tipo] || 0, gratis: false };
     }
 
-    /** Quanto costa un cosmetico del catalogo; per gli id degli avatar e delle canzoni, quanto costa cambiare */
+    /** Quanto costa un cosmetico del catalogo; per gli id degli avatar, dei colori e delle canzoni, quanto costa cambiare */
     function prezzoPer(id, contesto = {}) {
         const c = perId(id);
         if (!c) return null;
-        if (c.tipo === 'avatar' || c.tipo === 'canzone') return prezzoCambio(c.tipo, contesto);
+        if (FAMIGLIE.includes(c.tipo)) return prezzoCambio(c.tipo, contesto, id);
         return { prezzo: c.prezzo, gratis: false };
     }
 
@@ -245,5 +281,5 @@
         return { set, amichevoli, badge, stagione, mvp, totale: set + amichevoli + badge + stagione + mvp };
     }
 
-    return { PREMI, PREZZI, CATALOGO, TIPI, perId, possiede, possedutiDa, motivoBloccato, idAvatar, idCanzone, eDiDefault, idCorrente, prezzoCambio, prezzoPer, stimaStagione, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
+    return { PREMI, PREZZI, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, possiede, possedutiDa, motivoBloccato, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, prezzoCambio, prezzoPer, stimaStagione, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
 });

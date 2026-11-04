@@ -154,13 +154,18 @@ test('cambia avatar: il primo è gratis e resta tuo per sempre; ogni cambio dopo
     assert.deepEqual(await cambiaAv(db, 'u2', 12), { ok: false, motivo: 'taken' }, 'quello di casa di Didi resta suo');
     assert.deepEqual(await cambiaAv(db, 'u2', 14), { ok: false, motivo: 'taken' }, 'e quello che porta');
     assert.equal(saldo(db, 'u2'), 300, 'senza addebiti');
-    // tornare al primo è un cambio come gli altri (costa) e libera quello che portava
+    // tornare al primo non costa mai (è l'unica cosa personale) e libera quello che portava
     const ritorno = await cambiaAv(db, 'u1', 12);
-    assert.deepEqual(ritorno, { ok: true, saldo: 300 - 3 * avatar, gratis: false, casa: 'avatar-12', avatar: INDIRIZZO(12), liberato: 'avatar-14' });
+    assert.deepEqual(ritorno, { ok: true, saldo: 300 - 2 * avatar, gratis: false, ritorno: true, casa: 'avatar-12', avatar: INDIRIZZO(12), liberato: 'avatar-14' });
+    assert.equal(db.albero.players.didi.info.avatar, INDIRIZZO(12));
     assert.equal(presi(db)['avatar-14'], undefined);
     assert.equal((await cambiaAv(db, 'u2', 14)).ok, true, 'ora è libero');
+    assert.deepEqual(movimenti(db, 'u1').slice(-1).map(m => [m.importo, m.motivo]), [[0, 'Back to: Avatar 12']]);
+    // un nuovo cambio costa di nuovo, e il primo resta riservato anche stavolta
+    assert.equal((await cambiaAv(db, 'u1', 15)).saldo, 300 - 3 * avatar);
+    assert.deepEqual(presi(db)['avatar-12'], 'didi');
     // già quello che porta
-    assert.deepEqual(await cambiaAv(db, 'u1', 12), { ok: false, motivo: 'same' });
+    assert.deepEqual(await cambiaAv(db, 'u1', 15), { ok: false, motivo: 'same' });
     assert.equal(saldo(db, 'u1'), 300 - 3 * avatar);
 });
 
@@ -259,6 +264,69 @@ test('cambia canzone: il primo è gratis e resta tuo, poi costa; "None" è grati
     assert.deepEqual(await M.cambia({ db, uid: 'u3', tipo: 'colore', id: 'x' }), { ok: false, motivo: 'unknown' });
     assert.deepEqual(await M.cambia({ db, uid: 'senza-profilo', tipo: 'avatar', id: 'avatar-3' }), { ok: false, motivo: 'no-profile' });
     for (const id of ['avatar-162', 'avatar-293', 'avatar-0', 'canzone-1a2b3c4d', 'avatar-5; x']) assert.deepEqual(await cambiaAv(db, 'u3', id.replace('avatar-', '')), { ok: false, motivo: 'unknown' }, id);
+});
+
+test('cambia colore: come l\'avatar: il primo è gratis e di casa, poi si paga, il precedente torna libero, tornare al primo è gratis; chi aveva già un colore lo tiene "di casa" al primo cambio', async () => {
+    const db = dbFinto({
+        users: { u1: { name: 'Didi' }, u2: { name: 'Lukiani' }, u3: { name: 'Ilaria' } },
+        players: {
+            didi: { info: { color: '#31c489' } },                       // il verde degli account nuovi: ha ancora quello di partenza
+            lukiani: { info: { color: '#6B93B0' } },                    // l'aveva già scelto
+            ilaria: { info: {} }
+        },
+        wallet: { u1: { saldo: 300 }, u2: { saldo: 300 }, u3: { saldo: 300 } }
+    });
+    const { colore } = C.PREZZI;
+    const col = (uid, hex) => M.cambia({ db, uid, tipo: 'colore', id: C.idColore(hex) });
+    // il primo: gratis, di casa; il server scrive il colore in maiuscolo
+    assert.deepEqual(await col('u1', '#ff8800'), { ok: true, saldo: 300, gratis: true, casa: 'colore-ff8800', color: '#FF8800' });
+    assert.equal(db.albero.players.didi.info.color, '#FF8800');
+    assert.equal(db.albero.wallet.u1.casa.colore, 'colore-ff8800');
+    assert.deepEqual(presi(db), { 'colore-ff8800': 'didi' });
+    // poi si paga; il primo resta riservato; il secondo torna libero al terzo
+    assert.deepEqual(await col('u1', '#3399FF'), { ok: true, saldo: 300 - colore, gratis: false, casa: 'colore-ff8800', color: '#3399FF' });
+    const terzo = await col('u1', '#7A29FF');
+    assert.equal(terzo.liberato, 'colore-3399ff');
+    assert.deepEqual(presi(db), { 'colore-ff8800': 'didi', 'colore-7a29ff': 'didi' });
+    assert.equal((await col('u3', '#3399FF')).ok, true, 'liberato');
+    assert.deepEqual(await col('u3', '#FF8800'), { ok: false, motivo: 'taken' }, 'quello di casa di Didi');
+    assert.deepEqual(await col('u3', '#7A29FF'), { ok: false, motivo: 'taken' }, 'quello che porta');
+    // tornare al primo non costa
+    const ritorno = await col('u1', '#FF8800');
+    assert.deepEqual(ritorno, { ok: true, saldo: 300 - 2 * colore, gratis: false, ritorno: true, casa: 'colore-ff8800', color: '#FF8800', liberato: 'colore-7a29ff' });
+    assert.deepEqual(await col('u1', '#FF8800'), { ok: false, motivo: 'same' });
+    // chi aveva già un colore: lo porta anche mentre nessuno lo può prendere; al primo cambio paga e quello diventa di casa
+    assert.deepEqual(await col('u3', '#6B93B0'), { ok: false, motivo: 'taken' }, 'lo porta Lukiani');
+    assert.deepEqual(await col('u2', '#D11A7A'), { ok: true, saldo: 300 - colore, gratis: false, casa: 'colore-6b93b0', color: '#D11A7A' });
+    assert.equal(presi(db)['colore-6b93b0'], 'lukiani');
+    assert.deepEqual(await col('u3', '#6B93B0'), { ok: false, motivo: 'taken' }, 'ora è riservato, non solo in uso');
+    // solo i colori della palette; il verde degli account nuovi non è un colore da scegliere; il colore non si toglie
+    for (const hex of ['#123456', '#31C489', '#fff', 'rosso', '']) assert.deepEqual(await M.cambia({ db, uid: 'u3', tipo: 'colore', id: C.idColore(hex) || 'colore-xx' }), { ok: false, motivo: 'unknown' }, hex);
+    assert.deepEqual(await M.cambia({ db, uid: 'u3', tipo: 'colore', id: '' }), { ok: false, motivo: 'unknown' });
+    // due allenatori sullo stesso colore insieme: ne vince uno solo, e chi perde ha ancora il primo gratis
+    const gara = dbFinto({ users: { u1: { name: 'Didi' }, u2: { name: 'Ilaria' } }, players: { didi: { info: {} }, ilaria: { info: { color: '#31C489' } } }, wallet: { u1: { saldo: 0 }, u2: { saldo: 0 } } });
+    const [x, y] = await Promise.all(['u1', 'u2'].map(uid => M.cambia({ db: gara, uid, tipo: 'colore', id: 'colore-00ffcc' })));
+    assert.deepEqual([x.ok, y.ok].sort(), [false, true]);
+    assert.equal([x, y].find(r => !r.ok).motivo, 'taken');
+    assert.equal((await M.cambia({ db: gara, uid: x.ok ? 'u2' : 'u1', tipo: 'colore', id: 'colore-ff1744' })).gratis, true);
+});
+
+test('cambia canzone: tornare alla prima non costa, anche dopo "None"; il resto è come per l\'avatar', async () => {
+    const db = dbGiocatori();
+    const { canzone } = C.PREZZI;
+    const url = n => `https://x.test/${n}.mp3`;
+    const cambiaCa = (uid, n, nome) => M.cambia({ db, uid, tipo: 'canzone', id: C.idCanzone(url(n)), url: url(n), nome });
+    assert.equal((await cambiaCa('u1', 'uno', 'Uno')).gratis, true);
+    assert.equal((await cambiaCa('u1', 'due', 'Due')).saldo, 300 - canzone);
+    // tornare alla prima: gratis, e quella di prima torna libera
+    const ritorno = await cambiaCa('u1', 'uno', 'Uno');
+    assert.deepEqual(ritorno, { ok: true, saldo: 300 - canzone, gratis: false, ritorno: true, casa: C.idCanzone(url('uno')), liberato: C.idCanzone(url('due')), musicaPreferita: url('uno'), musicName: 'Uno' });
+    // senza canzone e poi di nuovo la prima: gratis anche così
+    assert.equal((await M.cambia({ db, uid: 'u1', tipo: 'canzone', id: '' })).ok, true);
+    const dopoNone = await cambiaCa('u1', 'uno', 'Uno');
+    assert.deepEqual([dopoNone.ok, dopoNone.ritorno, dopoNone.saldo], [true, true, 300 - canzone]);
+    // una nuova costa ancora
+    assert.equal((await cambiaCa('u1', 'tre', 'Tre')).saldo, 300 - 2 * canzone);
 });
 
 test('avatar e canzoni non si comprano: acquista li rifiuta; il resto del catalogo non è esclusivo (due allenatori possono avere la stessa aura)', async () => {
@@ -434,6 +502,38 @@ test('shinyPokemon: due richieste insieme lo pagano una volta; un segno vecchio 
     assert.equal(Object.keys(rotto.albero.walletEventi || {}).length, 0, 'e il segno cade');
 });
 
+test('colori: la lista dei colori firma è la stessa della pagina pubblica; id e colori si convertono; il verde degli account nuovi è "di partenza" e non si sceglie', () => {
+    const P = require('../docs/pagina-pubblica.js');
+    assert.deepEqual(C.COLORI_FIRMA, P.PALETTE_FIRMA, 'copiata da PALETTE_FIRMA: se cambia l\'una cambia l\'altra');
+    assert.equal(C.idColore('#FF8800'), 'colore-ff8800');
+    assert.equal(C.idColore('ff8800'), 'colore-ff8800');
+    assert.equal(C.coloreDaId('colore-ff8800'), '#FF8800');
+    for (const x of ['', '#fff', 'rosso', '#GG0000', null, undefined]) assert.equal(C.idColore(x), '', String(x));
+    for (const x of ['', 'colore-ff88', 'avatar-5', 'colore-GG0000']) assert.equal(C.coloreDaId(x), '', String(x));
+    // si sceglie solo dalla palette
+    assert.equal(C.perId('colore-ff8800').tipo, 'colore');
+    assert.equal(C.perId('colore-ff8800').prezzo, C.PREZZI.colore);
+    assert.equal(C.perId('colore-123456'), null);
+    assert.equal(C.perId(C.idColore(C.COLORE_DEFAULT)), null, 'il verde degli account nuovi non è nella palette');
+    assert.equal(C.COLORI_FIRMA.includes(C.COLORE_DEFAULT), false);
+    // di partenza: nessun colore, il verde (in qualunque forma), un valore illeggibile
+    for (const color of [undefined, '', '#31c489', '#31C489', ' #31c489 ', 'verde']) assert.equal(C.eDiDefault('colore', { color }), true, String(color));
+    assert.equal(C.eDiDefault('colore', { color: '#6B93B0' }), false);
+    assert.equal(C.idCorrente('colore', { color: '#6b93b0' }), 'colore-6b93b0');
+    assert.equal(C.idCorrente('colore', { color: '#31c489' }), '', 'quello di partenza non ha id: non si riserva');
+    // il gratis, il ritorno al primo, il prezzo
+    assert.deepEqual(C.prezzoCambio('colore', { info: { color: '#31c489' } }, 'colore-ff8800'), { prezzo: 0, gratis: true });
+    assert.deepEqual(C.prezzoCambio('colore', { info: { color: '#6B93B0' } }, 'colore-ff8800'), { prezzo: C.PREZZI.colore, gratis: false });
+    assert.deepEqual(C.prezzoCambio('colore', { wallet: { casa: { colore: 'colore-6b93b0' } }, info: { color: '#FF8800' } }, 'colore-6b93b0'), { prezzo: 0, gratis: false, ritorno: true });
+    assert.deepEqual(C.prezzoCambio('colore', { wallet: { casa: { colore: 'colore-6b93b0' } }, info: { color: '#FF8800' } }, 'colore-ff1744'), { prezzo: C.PREZZI.colore, gratis: false });
+    // lo stesso per avatar e canzone
+    assert.equal(C.prezzoCambio('avatar', { wallet: { casa: { avatar: 'avatar-5' } }, info: { avatar: 'immagini/profile/9.png' } }, 'avatar-5').prezzo, 0);
+    assert.equal(C.prezzoPer('canzone-aaaaaaaa', { wallet: { casa: { canzone: 'canzone-aaaaaaaa' } }, info: { musicaPreferita: 'https://x.test/b.mp3' } }).ritorno, true);
+    assert.ok(C.possiede('colore-6b93b0', { wallet: { casa: { colore: 'colore-6b93b0' } }, info: { color: '#FF8800' } }), 'quello di casa è tuo anche se non lo porti');
+    assert.ok(C.possiede('colore-ff8800', { info: { color: '#FF8800' } }), 'e quello che porti');
+    assert.equal(C.possiede('colore-ff1744', { info: { color: '#FF8800' } }), false);
+});
+
 test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a stagione (media ~780); i prezzi sono una frazione o un multiplo di quella stagione tipo, gli shiny i più cari', () => {
     // [set ufficiali, set vinti] a testa nei dati reali della stagione (5 allenatori, 27 showdown, 3 set a match)
     const stagione = { lukiani: [108, 79], didi: [99, 64], hilblacky: [99, 45], ilaria: [90, 38], dodo: [90, 17] };
@@ -451,6 +551,7 @@ test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a sta
     // i prezzi: un cambio di avatar è il 10–15% di una stagione, di canzone il 15–22%; uno shiny di un Pokémon di un team metà stagione (45–60%): una squadra intera ne costa ~tre
     const P = C.PREZZI;
     assert.ok(P.avatar >= media * 0.10 && P.avatar <= media * 0.15, `avatar ${P.avatar}`);
+    assert.ok(P.colore >= media * 0.10 && P.colore <= media * 0.15, `colore ${P.colore}`);
     assert.ok(P.canzone >= media * 0.15 && P.canzone <= media * 0.22, `canzone ${P.canzone}`);
     assert.ok(P.shinyPokemon >= media * 0.45 && P.shinyPokemon <= media * 0.60, `shiny di team ${P.shinyPokemon}`);
     assert.ok(6 * P.shinyPokemon >= media * 2.5 && 6 * P.shinyPokemon <= media * 4, 'una squadra intera shiny: tre stagioni circa');

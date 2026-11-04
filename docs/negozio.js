@@ -6,7 +6,7 @@
 //
 //   Negozio.apri(win)        legge il portafoglio e il profilo di chi è collegato e apre la finestra
 //   Negozio.html(stato)      il markup (puro): stato = { saldo, posseduti, info, pagina, movimenti, nota, occupato }
-//   Negozio.cambia(win, dati)         cambia l'avatar o la canzone dal server (costa, tranne il primo): { tipo: 'avatar'|'canzone', id, url?, nome? } → { ok, saldo, gratis, casa, liberato? } oppure { ok: false, motivo }
+//   Negozio.cambia(win, dati)         cambia l'avatar, il colore o la canzone dal server (costa, tranne il primo e il ritorno al primo): { tipo: 'avatar'|'colore'|'canzone', id, url?, nome? } → { ok, saldo, gratis, ritorno?, casa, liberato? } oppure { ok: false, motivo }
 //   Negozio.apriShinyTeam(win, team)  la finestra del Box per rendere shiny i Pokémon di un team (anche bloccato); htmlShinyTeam(stato) è il markup puro
 //   Negozio.frase(motivo)             il testo in inglese di un errore del negozio
 //
@@ -111,18 +111,18 @@
             + `<p class="ng-nota">${esc(notaPremi())}</p>`
             + (s.messaggio ? `<p class="ng-msg" role="status">${esc(s.messaggio)}</p>` : '')
             + gruppi
-            + `<p class="ng-guida"><b>More to spend on.</b> Changing your avatar (${Cosmetici.PREZZI.avatar} 🪙) or your song (${Cosmetici.PREZZI.canzone} 🪙) is in <b>Customize → Trainer</b>. Your first avatar and first song are free and stay yours for good; `
+            + `<p class="ng-guida"><b>More to spend on.</b> Changing your avatar (${Cosmetici.PREZZI.avatar} 🪙), colour (${Cosmetici.PREZZI.colore} 🪙) or song (${Cosmetici.PREZZI.canzone} 🪙) is in <b>Customize → Trainer</b>. Your first avatar, colour and song are free and stay yours for good, and coming back to them is always free; `
             + `the one you wear is yours while you wear it, then it goes back to the pool for everyone. `
             + `Shiny Pokémon (${Cosmetici.PREZZI.shinyPokemon} 🪙 each): the ✨ button on a team in your <b>Box</b>; it works on locked teams too.</p>`
             + `<section class="ng-gruppo"><h3>Recent coins</h3>${mov ? `<ul class="ng-movimenti">${mov}</ul>` : '<p>Nothing yet: play a set!</p>'}</section></div>`;
     }
 
     /**
-     * Le frasi della finestra di conferma di un cambio di avatar o di canzone (pura). `corrente` e `casa` sono gli id di quello che porti e di quello "di casa" (il primo, tuo per sempre; ''
-     * se non ci sono); `id` vuoto con tipo 'canzone' = togliere la canzone. → { righe, conferma, ok } (ok = si può confermare: bastano le monete)
+     * Le frasi della finestra di conferma di un cambio di avatar, di colore o di canzone (pura). `corrente` e `casa` sono gli id di quello che porti e di quello "di casa" (il primo, l'unico
+     * personale: tuo per sempre e tornarci non costa mai; '' se non ci sono); `id` vuoto con tipo 'canzone' = togliere la canzone. → { righe, conferma, ok } (ok = si può confermare: bastano le monete)
      */
-    function frasiCambio({ tipo, id, prezzo, gratis, saldo, corrente, casa, nomeCorrente }) {
-        const cosa = tipo === 'avatar' ? 'avatar' : 'song';
+    function frasiCambio({ tipo, id, prezzo, gratis, ritorno, saldo, corrente, casa, nomeCorrente }) {
+        const cosa = tipo === 'avatar' ? 'avatar' : tipo === 'colore' ? 'colour' : 'song';
         const quale = nomeCorrente || `your current ${cosa}`;
         const Quale = quale.charAt(0).toUpperCase() + quale.slice(1);
         const righe = [];
@@ -132,11 +132,15 @@
             return { righe, conferma: 'Remove it', ok: true };
         }
         if (gratis) {
-            righe.push(`Your first ${cosa} is free, and it stays yours for good: nobody else can take it, even when you wear another one later.`);
+            righe.push(`Your first ${cosa} is free, and it stays yours for good: nobody else can take it, even when you wear another one later, and coming back to it is always free.`);
             return { righe, conferma: 'Choose for free', ok: true };
         }
+        if (ritorno) {
+            righe.push(`It is your first ${cosa}: coming back to it is free, and it stays yours for good.`, ...sorteDiQuelloCheHai);
+            return { righe, conferma: 'Go back for free', ok: true };
+        }
         righe.push(`Changing your ${cosa} costs ${prezzo} 🪙, and you have ${saldo} 🪙.${saldo < prezzo ? ' Play some sets to earn more coins.' : ''}`);
-        righe.push(id === casa ? `It is your first ${cosa}: yours for good.` : `The new one is yours while you wear it.`, ...sorteDiQuelloCheHai);
+        righe.push('The new one is yours while you wear it.', ...sorteDiQuelloCheHai);
         return { righe, conferma: `Change · ${prezzo} 🪙`, ok: saldo >= prezzo };
     }
 
@@ -174,7 +178,7 @@
         const f = win.firebase.app().functions('europe-west1');
         return (await f.httpsCallable(nome)(dati || {})).data || {};
     }
-    /** Cambia l'avatar o la canzone (il server fa il cambio e scrive il profilo): { tipo, id, url?, nome? }. Per togliere la canzone: tipo 'canzone' e id ''. */
+    /** Cambia l'avatar, il colore o la canzone (il server fa il cambio e scrive il profilo): { tipo, id, url?, nome? }. Per togliere la canzone: tipo 'canzone' e id ''. */
     const cambia = (win, dati) => chiama(win, 'cambiaCosmetico', dati);
 
     function caricaFunzioni(win) {

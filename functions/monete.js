@@ -11,8 +11,8 @@
 // Ogni premio ha una chiave: lo stesso fatto (un set, un badge, una stagione) paga una volta sola (walletEventi/{chiave}).
 // Non si guadagna contro la CPU (nessun controllo possibile da qui).
 //
-// Come si spendono: i cosmetici del catalogo; il cambio di avatar e di canzone (costa sempre, tranne la prima volta per chi ha ancora quello di partenza; il primo resta tuo per sempre, gli altri
-// tornano liberi quando li cambi); lo shiny di un Pokémon di un team.
+// Come si spendono: i cosmetici del catalogo; il cambio di avatar, di colore e di canzone (costa sempre, tranne la prima volta per chi ha ancora quello di partenza e tornando al primo; il primo
+// resta tuo per sempre, gli altri tornano liberi quando li cambi); lo shiny di un Pokémon di un team.
 //
 //   premioSet({ ufficiale, vinto }), premioBadge(prima, dopo)           pure
 //   accredita(db, uid, importo, motivo, { chiave, tettoGiorno, adesso }) → monete date davvero (0 se già dato o oltre il tetto)
@@ -133,13 +133,15 @@ async function acquista({ db, uid, id, adesso = Date.now() }) {
     return { ok: true, saldo };
 }
 
-// ---------------------------------------------------------------- avatar e canzoni: si cambiano, non si comprano
-// Avatar e canzoni sono unici, com'è sempre stato: nessun altro può avere quello che hai. Cambiarli costa sempre (PREZZI.avatar, PREZZI.canzone), tranne la prima volta per chi ha ancora quello di partenza.
-//   - il primo avatar e la prima canzone sono "di casa" (wallet/{uid}/casa/<tipo>): quello scelto gratis, o per chi ne aveva già uno quello che aveva, resta tuo per sempre;
+// ---------------------------------------------------------------- avatar, colore e canzone: si cambiano, non si comprano
+// Avatar, colore firma e canzone sono unici, com'è sempre stato: nessun altro può avere quello che hai. Cambiarli costa sempre (PREZZI), tranne la prima volta per chi ha ancora quello di partenza.
+//   - il primo avatar, il primo colore e la prima canzone sono "di casa" (wallet/{uid}/casa/<tipo>), l'unica cosa personale: quello scelto gratis, o per chi ne aveva già uno quello che aveva,
+//     resta tuo per sempre, nessun altro lo può prendere e tornarci non costa mai;
 //   - quello che porti è riservato finché lo porti; cambiando di nuovo torna libero per tutti (tranne quello di casa);
 //   - il server fa il cambio e scrive il profilo: pagare e portarlo sono un'unica operazione, quindi non si paga mai qualcosa che poi non si può usare.
 // cosmeticiPresi/<id> = l'id dell'allenatore che lo tiene riservato (di casa o addosso): lo legge chiunque (per mostrare "già preso" nell'editor), lo scrive solo il server.
-const ESCLUSIVI = ['avatar', 'canzone'];
+// Il colore firma è uno dei COLORI_FIRMA (cosmetici.js), scritto in players/{id}/info/color.
+const ESCLUSIVI = Cosmetici.FAMIGLIE;          // avatar, colore, canzone
 // il sito dove stanno le immagini degli avatar (come li salva l'editor della pagina); il server compone l'indirizzo da sé, senza fidarsi di quello che arriva
 const SITO_AVATAR = process.env.SITO_AVATAR_URL || 'https://didi722.github.io/didi-lu/';
 const indirizzoAvatar = id => `${SITO_AVATAR}immagini/profile/${String(id).replace('avatar-', '')}.png`;
@@ -164,9 +166,9 @@ async function riserva(db, id, giocatore) {
 const libera = (db, id, giocatore) => db.ref(`cosmeticiPresi/${id}`).transaction(v => (v === giocatore ? null : undefined));
 
 /**
- * Cambia l'avatar o la canzone di chi chiama. `id` è avatar-<n> o canzone-<impronta>; per una canzone servono anche `url` e `nome` (l'id deve essere quello dell'indirizzo);
- * `id` vuoto con tipo 'canzone' toglie la canzone (gratis). Ritorna { ok, saldo, gratis, casa, liberato, avatar | musicaPreferita + musicName } oppure { ok: false, motivo }:
- * unknown, no-profile, same (è già quello che porti), taken (di un altro o lo porta un altro), poor, busy.
+ * Cambia l'avatar, il colore o la canzone di chi chiama. `id` è avatar-<n>, colore-<rrggbb> o canzone-<impronta>; per una canzone servono anche `url` e `nome` (l'id deve essere quello
+ * dell'indirizzo); `id` vuoto con tipo 'canzone' toglie la canzone (gratis). Tornare a quello di casa è gratis. Ritorna { ok, saldo, gratis, ritorno, casa, liberato, avatar | color |
+ * musicaPreferita + musicName } oppure { ok: false, motivo }: unknown, no-profile, same (è già quello che porti), taken (di un altro o lo porta un altro), poor, busy.
  */
 async function cambia({ db, uid, tipo, id, url, nome, adesso = Date.now() }) {
     if (!ESCLUSIVI.includes(tipo)) return { ok: false, motivo: 'unknown' };
@@ -178,6 +180,7 @@ async function cambia({ db, uid, tipo, id, url, nome, adesso = Date.now() }) {
         c = Cosmetici.perId(id);
         if (!c || c.tipo !== tipo) return { ok: false, motivo: 'unknown' };
         if (tipo === 'avatar') { indirizzo = indirizzoAvatar(id); titolo = c.nome; }
+        else if (tipo === 'colore') { indirizzo = Cosmetici.coloreDaId(id); titolo = c.nome; }
         else {
             indirizzo = String(url || '').trim();
             if (!/^https?:\/\/\S{4,500}$/i.test(indirizzo) || Cosmetici.idCanzone(indirizzo) !== id) return { ok: false, motivo: 'unknown' };
@@ -197,7 +200,7 @@ async function cambia({ db, uid, tipo, id, url, nome, adesso = Date.now() }) {
         if (!vuota && ((titolare && titolare !== giocatore) || chiUsa(giocatori, giocatore, c))) return { ok: false, motivo: 'taken' };
 
         const casaPrima = String((wallet.casa || {})[tipo] || '');
-        const { prezzo, gratis } = vuota ? { prezzo: 0, gratis: false } : Cosmetici.prezzoCambio(tipo, { wallet, info });
+        const { prezzo, gratis, ritorno } = vuota ? { prezzo: 0, gratis: false } : Cosmetici.prezzoCambio(tipo, { wallet, info }, id);
         // il "di casa": chi ha ancora quello di partenza sceglie gratis e quello diventa suo; chi ne aveva già uno tiene quello che aveva (al primo cambio)
         const casa = casaPrima || (gratis ? id : corrente);
 
@@ -209,13 +212,14 @@ async function cambia({ db, uid, tipo, id, url, nome, adesso = Date.now() }) {
         let pagato = false;
         try {
             if (prezzo > 0) {
-                if (!(await spendi(db, uid, prezzo, `${tipo === 'avatar' ? 'Avatar' : 'Song'}: ${titolo}`, { adesso }))) {
+                if (!(await spendi(db, uid, prezzo, `${tipo === 'canzone' ? 'Song' : tipo === 'colore' ? 'Colour' : 'Avatar'}: ${titolo}`, { adesso }))) {
                     if (riservato.nuovo) await libera(db, id, giocatore);
                     return { ok: false, motivo: 'poor' };
                 }
                 pagato = true;
             } else if (gratis) await scriviMovimento(db, uid, 0, `Free: ${titolo}`, adesso);
-            const campi = tipo === 'avatar' ? { avatar: indirizzo } : { musicaPreferita: indirizzo, musicName: vuota ? '' : titolo };
+            else if (ritorno) await scriviMovimento(db, uid, 0, `Back to: ${titolo}`, adesso);
+            const campi = tipo === 'avatar' ? { avatar: indirizzo } : tipo === 'colore' ? { color: indirizzo } : { musicaPreferita: indirizzo, musicName: vuota ? '' : titolo };
             await db.ref(`players/${giocatore}/info`).update(campi);
         } catch (e) {
             if (pagato) {
@@ -233,8 +237,9 @@ async function cambia({ db, uid, tipo, id, url, nome, adesso = Date.now() }) {
         if (corrente && corrente !== id && corrente !== casa) await libera(db, corrente, giocatore);
         const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
         const esito = { ok: true, saldo, gratis, casa };
+        if (ritorno) esito.ritorno = true;
         if (corrente && corrente !== id && corrente !== casa) esito.liberato = corrente;
-        return Object.assign(esito, tipo === 'avatar' ? { avatar: indirizzo } : { musicaPreferita: indirizzo, musicName: vuota ? '' : titolo });
+        return Object.assign(esito, tipo === 'avatar' ? { avatar: indirizzo } : tipo === 'colore' ? { color: indirizzo } : { musicaPreferita: indirizzo, musicName: vuota ? '' : titolo });
     });
 }
 

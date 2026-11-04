@@ -182,7 +182,7 @@ test('scheda Trainer: si carica con l\'editor, copre i sette campi del profilo e
     assert.match(trainer, /colori\.unshift\(attuale\)/);
     // le scelte degli altri restano in lista ma disabilitate e grigie: tutte e quattro le liste passano da comePresa()
     assert.match(trainer, /function comePresa\(bottone, titolo, motivo\) \{[^}]*bottone\.disabled = true;[^}]*classList\.add\('is-preso'\)/);
-    assert.equal((trainer.match(/comePresa\(/g) || []).length, 8, 'definizione + avatar (in uso o comprato da un altro), colori, Pokémon, Pokémon del Box, canzoni (in uso o comprata da un altro)');
+    assert.equal((trainer.match(/comePresa\(/g) || []).length, 9, 'definizione + avatar, colori e canzoni (portati o riservati da un altro: due chiamate ciascuno), Pokémon, Pokémon del Box');
     assert.doesNotMatch(trainer, /\.filter\(p => \(p\.name === mio \|\| !presi\.pokemon/, 'i Pokémon presi non si tolgono dalla lista');
     assert.doesNotMatch(trainer, /P\.PALETTE_FIRMA\.filter\(/, 'i colori presi non si tolgono dalla palette');
     assert.match(cssEditor, /\.is-preso, \.is-preso:hover \{[^}]*cursor: not-allowed/);
@@ -196,7 +196,7 @@ test('salvataggio: un\'unica scrittura su info, e le scelte uniche si ricontroll
     assert.match(editor, /database\.ref\('players'\)\.once\('value'\)/);
     assert.match(editor, /P\.conflitti\(chiave, unici, tutti\)/);
     // ogni campo unico è controllato, e ogni nome di conflitto ha il suo messaggio
-    assert.match(editor, /CAMPI_UNICI = \['color', 'pkmPreferito'\]/);
+    assert.match(editor, /CAMPI_UNICI = \['pkmPreferito'\]/);
     for (const nome of ['color', 'avatar', 'pkmPreferito', 'musica']) assert.match(editor, new RegExp(`NOMI_CONFLITTO = \\{[^}]*\\b${nome}:`), nome);
     // "No Title" si salva come stringa vuota, come faceva profile.html
     assert.match(editor, /k === 'title' && profilo\.title === 'No Title' \? ''/);

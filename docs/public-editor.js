@@ -86,8 +86,8 @@
         disegnaPannello();
     }
 
-    // avatar e canzone li scrive il server (a pagamento): non fanno parte di SAVE né delle modifiche da salvare
-    const CAMPI_DEL_SERVER = ['avatar', 'musicName', 'musicaPreferita'];
+    // avatar, colore e canzone li scrive il server (a pagamento): non fanno parte di SAVE né delle modifiche da salvare
+    const CAMPI_DEL_SERVER = ['avatar', 'color', 'musicName', 'musicaPreferita'];
     const profiloSporco = () => { const ora = C.profilo(), salvato = C.stato.infoSalvata; return P.CAMPI_PROFILO.some(k => !CAMPI_DEL_SERVER.includes(k) && ora[k] !== salvato[k]); };
     const sporco = () => !P.uguali(cfg(), C.stato.salvata) || profiloSporco();
 
@@ -235,8 +235,8 @@
         saldo: () => (portafoglio ? portafoglio.saldo : 0),
         /** Carica negozio.js (le frasi della conferma e la chiamata al server) se non c'è già */
         negozio: caricaNegozio,
-        /** Quanto costa cambiare oggi: { prezzo, gratis } */
-        prezzo: tipo => (window.Cosmetici && window.Cosmetici.prezzoCambio(tipo, contestoCosmetici())) || { prezzo: 0, gratis: false },
+        /** Quanto costa cambiare oggi: { prezzo, gratis, ritorno } (`id`: quello a cui si vuole passare; tornare a quello di casa non costa) */
+        prezzo: (tipo, id) => (window.Cosmetici && window.Cosmetici.prezzoCambio(tipo, contestoCosmetici(), id)) || { prezzo: 0, gratis: false },
         /** L'id di quello che porti adesso ('' se è quello di partenza) */
         corrente: idCorrente,
         /** L'id di quello "di casa" (il primo, tuo per sempre): quello registrato, o per chi non ha ancora cambiato niente quello che porta (diventerà di casa al primo cambio) */
@@ -251,7 +251,7 @@
         nomeDi: g => { const i = ((C.stato.dati.tutti || {})[g] || {}).info; return (i && i.name) || String(g); },
         frase: motivo => (motivo === 'loading' ? 'Still loading your coins: try again in a moment.' : window.Negozio ? window.Negozio.frase(motivo) : "Couldn't do that."),
         /**
-         * Cambia l'avatar (id avatar-<n>) o la canzone (id canzone-<impronta>, con url e nome; id '' = nessuna canzone). Il server paga e scrive il profilo: qui si aggiorna la carta, che
+         * Cambia l'avatar (id avatar-<n>), il colore (id colore-<rrggbb>) o la canzone (id canzone-<impronta>, con url e nome; id '' = nessuna canzone). Il server paga e scrive il profilo: qui si aggiorna la carta, che
          * conta già come salvata, e si rilegge portafoglio e registro. Ritorna { ok, ... } oppure { ok: false, motivo }.
          */
         async cambia(tipo, id, extra) {
@@ -259,7 +259,7 @@
             await caricaNegozio();
             const r = await window.Negozio.cambia(window, { tipo, id, ...(extra || {}) });
             if (r.ok) {
-                const valori = tipo === 'avatar' ? { avatar: r.avatar } : { musicaPreferita: r.musicaPreferita, musicName: r.musicName };
+                const valori = tipo === 'avatar' ? { avatar: r.avatar } : tipo === 'colore' ? { color: r.color } : { musicaPreferita: r.musicaPreferita, musicName: r.musicName };
                 C.profiloDalServer(valori);
                 for (const f of storia) Object.assign(f.profilo, valori);          // "undo" non deve riportare indietro quello che il server ha già cambiato
                 await Promise.all([leggiPortafoglio(true), leggiRegistro(true)]);
@@ -481,7 +481,7 @@
     // ---- Salvare ------------------------------------------------------------------------------
 
     // Le scelte che non si possono condividere con un altro allenatore
-    const CAMPI_UNICI = ['color', 'pkmPreferito'];          // avatar e canzone, pure unici, li cambia il server (che controlla)
+    const CAMPI_UNICI = ['pkmPreferito'];          // avatar, colore e canzone, pure unici, li cambia il server (che controlla)
     const NOMI_CONFLITTO = { color: 'colour', avatar: 'avatar', pkmPreferito: 'favourite Pokémon', musica: 'song' };
 
     async function salva() {
