@@ -251,7 +251,7 @@ test('nomeNeutro: la CPU si presenta come "Team N", mai col piano di gioco né c
 test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori, fine partita)', () => {
     const ui = leggi('battle-ui.js');
     assert.match(ui, /import \{ nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro \} from '\.\/cpu-partita\.js'/);
-    assert.match(ui, /import \{ caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra \} from '\.\/team-sito\.js'/);
+    assert.match(ui, /import \{ caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra, caricaAspetto \} from '\.\/team-sito\.js'/);
     assert.match(ui, /parametri\.get\('cpu'\)[\s\S]{0,400}preparaCpu\(parametri\.get\('team'\)\)/);
     assert.match(ui, /return !online && lato === 'p2' && \(!!cpu \|\| \$\('bot-p2'\)\.checked\)/, 'con la CPU il lato 2 è sempre automatico');
     assert.match(ui, /if \(cpu && cpu\.cerebro\) cpu\.cerebro\.osserva\(righe\)/, 'la CPU legge il log');
