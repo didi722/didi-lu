@@ -252,7 +252,8 @@ test('cablaggio del tema: pagina di battaglia, stili, vantaggio sempre in vista 
     assert.match(html, /id="pal-effetto"/); assert.match(html, /id="pal-annuncio"/);
     const bu = leggi('docs', 'battle-ui.js');
     assert.match(bu, /cpu\.palestra\.tema = vestiPalestra\(gym\);/);
-    assert.match(bu, /self\.Palestra\.temaPalestra\(gym\.aspetto, self\.PaginaPubblica, self\.Cosmetici\)/);
+    assert.match(bu, /self\.Palestra\.temaPalestra\(aspetto, self\.PaginaPubblica, self\.Cosmetici\)/);
+    assert.match(bu, /colore: 'giocatore' \} \} \};\n\s*const tema = self\.Palestra\.temaPalestra/, 'la palestra ha lo stesso sfondo delle partite: colore principale e motivo');
     assert.match(bu, /document\.body\.classList\.add\('palestra'\)/);
     assert.match(bu, /voci = cpu && cpu\.palestra \? vociInsegnaPalestra\(\)/, 'l\'insegna mostra chi tiene la palestra e il vantaggio');
     assert.match(bu, /if \(cpu && cpu\.palestra\) mostraAnnuncioPalestra\(false\);/, 'cartello intero quando si entra');
