@@ -1061,14 +1061,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let replayDaLinkAperto = false;
+const PAGINE_DI_RITORNO = { home: 'index.html', 'hall-of-fame': 'palmares.html?sezione=settimane' };
 /** Apre da solo il replay chiesto nell'indirizzo (una volta sola per apertura della pagina): il set indicato, con i suoi due team e il punteggio del match */
 function apriReplayDaLink(showdowns) {
     if (replayDaLinkAperto) return;
     const richiesto = new URLSearchParams(window.location.search).get('replay');
     if (!richiesto) return;
     replayDaLinkAperto = true;
-    // aperto dal banner "Match of the week" della home (da=home): chiudendo il replay si torna lì, non all'elenco dei match
-    window.replayTornaAllaHome = new URLSearchParams(window.location.search).get('da') === 'home';
+    // aperto dal banner "Match of the week" della home (da=home) o dalla Hall of Fame (da=hall-of-fame): chiudendo il replay si torna lì, non all'elenco dei match
+    window.replayTornaA = PAGINE_DI_RITORNO[new URLSearchParams(window.location.search).get('da')] || '';
     const [sdId, matchKey, setKey] = richiesto.split('~');
     // ?turno=12: il replay parte da quel turno (lo si manda al replay appena si fa vivo: vedi "replay-stato")
     const turnoRichiesto = parseInt(new URLSearchParams(window.location.search).get('turno'), 10);
@@ -2971,11 +2972,12 @@ window.chiudiReplay = function() {
     }
     if (window.nascondiComandiReplay) window.nascondiComandiReplay();
 
-    // replay aperto dalla home (link del Match of the week): si torna alla home (la musica la gestisce lei)
-    if (window.replayTornaAllaHome) {
-        window.replayTornaAllaHome = false;
+    // replay aperto dalla home o dalla Hall of Fame (link del Match of the week): si torna lì (la musica la gestisce quella pagina)
+    if (window.replayTornaA) {
+        const dove = window.replayTornaA;
+        window.replayTornaA = '';
         window.AppMusicaPausa = false;
-        window.location.replace('index.html');
+        window.location.replace(dove);
         return;
     }
 

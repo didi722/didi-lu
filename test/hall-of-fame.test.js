@@ -68,13 +68,13 @@ test('stagioni: solo le chiuse (non la beta), con MVP registrato e squadra ideal
     assert.deepEqual(H.stagioni({ seasons: {} }, { Statistiche, Mvp }), []);
 });
 
-test('settimane: dal Match of the week più recente, con link al replay senza ?da=home', () => {
+test('settimane: dal Match of the week più recente, con link al replay che riporta alla Hall of Fame (da=hall-of-fame)', () => {
     const set = { vincitore: 'p1', turni: 12, rimasti: 1, maxSvantaggio: 3, protagonista: { specie: 'Garchomp' }, motivi: ['Came back from 3 down'] };
     const mkSet = (n, quando) => ({ ...set, stagione: 's1', nomeStagione: 'Season One', showdown: 'sd1', match: 'match1', set: `set${n}`, categoria: 'VGC', data: quando, quando: Date.parse(quando), giocatori: { p1: { id: 'didi', nome: 'Didi', team: 'A' }, p2: { id: 'lu', nome: 'Lu', team: 'B' } } });
     const w = (inizio, s) => ({ inizio: Date.parse(inizio), fine: Date.parse(inizio) + 6 * 86400000, numero: 1, anno: 2026, corrente: false, quanti: 4, scelto: s });
     const l = H.settimane([w('2026-10-12', mkSet(1, '2026-10-13')), w('2026-10-19', mkSet(2, '2026-10-20'))], MatchSettimana);
     assert.equal(l.length, 2);
-    assert.match(l[0].link, /^matches\.html\?id=s1&replay=sd1~match1~set2$/, 'la più recente per prima');
+    assert.match(l[0].link, /^matches\.html\?id=s1&replay=sd1~match1~set2&da=hall-of-fame$/, 'la più recente per prima, e chiudendo il replay si torna alla Hall of Fame');
     assert.equal(l[0].p1.nome, 'Didi');
     assert.equal(l[0].motivi[0], 'Came back from 3 down');
     assert.deepEqual(H.settimane(null, MatchSettimana), []);
@@ -87,17 +87,21 @@ test('markup: testo protetto, podio con il primo evidenziato, link all\'allenato
     assert.doesNotMatch(h, /<b>Serie<\/b>/);
     assert.match(h, /<a class="hof-nome" href="public\.html\?player=Di%3Cdi%3E">Di&lt;di&gt;<\/a>/);
     assert.match(h, /hof-primo/);
-    assert.match(h, /29\/10\/2026/);
+    assert.match(h, /<span class="hof-quando"><time datetime="2026-10-29">29\/10\/<wbr>2026<\/time><\/span>/, 'la data ha il suo posto tra il nome e il numero (e va a capo dopo il mese se serve)');
+    assert.match(h, /<\/span><span class="hof-quando">[\s\S]*?<\/span><span class="hof-valore">15<\/span>/);
+    assert.doesNotMatch(h, /<small>29\/10\/2026<\/small>/, 'non più sotto il tag del nome');
+    // senza data la cella c'è lo stesso (la griglia ha una colonna per la data)
+    assert.match(H.htmlRecords([{ id: 'y', gruppo: 'Trainers', titolo: 'T', voci: [{ nome: 'A', sotto: '', valore: '1', specie: '', colore: '#fff', avatar: '', link: '', quando: '' }] }]), /<span class="hof-quando"><\/span><span class="hof-valore">1<\/span>/);
     assert.match(H.htmlRecords([]), /No records yet/);
     assert.match(H.htmlStagioni([]), /No MVP or Dream Team yet/);
     assert.match(H.htmlSettimane([]), /No Match of the week yet/);
     const st = H.htmlStagioni([{ stagione: 's1', nome: 'S<1>', data: '2026-04-01', mvp: [{ specie: 'Garchomp', player: 'Didi', team: 'A' }], dream: [{ specie: 'Rillaboom', player: 'Lu', team: 'B', formato: 'VGC' }] }], { gif: s => `${s}.gif` });
     assert.match(st, /S&lt;1&gt;/);
     assert.match(st, /Season MVP<\/h4>[\s\S]*Garchomp[\s\S]*Dream Team<\/h4>[\s\S]*Rillaboom/);
-    // le settimane usano il banner della home (MatchSettimana.html), una volta per settimana e senza frecce; il replay non riporta alla home
-    const finto = { html: (sc, o) => `<banner ${sc.stagione} ${o.settimana.titolo} ${o.totale} ${o.daHome}>` };
+    // le settimane usano il banner della home (MatchSettimana.html), una volta per settimana e senza frecce; il replay riporta alla Hall of Fame
+    const finto = { html: (sc, o) => `<banner ${sc.stagione} ${o.settimana.titolo} ${o.totale} ${o.da}>` };
     const se = H.htmlSettimane([{ titolo: 'Last <week>', intervallo: '1 Nov', scelto: { stagione: 's1' } }], { MatchSettimana: finto, giocatori: { lu: { color: '#fff', avatar: 'a.png' } } });
-    assert.equal(se, '<ol class="hof-settimane"><li class="ms hof-ms"><banner s1 Last <week> 1 false></li></ol>');
+    assert.equal(se, '<ol class="hof-settimane"><li class="ms hof-ms"><banner s1 Last <week> 1 hall-of-fame></li></ol>');
 });
 
 test('cablaggio: la pagina si chiama Hall of Fame (titolo e menu), ha le quattro sezioni e carica i moduli; le stagioni intere si leggono solo alla prima apertura', () => {
@@ -109,13 +113,21 @@ test('cablaggio: la pagina si chiama Hall of Fame (titolo e menu), ha le quattro
     assert.ok(p.indexOf('hall-of-fame.js') < p.indexOf('palmares.js'));
     const js = leggi('docs', 'palmares.js');
     assert.match(js, /function montaSezioni\(giocatori\)/);
-    assert.match(js, /if \(vista === 'stagioni' \|\| pronte\[vista\]\) return;/);
+    assert.match(js, /if \(vista === 'stagioni'\) return;\s*if \(pronte\[vista\]\) \{ misuraNomi\(\); return; \}/, 'le sezioni già pronte non si rileggono');
     assert.match(js, /get\('sezione'\)/);
     assert.ok(leggi('docs', 'style-palmares.css').includes('.hof-record'));
     for (const f of ['match-settimana.css', 'nome-scorrevole.css']) assert.ok(p.includes(`<link rel="stylesheet" href="${f}">`), f);
     for (const f of ['medaglione-pkm.js', 'nome-scorrevole.js']) assert.ok(p.includes(`<script src="${f}"></script>`), f);
     assert.match(js, /MatchSettimana: window\.MatchSettimana/);
-    assert.match(leggi('docs', 'match-settimana.js'), /\$\{daHome \? '&da=home' : ''\}/);
+    assert.match(leggi('docs', 'match-settimana.js'), /\$\{da \? `&da=\$\{encodeURIComponent\(da\)\}` : ''\}/);
+    // lo scorrimento della pagina (la base lo blocca), i nomi dei team che scorrono anche quando lo spazio cambia, e il ritorno dal replay sulla stessa sezione
+    assert.match(leggi('docs', 'style-palmares.css'), /body\.pg-palmares \{ overflow-x: hidden; overflow-y: auto; \}/);
+    assert.match(js, /document\.fonts\.addEventListener\('loadingdone', rifaiNomi\)/);
+    assert.match(js, /window\.addEventListener\('resize', rifaiNomi\)/);
+    assert.match(js, /if \(pronte\[vista\]\) \{ misuraNomi\(\); return; \}/, 'tornando a una sezione già pronta i nomi si rimisurano');
+    assert.match(js, /u\.searchParams\.set\('sezione', vista\)/, 'la sezione aperta sta nell\'indirizzo');
+    assert.match(js, /sessionStorage\.setItem\(CHIAVE_SCORRIMENTO, String\(Math\.round\(window\.scrollY\)\)\)/);
+    assert.match(js, /window\.scrollTo\(0, daRiprendere\)/);
     for (const f of fs.readdirSync(path.join(__dirname, '..', 'docs')).filter(n => n.endsWith('.html'))) {
         const t = leggi('docs', f);
         assert.ok(!/fa-trophy"><\/i> ARCHIVE/.test(t), `${f}: il menu dice ancora ARCHIVE`);

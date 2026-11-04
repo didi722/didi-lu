@@ -326,6 +326,7 @@ test('Shop: la pagina, le schede, l\'anteprima della tua pagina, il menu del sit
         if (/class="menu-item"[^>]*><i class="fas fa-trophy"/.test(t)) assert.match(t, /<a href="shop\.html" class="menu-item"><i class="fas fa-store"><\/i> SHOP<\/a>/, `${f}: manca SHOP nel menu`);
     }
     assert.match(leggi('docs', 'app.js'), /\{ id: 'shop', et: 'Shop', href: 'shop\.html', colore: '#47ea6a', pagine: \['shop\.html'\] \}/);
+    assert.match(leggi('docs', 'style-shop.css'), /body\.pg-shop \{ overflow-x: hidden; overflow-y: auto; \}/, 'la base blocca lo scorrimento del body: lo Shop lo ripristina');
 });
 
 test('frasiAcquisto: la prima volta è gratis; poi il prezzo e le monete; a quota piena si deve scegliere cosa rilasciare; frasiRilascio: gratis, torna libero per tutti', () => {

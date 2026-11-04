@@ -3,6 +3,8 @@
    A sinistra quello che si compra, a destra la TUA pagina in anteprima (public.html?anteprima=1): toccando una voce la si prova prima di comprarla.
    Le righe del catalogo (.ng-voce...) sono di negozio.js: qui si rivestono con i colori del tema.
    ===================================================================== */
+/* il modello di base blocca lo scorrimento della pagina: qui si scorre normalmente */
+body.pg-shop { overflow-x: hidden; overflow-y: auto; }
 body.pg-shop .shop-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); max-width: 1180px; margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px); padding: 34px 26px 90px; box-sizing: border-box; font-family: var(--nb-font-testo, 'Montserrat', sans-serif); }
 @media (max-width: 900px) { body.pg-shop .ads-sidebar { display: none; } body.pg-shop .shop-pagina { width: 100%; margin-left: 0; padding: 22px 14px 80px; } }
 

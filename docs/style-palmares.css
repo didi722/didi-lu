@@ -1,4 +1,6 @@
 /* Archive: le card di ogni stagione e cup chiusa (palmares.js), nello stile neubrutalista del sito */
+/* il modello di base blocca lo scorrimento della pagina: qui si scorre normalmente */
+body.pg-palmares { overflow-x: hidden; overflow-y: auto; }
 body.pg-palmares .palm-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); max-width: 1100px; margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px); padding: 44px 26px 80px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
 @media (max-width: 900px) { body.pg-palmares .ads-sidebar { display: none; } body.pg-palmares .palm-pagina { width: 100%; margin-left: 0; padding: 30px 16px 70px; } }
 .palm-filtri { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
@@ -92,13 +94,13 @@ body.pg-palmares .hub-title-display { white-space: normal; overflow: visible; te
 .hof-nota { margin: 2px 0 10px; font: 600 .72rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .65; }
 .hof-record ol { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 9px; }
 .hof-voce {
-    display: grid; grid-template-columns: 18px 44px minmax(7.5em, 1fr) auto; align-items: center; gap: 7px; padding: 7px 9px;
+    display: grid; grid-template-columns: 18px 44px minmax(0, auto) minmax(min-content, 1fr) auto; align-items: center; gap: 7px; padding: 7px 9px;
     background: color-mix(in srgb, var(--c, #d9dde6) 38%, var(--nb-carta, #fff)); color: #000;
     border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
     rotate: calc(var(--nb-rot, 1) * -.4deg);
 }
 .hof-voce:nth-child(even) { rotate: calc(var(--nb-rot, 1) * .4deg); }
-.hof-voce:not(:has(.ms-med, .ms-av)) { grid-template-columns: 18px minmax(7.5em, 1fr) auto; }
+.hof-voce:not(:has(.ms-med, .ms-av)) { grid-template-columns: 18px minmax(0, auto) minmax(min-content, 1fr) auto; }
 .hof-primo { background: var(--c, #ffbd44); box-shadow: var(--nb-sh-4, 4px 4px 0 #000); }
 .hof-pos { font: 900 .9rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
 .hof-chi { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
@@ -108,6 +110,9 @@ body.pg-palmares .hub-title-display { white-space: normal; overflow: visible; te
     font: 700 14px/1.15 'Josefin Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * -1deg);
 }
 a.hof-nome:hover { background: #fff; color: #000; }
+/* la data di un record sta nello spazio tra il nome e il numero (se è poco va a capo dopo il mese) */
+.hof-quando { min-width: 0; text-align: center; font: 800 .72rem/1.15 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.hof-quando time { display: block; }
 .hof-chi small { font: 700 .66rem/1.25 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
 .hof-valore { max-width: 4.6em; text-align: right; font: 900 1.05rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
 
