@@ -107,8 +107,9 @@ if (require.main === module) {
             const set = Object.values(g.sets).reduce((t, r) => t + r.monete, 0);
             console.log(`  ${id.padEnd(14)} ${String(totale(g)).padStart(5)} = set ${set} + badge ${g.badge.length} (${g.badge.reduce((t, b) => t + monete.premioBadge(0, b.liv), 0)}) + stagioni vinte ${g.stagioni.length} + MVP ${g.mvp.length}`);
         }
-        if (!arg.includes('--applica')) { console.log('\nProva: non è stato scritto niente. Rilancia con "applica" per dare le monete.'); return; }
+        if (!arg.includes('--applica')) { console.log('\nProva: non è stato scritto niente. Rilancia con "applica" per dare le monete.'); process.exit(0); }
         await applica(db, dati, utenti, { badge: !senzaBadge });
         console.log('Fatto.');
+        process.exit(0);      // la connessione al database tiene vivo il processo: senza, il job non finisce mai
     })().catch(e => { console.error(e); process.exit(1); });
 }
