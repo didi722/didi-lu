@@ -25,6 +25,9 @@
 /* sul sito, vedendo il riepilogo non serve la classifica a lato: la colonna dei match prende tutta la larghezza */
 html:not(.app-shell) .hub-main-layout.rs-solo-riepilogo .hub-right-column { display: none; }
 html:not(.app-shell) .hub-main-layout.rs-solo-riepilogo .hub-left-column { margin-right: 0 !important; }
+/* il riepilogo riempie la pagina: un po' d'aria a destra (le linguette e le carte inclinate sporgono di qualche pixel) e mai lo scorrimento in orizzontale, nemmeno con la barra di scorrimento del browser */
+html:not(.app-shell) .hub-main-layout.rs-solo-riepilogo { box-sizing: border-box; padding-right: 28px; }
+html:not(.app-shell) body.rs-vista-riepilogo { overflow-x: hidden; }
 /* in alto, vedendo il riepilogo: niente "Registered teams" né "Vote MVP" (nell'app "Registered teams" non c'è; il tasto dell'MVP sparisce con il tag Recap) */
 body.rs-vista-riepilogo .top-auth-bar .btn-registered-teams, body.rs-vista-riepilogo .top-auth-bar #btn-mvp { display: none !important; }
 html.app-shell[data-mt="rc"] body.pg-matches .top-auth-bar > #btn-mvp#btn-mvp#btn-mvp#btn-mvp { display: none !important; }

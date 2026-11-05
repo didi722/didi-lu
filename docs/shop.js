@@ -343,7 +343,7 @@
         const schede = squadre.map(x => `<button type="button" class="shop-squadra${x.id === S.squadra ? ' attiva' : ''}" data-ng="squadra" data-id="${esc(x.id)}">${esc(x.nome)}</button>`).join('');
         return `<section class="ng-gruppo"><h3>Shiny Pokémon</h3><div class="shop-squadre">${schede}</div>`
             + N.shinyTeamHtml({ pokemon: t.pokemon.map(p => ({ nome: p.nome, shiny: !!p.shiny, comprato: !!S.shinyPkm[`${t.id}_${C.idSpecie(p.nome)}`], normale: gif(p.nome, false), brillante: gif(p.nome, true) })), saldo: S.saldo, occupato: S.occupato })
-            + `<p class="ng-nota">You will see it in your <a href="box.html">Box</a>, in battle, in the rankings and on your page.</p></section>`;
+            + '</section>';
     }
 
     // ---------------------------------------------------------------- Coins

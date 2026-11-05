@@ -936,6 +936,10 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 .pp-personalita { container-type: inline-size; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .pp-pers-corpo { align-self: stretch; flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 0; }
 .pp-pers-grafico { position: relative; width: 100%; max-width: 420px; aspect-ratio: 380 / 244; }
+/* il blocco ha un contenitore di dimensione (container-type): senza una larghezza sua, in una riga di blocchi si riduce a zero e il diagramma si schiaccia.
+   Un minimo di larghezza e di altezza (come MINIMI in pagina-pubblica.js) vale in ogni disposizione, non solo sulla tela del PC */
+:is(.pp-zona, .pp-linea) > .pp-personalita { min-width: 210px; }
+.pp-pers-grafico { min-height: 100px; }
 /* l'etichetta non occupa una riga: sta sopra l'angolo del blocco e il diagramma prende tutto lo spazio.
    Se il blocco è stretto finirebbe sopra la scritta ATTACK: allora sparisce (il diagramma ha già i nomi degli assi e, al
    passaggio del mouse, la spiegazione; il nome della personalità sta sul palco) */
