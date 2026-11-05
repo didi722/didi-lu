@@ -444,12 +444,12 @@ body.nb .top-bar > .music-btn.muted .onda { display: none; }
     box-shadow: none !important;
 }
 /* Su PC il menu si adatta all'altezza dello schermo: --mn-h è l'altezza di una voce e --mn-gap lo spazio tra due voci,
-   entrambe calcolate sui vh, così le nove voci (con Admin e Logout) stanno sempre tutte in vista, anche su un portatile
+   entrambe calcolate sui vh, così le undici voci (con Admin e Logout) stanno sempre tutte in vista, anche su un portatile
    con la finestra bassa. Sotto i 470px di altezza il menu, in ultima istanza, scorre. */
 @media (min-width: 901px) {
     :is(body.nb, body.pg-public) .user-dropdown {
-        --mn-h: clamp(32px, calc((100vh - 150px) / 9 - 8px), 54px);
-        --mn-gap: clamp(4px, calc((100vh - 150px) / 9 * .16), 14px);
+        --mn-h: clamp(28px, calc((100vh - 150px) / 11 - 8px), 54px);
+        --mn-gap: clamp(3px, calc((100vh - 150px) / 11 * .16), 14px);
     }
     :is(body.nb, body.pg-public) .user-dropdown .menu-item,
     :is(body.nb, body.pg-public) .user-dropdown .logout-btn {
@@ -470,8 +470,9 @@ body.nb .top-bar > .music-btn.muted .onda { display: none; }
         font-size: clamp(10px, calc(var(--mn-h) * .32), 16px);
     }
 }
-@media (min-width: 901px) and (max-height: 470px) {
-    :is(body.nb, body.pg-public) .user-dropdown { box-sizing: border-box; max-height: calc(100vh - 100px); overflow-y: auto; padding: 4px 12px 10px 6px; scrollbar-width: thin; }
+/* In ultima istanza (zoom alto, finestra bassa) il menu scorre da solo, senza trascinare la pagina sotto */
+@media (min-width: 901px) {
+    :is(body.nb, body.pg-public) .user-dropdown { box-sizing: border-box; max-height: calc(100vh - 100px); overflow-y: auto; overscroll-behavior: contain; padding: 4px 12px 10px 6px; scrollbar-width: thin; }
 }
 
 /* ---------- Profilo: le sue variabili di ombra e di nero passano dal tema ---------- */
@@ -685,6 +686,7 @@ body.pg-box { --nb-sezione: "BOX"; }
         min-width: 0;
         max-height: calc(100vh - 110px);
         overflow-y: auto;
+        overscroll-behavior: contain;
         padding: 0 8px 12px 0;
         gap: 0 !important;
         z-index: 3001;

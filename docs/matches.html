@@ -2777,6 +2777,7 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         }));
         s.hidden = !s.childElementCount;
         evidenziaMomento();
+        if (typeof adattaReplayAlloSchermo === 'function') adattaReplayAlloSchermo();      // la striscia ha tolto altezza alla console: si rimisura
     };
     window.addEventListener('replay-momenti', e => {
         const f = frame();
@@ -2928,7 +2929,7 @@ function adattaReplayAlloSchermo() {
     const insieme = larghezza > 900;
     const tastiSet = insieme ? (modal.querySelector('.set-selector')?.offsetWidth || 90) + 16 : 0;
     const sotto = insieme ? 0 : alto('.set-selector') + 10;
-    const riservatoBase = alto('.replay-mini-header') + alto('.replay-comandi') + sotto + 54;
+    const riservatoBase = alto('.replay-mini-header') + alto('.replay-comandi') + alto('#replayMomenti') + sotto + 54;      // i momenti chiave (una striscia, anche su più righe) stanno sotto i comandi
     // nell'app da telefono non c'è la console né l'intestazione: la scena del replay (640 × 360) sta da sola al centro, ingrandita quanto ci sta;
     // ai lati restano due colonne strette, i tasti dei set a sinistra e i comandi a destra
     if (document.documentElement.classList.contains('app-shell') && (larghezza <= 900 || altezza <= 500)) {
