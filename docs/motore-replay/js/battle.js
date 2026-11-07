@@ -471,7 +471,7 @@ this.statusStage=0;
 this.statusData.toxicTurns=0;
 if(this.side.battle.gen===5)this.statusData.sleepTurns=0;
 };_proto.
-copyVolatileFrom=function copyVolatileFrom(pokemon,copySource){
+copyVolatileFrom=function copyVolatileFrom(pokemon,copySource){var _this$volatiles$typec;
 this.boosts=pokemon.boosts;
 this.volatiles=pokemon.volatiles;
 
@@ -486,6 +486,8 @@ volatilesToRemove.push('quarkdrive'+statName);
 volatilesToRemove.length;_i6++){var volatile=volatilesToRemove[_i6];
 delete this.volatiles[volatile];
 }
+}else if(copySource==='illusion'&&(_this$volatiles$typec=this.volatiles.typechange)!=null&&_this$volatiles$typec[2]){
+delete this.volatiles.typechange;
 }
 
 
@@ -2663,7 +2665,7 @@ if(_fromeffect3.id.startsWith('format')){
 _poke32.moddedType=types.split('/');
 }
 _poke32.removeVolatile('typeadd');
-_poke32.addVolatile('typechange',types);
+_poke32.addVolatile('typechange',types,!!kwArgs.silent&&!kwArgs.from);
 if(!kwArgs.silent){
 this.scene.typeAnim(_poke32,types);
 }
