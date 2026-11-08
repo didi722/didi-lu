@@ -151,6 +151,20 @@
         <input type="checkbox" id="new-season-open-sheet" style="width: 20px; height: 20px; cursor: pointer;">
         <label for="new-season-open-sheet" style="margin-bottom: 0; cursor: pointer;">Open Sheet</label>
     </div>
+    <div id="gruppo-iscrizione-manuale">
+        <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+            <input type="checkbox" id="iscrizione-manuale" style="width: 20px; height: 20px; cursor: pointer;" onchange="mostraListaIscrizione()">
+            <label for="iscrizione-manuale" style="margin-bottom: 0; cursor: pointer;">Enrol players manually</label>
+        </div>
+        <div id="lista-iscrizione" style="display: none; margin-top: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+                <small id="conto-iscrizione" style="opacity: .8;"></small>
+                <button type="button" class="btn-small" onclick="iscriviTutti(true)">Enrol everyone</button>
+                <button type="button" class="btn-small" onclick="iscriviTutti(false)">None</button>
+            </div>
+            <div id="elenco-giocatori-iscrizione" style="max-height: 170px; overflow-y: auto; padding: 6px 8px; border: 2px solid rgba(255,255,255,.35);"></div>
+        </div>
+    </div>
 </div>
 
         <div class="admin-col">
@@ -769,7 +783,8 @@ async function apriModaleEdit(idStagione) {
         }
 
         // 6. MOSTRA MODALE E AGGIORNA CALCOLI
-        document.getElementById('modalCreazione').style.display = 'flex'; 
+        document.getElementById('modalCreazione').style.display = 'flex';
+        document.getElementById('gruppo-iscrizione-manuale').style.display = 'none';      // l'iscrizione manuale è solo per la creazione
         aggiornaCalcoloDinamico();
 
     } catch (e) {
@@ -1094,7 +1109,13 @@ async function creaNuovaStagione() {
 
         await db.ref(`seasons/${nuovoID}/info`).set(seasonInfo);
 
-        alert(`Season ${nuovoID} created!`);
+        // iscrizione manuale: i giocatori scelti risultano già iscritti (come se avessero premuto CONFIRM nel hub)
+        const daIscrivere = giocatoriDaIscrivere();
+        for (const g of daIscrivere) {
+            await db.ref(`seasons/${nuovoID}/iscritti/${g.nome}`).set({ uid: g.uid, timestamp: firebase.database.ServerValue.TIMESTAMP });
+        }
+
+        alert(`Season ${nuovoID} created!` + (daIscrivere.length ? ` ${daIscrivere.length} player(s) enrolled.` : ''));
         location.reload();
 
     } catch (e) {
@@ -1195,6 +1216,10 @@ window.onload = () => {
     tipo.disabled = false;
     document.getElementById('icona-cup').value = '';
     document.getElementById('modalCreazione').style.display = 'flex';
+    document.getElementById('gruppo-iscrizione-manuale').style.display = '';
+    document.getElementById('iscrizione-manuale').checked = false;
+    mostraListaIscrizione();
+    caricaGiocatoriIscrivibili();
     popolaFormatiDaRegolamenti().then(() => cambiaTipoStagione());
 
     // Aggiorna il calcolo dinamico (es: "6 Sd / avversario")
@@ -1397,6 +1422,44 @@ async function creaNuovoPlayerAdmin() {
         console.error("Error during player creation:", error);
         alert("Error: " + error.message);
     }
+}
+
+// Iscrizione manuale dei giocatori alla stagione appena creata (senza che debbano iscriversi loro)
+let giocatoriIscrivibili = [];      // [{ nome, uid }] dal nodo users
+async function caricaGiocatoriIscrivibili() {
+    try {
+        const snap = await db.ref('users').once('value');
+        const u = snap.val() || {};
+        giocatoriIscrivibili = Object.entries(u).filter(([, v]) => v && String(v.name || '').trim()).map(([uid, v]) => ({ nome: String(v.name).trim(), uid }))
+            .sort((a, b) => a.nome.localeCompare(b.nome));
+    } catch (e) { giocatoriIscrivibili = []; }
+    const box = document.getElementById('elenco-giocatori-iscrizione');
+    if (!box) return;
+    box.replaceChildren(...giocatoriIscrivibili.map((g, i) => {
+        const riga = document.createElement('label');
+        riga.style.cssText = 'display:flex; align-items:center; gap:8px; margin:3px 0; cursor:pointer;';
+        const c = document.createElement('input');
+        c.type = 'checkbox'; c.value = String(i); c.className = 'iscrivi-giocatore'; c.onchange = aggiornaContoIscrizione;
+        riga.append(c, document.createTextNode(g.nome));
+        return riga;
+    }));
+    aggiornaContoIscrizione();
+}
+function mostraListaIscrizione() {
+    document.getElementById('lista-iscrizione').style.display = document.getElementById('iscrizione-manuale').checked ? 'block' : 'none';
+}
+function iscriviTutti(si) {
+    document.querySelectorAll('.iscrivi-giocatore').forEach(c => { c.checked = si; });
+    aggiornaContoIscrizione();
+}
+function aggiornaContoIscrizione() {
+    const n = document.querySelectorAll('.iscrivi-giocatore:checked').length;
+    const t = document.getElementById('conto-iscrizione');
+    if (t) t.textContent = `${n} of ${giocatoriIscrivibili.length} selected`;
+}
+function giocatoriDaIscrivere() {
+    if (!document.getElementById('iscrizione-manuale')?.checked) return [];
+    return [...document.querySelectorAll('.iscrivi-giocatore:checked')].map(c => giocatoriIscrivibili[Number(c.value)]).filter(Boolean);
 }
 
 // Chiama una Function del server (europe-west1): l'SDK delle Functions si carica la prima volta

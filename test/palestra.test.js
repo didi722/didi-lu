@@ -378,3 +378,11 @@ test('CPU come allenatore: nome, avatar e colore a caso tra i liberi; sfondo sfi
     assert.match(sf, /notifiche\/\$\{P\.uid\}\/nascoste/);
     assert.match(sf, /class: ?'sfide-x'|el\('button', 'sfide-x'/);
 });
+
+test('admin: iscrizione manuale dei giocatori alla creazione della stagione (lista, iscrivi tutti, scrittura in iscritti)', () => {
+    const a = leggi('docs', 'admin.html');
+    assert.match(a, /id="iscrizione-manuale"/);
+    assert.match(a, /onclick="iscriviTutti\(true\)">Enrol everyone/);
+    assert.match(a, /db\.ref\(`seasons\/\$\{nuovoID\}\/iscritti\/\$\{g\.nome\}`\)\.set\(\{ uid: g\.uid, timestamp: firebase\.database\.ServerValue\.TIMESTAMP \}\)/);
+    assert.match(a, /gruppo-iscrizione-manuale'\)\.style\.display = 'none'/, 'non compare quando si modifica una stagione');
+});
