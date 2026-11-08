@@ -320,7 +320,12 @@ export async function caricaTappaPalestra(db, idGym, numeroTappa) {
     if (!testo) throw new Error("The gym leader's team is empty.");
     const vantaggio = self.Palestra.perId(tappa.vantaggio);
     // com'è fatta la sua pagina pubblica (colore, sfondo, aura, effetti): il simulatore ne veste la palestra (Palestra.temaPalestra)
-    const aspetto = { colore: info.color, avatar: info.avatar, pagina: info.pagina, aura: info.aura, effettoNome: info.effettoNome, effettoPalco: info.effettoPalco };
+    // il Pokémon compagno del capopalestra (shiny se lo è nel suo Box): sta sullo sfondo della battaglia
+    let shiny = false;
+    if (info.pkmBox && info.pkmPreferito && self.Cosmetici) {
+        try { shiny = !!self.Cosmetici.compagnoShiny(info, (await db.ref(`players/${id}/teams`).once('value')).val() || {}); } catch (e) { /* senza shiny */ }
+    }
+    const aspetto = { colore: info.color, avatar: info.avatar, pagina: info.pagina, aura: info.aura, effettoNome: info.effettoNome, effettoPalco: info.effettoPalco, compagno: info.pkmPreferito ? { nome: String(info.pkmPreferito), shiny } : null };
     return { nome: String(info.name || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria, aspetto };
 }
 

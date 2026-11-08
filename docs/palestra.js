@@ -194,9 +194,8 @@
         if (!fonte) return { ok: false };
         const annuncia = () => battle.add('-message', `${v.icona || '🏟️'} GYM ADVANTAGE${nome ? ` · ${String(nome).replace(/[|\r\n]+/g, ' ')}'s gym` : ''}: ${v.nome}! ${testoAnnuncio(v, battle.gen)}`);
         if (v.tipo === 'boost') {
-            annuncia();
-            for (const p of attivi) battle.boost(v.boost, p, p, null, true, true);
-            proteggi(battle, v, lato);
+            // i boost arrivano a ogni Pokémon della palestra che entra in campo (proteggi li installa); qui, se non c'era ancora, ai due d'apertura
+            if (!battle.gymBoostAttivo) { proteggi(battle, v, lato, nome); battle.gymAnnuncia(); for (const p of attivi) boostaIngresso(battle, v, p); }
             return { ok: true };
         }
         const gen = battle.gen || 9;
@@ -238,15 +237,35 @@
      * Da chiamare appena la partita è creata (i Pokémon d'apertura, con Intimidate, entrano in campo prima che il vantaggio parta): da lì le abilità avversarie non abbassano
      * le statistiche che il vantaggio di boost alza. Per gli altri vantaggi non fa niente. Si può chiamare più volte.
      */
-    function proteggi(battle, vantaggio, lato = 'p2') {
+    function proteggi(battle, vantaggio, lato = 'p2', nome = '') {
         const v = typeof vantaggio === 'string' ? perId(vantaggio) : vantaggio;
         if (!battle || !v || v.tipo !== 'boost' || battle.gymProtetto) return false;
         const side = battle.sides.find(s => s.id === lato);
         if (!side) return false;
         battle.gymProtetto = true;
         proteggiBoost(battle, side, Object.keys(v.boost));
+        // ogni volta che un Pokémon della palestra entra in campo prende il boost (non si sommano: quando esce lo perde)
+        battle.gymBoostAttivo = true;
+        const host = battle.actions && typeof battle.actions.switchIn === 'function' ? battle.actions : battle;      // nelle versioni nuove del simulatore sta in battle.actions
+        const entra = host.switchIn.bind(host);
+        let annunciato = false;
+        battle.gymAnnuncia = () => {
+            if (annunciato) return;
+            annunciato = true;
+            battle.add('-message', `${v.icona || '🏟️'} GYM ADVANTAGE${nome ? ` · ${String(nome).replace(/[|\r\n]+/g, ' ')}'s gym` : ''}: ${v.nome}! ${testoAnnuncio(v, battle.gen)}`);
+        };
+        host.switchIn = function (pokemon, ...resto) {
+            const esito = entra(pokemon, ...resto);
+            if (pokemon && pokemon.side === side && esito !== false && !pokemon.fainted) {
+                battle.gymAnnuncia();
+                boostaIngresso(battle, v, pokemon);
+            }
+            return esito;
+        };
         return true;
     }
+
+    function boostaIngresso(battle, v, pokemon) { battle.boost(v.boost, pokemon, pokemon, null, true, true); }
 
     /** Le statistiche alzate dal vantaggio non scendono per colpa di un'abilità avversaria (Intimidate...): sono le abilità a contare, le mosse (Parting Shot...) le abbassano lo stesso */
     function proteggiBoost(battle, side, stat) {

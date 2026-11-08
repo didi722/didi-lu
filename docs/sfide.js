@@ -55,7 +55,7 @@
         nonLettePrima: 0,
         battagliePrima: 0,
         mvp: {},                  // id → stagione in cui votare l'MVP (vedi la sezione MVP)
-        posta: { uid: '', voci: [], lette: {}, pronte: { voci: false, lette: false }, locali: new Set(), ascolti: [], digestSpento: false },   // la posta del campanello (vedi la sezione 7c)
+        posta: { uid: '', voci: [], lette: {}, pronte: { voci: false, lette: false }, locali: new Set(), nascoste: {}, nascosteLocali: new Set(), ascolti: [], digestSpento: false },   // la posta del campanello (vedi la sezione 7c)
         pushStato: '',            // lo stato delle notifiche push su questo dispositivo ('acceso', 'spento', 'negato', 'non-supportato', '' = non ancora letto)
         pushNota: '',             // l'ultima frase del piè del campanello (esito di accensione o prova)
         pushOccupato: false,
@@ -841,7 +841,7 @@
 
     function staccaPosta() {
         S.posta.ascolti.forEach(([q, fn]) => { try { q.off('value', fn); } catch (e) { /* già staccato */ } });
-        S.posta = { uid: '', voci: [], lette: {}, pronte: { voci: false, lette: false }, locali: new Set(), ascolti: [], digestSpento: false };
+        S.posta = { uid: '', voci: [], lette: {}, pronte: { voci: false, lette: false }, locali: new Set(), nascoste: {}, nascosteLocali: new Set(), ascolti: [], digestSpento: false };
     }
 
     function avviaPosta() {
@@ -873,6 +873,11 @@
             P.digestSpento = (snap.val() || {}).digest === 'off';
             disegnaCampanella();
         }, err => console.warn('Preferenze non leggibili: controlla le regole del database', err));
+        // le notifiche cancellate dal campanello: notifiche/{uid}/nascoste/{chiave} = timestamp (restano nel database, ma non si mostrano più)
+        segui(`notifiche/${P.uid}/nascoste`, 0, snap => {
+            P.nascoste = snap.val() || {};
+            disegnaCampanella();
+        }, err => console.warn('Notifiche cancellate non leggibili: controlla le regole del database', err));
         segui(`notifiche/${P.uid}/posta-lette`, 0, snap => {
             P.lette = snap.val() || {};
             P.pronte.lette = true;
@@ -884,7 +889,22 @@
     }
 
     const lettaPosta = k => !!S.posta.lette[k] || S.posta.locali.has(k);
-    const postaNonLetta = () => (S.posta.pronte.voci && S.posta.pronte.lette ? S.posta.voci.filter(x => !lettaPosta(x.k)) : []);
+    // ---- cancellare le notifiche dal campanello ----
+    const chiaveNascosta = (...parti) => parti.join('__').replace(/[.#$\[\]\/]/g, '_');
+    const nascosta = k => !!S.posta.nascoste[k] || S.posta.nascosteLocali.has(k);
+    const postaVisibile = () => S.posta.voci.filter(x => !nascosta(chiaveNascosta('posta', x.k)));
+    /** Si possono cancellare le risposte alle mie sfide, il voto MVP e la posta; le sfide in attesa si rispondono (Accept/Decline) o si ritirano */
+    const cancellabile = x => x.tipo === 'rifiutata' || x.tipo === 'accettata' || x.tipo === 'mvp';
+    const chiaveDi = x => chiaveNascosta(x.D.id, x.chiave);
+    function nascondi(chiavi) {
+        if (!S.utente || !chiavi.length) return;
+        const agg = {};
+        for (const k of chiavi) { S.posta.nascosteLocali.add(k); agg[k] = firebase.database.ServerValue.TIMESTAMP; }
+        db().ref(`notifiche/${S.utente.uid}/nascoste`).update(agg)
+            .catch(e => console.warn('Notifica non cancellata: controlla le regole del database', e));
+        disegnaCampanella();
+    }
+    const postaNonLetta = () => (S.posta.pronte.voci && S.posta.pronte.lette ? postaVisibile().filter(x => !lettaPosta(x.k)) : []);
 
     function segnaLettePosta(voci) {
         if (!S.utente || !voci.length) return;
@@ -1079,12 +1099,20 @@
         return a;
     }
 
-    function voce({ classe = '', tag, quando, nuova = false, testo, dettagli, azioni = [] }) {
+    function voce({ classe = '', tag, quando, nuova = false, testo, dettagli, azioni = [], cancella = null }) {
         const v = el('div', `sfide-voce ${classe}`);
         const top = el('div', 'sfide-voce-top');
         top.append(el('span', 'sfide-tag', esc(tag)));
         if (nuova) top.append(el('span', 'sfide-nuova', 'New'));
         top.append(el('span', 'sfide-quando', esc(quandoFa(quando))));
+        if (cancella) {
+            const x = el('button', 'sfide-x', '&times;');
+            x.type = 'button';
+            x.title = 'Delete this notification';
+            x.setAttribute('aria-label', 'Delete this notification');
+            x.addEventListener('click', e => { e.stopPropagation(); cancella(); });
+            top.append(x);
+        }
         v.append(top, el('p', '', testo));
         if (dettagli) v.append(el('p', 'sfide-dettagli', esc(dettagli)));
         if (azioni.length) {
@@ -1125,7 +1153,7 @@
         aggiornaVisibilita();
         if (btn.hidden) return;
 
-        const tutte = notifiche();
+        const tutte = notifiche().filter(x => !(cancellabile(x) && nascosta(chiaveDi(x))));
         const caricata = D => D.pronti.sfide && D.pronti.lette;
         let nonLette = tutte.filter(n => caricata(n.D) && !letta(n.D, n.chiave));
         let postaNuova = postaNonLetta();
@@ -1177,7 +1205,7 @@
         // Solo l'avviso: la battaglia in corso si apre dal bottone con le spade (le amichevoli accettate stanno nella sezione sotto)
         const risposte = tutte.filter(x => x.tipo !== 'ricevuta' && x.tipo !== 'mvp' && !(x.D.amichevole && x.tipo === 'accettata')).map(x => voce({
             classe: x.tipo === 'rifiutata' ? 'rifiutata' : 'accettata',
-            tag: x.D.amichevole ? 'Friendly' : x.s.categoria, quando: x.quando, nuova: nuova(x),
+            tag: x.D.amichevole ? 'Friendly' : x.s.categoria, quando: x.quando, nuova: nuova(x), cancella: () => nascondi([chiaveDi(x)]),
             testo: `<strong>${esc(x.s.a)}</strong> ${x.tipo === 'rifiutata' ? 'declined' : 'accepted'} your ${x.D.amichevole ? 'friendly ' : ''}challenge`
         }));
 
@@ -1209,7 +1237,7 @@
 
         // Il voto dell'MVP è aperto e non ho ancora votato: dice quanto manca e porta dritto al voto
         const votiMvp = tutte.filter(x => x.tipo === 'mvp').map(x => voce({
-            classe: 'ricevuta', tag: 'MVP', quando: x.quando, nuova: nuova(x),
+            classe: 'ricevuta', tag: 'MVP', quando: x.quando, nuova: nuova(x), cancella: () => nascondi([chiaveDi(x)]),
             testo: `Vote for the <strong>${esc(x.nome)}</strong> MVP`,
             dettagli: x.f.fase === 'dopo'
                 ? `The season is over · voting closes ${new Date(x.f.scade).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`
@@ -1222,12 +1250,14 @@
             classe: x.lega ? 'posta lega' : 'posta', tag: TAG_POSTA[x.tipo] || 'News', quando: x.t,
             nuova: S.nuoveAperte.has(`posta/${x.k}`) || (S.posta.pronte.voci && S.posta.pronte.lette && !lettaPosta(x.k)),
             testo: x.titolo && !x.lega ? `<strong>${esc(x.titolo)}</strong> ${esc(x.testo)}` : esc(x.testo),
+            cancella: () => nascondi([chiaveNascosta('posta', x.k)]),
             azioni: x.url ? [collegamento('Open', '', x.url)] : []
         });
-        const perMe = S.posta.voci.filter(x => !x.lega).slice(0, 8).map(vocePosta);
-        const dallaLega = S.posta.voci.filter(x => x.lega).slice(0, 8).map(vocePosta);
+        const perMe = postaVisibile().filter(x => !x.lega).slice(0, 8).map(vocePosta);
+        const dallaLega = postaVisibile().filter(x => x.lega).slice(0, 8).map(vocePosta);
 
         const pie = piePush();
+        const cancellabili = [...tutte.filter(cancellabile).map(chiaveDi), ...postaVisibile().slice(0, 16).map(x => chiaveNascosta('posta', x.k))];
         box.replaceChildren(...menuConSezioni('Notifications', [
             ['Waiting for you', ricevute],
             ['MVP voting', votiMvp],
@@ -1237,6 +1267,13 @@
             ['Replies', risposte],
             ['Sent', inviate]
         ], 'No notifications. Press VS next to a player in the rankings to send a challenge, or ⚔ on the Trainers page for a friendly match.'), ...(pie ? [pie] : []));
+        if (cancellabili.length) {
+            const tutteX = el('button', 'sfide-cancella-tutte', 'Clear all');
+            tutteX.type = 'button';
+            tutteX.addEventListener('click', e => { e.stopPropagation(); nascondi(cancellabili); });
+            const titolo = box.querySelector('h3');
+            if (titolo) titolo.after(tutteX); else box.prepend(tutteX);
+        }
     }
 
     // ---- Spade: battaglie in corso in tutte le stagioni (compare solo se ce ne sono) ----
