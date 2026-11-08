@@ -38,7 +38,7 @@ test('premi: in stagione un set giocato 5, vinto 11; amichevole 2 e 5; badge per
     assert.equal(M.premioSet({ ufficiale: false, vinto: true }), 5);
     assert.equal(M.premioSet({ ufficiale: true, vinto: false }), 5);
     assert.equal(M.premioSet({ ufficiale: true, vinto: true }), 11);
-    assert.deepEqual([M.premioBadge(0, 1), M.premioBadge(0, 3), M.premioBadge(1, 2), M.premioBadge(2, 3), M.premioBadge(3, 3), M.premioBadge(0, 9)], [25, 175, 50, 100, 0, 175]);
+    assert.deepEqual([M.premioBadge(0, 1), M.premioBadge(0, 3), M.premioBadge(1, 2), M.premioBadge(2, 3), M.premioBadge(3, 3), M.premioBadge(3, 4), M.premioBadge(0, 9)], [25, 175, 50, 100, 0, 200, 375]);
 });
 
 test('accredita: aggiunge al saldo e scrive il movimento; la stessa chiave paga una volta sola; importi nulli o senza uid non fanno niente', async () => {

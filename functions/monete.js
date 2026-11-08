@@ -6,7 +6,7 @@
 //
 // Come si guadagnano (PREMI, in cosmetici.js: sono calibrati con i prezzi sulla stagione tipo, vedi stimaStagione):
 //   - ogni set giocato: in stagione 5 monete, +6 se lo si vince; nelle amichevoli 2, +3 (al massimo 10 al giorno in tutto: così non si fanno monete giocando sempre con lo stesso amico);
-//   - un badge nuovo: 25 (bronzo), 50 (argento), 100 (oro); salendo di livello si prende quello dei livelli saltati;
+//   - un badge nuovo: 25 (bronzo), 50 (argento), 100 (oro), 200 (platino); salendo di livello si prende quello dei livelli saltati;
 //   - una stagione vinta: 300; un MVP della stagione (il Pokémon di un allenatore): 100.
 // Ogni premio ha una chiave: lo stesso fatto (un set, un badge, una stagione) paga una volta sola (walletEventi/{chiave}).
 // Non si guadagna contro la CPU (nessun controllo possibile da qui).
@@ -30,7 +30,7 @@ const sicura = t => String(t == null ? '' : t).replace(/[.#$/[\]]/g, '_').slice(
 const giornoDi = adesso => new Date(adesso).toISOString().slice(0, 10);
 
 const premioSet = ({ ufficiale, vinto }) => { const t = ufficiale ? PREMI.set.ufficiale : PREMI.set.amichevole; return t.giocato + (vinto ? t.vinto : 0); };
-const premioBadge = (prima, dopo) => { let t = 0; for (let l = Math.max(0, prima) + 1; l <= Math.min(3, dopo); l++) t += PREMI.badge[l]; return t; };
+const premioBadge = (prima, dopo) => { let t = 0; for (let l = Math.max(0, prima) + 1; l <= Math.min(4, dopo); l++) t += PREMI.badge[l]; return t; };
 
 async function scriviMovimento(db, uid, importo, motivo, adesso) {
     const rif = db.ref(`wallet/${uid}/movimenti`);
@@ -95,7 +95,7 @@ async function premiaSet({ db, uids, vincitore, ufficiale, id, set, adesso = Dat
     return dati;
 }
 
-/** Un badge nuovo o salito di livello (1 bronzo, 2 argento, 3 oro): chiave stabile, quindi paga una volta */
+/** Un badge nuovo o salito di livello (1 bronzo, 2 argento, 3 oro, 4 platino): chiave stabile, quindi paga una volta */
 async function premiaBadge({ db, uid, chiave, prima, dopo, nome, adesso = Date.now() }) {
     const importo = premioBadge(prima, dopo);
     return accredita(db, uid, importo, `Badge: ${nome || 'new badge'}`, { chiave: `badge-${chiave}-${dopo}`, adesso });
