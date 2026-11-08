@@ -180,7 +180,7 @@ test('cablaggio: motore (vantaggio prima del turno 1), battle.html?cpu=1&palestr
     // vantaggio di campo fisso: il campo mostra "all battle" invece dei turni
     assert.match(bu, /permanenti: cpu && cpu\.palestra \? self\.Palestra\.condizioniFisse\(cpu\.palestra\.vantaggio\) : \[\]/);
     assert.match(leggi('docs', 'battle-extra.js'), /S\.permanenti\.has\(idDi\(battle\.weather\)\) \? ALL_BATTLE/);
-    assert.match(mb, /self\.Palestra\.proteggi\(battle, v\.id, v\.lato \|\| 'p2'\)/, 'la protezione dei boost parte prima dei Pokémon d\'apertura');
+    assert.match(mb, /self\.Palestra\.proteggi\(battle, v\.id, v\.lato \|\| 'p2', v\.nome \|\| ''\)/, 'la protezione dei boost parte prima dei Pokémon d\'apertura');
     assert.match(leggi('docs', 'palestra.html'), /<script src="palestra\.js"><\/script>\s*<script src="palestra-ui\.js"><\/script>/);
     assert.match(leggi('docs', 'style-palestra.css'), /body\.pg-palestra \{ overflow-x: hidden; overflow-y: auto; \}/);
 });
@@ -258,10 +258,10 @@ test('cablaggio del tema: pagina di battaglia, stili, vantaggio sempre in vista 
     assert.match(bu, /voci = cpu && cpu\.palestra \? vociInsegnaPalestra\(\)/, 'l\'insegna mostra chi tiene la palestra e il vantaggio');
     assert.match(bu, /if \(cpu && cpu\.palestra\) mostraAnnuncioPalestra\(false\);/, 'cartello intero quando si entra');
     assert.ok(!/mostraAnnuncioPalestra\(true\)/.test(bu), 'il cartello non ricompare a inizio partita');
-    assert.match(bu, /nome: cpu && cpu\.palestra \? config\.p2\.nome : 'CPU'/, 'nelle colonne l\'avversario è il capopalestra, non "CPU"');
+    assert.match(bu, /nome: \(cpu && config\.p2\.nome\) \|\| 'CPU'/, 'nelle colonne l\'avversario è il capopalestra, non "CPU"');
     const ts = leggi('docs', 'team-sito.js');
     assert.match(ts, /players\/\$\{id\}\/info`/);
-    assert.match(ts, /const aspetto = \{ colore: info\.color, avatar: info\.avatar, pagina: info\.pagina, aura: info\.aura, effettoNome: info\.effettoNome, effettoPalco: info\.effettoPalco \};/);
+    assert.match(ts, /const aspetto = \{ colore: info\.color, avatar: info\.avatar, pagina: info\.pagina, aura: info\.aura, effettoNome: info\.effettoNome, effettoPalco: info\.effettoPalco, compagno: /);
     const css = leggi('docs', 'style-palestra-battaglia.css');
     for (const re of [/body\.palestra \{ background: var\(--pp-sfondo\); \}/, /body\.palestra \.cab-insegna/, /\.pal-annuncio \{/, /\.ins-vantaggio \{/, /\.pal-effetto \{/, /prefers-reduced-motion/, /max-width: 720px/]) assert.match(css, re);
     // il nero ha ombre scure semitrasparenti (regola del sito)
@@ -277,7 +277,7 @@ test('permanente: meteo, terreno, Trick Room e Tailwind non si tolgono né si so
         const gym = mk('Snorlax\nLevel: 50\n- Protect\n- Splash\n\nBlissey\nLevel: 50\n- Protect\n- Splash\n\nChansey\nLevel: 50\n- Protect\n- Splash\n\nMunchlax\nLevel: 50\n- Protect\n- Splash');
         const sfid = mk('Pelipper\nAbility: Drizzle\nLevel: 50\n- Trick Room\n- Tailwind\n- Sunny Day\n- Splash\n\nIncineroar\nAbility: Intimidate\nLevel: 50\n- Parting Shot\n- Splash\n\nIndeedee-F\nAbility: Psychic Surge\nLevel: 50\n- Protect\n- Splash\n\nTornadus\nLevel: 50\n- Protect\n- Splash');
         const sfid2 = mk('Indeedee-F\nAbility: Psychic Surge\nLevel: 50\n- Protect\n- Splash\n\nIncineroar\nAbility: Intimidate\nLevel: 50\n- Parting Shot\n- Splash\n\nPelipper\nLevel: 50\n- Protect\n- Splash\n\nTornadus\nLevel: 50\n- Protect\n- Splash');
-        async function gioca(vantaggio, squadra, mosse) {
+        async function gioca(vantaggio, squadra, mosse, gymMosse) {
             const flusso = new BattleStreams.BattleStream();
             const s = BattleStreams.getPlayerStreams(flusso);
             const log = []; (async () => { for await (const c of s.spectator) log.push(...c.split('\n')); })();
@@ -288,7 +288,7 @@ test('permanente: meteo, terreno, Trick Room e Tailwind non si tolgono né si so
             flusso.battle.endTurn = function () { if (this.turn === 0) P.applica(this, vantaggio, 'p2'); return originale(); };
             s.p1.write('team 1234'); s.p2.write('team 1234');
             await new Promise(r => setTimeout(r, 200));
-            for (const m of mosse) { s.p1.write(m); s.p2.write('move 2, move 2'); await new Promise(r => setTimeout(r, 120)); }
+            for (const m of mosse) { s.p1.write(m); s.p2.write(typeof gymMosse === 'function' ? gymMosse() : 'move 2, move 2'); await new Promise(r => setTimeout(r, 120)); }
             return { log, battle: flusso.battle };
         }
         // Pelipper (Drizzle) e Sunny Day non tolgono il sole
@@ -308,12 +308,18 @@ test('permanente: meteo, terreno, Trick Room e Tailwind non si tolgono né si so
         r = await gioca('boost-att', sfid2, ['move 2, move 1 1', 'move 2, move 1 1']);
         assert.ok(r.log.some(l => /\|-unboost\|p2a: Snorlax\|atk\|1/.test(l)), 'Parting Shot abbassa');
         assert.deepEqual(r.battle.sides[1].active[0].boosts.atk, 1);
+        // ogni Pokémon della palestra che entra in campo prende il boost (non si sommano: chi esce lo perde)
+        let turno = 0;
+        r = await gioca('boost-vel', sfid2, ['move 2, move 2', 'move 2, move 2'], () => (turno++ === 0 ? 'move 2, move 2' : 'switch 3, move 2'));
+        const gymLato = r.battle.sides[1];
+        assert.equal(gymLato.pokemon.find(p => p.name === 'Chansey').boosts.spe, 2, 'il nuovo entrato ha +2');
+        assert.equal(gymLato.pokemon.find(p => p.name === 'Snorlax').boosts.spe, 0, 'chi è uscito lo ha perso');
     } finally { fs.unlinkSync(copia); }
 });
 
 test('sfondo "sfida": partite tra due allenatori con lo sfondo diviso in diagonale (avatar, nome gigante)', () => {
     const bu = leggi('docs', 'battle-ui.js');
-    assert.match(bu, /async function vestiVersus\(nomeP1, nomeP2\)/);
+    assert.match(bu, /async function vestiVersus\(nomeP1, nomeP2, aspetto2 = null\)/);
     assert.equal((bu.match(/vestiVersus\(info\.p1\.nome, info\.p2\.nome\);/g) || []).length, 2, 'ufficiale e amichevole');
     assert.match(bu, /vestiVersus\(dati\.giocatori\.p1\.nome, dati\.giocatori\.p2\.nome\);/, 'prova dal sito');
     assert.match(bu, /mioLato === 'p2' \? \[destra, sinistra\]/, 'chi gioca sta a sinistra');
@@ -341,4 +347,34 @@ test('anteprima: con un solo team registrato l\'avversario non si svela prima de
     const be = leggi('docs', 'battle-extra.js');
     assert.match(be, /const visibile = S\.latiNoti\.includes\(lato\) \|\| S\.openSheet;/);
     assert.match(be, /candidati\.length === 1 && visibile \? candidati\[0\] : null/);
+});
+
+test('CPU come allenatore: nome, avatar e colore a caso tra i liberi; sfondo sfida; palestra con avatar a sinistra e compagno a destra', () => {
+    const C = require('../docs/cpu-persona.js'), Co = require('../docs/cosmetici.js');
+    assert.ok(C.NOMI.length >= 200 && new Set(C.NOMI).size === C.NOMI.length, 'una lista lunga, senza doppi');
+    assert.ok(!C.NOMI.some(n => /^cpu$/i.test(n)));
+    // solo avatar e colori liberi: se tutti tranne uno sono presi, esce quello
+    const presi = {};
+    for (const n of C.NUMERI_AVATAR) if (n !== 77) presi[`avatar-${n}`] = 'dodo';
+    for (const c of Co.COLORI_FIRMA) if (c !== '#00F0FF') presi[`colore-${c.slice(1).toLowerCase()}`] = 'didi';
+    for (let i = 0; i < 20; i++) {
+        const p = C.scegli({ presi, colori: Co.COLORI_FIRMA });
+        assert.equal(p.avatar, 'immagini/profile/77.png'); assert.equal(p.colore, '#00F0FF'); assert.ok(p.nome);
+    }
+    // senza niente di preso: avatar validi (mai i due che mancano) e nomi diversi tra loro
+    const visti = new Set();
+    for (let i = 0; i < 60; i++) { const p = C.scegli({ colori: Co.COLORI_FIRMA }); assert.match(p.avatar, /^immagini\/profile\/\d+\.png$/); assert.ok(!/\/(162|168)\.png/.test(p.avatar)); visti.add(p.nome); }
+    assert.ok(visti.size > 20);
+    const bu = leggi('docs', 'battle-ui.js');
+    assert.match(bu, /async function assegnaPersonaCpu\(\)/);
+    assert.match(bu, /async function iniziaContro\(team\) \{\s*await assegnaPersonaCpu\(\);/);
+    assert.match(bu, /async function iniziaRandom\(\) \{\s*await assegnaPersonaCpu\(\);/);
+    assert.match(bu, /vestiVersus\(config\.p1\.nome, p\.nome, \{/, 'sfondo sfida anche contro la CPU');
+    assert.match(bu, /data-colonna': 'sx'/, 'palestra: avatar a sinistra');
+    assert.match(bu, /data-colonna': 'dx'/, 'palestra: compagno a destra');
+    assert.match(leggi('docs', 'battle.html'), /<script src="cpu-persona\.js"><\/script>/);
+    assert.match(leggi('docs', 'style-palestra-battaglia.css') + leggi('docs', 'style-versus.css'), /\.pal-decor \.vs-avatar \{ transform: translateX\(-50%\) scaleX\(-1\)/);
+    const sf = leggi('docs', 'sfide.js');
+    assert.match(sf, /notifiche\/\$\{P\.uid\}\/nascoste/);
+    assert.match(sf, /class: ?'sfide-x'|el\('button', 'sfide-x'/);
 });

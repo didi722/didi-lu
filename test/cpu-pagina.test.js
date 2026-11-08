@@ -280,7 +280,7 @@ test('battle-ui.js: la CPU compone un team a caso quando inizia la sfida; a fine
     const ui = leggi('battle-ui.js');
     // all'inizio della prova: un team, composto adesso (non più uno scelto da un elenco già pronto)
     assert.match(ui, /primo = await nuovoTeamCpu\(dati\.regolamento, \{ iniziali: dati\.iniziali \}\);/);
-    assert.match(ui, /function iniziaContro\(team\) \{\s*cpu\.team = team;/);
+    assert.match(ui, /async function iniziaContro\(team\) \{\s*await assegnaPersonaCpu\(\);\s*cpu\.team = team;/);
     // rivincita: lo stesso team; altro team: se ne compone uno nuovo (il pulsante si disabilita mentre lavora)
     assert.match(ui, /iniziaContro\(cpu\.team\) \}, 'Rematch · same CPU team'/);
     assert.match(ui, /ev\.currentTarget\.disabled = true; altroTeamCpu\(\); \} \}, 'Another random CPU team'/);

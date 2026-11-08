@@ -34,6 +34,11 @@ body.versus { background: #1b1b22; }
 .vs-avatar { left: var(--vs-x, 12vw); transform: translateX(-50%); }
 .vs-dx .vs-avatar { transform: translateX(-50%) scaleX(-1); }
 
+/* palestra: l'avatar del capopalestra a sinistra, specchiato (gli avatar guardano a sinistra), il suo compagno a destra, centrati sotto le colonne dei Pokémon */
+.pal-decor .vs-avatar { transform: translateX(-50%) scaleX(-1); }
+.vs-compagno { position: absolute; bottom: 4vh; left: var(--vs-x, 88vw); transform: translateX(-50%); height: min(26vh, 260px); width: auto; max-width: 20vw; object-fit: contain; object-position: center bottom; filter: drop-shadow(4px 4px 0 rgba(0, 0, 0, .3)); }
+@media (max-width: 720px) { .vs-compagno { height: 16vh; } }
+
 html.app .vs-sfondo { display: none; }
 @media (max-width: 720px) {
     .vs-avatar { height: 40vh; }

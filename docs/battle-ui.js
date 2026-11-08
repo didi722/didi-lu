@@ -326,7 +326,8 @@ async function preparaCpuRandom(idFormato) {
 }
 
 // Due team nuovi e si parte (anche per la rivincita)
-function iniziaRandom() {
+async function iniziaRandom() {
+    await assegnaPersonaCpu();
     cpu.avviso = '';
     cpu.ultimoVincitore = null;
     config.p1.team = Teams.generate(cpu.random.id);
@@ -342,7 +343,7 @@ function schedeRandom() {
         senzaAnteprima: true,
         latiNoti: ['p1'],
         p1: { id: config.p1.id || '', nome: config.p1.nome, avatar: config.p1.avatar || '', candidati: [{ nome: config.p1.nomeTeam, set: setDaTeam(config.p1.team) }] },
-        p2: { nome: 'CPU', avatar: '', candidati: [{ nome: config.p2.nomeTeam, set: [] }] }
+        p2: { nome: config.p2.nome || 'CPU', avatar: config.p2.avatar || '', candidati: [{ nome: config.p2.nomeTeam, set: [] }] }
     });
 }
 
@@ -387,7 +388,29 @@ function preparaNote(dati, chiaveTeam) {
 }
 
 // Mette in campo il team della CPU indicato e fa partire la battaglia
-function iniziaContro(team) {
+// L'avversario CPU come un allenatore: nome, avatar e colore a caso (tra quelli liberi), nuovi a ogni partita; e lo sfondo "sfida" con lui
+let presiCache = null;
+async function cosmeticiPresiOra() {
+    if (presiCache) return presiCache;
+    try { presiCache = (await firebase.database().ref('cosmeticiPresi').once('value')).val() || {}; } catch (e) { presiCache = {}; }
+    return presiCache;
+}
+async function assegnaPersonaCpu() {
+    if (!cpu || cpu.palestra || !self.CpuPersona) return;
+    const presi = await cosmeticiPresiOra();
+    const p = self.CpuPersona.scegli({ presi, colori: (self.Cosmetici && self.Cosmetici.COLORI_FIRMA) || [] });
+    const motivi = Object.keys((self.PaginaPubblica && self.PaginaPubblica.MOTIVI) || { punti: 1 }).filter(m => m !== 'nessuno');
+    p.motivo = motivi[Math.floor(Math.random() * motivi.length)] || 'punti';
+    cpu.persona = p;
+    config.p2.nome = p.nome;
+    config.p2.avatar = p.avatar;
+    document.documentElement.style.setProperty('--colore-p2', p.colore);
+    impostaNomeGiocatore('p2', p.nome);
+    vestiVersus(config.p1.nome, p.nome, { nome: p.nome, colore: p.colore, avatar: p.avatar, pagina: { sfondo: { motivo: p.motivo, forza: 2, scritta: true } } });
+}
+
+async function iniziaContro(team) {
+    await assegnaPersonaCpu();
     cpu.team = team;
     cpu.avviso = '';
     cpu.ultimoVincitore = null;
@@ -419,10 +442,11 @@ function schedeCpu() {
     impostaPartita({
         openSheet: false,
         latiNoti: ['p1'],
-        permanenti: cpu && cpu.palestra ? self.Palestra.condizioniFisse(cpu.palestra.vantaggio) : [],      // il vantaggio di campo non ha un conto alla rovescia: dura tutta la partita
+        permanenti: cpu && cpu.palestra ? self.Palestra.condizioniFisse(cpu.palestra.vantaggio) : [],
+        latoPermanenti: cpu && cpu.palestra ? 'p2' : '',      // il vantaggio di campo non ha un conto alla rovescia: dura tutta la partita
         p1: { id: config.p1.id || '', nome: config.p1.nome, avatar: config.p1.avatar || '', candidati: [{ nome: config.p1.nomeTeam, set: setDaTeam(config.p1.team) }] },
         // in palestra l'avversario è il capopalestra, con il suo nome e la sua faccia anche dentro lo schermo
-        p2: { nome: cpu && cpu.palestra ? config.p2.nome : 'CPU', avatar: (cpu && cpu.palestra && config.p2.avatar) || '', candidati: [{ nome: config.p2.nomeTeam, set: setDaTeam(config.p2.team).map(x => ({ species: x.species, name: x.name })) }] }
+        p2: { nome: (cpu && config.p2.nome) || 'CPU', avatar: (cpu && config.p2.avatar) || '', candidati: [{ nome: config.p2.nomeTeam, set: setDaTeam(config.p2.team).map(x => ({ species: x.species, name: x.name })) }] }
     });
 }
 
@@ -1368,6 +1392,24 @@ function vestiPalestra(gym) {
     const effetto = $('pal-effetto');
     effetto.dataset.effettoPalco = tema.effettoPalco || '';
     effetto.hidden = !tema.effettoPalco;
+    // a sinistra l'avatar del capopalestra (specchiato: gli avatar guardano verso sinistra), a destra il suo Pokémon compagno; ognuno centrato sotto la sua colonna
+    const SP = self.SpritePkm;
+    const decor = el('div', { class: 'vs-sfondo pal-decor', 'aria-hidden': 'true' });
+    if (tema.avatar) decor.append(el('img', { class: 'vs-avatar pal-avatar', 'data-colonna': 'sx', src: tema.avatar, alt: '', draggable: 'false', style: tema.aura ? `--pal-aura:${tema.aura.colore}` : null, onerror: ev => ev.target.remove() }));
+    const comp = gym.aspetto && gym.aspetto.compagno;
+    if (comp && SP) decor.append(el('img', { class: 'vs-compagno', 'data-colonna': 'dx', src: SP.gif(comp.nome, comp.shiny), alt: '', draggable: 'false', 'data-pkm': comp.nome, onerror: ev => { if (!SP.ritenta(ev.target)) ev.target.remove(); } }));
+    document.body.prepend(decor);
+    const posiziona = () => {
+        const colonne = ['lato-p1', 'lato-p2'].map(id => $(id)).filter(Boolean).map(e => e.getBoundingClientRect()).filter(r => r.width > 0).sort((x, y) => x.left - y.left);
+        if (colonne.length < 2) return;
+        for (const img of decor.querySelectorAll('[data-colonna]')) {
+            const r = img.dataset.colonna === 'sx' ? colonne[0] : colonne[1];
+            img.style.setProperty('--vs-x', `${Math.round(r.left + r.width / 2)}px`);
+        }
+    };
+    posiziona();
+    window.addEventListener('resize', posiziona);
+    setInterval(posiziona, 700);
     // il nome gigante dietro a tutto, come sulla sua pagina (solo contorno)
     if (tema.scritta) {
         const nome = String(gym.nome || '').toUpperCase();
@@ -1379,11 +1421,11 @@ function vestiPalestra(gym) {
 
 // Partite tra due allenatori (ufficiali, amichevoli, prove dal sito): lo sfondo è la "carta di sfida" dei due. La pagina è divisa in diagonale: a sinistra lo sfondo della pagina pubblica
 // del primo (colore, motivo, nome gigante) con il suo avatar grande, a destra lo stesso per il secondo (stile in style-versus.css).
-async function vestiVersus(nomeP1, nomeP2) {
+async function vestiVersus(nomeP1, nomeP2, aspetto2 = null) {
     try {
         if (document.body.classList.contains('palestra') || !window.firebase || !self.Palestra) return;
         const db = firebase.database();
-        const [a1, a2] = await Promise.all([caricaAspetto(db, nomeP1), caricaAspetto(db, nomeP2)]);
+        const [a1, a2] = await Promise.all([caricaAspetto(db, nomeP1), aspetto2 ? Promise.resolve(aspetto2) : caricaAspetto(db, nomeP2)]);
         const lato = (a, nome, classe) => {
             // lo sfondo è il colore principale dell'allenatore con il motivo che ha scelto per la sua pagina (non il colore di sfondo della pagina)
             const t = self.Palestra.temaPalestra({ ...a, pagina: { sfondo: { ...((a.pagina && typeof a.pagina.sfondo === 'object' && a.pagina.sfondo) || {}), colore: 'giocatore' } } }, self.PaginaPubblica, self.Cosmetici);

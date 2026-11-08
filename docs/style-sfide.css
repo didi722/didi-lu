@@ -609,3 +609,19 @@
 
 /* il tasto VS di una classifica già disegnata si nasconde quando contro quel giocatore non resta nulla da giocare (sfide.js) */
 .sfida-rank-btn[hidden] { display: none !important; }
+
+/* ---------- Cancellare le notifiche dal campanello ---------- */
+.sfide-x {
+    flex: none; width: 22px; height: 22px; padding: 0; margin-left: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #fff; color: #000; border: 2px solid var(--nb-ink, #000);
+    font: 900 1rem/1 'Josefin Sans', sans-serif; cursor: pointer;
+    transition: transform 0.1s ease, background 0.1s ease;
+}
+.sfide-x:hover { background: #ff4d4d; color: #fff; transform: rotate(-6deg) scale(1.08); }
+.sfide-cancella-tutte {
+    display: block; margin: 0 0 8px auto; padding: 4px 10px 2px; cursor: pointer;
+    background: #fff; color: #000; border: 2px solid var(--nb-ink, #000);
+    font: 800 0.7rem 'Josefin Sans', sans-serif; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.sfide-cancella-tutte:hover { background: #ffbd44; }
