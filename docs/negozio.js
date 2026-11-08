@@ -83,7 +83,7 @@
         const voci = [
             ['Season set played', o.giocato], ['Season set won', o.giocato + o.vinto],
             ['Friendly set played', a.giocato], ['Friendly set won', a.giocato + a.vinto],
-            ['New bronze badge', P.badge[1]], ['New silver badge', P.badge[2]], ['New gold badge', P.badge[3]],
+            ['New bronze badge', P.badge[1]], ['New silver badge', P.badge[2]], ['New gold badge', P.badge[3]], ['New platinum badge', P.badge[4]],
             ['Season won', P.stagioneVinta], ['Season MVP', P.mvp]
         ];
         return `<ul class="ng-premi">${voci.map(([testo, n]) => `<li><span>${esc(testo)}</span><b>+${n} 🪙</b></li>`).join('')}</ul>`

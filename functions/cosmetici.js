@@ -51,7 +51,7 @@
     const PREMI = {
         set: { ufficiale: { giocato: 5, vinto: 6 }, amichevole: { giocato: 2, vinto: 3 } },     // "vinto" è in più di "giocato": vincere un set di stagione vale 11
         tettoAmichevoliGiorno: 10,
-        badge: [0, 25, 50, 100],            // bronzo, argento, oro
+        badge: [0, 25, 50, 100, 200],       // bronzo, argento, oro, platino
         stagioneVinta: 300,
         mvp: 100
     };
