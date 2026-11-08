@@ -65,6 +65,8 @@
     const db = () => firebase.database();
     const $ = id => document.getElementById(id);
     const idDi = n => String(n || '').toLowerCase().trim();
+    // il nome di un formato come lo scrivono lo showdown e la sfida può avere maiuscole o spazi diversi da quello della stagione: si confronta senza badarci
+    const idFormato = f => String(f || '').toLowerCase().replace(/\s+/g, ' ').trim();
     const esc = t => String(t ?? '').replace(/[&<>"']/g, c =>
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -107,7 +109,7 @@
     function showdownTra(D, a, b, formato) {
         return Object.entries(D.showdowns).filter(([, sd]) => {
             const i = sd?.info || {};
-            return coppia(i.player1, i.player2, a, b) && (!formato || i.categoria === formato);
+            return coppia(i.player1, i.player2, a, b) && (!formato || idFormato(i.categoria) === idFormato(formato));
         });
     }
 
@@ -120,7 +122,7 @@
 
     function rimasti(D, a, b, formato) {
         if (!massimo(D)) return Infinity;
-        const inAttesa = sfideInAttesaTra(D, a, b).filter(([, s]) => s.categoria === formato).length;
+        const inAttesa = sfideInAttesaTra(D, a, b).filter(([, s]) => idFormato(s.categoria) === idFormato(formato)).length;
         return Math.max(0, massimo(D) - showdownTra(D, a, b, formato).length - inAttesa);
     }
 
@@ -131,8 +133,8 @@
         const inAttesa = sfideInAttesaTra(D, a, b);
         const inCorso = showdownTra(D, a, b).filter(([, sd]) => !completato(sd));
         const occupati = new Set([
-            ...inAttesa.map(([, s]) => s.categoria),
-            ...inCorso.map(([, sd]) => sd.info.categoria)
+            ...inAttesa.map(([, s]) => idFormato(s.categoria)),
+            ...inCorso.map(([, sd]) => idFormato(sd.info.categoria))
         ]);
         return { inAttesa, inCorso, occupati };
     }
@@ -575,7 +577,7 @@
 
         // Solo i formati liberi e con showdown ancora da giocare
         const formati = formatiStagione(D)
-            .filter(f => !occupati.has(f))
+            .filter(f => !occupati.has(idFormato(f)))
             .map(f => [f, rimasti(D, D.io, nome, f)])
             .filter(([, r]) => r > 0);
         if (!formati.length) {
@@ -618,7 +620,7 @@
     async function lancia(D, nome, formato, bottone) {
         bottone.disabled = true;
         // Ricontrollo con i dati più freschi
-        if (formatiOccupati(D, D.io, nome).occupati.has(formato)) {
+        if (formatiOccupati(D, D.io, nome).occupati.has(idFormato(formato))) {
             chiudiModale();
             return mostraAvviso(`There is already an active ${formato} challenge or showdown with ${nome}`);
         }
