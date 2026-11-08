@@ -1410,6 +1410,13 @@ function vestiPalestra(gym) {
     posiziona();
     window.addEventListener('resize', posiziona);
     setInterval(posiziona, 700);
+    // il compagno è in scala con l'avatar del capopalestra (altezza vera del Pokémon, allenatore alto 1,70 m: ScalaPkm.scena); chi vola sta un po' sollevato
+    const avatarImg = decor.querySelector('.pal-avatar'), compImg = decor.querySelector('.vs-compagno');
+    const scala = () => { if (avatarImg && compImg && self.ScalaPkm) self.ScalaPkm.scena({ allenatore: avatarImg, pokemon: compImg, spazioPx: Math.round(window.innerHeight * 0.9) }).catch(() => {}); };
+    scala();
+    for (const img of [avatarImg, compImg]) if (img) img.addEventListener('load', scala);
+    setTimeout(scala, 1500);
+    window.addEventListener('resize', scala);
     // il nome gigante dietro a tutto, come sulla sua pagina (solo contorno)
     if (tema.scritta) {
         const nome = String(gym.nome || '').toUpperCase();
