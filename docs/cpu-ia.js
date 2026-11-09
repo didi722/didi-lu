@@ -1903,5 +1903,5 @@
 
     function crea(opzioni) { return new Cerebro(opzioni); }
 
-    return { crea, Cerebro, posizione, leggiHp, leggiDettagli };
+    return { crea, Cerebro, posizione, leggiHp, leggiDettagli, PARAMETRI_BASE };
 });
