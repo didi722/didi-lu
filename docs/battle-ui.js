@@ -21,7 +21,7 @@ import {
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
 import { caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra, caricaAspetto } from './team-sito.js';
-import { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro } from './cpu-partita.js';
+import { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile } from './cpu-partita.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
 import './formato-random.js';   // self.FormatoRandom: i formati Random Battle di Showdown
@@ -65,6 +65,18 @@ let battaglia, stato, pannelli, finita;
 // partita), problemi (perché il team, dopo una modifica, non si può giocare), ultimoVincitore, generando (si sta
 // componendo un altro team della CPU) }
 let cpu = null;
+// Le abitudini di chi gioca contro la CPU (players/<id>/stile, cpu-avversario.js): si leggono una volta per giocatore. Il cervello le usa per prevedere cosa
+// farà (si para, cambia, usa una mossa di stato) e impara da quello che fa in partita; finché non arrivano (o per chi non ha il login) parte dalla media della lega.
+let stileCpu = { id: '', profilo: null };
+function studiaGiocatore(id) {
+    if (!id || stileCpu.id === id) return;
+    stileCpu = { id, profilo: null };
+    caricaStile(firebase.database(), id).then(profilo => {
+        if (stileCpu.id !== id) return;
+        stileCpu.profilo = profilo;
+        if (cpu && cpu.cerebro) cpu.cerebro.impostaAvversario(profilo);      // arrivate a partita iniziata: da adesso le usa
+    }).catch(() => { /* senza le sue abitudini la CPU parte dalla media della lega */ });
+}
 let editor = null;          // { frame, pronto } mentre la finestra dell'editor del team è aperta
 let generatoriRandom = null; // la promessa del caricamento di pkmn-randoms.js (i team dei formati Random), solo quando serve
 
@@ -1562,7 +1574,8 @@ function avviaBattaglia() {
     // il cervello conosce la strategia del team che sta giocando (non si vede da nessuna parte: il team si chiama "Team N")
     // ...e quali meccaniche di generazione ammette il formato (Dynamax, Mosse Z, Mega, Teracristal): se è spento, la CPU non ci pensa nemmeno
     if (cpu) {
-        cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento) });
+        studiaGiocatore(config.p1 && config.p1.id);
+        cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento), avversario: stileCpu.profilo || true });
         cpu.errori = 0; cpu.rqid = null;
     }
     battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2, vantaggio: cpu && cpu.palestra && cpu.palestra.vantaggio ? { id: cpu.palestra.vantaggio.id, lato: 'p2', nome: cpu.palestra.nome } : null });

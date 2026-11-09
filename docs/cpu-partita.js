@@ -5,13 +5,16 @@
 //     (formato-pool.js) nel momento in cui inizia la sfida, a caso e diverso da quelli appena incontrati. La parte lenta (leggere
 //     le mosse di un centinaio di Pokémon) si fa una volta per formato e si tiene in memoria finché la pagina resta aperta:
 //     il primo team costa una frazione di secondo, quelli dopo ancora meno. Niente più team ricordati nel browser.
-//   - nuovoCervello(): chi sceglie le mosse della CPU in battaglia (cpu-ia.js).
+//   - nuovoCervello(): chi sceglie le mosse della CPU in battaglia (cpu-ia.js), che può conoscere le abitudini di chi ha davanti.
+//   - caricaStile(db, id): le abitudini di un giocatore (players/<id>/stile, le somma il workflow "Stile dei giocatori") nella forma che il cervello legge.
 // Nessun riferimento al DOM.
 // =====================================================
 
 import { Dex, TeamValidator } from './pkmn-sim.js';
 import './cpu-conoscenza.js';    // self.CpuConoscenza
 import './cpu-calcolo.js';       // self.CpuCalcolo
+import './azioni-mosse.js';      // self.AzioniMosse (come le statistiche dividono le mosse: attacco, protezione...)
+import './cpu-avversario.js';    // self.CpuAvversario (le abitudini di chi ha davanti)
 import './cpu-ia.js';            // self.CpuIa
 import './formato-pool.js';      // self.FormatoPool
 import './consigli.js';          // self.Consigli
@@ -80,8 +83,22 @@ export async function nuovoTeamCpu(regolamento, { iniziali = [], seme } = {}) {
 // `piano`: la strategia del team che gioca (team.piano di nuovoTeamCpu): l'IA la applica in anteprima e in battaglia.
 // `meccaniche`: le meccaniche di generazione che il formato ammette (Mega Evoluzione, Mosse Z, Dynamax, Teracristal): false se il formato
 // non le ammette (generationalMechanics spento), altrimenti ci pensa il simulatore a offrirle (e a scrivere nel log le clausole che le vietano)
-export function nuovoCervello(lato = 'p2', { piano = null, meccaniche } = {}) {
-    return self.CpuIa.crea({ Dex, lato, piano, meccaniche });
+// `avversario`: le abitudini di chi gioca contro (il risultato di caricaStile): con quelle la CPU non prevede più solo il suo attacco migliore ma anche se
+// si para, cambia o usa una mossa di stato; senza (null) è la CPU di sempre.
+export function nuovoCervello(lato = 'p2', { piano = null, meccaniche, avversario = null } = {}) {
+    return self.CpuIa.crea({ Dex, lato, piano, meccaniche, avversario });
+}
+
+// Le abitudini di un giocatore, nella forma che il cervello legge (cpu-avversario.js): quelle sue tirate verso la media della lega se ha pochi set, la
+// media della lega se non ha dati. Un errore di rete non ferma niente: la CPU parte comunque, con la media della lega.
+export async function caricaStile(db, id) {
+    let nodo = null;
+    try {
+        if (db && id) nodo = (await db.ref(`players/${String(id).toLowerCase().trim()}/stile`).once('value')).val();
+    } catch (errore) {
+        console.warn("Couldn't read the player's style, the CPU starts with the league's average", errore);
+    }
+    return self.CpuAvversario.daStile(nodo);
 }
 
 // Cosa dire a nuovoCervello delle meccaniche di generazione di un formato: false se spente, altrimenti niente (le decide il simulatore)

@@ -19,6 +19,11 @@
 //     contro di lui; U-turn/Volt Switch/Flip Turn fanno entrare chi regge meglio; a fine turno conta la posizione (chi
 //     minaccia chi, chi muove prima) e non solo il danno del turno.
 //
+// Chi ha davanti: se la CPU conosce le abitudini dell'avversario (cpu-avversario.js: quante volte si para, cambia, usa una mossa di stato) il
+// punto 3 non prevede più solo l'attacco migliore ma più scenari, ognuno con la sua probabilità: attacca, si para, cambia, fa altro. Le
+// abitudini vengono dai suoi set giocati sul sito (players/<id>/stile) e si correggono con quello che fa in partita. Senza (opzione
+// `avversario` assente) la previsione è quella di sempre.
+//
 // Strategia del team: ogni team ha un piano (Tailwind, Stanza Magica, pioggia, sole, sabbia, neve, bilanciato...) deciso da
 // team-cpu.js. L'IA lo legge dai set (chi lo imposta, chi ne approfitta) e lo applica: in anteprima porta il nucleo del piano e
 // manda in campo per primo chi lo imposta; in battaglia valuta di più Tailwind, Stanza Magica e il proprio meteo, anche
@@ -30,9 +35,9 @@
 // Il Dex di @pkmn/sim arriva da fuori. Funziona nel browser (window.CpuIa) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'));
-    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo);
-})(typeof self !== 'undefined' ? self : this, function (K, C) {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'), require('./cpu-avversario.js'));
+    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo, radice.CpuAvversario);
+})(typeof self !== 'undefined' ? self : this, function (K, C, Avv) {
     'use strict';
 
     const id = K.id;
@@ -70,6 +75,15 @@
     //                       il Dynamax dura tre turni (HP doppi, mosse Max che non sbagliano): il turno in cui si fa vale subito per i danni
     //                       e la resistenza che si vedono nel turno, più bonusDinamax per i due turni dopo; si fa una volta sola per partita,
     //                       quindi costa spesaDinamax (meno se restano pochi Pokémon: usarlo o perderlo)
+    //   sogliaScenario, maxScenari
+    //                       con le abitudini dell'avversario (opzione `avversario`) ogni turno ha più scenari: si tengono i più probabili (almeno
+    //                       sogliaScenario ciascuno, al massimo maxScenari) e il turno si valuta su ognuno
+    //   parataCambioAvv     se l'avversario cambia, chi entra al suo posto incassa questa parte di danno in meno (di solito è scelto per reggere)
+    //   protezioneDiFilaAvv quanto è probabile che l'avversario si pari di nuovo se l'ha già fatto il turno prima (la seconda riesce una volta su tre,
+    //                       e chi gioca lo sa): 1 = come sempre, 0 = mai
+    //   forzaLegaAvv, forzaPartitaAvv
+    //                       quanto fidarsi delle abitudini di un avversario con pochi dati (decisioni che valgono quanto la media della lega) e
+    //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
     //   spesaMossaZ         la Mossa Z si fa una volta sola per partita: costa questo (meno se restano pochi Pokémon)
     //   antMeccanica        anteprima: portare chi ha il Cristallo Z (se il formato ammette le Mosse Z) vale questo; chi ha la Megapietra
     //                       si valuta già con le statistiche della Mega (se il formato ammette la Mega Evoluzione)
@@ -79,7 +93,8 @@
         antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.08, sogliaRecupero: 0.25,
-        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2
+        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2,
+        sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40
     };
     // Abilità che agiscono quando il Pokémon entra in campo
     const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
@@ -137,6 +152,9 @@
             this.debug = !!opzioni.debug;
             this.par = Object.assign({}, PARAMETRI_BASE, opzioni.parametri || {});
             this.pianoDato = opzioni.piano || null;     // il piano del team deciso da chi lo ha composto (team-cpu.js), se c'è
+            // le abitudini di chi ha davanti (cpu-avversario.js): il profilo da players/<id>/stile (daStile) oppure true (la media della lega); senza, nessun modello
+            this.modelloAvv = null;
+            this.impostaAvversario(opzioni.avversario);
             this.meccOpzioni = leggiMeccaniche(opzioni.meccaniche);
             this.strategia = null;
             this.impostaGenerazione(9);
@@ -151,7 +169,27 @@
             this.cacheSpecie = new Map();
         }
 
+        /**
+         * Le abitudini dell'avversario (il risultato di CpuAvversario.daStile, oppure true per la media della lega; null/false per toglierle). Si può chiamare anche
+         * a partita iniziata, se il profilo arriva tardi: quello che l'avversario ha già fatto vedere resta.
+         */
+        impostaAvversario(profilo) {
+            if (!Avv || !profilo) { if (!profilo) this.modelloAvv = null; return; }
+            const p = profilo === true ? null : profilo;
+            if (this.modelloAvv) { this.modelloAvv.impostaProfilo(p); return; }
+            this.modelloAvv = Avv.crea(p, { forzaLega: this.par.forzaLegaAvv, forzaPartita: this.par.forzaPartitaAvv });
+        }
+
+        /** Cosa pensa dell'avversario: { quote, partenza, visti, nVisti }, o null se non conosce le sue abitudini (per le prove e la diagnosi) */
+        modelloAvversario() {
+            const m = this.modelloAvv;
+            return m ? { quote: m.quote(), partenza: m.partenza(), visti: m.visti(), nVisti: m.nVisti() } : null;
+        }
+
+        _osservaAvv(categoria) { if (this.modelloAvv) this.modelloAvv.osserva(categoria); }
+
         resetta() {
+            this.fase = '';              // dentro un turno: 'scelte' (i cambi scelti), 'mosse', 'fine' (dopo |upkeep|: i sostituti dei KO)
             this.turno = 0;
             this.meteo = null;
             this.terreno = null;
@@ -251,7 +289,9 @@
             switch (cmd) {
                 case 'gen': this.impostaGenerazione(parseInt(p[1], 10) || 9); break;
                 case 'gametype': this.tipo = p[1] === 'doubles' ? 'doubles' : 'singles'; break;
-                case 'turn': this.turno = parseInt(p[1], 10); break;
+                case 'turn': this.turno = parseInt(p[1], 10); this.fase = 'scelte'; break;
+                case 'upkeep': this.fase = 'fine'; break;
+                case 'teamsize': { const l = this.lati[p[1]]; if (l) l.dimSquadra = parseInt(p[2], 10) || 0; break; }
                 case 'rule': {
                     // le clausole che spengono una meccanica: "Dynamax Clause: Pokémon cannot Dynamax", "Terastal Clause: ..."
                     const regola = String(p[1] || '');
@@ -269,6 +309,8 @@
                 case 'switch': case 'drag': case 'replace': {
                     const pos = posizione(p[1]);
                     if (!pos) break;
+                    // un cambio scelto dall'avversario: a inizio turno, prima di qualunque mossa (dopo una mossa è U-turn o simili, dopo |upkeep| un KO sostituito)
+                    if (cmd === 'switch' && this.fase === 'scelte' && this.turno >= 1 && pos.lato !== this.lato) this._osservaAvv('cambio');
                     const d = leggiDettagli(p[2]);
                     const l = this.lati[pos.lato];
                     let m = l.mons[pos.nome];
@@ -321,6 +363,10 @@
                 case '-zpower': { const pos = posizione(p[1]); if (pos) this.lati[pos.lato].zUsata = true; break; }
                 case '-mega': { const m = this._mon(p[1]); if (m) m.megaDi = p[2]; break; }
                 case 'move': {
+                    // una mossa scelta dall'avversario (non quelle che partono da sole: [from] = mossa bloccata, Sleep Talk, Dancer...)
+                    this.fase = 'mosse';
+                    const chi = posizione(p[1]);
+                    if (chi && chi.lato !== this.lato && !p.some(x => String(x).startsWith('[from]'))) this._osservaAvv(Avv ? Avv.categoriaMossa(p[2]) : 'attacco');
                     const m = this._mon(p[1]);
                     if (!m) break;
                     const mossa = id(p[2]);
@@ -1062,8 +1108,11 @@
         }
 
         // ---------- avversario previsto ----------
-        // Restituisce due scenari: l'avversario fa la mossa migliore sul bersaglio migliore; oppure punta l'altro bersaglio
+        // Senza le sue abitudini restituisce due scenari: l'avversario fa la mossa migliore sul bersaglio migliore; oppure punta l'altro bersaglio.
+        // Con le sue abitudini (cpu-avversario.js) gli scenari sono di più: ogni suo Pokémon attacca, si para, cambia o fa altro, con le probabilità
+        // di chi ha davanti; chi attacca fa sempre la mossa migliore sul bersaglio migliore (o sull'altro).
         _scenariAvversari(S) {
+            if (this.modelloAvv) return this._scenariConAbitudini(S);
             const piani = [];
             for (const variante of [0, 1]) {
                 const azioni = [];
@@ -1074,6 +1123,50 @@
                 piani.push(azioni);
             }
             return [{ peso: 0.65, azioni: piani[0] }, { peso: 0.35, azioni: piani[1] }];
+        }
+
+        // Gli scenari del turno secondo le abitudini dell'avversario: { peso, variante, categorie: { slot: categoria }, azioni }
+        _scenariConAbitudini(S) {
+            const puoCambiare = this._puoCambiareAvv();
+            const slot = S.avv.map(o => (o ? { fattoreProtezione: this._fattoreProtezioneAvv(o), puoCambiare } : null));
+            const lista = Avv.scenari(this.modelloAvv.quote(), slot, { doppio: S.doppio, soglia: this.par.sogliaScenario, max: this.par.maxScenari });
+            return lista.map(sc => {
+                const azioni = [];
+                S.avv.forEach((o, i) => { if (o) azioni.push(this._azioneAvversariaDi(o, i, S, sc.categorie[i], sc.variante)); });
+                return { peso: sc.peso, variante: sc.variante, categorie: sc.categorie, azioni };
+            });
+        }
+
+        // Quanto è possibile che questo avversario si pari ora: come sempre, o molto meno se l'ha già fatto il turno scorso (la seconda di fila riesce
+        // una volta su tre, e chi gioca lo sa)
+        _fattoreProtezioneAvv(o) {
+            return this._protezioniDiFila(o.ref) > 0 ? this.par.protezioneDiFilaAvv : 1;
+        }
+
+        // L'avversario ha qualcuno in panchina a cui cambiare? (nei formati con squadra scelta |teamsize| dice quanti ne ha portati)
+        _puoCambiareAvv() {
+            const l = this.lati[lato2(this.lato)];
+            const totale = l.dimSquadra || l.squadra.length;
+            if (!totale) return true;
+            return totale - l.caduti - l.attivi.filter(Boolean).length > 0;
+        }
+
+        // La mossa con cui si presume che si pari: una Protezione che gli ha già visto usare, altrimenti Protect
+        _mossaProtezioneAvv(o) {
+            for (const k of o.ref.mosseViste) if (K.PROTEZIONI.has(k)) return this.mossa(k);
+            return this.mossa('protect');
+        }
+
+        // Cosa fa un suo Pokémon in uno scenario: attacca (la mossa migliore, sul bersaglio migliore o sull'altro), si para, cambia, o fa altro (di
+        // cui non si sa cosa: per questo turno non fa danni)
+        _azioneAvversariaDi(o, slot, S, categoria, variante) {
+            if (categoria === 'protezione') {
+                const mossa = this._mossaProtezioneAvv(o);
+                return mossa ? { tipo: 'mossa', slot, mossa, bersaglio: null, lato: 'avv' } : { tipo: 'passa', slot };
+            }
+            if (categoria === 'cambio') return { tipo: 'cambio', slot, lato: 'avv' };
+            if (categoria === 'altro') return { tipo: 'passa', slot };
+            return this._azioneAvversaria(o, slot, S, variante);
         }
 
         _azioneAvversaria(o, slot, S, variante) {
@@ -1143,7 +1236,7 @@
             let tot = 0;
             scenari.forEach((sc, k) => {
                 const parti = lam > 0
-                    ? [{ peso: sc.peso * (1 - lam), azioni: sc.azioni }, { peso: sc.peso * lam, azioni: this._rispostaAlCambio(scelta, S, k) }]
+                    ? [{ peso: sc.peso * (1 - lam), azioni: sc.azioni }, { peso: sc.peso * lam, azioni: this._rispostaAlCambio(scelta, S, k, sc) }]
                     : [sc];
                 for (const q of parti) for (const e of esiti) tot += q.peso * e.peso * this._simula(scelta, S, q.azioni, e.riesce);
             });
@@ -1151,8 +1244,11 @@
         }
 
         // Le azioni dell'avversario se a rispondere a chi entra dopo i miei cambi (la mossa migliore contro i nuovi arrivati)
-        _rispostaAlCambio(scelta, S, variante) {
-            const chiave = scelta.map(a => (a.tipo === 'cambio' ? a.verso : '-')).join(',') + '|' + variante;
+        // `k` è lo scenario (la chiave della cache); `sc` lo scenario stesso: chi in quello scenario non attacca (si para, cambia, fa altro) continua
+        // a fare quello, chi attacca risponde ai nuovi arrivati
+        _rispostaAlCambio(scelta, S, k, sc) {
+            const variante = sc && sc.variante != null ? sc.variante : k;
+            const chiave = scelta.map(a => (a.tipo === 'cambio' ? a.verso : '-')).join(',') + '|' + k;
             const cache = S.cacheRisposte || (S.cacheRisposte = new Map());
             if (cache.has(chiave)) return cache.get(chiave);
             const mie = S.mie.map((v, i) => {
@@ -1163,7 +1259,13 @@
             });
             const S2 = Object.assign({}, S, { mie });
             const azioni = [];
-            S.avv.forEach((o, i) => { if (o) azioni.push(this._azioneAvversaria(o, i, S2, variante)); });
+            S.avv.forEach((o, i) => {
+                if (!o) return;
+                const categoria = sc && sc.categorie ? sc.categorie[i] : 'attacco';
+                if (categoria === 'attacco') { azioni.push(this._azioneAvversaria(o, i, S2, variante)); return; }
+                const prevista = sc.azioni.find(a => a.slot === i);
+                if (prevista) azioni.push(prevista);
+            });
             cache.set(chiave, azioni);
             return azioni;
         }
@@ -1192,6 +1294,11 @@
             azioniAvv.forEach(a => { if (a.tipo !== 'passa') azioni.push({ lato: 'avv', slot: a.slot, a }); });
 
             for (const x of azioni) {
+                if (x.lato === 'avv' && x.a.tipo === 'cambio') {
+                    // l'avversario cambia: i miei attacchi su quel posto colpiscono chi entra, che di solito è scelto per reggere (e il suo attacco non c'è)
+                    if (avv[x.slot]) avv[x.slot].parata = this.par.parataCambioAvv;
+                    continue;
+                }
                 if (x.lato !== 'mie') continue;
                 const a = x.a;
                 if (a.tipo === 'cambio') {
@@ -1336,6 +1443,7 @@
                     if (dif.protetto) continue;   // la protezione ha parato l'attacco
                     if (dif.protettoDaDiffusi && tutti) continue;
                     const colpo = this._colpo(me, dif, m, ctx, piu, lato, aiuto, x.slot, schermiDi(b.lato));
+                    if (dif.parata) { colpo.atteso *= 1 - dif.parata; colpo.pKO *= 1 - dif.parata; }      // chi sta cambiando (vedi sopra)
                     const prima = dif.hp;
                     // un KO probabile (>= 50%) si considera avvenuto; altrimenti il bersaglio scende del danno atteso
                     const preso = colpo.pKO >= 0.5 ? prima : Math.min(prima - 1, colpo.atteso);
