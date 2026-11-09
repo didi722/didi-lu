@@ -35,9 +35,9 @@
 // Il Dex di @pkmn/sim arriva da fuori. Funziona nel browser (window.CpuIa) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'), require('./cpu-avversario.js'));
-    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo, radice.CpuAvversario);
-})(typeof self !== 'undefined' ? self : this, function (K, C, Avv) {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'), require('./cpu-avversario.js'), require('./cpu-situazioni.js'));
+    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo, radice.CpuAvversario, radice.CpuSituazioni);
+})(typeof self !== 'undefined' ? self : this, function (K, C, Avv, Sit) {
     'use strict';
 
     const id = K.id;
@@ -84,6 +84,7 @@
     //   forzaLegaAvv, forzaPartitaAvv
     //                       quanto fidarsi delle abitudini di un avversario con pochi dati (decisioni che valgono quanto la media della lega) e
     //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
+    //   pesoSituazioni      quanto contano le regole sulle situazioni imparate dai replay della lega (cpu-situazioni.js): 0 = niente, 1 = per intero
     //   spesaMossaZ         la Mossa Z si fa una volta sola per partita: costa questo (meno se restano pochi Pokémon)
     //   antMeccanica        anteprima: portare chi ha il Cristallo Z (se il formato ammette le Mosse Z) vale questo; chi ha la Megapietra
     //                       si valuta già con le statistiche della Mega (se il formato ammette la Mega Evoluzione)
@@ -94,7 +95,7 @@
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.08, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2,
-        sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40
+        pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40
     };
     // Abilità che agiscono quando il Pokémon entra in campo
     const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
@@ -186,9 +187,17 @@
             return m ? { quote: m.quote(), partenza: m.partenza(), visti: m.visti(), nVisti: m.nVisti() } : null;
         }
 
+        // Le regole delle situazioni (cpu-situazioni.js) per il tipo di partita in corso, se il profilo dell'avversario le ha
+        _regoleSituazioni() {
+            const r = this.modelloAvv && this.modelloAvv.situazioni && this.modelloAvv.situazioni();
+            const regole = r && (this.tipo === 'doubles' ? r.doppi : r.singoli);
+            return regole && regole.pesi ? regole : null;
+        }
+
         _osservaAvv(categoria) { if (this.modelloAvv) this.modelloAvv.osserva(categoria); }
 
         resetta() {
+            this.situazioni = Sit ? Sit.crea() : null;     // legge il log come ha fatto chi ha imparato le regole: stesse caratteristiche (cpu-situazioni.js)
             this.fase = '';              // dentro un turno: 'scelte' (i cambi scelti), 'mosse', 'fine' (dopo |upkeep|: i sostituti dei KO)
             this.turno = 0;
             this.meteo = null;
@@ -229,6 +238,7 @@
         // 1. LETTURA DEL LOG
         // =================================================
         osserva(righe) {
+            if (this.situazioni) { try { this.situazioni.righe(righe); } catch (e) { if (this.debug) console.warn('CPU: situazioni non lette', e); } }
             for (const riga of righe) {
                 if (typeof riga !== 'string' || riga.charAt(0) !== '|') continue;
                 const p = riga.split('|').slice(1);
@@ -1128,7 +1138,19 @@
         // Gli scenari del turno secondo le abitudini dell'avversario: { peso, variante, categorie: { slot: categoria }, azioni }
         _scenariConAbitudini(S) {
             const puoCambiare = this._puoCambiareAvv();
-            const slot = S.avv.map(o => (o ? { fattoreProtezione: this._fattoreProtezioneAvv(o), puoCambiare } : null));
+            const regole = this.par.pesoSituazioni > 0 ? this._regoleSituazioni() : null;
+            const latoAvv = lato2(this.lato);
+            const slot = S.avv.map((o, i) => {
+                if (!o) return null;
+                const s = { fattoreProtezione: this._fattoreProtezioneAvv(o), puoCambiare };
+                const f = regole && this.situazioni && this.situazioni.contesto(latoAvv + 'abc'[i]);
+                if (f) {
+                    const m = Sit.moltiplicatori(regole.pesi, f);
+                    const e = this.par.pesoSituazioni;
+                    s.moltiplicatori = e === 1 ? m : { attacco: Math.pow(m.attacco, e), protezione: Math.pow(m.protezione, e), cambio: Math.pow(m.cambio, e), altro: Math.pow(m.altro, e) };
+                }
+                return s;
+            });
             const lista = Avv.scenari(this.modelloAvv.quote(), slot, { doppio: S.doppio, soglia: this.par.sogliaScenario, max: this.par.maxScenari });
             return lista.map(sc => {
                 const azioni = [];

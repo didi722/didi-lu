@@ -153,8 +153,8 @@ test('abitudini: quello che l\'avversario fa in partita corregge le quote (chi s
 
 function squadraSingolo() { return [{ specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Swords Dance', 'Protect'] }]; }
 
-async function scenariDi({ avversario, avversari = [{ specie: 'Heatran' }, { specie: 'Dragonite' }, { specie: 'Ferrothorn' }], doppio = false, extra = [], squadra, richiesta }) {
-    const { sim, ia } = await cervello({ avversario, debug: true });
+async function scenariDi({ avversario, avversari = [{ specie: 'Heatran' }, { specie: 'Dragonite' }, { specie: 'Ferrothorn' }], doppio = false, extra = [], squadra, richiesta, parametri }) {
+    const { sim, ia } = await cervello({ avversario, debug: true, ...(parametri ? { parametri } : {}) });
     squadra = squadra || squadraSingolo();
     const r = richiesta ? richiesta(sim) : creaRichiesta(sim.Dex, { squadra, attivi: doppio ? [0, 1] : [0] });
     scelta(ia, r, [...logAvversario(avversari, doppio), ...extra, ...logMiaSquadra(squadra, doppio ? [0, 1] : [0])]);
@@ -176,6 +176,49 @@ test('scenari, singolo: attacca, si para, cambia o fa altro, con le probabilità
     assert.equal(scenari.find(s => s.categorie[0] === 'cambio').azioni[0].tipo, 'cambio');
     assert.equal(scenari.find(s => s.categorie[0] === 'altro').azioni[0].tipo, 'passa');
     assert.equal(scenari.find(s => s.categorie[0] === 'attacco').azioni[0].tipo, 'mossa');
+});
+
+// le regole sulle situazioni (cpu-situazioni.js): con pochi PS l'avversario cambia molto di più
+const PESI_ZERO = () => Object.fromEntries(['base', ...require('../docs/cpu-situazioni.js').CARATTERISTICHE].map(k => [k, 0]));
+const REGOLE_PS_BASSI = { singoli: { n: 5000, pesi: { protezione: PESI_ZERO(), cambio: Object.assign(PESI_ZERO(), { psBassi: 2 }), altro: PESI_ZERO() } } };
+const conRegole = (regole = REGOLE_PS_BASSI) => Object.assign(abitudini(0.6, 0.2, 0.1, 0.1), { situazioni: regole });
+const pesoDi = (scenari, c) => scenari.find(s => s.categorie[0] === c).peso;
+
+test('situazioni: le regole imparate dai replay cambiano i pesi degli scenari secondo come sta il Pokémon avversario (pochi PS: cambia molto di più)', async () => {
+    const normale = await scenariDi({ avversario: conRegole() });
+    const quasiKo = await scenariDi({ avversario: conRegole(), avversari: [{ specie: 'Heatran', hp: 20 }, { specie: 'Dragonite' }, { specie: 'Ferrothorn' }] });
+    vicino(pesoDi(normale.scenari, 'cambio'), 0.1, 0.02);                          // a pieno PS le regole non cambiano niente (pesi a zero)
+    assert.ok(pesoDi(quasiKo.scenari, 'cambio') > pesoDi(normale.scenari, 'cambio') * 4, `${pesoDi(quasiKo.scenari, 'cambio')} contro ${pesoDi(normale.scenari, 'cambio')}`);
+    assert.ok(pesoDi(quasiKo.scenari, 'attacco') < pesoDi(normale.scenari, 'attacco'));
+    assert.ok(Math.abs(quasiKo.scenari.reduce((t, s) => t + s.peso, 0) - 1) < 1e-9);
+    // senza regole, o spente, nessuna differenza tra PS pieni e bassi
+    const senza = await scenariDi({ avversario: abitudini(0.6, 0.2, 0.1, 0.1), avversari: [{ specie: 'Heatran', hp: 20 }, { specie: 'Dragonite' }, { specie: 'Ferrothorn' }] });
+    vicino(pesoDi(senza.scenari, 'cambio'), 0.1, 0.02);
+    const spente = await scenariDi({ avversario: conRegole(), parametri: { pesoSituazioni: 0 }, avversari: [{ specie: 'Heatran', hp: 20 }, { specie: 'Dragonite' }, { specie: 'Ferrothorn' }] });
+    vicino(pesoDi(spente.scenari, 'cambio'), 0.1, 0.02);
+    // metà peso: a metà strada
+    const meta = await scenariDi({ avversario: conRegole(), parametri: { pesoSituazioni: 0.5 }, avversari: [{ specie: 'Heatran', hp: 20 }, { specie: 'Dragonite' }, { specie: 'Ferrothorn' }] });
+    assert.ok(pesoDi(meta.scenari, 'cambio') > pesoDi(normale.scenari, 'cambio') * 1.5 && pesoDi(meta.scenari, 'cambio') < pesoDi(quasiKo.scenari, 'cambio'));
+});
+
+test('situazioni: le regole del doppio non valgono nel singolo e viceversa; regole incomplete o assenti non rompono niente', async () => {
+    const soloDoppio = { doppi: REGOLE_PS_BASSI.singoli };
+    const s = await scenariDi({ avversario: conRegole(soloDoppio), avversari: [{ specie: 'Heatran', hp: 20 }, { specie: 'Dragonite' }, { specie: 'Ferrothorn' }] });
+    vicino(pesoDi(s.scenari, 'cambio'), 0.1, 0.02);
+    for (const strane of [{}, { singoli: {} }, { singoli: { pesi: null } }, { singoli: { pesi: { cambio: { psBassi: 'boh' } } } }, 'testo', 5]) {
+        const x = await scenariDi({ avversario: conRegole(strane), avversari: [{ specie: 'Heatran', hp: 20 }, { specie: 'Dragonite' }, { specie: 'Ferrothorn' }] });
+        assert.ok(x.scenari.length >= 1);
+        assert.ok(Math.abs(x.scenari.reduce((t, c) => t + c.peso, 0) - 1) < 1e-9);
+    }
+});
+
+test('situazioni: nel doppio ogni Pokémon avversario ha la sua situazione (uno quasi KO, l\'altro no)', async () => {
+    const regole = { doppi: REGOLE_PS_BASSI.singoli };
+    const d = await scenariDi({ avversario: conRegole(regole), doppio: true, squadra: [{ specie: 'Garchomp', mosse: ['Earthquake', 'Protect'] }, { specie: 'Rillaboom', mosse: ['Grassy Glide', 'Protect'] }],
+        avversari: [{ specie: 'Heatran', hp: 15 }, { specie: 'Dragonite' }, { specie: 'Ferrothorn' }] });
+    const cambiaPrimo = d.scenari.filter(s => s.categorie[0] === 'cambio').reduce((t, s) => t + s.peso, 0);
+    const cambiaSecondo = d.scenari.filter(s => s.categorie[1] === 'cambio').reduce((t, s) => t + s.peso, 0);
+    assert.ok(cambiaPrimo > cambiaSecondo * 3, `${cambiaPrimo} contro ${cambiaSecondo}`);
 });
 
 test('scenari: senza abitudini restano i due di sempre (65% e 35%); con un avversario che attacca e basta, lo stesso', async () => {

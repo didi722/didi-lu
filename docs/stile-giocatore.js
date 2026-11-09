@@ -11,6 +11,7 @@
 //   StileGiocatore.profili(seasons) -> { [idAllenatore]: nodo }     il nodo da salvare in players/<id>/stile (senza l'orario: lo mette chi scrive)
 //     nodo = { v: 1, set, decisioni, azioni: { mosse, cambi, attacco, protezione, recupero, potenziamento, campo, supporto, disturbo, altro },
 //              lega: { set, decisioni, azioni: {...} } }              (la lega: la somma di tutti gli allenatori, la stessa in ogni nodo)
+//   (il workflow aggiunge al nodo anche `situazioni`: le regole sulle situazioni imparate dai replay, vedi cpu-situazioni.js; sono le stesse in ogni nodo)
 //   StileGiocatore.uguali(a, b)     due nodi dicono la stessa cosa? (l'orario di aggiornamento non conta: serve a non riscrivere per niente)
 //
 // Funziona nel browser (window.StileGiocatore) e in Node (workflow "Stile dei giocatori", .github/workflows/stile-giocatori.js).
@@ -35,6 +36,29 @@
         somma.set++;
         somma.decisioni += num(azioni.mosse) + num(azioni.cambi);
         for (const k of AZIONI) somma.azioni[k] += Math.max(0, num(azioni[k]));
+    }
+
+    /**
+     * I set di cui si può leggere il replay: [{ id, url, giocatori: { p1, p2 } }] (id degli allenatori in minuscolo). `seasons` è il nodo "seasons" di Firebase;
+     * come per le statistiche, la stagione beta non conta. Un set senza indirizzo del replay o contro se stesso si salta.
+     */
+    function setConReplay(seasons, { escludi = [BETA] } = {}) {
+        const out = [];
+        for (const [sid, stagione] of Object.entries(seasons || {})) {
+            if (!stagione || escludi.includes(sid)) continue;
+            for (const [dk, showdown] of Object.entries((stagione.showdowns && typeof stagione.showdowns === 'object') ? stagione.showdowns : {})) {
+                for (const [mk, match] of Object.entries((showdown && showdown.matches && typeof showdown.matches === 'object') ? showdown.matches : {})) {
+                    if (!match || !match.replays || typeof match.replays !== 'object') continue;
+                    const p1 = idDi(match.player1Id || match.player1), p2 = idDi(match.player2Id || match.player2);
+                    if (!p1 || !p2 || p1 === p2) continue;
+                    for (const [sk, r] of Object.entries(match.replays)) {
+                        const url = r && typeof r.url === 'string' ? r.url.trim() : '';
+                        if (/^https:\/\//.test(url)) out.push({ id: `${sid}/${dk}/${mk}/${sk}`, url, giocatori: { p1, p2 } });
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     /**
@@ -66,6 +90,48 @@
         return { giocatori, lega };
     }
 
+    // Una firma corta e stabile di un elenco di indirizzi (e della versione delle regole): se non cambia, i replay sono gli stessi e non c'è niente da reimparare
+    function firmaDi(testi) {
+        let h = 5381;
+        for (const c of [...testi].sort().join('\n')) h = ((h << 5) + h + c.charCodeAt(0)) | 0;
+        return (h >>> 0).toString(36);
+    }
+
+    /**
+     * Le regole sulle situazioni (cpu-situazioni.js) imparate dai replay dei set della lega.
+     *   seasons        il nodo "seasons" di Firebase
+     *   scarica(url)   -> testo del replay (async); leggiReplay(testo) -> { log } oppure null (replay-sito.js); Situazioni: cpu-situazioni.js
+     *   precedente     le regole già salvate: se i replay sono gli stessi non si rifà niente; se molti non si scaricano (rete) si tengono quelle
+     * Restituisce { situazioni, riusate, scaricati, falliti }: `situazioni` è il nodo da salvare in players/<id>/stile/situazioni
+     * ({ v, firma, set, singoli?, doppi?, validazione }; singoli e doppi ci sono solo se la prova incrociata dice che servono) oppure null.
+     */
+    async function situazioniDaiReplay(seasons, { scarica, leggiReplay, Situazioni, precedente = null, concorrenza = 6, opzioni = {} } = {}) {
+        const lista = setConReplay(seasons);
+        if (!lista.length) return { situazioni: null, riusate: false, scaricati: 0, falliti: 0 };
+        const firma = firmaDi([`v${Situazioni.VERSIONE}`, ...lista.map(x => x.url)]);
+        if (precedente && precedente.firma === firma) return { situazioni: precedente, riusate: true, scaricati: 0, falliti: 0 };
+        const set = [];
+        let falliti = 0, prossimo = 0;
+        const operaio = async () => {
+            while (prossimo < lista.length) {
+                const s = lista[prossimo++];
+                try {
+                    const r = leggiReplay(await scarica(s.url));
+                    if (r && Array.isArray(r.log) && r.log.length) set.push({ id: s.id, log: r.log, giocatori: s.giocatori }); else falliti++;
+                } catch (e) { falliti++; }
+            }
+        };
+        await Promise.all(Array.from({ length: Math.max(1, concorrenza) }, operaio));
+        // se la rete ha fatto cilecca per molti replay, le regole nuove si baserebbero su un pezzo di lega: meglio tenere le vecchie
+        if (precedente && falliti > lista.length * 0.2) return { situazioni: precedente, riusate: true, scaricati: set.length, falliti };
+        set.sort((a, b) => (a.id < b.id ? -1 : 1));
+        const { regole, validazione } = Situazioni.costruisci(set, opzioni);
+        const nodo = { v: Situazioni.VERSIONE, firma, set: set.length, validazione };
+        if (regole.singoli) nodo.singoli = regole.singoli;
+        if (regole.doppi) nodo.doppi = regole.doppi;
+        return { situazioni: nodo, riusate: false, scaricati: set.length, falliti };
+    }
+
     /** I nodi da salvare, uno per allenatore con almeno un set con le scelte registrate */
     function profili(seasons, opz) {
         const { giocatori, lega } = somme(seasons, opz);
@@ -76,7 +142,7 @@
 
     /** Due nodi dicono la stessa cosa? (senza badare all'orario dell'ultimo aggiornamento) */
     function uguali(a, b) {
-        const nudo = n => (n && typeof n === 'object' ? { v: n.v, set: n.set, decisioni: n.decisioni, azioni: n.azioni, lega: n.lega } : null);
+        const nudo = n => (n && typeof n === 'object' ? { v: n.v, set: n.set, decisioni: n.decisioni, azioni: n.azioni, lega: n.lega, situazioni: n.situazioni || null } : null);
         return JSON.stringify(ordina(nudo(a))) === JSON.stringify(ordina(nudo(b)));
     }
     // un oggetto con le chiavi in ordine, così il confronto non dipende da come Firebase le restituisce
@@ -86,5 +152,5 @@
         return x;
     }
 
-    return { VERSIONE, AZIONI, somme, profili, uguali };
+    return { VERSIONE, AZIONI, somme, profili, uguali, setConReplay, firmaDi, situazioniDaiReplay };
 });

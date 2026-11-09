@@ -121,3 +121,109 @@ test('i dati veri: i profili di un\'esportazione reale del database, con quote c
     const lega = AV.daStile(Object.values(p)[0]).lega.quote;
     for (const k of AV.CATEGORIE) assert.ok(Math.abs(lega[k] - AV.QUOTE_LEGA[k]) < 0.03, `${k}: ${lega[k]} contro ${AV.QUOTE_LEGA[k]}`);
 });
+
+// ---------- le situazioni, imparate dai replay ----------
+const Sit = require('../docs/cpu-situazioni.js');
+const { set: setFinti } = require('./dati/log-finti.js');
+// con pochi PS si cambia molto di più
+const CON_PS_BASSI_FINTO = bassi => (bassi ? { attacco: 0.45, protezione: 0.2, cambio: 0.3, altro: 0.05 } : { attacco: 0.74, protezione: 0.11, cambio: 0.04, altro: 0.11 });
+
+// stagioni con un replay (finto) per ogni set: l'indirizzo dice quale log scaricare
+function stagioniConReplay(n, effetto = CON_PS_BASSI_FINTO) {
+    const finti = setFinti(n, effetto);
+    const matches = {};
+    finti.forEach((s, i) => { matches['m' + i] = { player1Id: 'Ada', player2Id: 'bruno', replays: { set1: { url: `https://replay.example/${i}.html`, vincitore: '1' } } }; });
+    return { seasons: { s0: { showdowns: { sd1: { matches } } }, sbeta: { showdowns: { x: { matches: { m: { player1Id: 'a', player2Id: 'b', replays: { set1: { url: 'https://replay.example/beta.html' } } } } } } } }, finti };
+}
+const scaricaDa = finti => async url => { const m = /\/(\d+)\.html$/.exec(url); if (!m) throw new Error('404'); return JSON.stringify({ log: finti[+m[1]].log }); };
+const leggiFinto = testo => { const d = JSON.parse(testo); return { log: d.log }; };
+
+test('replay: quali set si possono leggere (con l\'indirizzo del replay, non la beta, non contro se stessi), con i due allenatori in minuscolo', () => {
+    const seasons = {
+        s0: { showdowns: { a: { matches: {
+            m1: { player1Id: 'Didi', player2Id: 'Lu', replays: { set1: { url: 'https://x/1.html' }, set2: { url: 'https://x/2.html' }, set3: { url: '' }, set4: {}, set5: { url: 'http://non-sicuro/5.html' } } },
+            m2: { player1Id: 'a', player2Id: 'a', replays: { set1: { url: 'https://x/3.html' } } },
+            m3: { player1Id: 'a', player2Id: 'b' },
+            m4: null
+        } } } },
+        sbeta: { showdowns: { a: { matches: { m: { player1Id: 'a', player2Id: 'b', replays: { set1: { url: 'https://x/beta.html' } } } } } } },
+        s1: null
+    };
+    const l = S.setConReplay(seasons);
+    assert.deepEqual(l.map(x => x.url), ['https://x/1.html', 'https://x/2.html']);
+    assert.deepEqual(l[0].giocatori, { p1: 'didi', p2: 'lu' });
+    assert.deepEqual(S.setConReplay(null), []);
+    assert.equal(S.setConReplay(seasons, { escludi: [] }).length, 3);
+});
+
+test('replay: le regole si imparano dai replay scaricati, con la prova incrociata; sono pubblicate solo dove servono', async () => {
+    const { seasons, finti } = stagioniConReplay(70);
+    const r = await S.situazioniDaiReplay(seasons, { scarica: scaricaDa(finti), leggiReplay: leggiFinto, Situazioni: Sit });
+    assert.equal(r.riusate, false);
+    assert.equal(r.scaricati, 70);
+    assert.equal(r.falliti, 0);
+    const n = r.situazioni;
+    assert.equal(n.v, Sit.VERSIONE);
+    assert.equal(n.set, 70);
+    assert.ok(n.singoli && n.singoli.pesi.cambio.psBassi > 0.8);
+    assert.equal(n.doppi, undefined, 'nessun set in doppio: nessuna regola');
+    assert.equal(n.validazione.singoli.esito, 'pubblicate');
+    assert.equal(n.validazione.doppi.esito, 'pochi dati');
+    // è un nodo da salvare: solo valori semplici
+    assert.doesNotThrow(() => JSON.parse(JSON.stringify(n)));
+    assert.ok(!JSON.stringify(n).includes('null'));
+    // e la CPU lo legge: le regole arrivano al profilo
+    const profilo = AV.daStile({ set: 30, azioni: { mosse: 190, cambi: 10, attacco: 100, protezione: 80, recupero: 0, potenziamento: 0, campo: 0, supporto: 0, disturbo: 0, altro: 0 }, situazioni: JSON.parse(JSON.stringify(n)) });
+    assert.ok(profilo.situazioni.singoli.pesi);
+    assert.equal(AV.daStile({ set: 1 }).situazioni, null);
+
+    // senza effetto nei dati, nessuna regola
+    const senza = stagioniConReplay(70, () => ({ attacco: 0.7, protezione: 0.12, cambio: 0.06, altro: 0.12 }));
+    const r2 = await S.situazioniDaiReplay(senza.seasons, { scarica: scaricaDa(senza.finti), leggiReplay: leggiFinto, Situazioni: Sit });
+    assert.equal(r2.situazioni.singoli, undefined);
+    assert.equal(r2.situazioni.validazione.singoli.esito, 'non servono');
+});
+
+test('replay: se i replay sono gli stessi non si scarica niente; se molti non arrivano si tengono le regole di prima; un replay illeggibile si salta', async () => {
+    const { seasons, finti } = stagioniConReplay(70);
+    const prima = (await S.situazioniDaiReplay(seasons, { scarica: scaricaDa(finti), leggiReplay: leggiFinto, Situazioni: Sit })).situazioni;
+    let scaricati = 0;
+    const conta = async url => { scaricati++; return scaricaDa(finti)(url); };
+    const uguali = await S.situazioniDaiReplay(seasons, { scarica: conta, leggiReplay: leggiFinto, Situazioni: Sit, precedente: JSON.parse(JSON.stringify(prima)) });
+    assert.equal(uguali.riusate, true);
+    assert.equal(scaricati, 0);
+    assert.deepEqual(uguali.situazioni, prima);
+    assert.notEqual(S.firmaDi(['a', 'b']), S.firmaDi(['a', 'c']));
+    assert.equal(S.firmaDi(['b', 'a']), S.firmaDi(['a', 'b']), 'l\'ordine non conta');
+
+    // un replay in più: si rifà tutto
+    const piu = JSON.parse(JSON.stringify(seasons));
+    piu.s0.showdowns.sd1.matches.nuovo = { player1Id: 'ada', player2Id: 'bruno', replays: { set1: { url: 'https://replay.example/3.html' } } };
+    const nuova = await S.situazioniDaiReplay(piu, { scarica: conta, leggiReplay: leggiFinto, Situazioni: Sit, precedente: prima });
+    assert.equal(nuova.riusate, false);
+    assert.ok(scaricati > 70);
+
+    // la rete non risponde per la maggior parte dei replay: restano le regole di prima, non se ne imparano di peggiori
+    const rotta = async url => { if (+/\/(\d+)\./.exec(url)[1] % 2) throw new Error('rete'); return scaricaDa(finti)(url); };
+    const tenute = await S.situazioniDaiReplay(piu, { scarica: rotta, leggiReplay: leggiFinto, Situazioni: Sit, precedente: prima });
+    assert.equal(tenute.riusate, true);
+    assert.deepEqual(tenute.situazioni, prima);
+    assert.ok(tenute.falliti > 30);
+
+    // senza regole di prima, un replay illeggibile si salta e si impara dagli altri
+    let letti = 0;
+    const conBuco = await S.situazioniDaiReplay(seasons, { scarica: scaricaDa(finti), leggiReplay: t => (++letti === 5 ? null : leggiFinto(t)), Situazioni: Sit });
+    assert.equal(conBuco.scaricati, 69);
+    assert.equal(conBuco.falliti, 1);
+    assert.ok(conBuco.situazioni.singoli);
+    const nessuno = await S.situazioniDaiReplay({ s0: {} }, { scarica: scaricaDa(finti), leggiReplay: leggiFinto, Situazioni: Sit });
+    assert.equal(nessuno.situazioni, null);
+});
+
+test('uguali: anche le regole sulle situazioni contano nel confronto', () => {
+    const seasons = { s0: stagione(match('didi', 'lu', set(az(8, 1, 1), az(6, 3, 1)))) };
+    const a = S.profili(seasons).didi;
+    const conRegole = Object.assign({}, a, { situazioni: { v: 1, firma: 'abc', set: 5 } });
+    assert.equal(S.uguali(a, conRegole), false);
+    assert.equal(S.uguali(conRegole, JSON.parse(JSON.stringify(conRegole))), true);
+});

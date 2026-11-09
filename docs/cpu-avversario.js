@@ -70,7 +70,9 @@
         return {
             giocatore: s ? quoteDaAzioni(s.azioni) : null,
             lega: s && s.lega ? quoteDaAzioni(s.lega.azioni) : null,
-            set: s ? Math.max(0, Math.round(num(s.set))) : 0
+            set: s ? Math.max(0, Math.round(num(s.set))) : 0,
+            // le regole sulle situazioni imparate dai replay della lega (cpu-situazioni.js): { singoli, doppi }, ognuna { pesi } oppure assente
+            situazioni: s && s.situazioni && typeof s.situazioni === 'object' ? s.situazioni : null
         };
     }
 
@@ -96,6 +98,7 @@
         const forzaLega = opzioni.forzaLega != null ? opzioni.forzaLega : FORZA_LEGA;
         const forzaPartita = opzioni.forzaPartita != null ? opzioni.forzaPartita : FORZA_PARTITA;
         let partenza = stima(profilo && profilo.giocatore, profilo && profilo.lega, forzaLega);
+        let situazioni = profilo && profilo.situazioni ? profilo.situazioni : null;
         const visti = { attacco: 0, protezione: 0, cambio: 0, altro: 0 };
         let nVisti = 0;
         return {
@@ -113,8 +116,10 @@
             visti: () => Object.assign({}, visti),
             nVisti: () => nVisti,
             partenza: () => Object.assign({}, partenza),
+            /** Le regole sulle situazioni del profilo ({ singoli, doppi }), o null */
+            situazioni: () => situazioni,
             /** Cambia il profilo di partenza a partita iniziata (è arrivato dopo): quello che si è già visto resta */
-            impostaProfilo(nuovo) { partenza = stima(nuovo && nuovo.giocatore, nuovo && nuovo.lega, forzaLega); }
+            impostaProfilo(nuovo) { partenza = stima(nuovo && nuovo.giocatore, nuovo && nuovo.lega, forzaLega); situazioni = nuovo && nuovo.situazioni ? nuovo.situazioni : null; }
         };
     }
 
@@ -132,6 +137,8 @@
             cambio: s && s.puoCambiare === false ? 0 : quote.cambio,
             altro: quote.altro
         };
+        // le regole della situazione in cui si trova il Pokémon (cpu-situazioni.js): ogni categoria vale di più o di meno
+        if (s && s.moltiplicatori) for (const k of CATEGORIE) if (s.moltiplicatori[k] != null) w[k] *= Math.max(0, num(s.moltiplicatori[k]));
         return normalizza(w);
     }
 
@@ -142,7 +149,7 @@
      * massimo `max`) e i pesi si riportano a somma 1.
      *   quote: le quote di adesso (modello.quote())
      *   slot: per ogni slot, null (nessuno in campo) oppure { fattoreProtezione?: 0..1 (quanto è possibile che si pari: 0 se non può, meno se ha
-     *         appena protetto), puoCambiare?: bool }
+     *         appena protetto), puoCambiare?: bool, moltiplicatori?: { attacco, protezione, cambio, altro } (la situazione, vedi cpu-situazioni.js) }
      *   opz: { doppio, soglia = 0.03, max = 8, pesoVariante0 = 0.65 }
      */
     function scenari(quote, slot, opz = {}) {

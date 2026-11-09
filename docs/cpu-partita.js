@@ -15,6 +15,7 @@ import './cpu-conoscenza.js';    // self.CpuConoscenza
 import './cpu-calcolo.js';       // self.CpuCalcolo
 import './azioni-mosse.js';      // self.AzioniMosse (come le statistiche dividono le mosse: attacco, protezione...)
 import './cpu-avversario.js';    // self.CpuAvversario (le abitudini di chi ha davanti)
+import './cpu-situazioni.js';    // self.CpuSituazioni (come cambiano le abitudini nelle varie situazioni, imparato dai replay della lega)
 import './cpu-ia.js';            // self.CpuIa
 import './formato-pool.js';      // self.FormatoPool
 import './consigli.js';          // self.Consigli
