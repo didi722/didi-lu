@@ -15,6 +15,8 @@
     <script src="dati-gen.js"></script>
     <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
+<script src="team-bloccati.js"></script>
+<script src="somiglianza-team.js"></script>
 <script src="mvp.js"></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
@@ -916,6 +918,39 @@ function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
 }
 
 
+// Quello che serve a sapere se un team si può iscrivere (somiglianza-team.js), o null se nel formato la regola non c'è o non si riesce a leggere: allora non si
+// blocca niente. delFormato: i team del giocatore in quel formato; bloccato(team): chi non si può più modificare (iscritto a una stagione iniziata); altrove: i team
+// già iscritti ad altre stagioni con le iscrizioni aperte (come quelli che si iscrivono ora, alla chiusura diventerebbero non modificabili).
+async function leggiControlloSomiglianza(format, nomeUtenteClean, allTeams) {
+    try {
+        const [stagioniSnap, formatiSnap] = await Promise.all([db.ref('seasons').once('value'), db.ref('regolamenti').once('value')]);
+        let strutturaFormato;
+        formatiSnap.forEach(c => {
+            const r = c.val();
+            if (r && String(r.categoria || '').trim().toLowerCase() === String(format).trim().toLowerCase()) strutturaFormato = String(r.strutturaSito || '');
+        });
+        if (strutturaFormato === undefined || !SomiglianzaTeam.valeNelFormato(strutturaFormato)) return null;
+        const stagioni = stagioniSnap.val();
+        const bloccati = TeamBloccati.nomiBloccati(stagioni);
+        const delFormato = Object.entries(allTeams).filter(([, t]) => t && t.categoria === format).map(([id, t]) => ({ ...t, id }));
+        const altrove = TeamBloccati.iscrittiInStagioniAperte(stagioni, { giocatore: nomeUtenteClean, formato: format, escludi: seasonId })
+            .map(i => ({ ...(allTeams[i.id] || { nome: i.nome, pokemon: i.pokemon }), id: i.id, categoria: format, nomeStagione: i.nomeStagione }));
+        return { delFormato, altrove, bloccato: t => TeamBloccati.eBloccato(bloccati, t.nome) };
+    } catch (e) {
+        console.warn('Similarity check not available:', e);
+        return null;
+    }
+}
+
+// Perché un team non si può iscrivere adesso, data la selezione corrente (quelli che si iscrivono insieme contano): [] se si può
+function conflittiDiIscrizione(controllo, id, selectedTeamIds) {
+    if (!controllo) return [];
+    const team = controllo.delFormato.find(t => t.id === id);
+    if (!team) return [];
+    const scelti = selectedTeamIds.map(sid => controllo.delFormato.find(t => t.id === sid)).filter(Boolean);
+    return SomiglianzaTeam.conflittiIscrizione(team, { ...controllo, scelti });
+}
+
 async function openTeamPicker(format, nomeUtenteClean) {
 
     const overlay = document.getElementById('modal-overlay');
@@ -936,6 +971,11 @@ async function openTeamPicker(format, nomeUtenteClean) {
 
     const teamsSnap = await db.ref(`players/${nomeUtenteClean}/teams`).once('value');
     const allTeams = teamsSnap.val() || {};
+
+    // Perché un team non si può iscrivere (somiglianza-team.js): troppo simile a un team non modificabile (iscritto a una stagione iniziata), o a un altro che si iscrive
+    // adesso o è già iscritto a una stagione con le iscrizioni aperte (alla chiusura i due sarebbero non modificabili e romperebbero la regola). Dipende da chi è
+    // selezionato in questo momento. Tra team non iscritti la regola non c'è.
+    const controllo = await leggiControlloSomiglianza(format, nomeUtenteClean, allTeams);
     
     const modal = document.getElementById('modal-select-team');
     const container = document.getElementById('user-teams-list');
@@ -971,12 +1011,32 @@ async function openTeamPicker(format, nomeUtenteClean) {
     const closeBtn = modal.querySelector('.btn-cancel');
     if (closeBtn) footer.appendChild(closeBtn);
 
+    // il suggerimento di una voce: il fumetto del sito (tooltip.js) toglie il title mentre ci si passa sopra e lo rimette uscendo, quindi si aggiorna dove sta
+    const impostaSuggerimento = (el, testo) => {
+        if (el.getAttribute && el.getAttribute('data-tip-titolo') != null) el.setAttribute('data-tip-titolo', testo);
+        else el.title = testo;
+    };
+
+    // le voci della lista: ogni scelta cambia chi si può ancora iscrivere (un team simile a uno scelto si spegne, e si riaccende se quello si toglie)
+    const opzioni = [];
+    const aggiornaSimili = () => {
+        let sceltiInConflitto = 0;
+        for (const o of opzioni) {
+            const conflitti = conflittiDiIscrizione(controllo, o.id, selectedTeamIds);
+            o.div.classList.toggle('team-option-simile', conflitti.length > 0);
+            impostaSuggerimento(o.div, conflitti.length ? SomiglianzaTeam.testo(conflitti) : '');
+            if (conflitti.length && selectedTeamIds.includes(o.id)) sceltiInConflitto++;
+        }
+        return sceltiInConflitto;
+    };
+
     const updateTitleAndUI = () => {
         const isOverLimit = !isNoLimit && selectedTeamIds.length > maxAllowed;
+        const sceltiInConflitto = aggiornaSimili();       // già scelti e fuori regola (ci si arriva da iscrizioni di prima): si tolgono prima di salvare
         const counterText = isNoLimit ? `${selectedTeamIds.length}` : `${selectedTeamIds.length}/${maxAllowed}`;
         title.innerHTML = `<span class="neubrutal-badge">Select ${format} (${counterText})</span>`;
-        confirmBtn.innerText = isOverLimit ? "Too many teams!" : "Save selection";
-        confirmBtn.disabled = isOverLimit;
+        confirmBtn.innerText = isOverLimit ? "Too many teams!" : (sceltiInConflitto ? "Similar teams!" : "Save selection");
+        confirmBtn.disabled = isOverLimit || sceltiInConflitto > 0;
     };
 
     updateTitleAndUI();
@@ -986,6 +1046,7 @@ async function openTeamPicker(format, nomeUtenteClean) {
         if (data.categoria === format) {
             const div = document.createElement('div');
             div.className = `team-option ${selectedTeamIds.includes(id) ? 'selected' : ''}`;
+            opzioni.push({ id, div });
             
             const pokemonArray = Array.isArray(data.pokemon) ? data.pokemon : Object.values(data.pokemon || {});
             const pokemonImages = pokemonArray.map(p => {
@@ -1039,9 +1100,12 @@ async function openTeamPicker(format, nomeUtenteClean) {
             div.onclick = (e) => {
                 if (e.target.classList.contains('info-icon')) return;
                 const index = selectedTeamIds.indexOf(id);
+                const conflitti = index > -1 ? [] : conflittiDiIscrizione(controllo, id, selectedTeamIds);
                 if (index > -1) {
                     selectedTeamIds.splice(index, 1);
                     div.classList.remove('selected');
+                } else if (conflitti.length) {
+                    alert(SomiglianzaTeam.testo(conflitti));
                 } else if (selectedTeamIds.length < maxAllowed) {
                     selectedTeamIds.push(id);
                     div.classList.add('selected');
@@ -1054,6 +1118,7 @@ async function openTeamPicker(format, nomeUtenteClean) {
         }
     });
     
+    updateTitleAndUI();
     confirmBtn.onclick = () => inviaSelezioneTeam(format, nomeUtenteClean, allTeams, selectedTeamIds);
     modal.style.display = 'flex';
 }
@@ -1453,6 +1518,15 @@ function chiudiTeamSeFuori(event) { if (event.target.id === 'teamModal') chiudiT
 async function inviaSelezioneTeam(format, nomeUtenteClean, allTeams, selectedTeamIds) {
     if (selectedTeamIds.length === 0) {
         if(!confirm("No teams selected. Remove registration?")) return;
+    } else {
+        // rete di sicurezza: la stessa regola della finestra, riletta adesso (da quando si è aperta le iscrizioni o i team bloccati possono essere cambiati,
+        // magari da un altro dispositivo). Se non si riesce a leggere non si blocca niente.
+        const controllo = await leggiControlloSomiglianza(format, nomeUtenteClean, allTeams);
+        const problema = selectedTeamIds.map(id => conflittiDiIscrizione(controllo, id, selectedTeamIds)).find(c => c.length);
+        if (problema) {
+            alert(SomiglianzaTeam.testo(problema));
+            return;
+        }
     }
 
     const payload = {

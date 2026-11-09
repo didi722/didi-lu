@@ -253,3 +253,24 @@
 
 /* ✨ Il tasto sulla card per rendere shiny un Pokémon del team (negozio.js) */
 .card-azione.azione-shiny { filter: saturate(1.2); }
+
+/* ---------- Fuori regola di somiglianza ----------
+   Un team ancora modificabile che ha più di 2 Pokémon in comune con uno che non lo è più (iscritto a una stagione iniziata) diventa grigio: non si può
+   iscrivere a una stagione finché non lo si cambia. Resta aperto, modificabile e provabile. Il perché sta nel fumetto che compare passandoci sopra
+   (box.html, avviaFumettoSimile) e, per chi non ha il mouse, in cima al dettaglio del team. */
+.card.card-simile { filter: grayscale(.95) brightness(1.04); opacity: .82; }
+.team-simile-avviso {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    box-sizing: border-box;
+    margin: 8px 0 14px;
+    padding: 8px 12px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 3px 3px 0 var(--nb-ink, #000);
+    font: 700 .78rem/1.35 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+}
+.team-simile-avviso b { font-size: .86rem; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
