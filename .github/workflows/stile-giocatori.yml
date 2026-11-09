@@ -1,0 +1,30 @@
+name: Stile dei giocatori
+
+# Somma le scelte di ogni allenatore nei set giocati sul sito (attacco, protezione, cambi, mosse di stato) e le salva in players/<id>/stile: è ciò che la CPU
+# legge per sapere come gioca chi ha davanti. Gira da solo ogni sei ore e si può lanciare a mano (Actions → Stile dei giocatori → Run workflow;
+# la prima volta, dopo averlo aggiunto, per avere subito i profili). Con "prova" stampa cosa scriverebbe senza scrivere niente.
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: 'Solo prova: stampa cosa scriverebbe, senza scrivere'
+        type: boolean
+        default: false
+
+jobs:
+  stile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Installa firebase-admin
+        run: npm install firebase-admin
+      - name: Calcola e salva lo stile
+        run: node .github/workflows/stile-giocatori.js ${{ inputs.prova && '--prova' || '' }}
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

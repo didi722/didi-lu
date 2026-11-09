@@ -121,7 +121,7 @@ async function creaCpuPartita({ fetchFallisce = 0 } = {}) {
     const scaricati = [];
     let fallimenti = fetchFallisce;
     const ambiente = {
-        self: { TeamCpu: T, CpuIa: require('../docs/cpu-ia.js') },
+        self: { TeamCpu: T, CpuIa: require('../docs/cpu-ia.js'), CpuAvversario: require('../docs/cpu-avversario.js') },
         Dex: sim.Dex, TeamValidator: sim.TeamValidator, localStorage,
         fetch: async p => {
             scaricati.push(p);
@@ -129,7 +129,7 @@ async function creaCpuPartita({ fetchFallisce = 0 } = {}) {
             return { ok: true, json: async () => leggiJson(p) };
         }
     };
-    const modulo = new Function(...Object.keys(ambiente), src + '\nreturn { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro };')(...Object.values(ambiente));
+    const modulo = new Function(...Object.keys(ambiente), src + '\nreturn { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile };')(...Object.values(ambiente));
     return { modulo, memoriaBrowser, localStorage, scaricati };
 }
 const regPiccolo = (extra = {}) => ({ ...regOU, restrizioni: { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' } } }, ...extra });
@@ -146,6 +146,49 @@ test('meccanicheDelFormato: spente se il formato non le ammette, altrimenti le d
     for (const m of ['mega', 'z', 'dynamax', 'tera']) assert.equal(spento.ammette(m), false, m);
     const acceso = modulo.nuovoCervello('p2', { meccaniche: modulo.meccanicheDelFormato({ generationalMechanics: true }) });
     for (const m of ['mega', 'z', 'dynamax', 'tera']) assert.equal(acceso.ammette(m), true, m);
+});
+
+test('nuovoCervello: con le abitudini dell\'avversario la CPU le conosce, senza è quella di sempre', async () => {
+    const { modulo } = await creaCpuPartita();
+    assert.equal(modulo.nuovoCervello('p2').modelloAvversario(), null);
+    assert.equal(modulo.nuovoCervello('p2', { avversario: null }).modelloAvversario(), null);
+    assert.ok(modulo.nuovoCervello('p2', { avversario: true }).modelloAvversario(), 'la media della lega');
+    const profilo = require('../docs/cpu-avversario.js').daStile({ set: 50, azioni: { mosse: 480, cambi: 20, attacco: 300, protezione: 120, recupero: 20, potenziamento: 20, campo: 10, supporto: 10, disturbo: 0, altro: 0 } });
+    const cervello = modulo.nuovoCervello('p2', { avversario: profilo });
+    assert.ok(cervello.modelloAvversario().partenza.protezione > 0.15, 'si para più della media');
+});
+
+test('caricaStile: legge players/<id>/stile (id in minuscolo) e lo dà nella forma che il cervello legge; senza dati o con la rete giù è la media della lega, senza errori', async () => {
+    const { modulo } = await creaCpuPartita();
+    const letti = [];
+    const db = valore => ({ ref: percorso => ({ once: async () => { letti.push(percorso); if (valore instanceof Error) throw valore; return { val: () => valore }; } }) });
+    const nodo = { v: 1, set: 40, azioni: { mosse: 190, cambi: 10, attacco: 130, protezione: 40, recupero: 5, potenziamento: 5, campo: 5, supporto: 3, disturbo: 2, altro: 0 }, lega: { set: 200, azioni: { mosse: 960, cambi: 40, attacco: 740, protezione: 100, recupero: 30, potenziamento: 30, campo: 30, supporto: 15, disturbo: 10, altro: 5 } } };
+    const p = await modulo.caricaStile(db(nodo), ' Didi ');
+    assert.deepEqual(letti, ['players/didi/stile']);
+    assert.equal(p.giocatore.n, 200);
+    assert.equal(p.lega.n, 1000);
+    assert.equal(p.set, 40);
+    // nessun dato: un profilo vuoto (la CPU parte dalla media della lega)
+    const vuoto = await modulo.caricaStile(db(null), 'nuovo');
+    assert.equal(vuoto.giocatore, null);
+    assert.ok(modulo.nuovoCervello('p2', { avversario: vuoto }).modelloAvversario());
+    // la rete giù non ferma niente
+    const rotto = await modulo.caricaStile(db(new Error('rete')), 'didi');
+    assert.equal(rotto.giocatore, null);
+    // senza id o senza database non si legge nulla
+    const prima = letti.length;
+    assert.equal((await modulo.caricaStile(db(nodo), '')).giocatore, null);
+    assert.equal((await modulo.caricaStile(null, 'didi')).giocatore, null);
+    assert.equal(letti.length, prima);
+});
+
+test('battle-ui.js: la CPU studia chi gioca — legge il suo stile una volta, lo dà al cervello e, se arriva tardi, glielo passa a partita iniziata', () => {
+    const ui = leggi('battle-ui.js');
+    assert.match(ui, /import \{[^}]*caricaStile[^}]*\} from '\.\/cpu-partita\.js';/);
+    assert.match(ui, /function studiaGiocatore\(id\) \{\s*if \(!id \|\| stileCpu\.id === id\) return;/, 'una volta per giocatore, e non per chi non ha il login');
+    assert.match(ui, /caricaStile\(firebase\.database\(\), id\)/);
+    assert.match(ui, /if \(cpu && cpu\.cerebro\) cpu\.cerebro\.impostaAvversario\(profilo\);/);
+    assert.match(ui, /studiaGiocatore\(config\.p1 && config\.p1\.id\);\s*cpu\.cerebro = nuovoCervello\('p2', \{[^}]*avversario: stileCpu\.profilo \|\| true \}\);/, 'il cervello parte con le abitudini, o con la media della lega');
 });
 
 test('nuovoTeamCpu: un team legale, nuovo a ogni chiamata, numerato "Team 1", "Team 2"...', async () => {
@@ -250,7 +293,7 @@ test('nomeNeutro: la CPU si presenta come "Team N", mai col piano di gioco né c
 // ===================================================
 test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori, fine partita)', () => {
     const ui = leggi('battle-ui.js');
-    assert.match(ui, /import \{ nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro \} from '\.\/cpu-partita\.js'/);
+    assert.match(ui, /import \{ nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile \} from '\.\/cpu-partita\.js'/);
     assert.match(ui, /import \{ caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra, caricaAspetto \} from '\.\/team-sito\.js'/);
     assert.match(ui, /parametri\.get\('cpu'\)[\s\S]{0,400}preparaCpu\(parametri\.get\('team'\)\)/);
     assert.match(ui, /return !online && lato === 'p2' && \(!!cpu \|\| \$\('bot-p2'\)\.checked\)/, 'con la CPU il lato 2 è sempre automatico');
@@ -259,8 +302,8 @@ test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori
     assert.match(ui, /if \(cpu && lato === 'p2'\) cpu\.errori\+\+/, 'dopo un rifiuto prova la scelta successiva');
     assert.match(ui, /richiesta\.rqid !== cpu\.rqid/, 'ogni richiesta nuova riparte dalla scelta migliore');
     assert.match(ui, /else if \(cpu\) \{\s*mostraFineCpu\(vincitore\);/);
-    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2', \{ piano: cpu\.team && cpu\.team\.piano, meccaniche: meccanicheDelFormato\(cpu\.giocatore && cpu\.giocatore\.regolamento\) \}\)/,
-        'un cervello nuovo a ogni partita, che conosce il piano del team e le meccaniche di generazione del formato');
+    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2', \{ piano: cpu\.team && cpu\.team\.piano, meccaniche: meccanicheDelFormato\(cpu\.giocatore && cpu\.giocatore\.regolamento\), avversario: stileCpu\.profilo \|\| true \}\)/,
+        'un cervello nuovo a ogni partita, che conosce il piano del team, le meccaniche di generazione del formato e le abitudini di chi gioca');
     // il giocatore non vede il team della CPU (solo le specie, come in una partita vera)
     assert.match(ui, /openSheet: false,\s*latiNoti: \['p1'\]/);
     // se la CPU va in errore si gioca una mossa valida a caso: la partita non si blocca
@@ -330,5 +373,5 @@ test('battle.html ha i pezzi che la modalità CPU usa e nessun file nuovo da car
     for (const id of ['opzione-bot', 'link-hub', 'azioni-vittoria', 'sotto-vittoria', 'testo-vittoria']) assert.match(html, new RegExp(`id="${id}"`));
     // i moduli della CPU si caricano da soli dagli import di battle-ui.js
     const partita = leggi('cpu-partita.js');
-    for (const f of ['cpu-conoscenza.js', 'cpu-calcolo.js', 'cpu-ia.js', 'formato-pool.js', 'consigli.js', 'team-cpu.js', 'pkmn-sim.js']) assert.match(partita, new RegExp(`import '?[^;]*\\./${f.replace('.', '\\.')}`), f);
+    for (const f of ['cpu-conoscenza.js', 'cpu-calcolo.js', 'azioni-mosse.js', 'cpu-avversario.js', 'cpu-ia.js', 'formato-pool.js', 'consigli.js', 'team-cpu.js', 'pkmn-sim.js']) assert.match(partita, new RegExp(`import '?[^;]*\\./${f.replace('.', '\\.')}`), f);
 });
