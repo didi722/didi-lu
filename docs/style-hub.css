@@ -553,6 +553,17 @@ body.status-live .hub-header {
     background: rgba(201, 43, 43, 0.8);
 }
 
+/* fuori regola di somiglianza (somiglianza-team.js): troppo simile a un team che non si può più modificare; non si seleziona, il perché sta nel fumetto */
+.team-option.team-option-simile {
+    filter: grayscale(.95);
+    opacity: .62;
+    cursor: not-allowed;
+}
+.team-option.team-option-simile:not(.selected):hover {
+    border-color: var(--nb-ink, #000);
+    background: white;
+}
+
 #modal-select-team {
     position: fixed; /* o absolute */
     z-index: 1000;

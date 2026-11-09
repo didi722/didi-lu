@@ -170,7 +170,7 @@ test('card del team: il clic su un Pokémon apre il team (non il Pokémon: quell
     const fn = box.slice(inizio, box.indexOf('\n}\n', inizio));
     assert.doesNotMatch(fn, /class="pkm-box"[^>]*onclick/, 'le tessere non hanno un clic loro: sale alla card');
     assert.doesNotMatch(fn, /preparaAperturaPkm/);
-    assert.match(fn, /<div class="card" style="--i: \$\{posizione\}; --cc: \$\{coloreFormato\(/);
+    assert.match(fn, /<div class="card\$\{conflittoSimile \? ' card-simile' : ''\}" style="--i: \$\{posizione\}; --cc: \$\{coloreFormato\(/, 'la card è grigia (card-simile) solo se il team è fuori regola di somiglianza');
     assert.match(fn, /<span class="bt-card" data-team-badge="\$\{team\.id\}" onclick="event\.stopPropagation\(\)">/);
     assert.match(fn, /onclick="apriDettagli\('\$\{team\.id\}'\)"/);
 });

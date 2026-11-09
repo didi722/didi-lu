@@ -79,7 +79,7 @@ test('le pagine usano la regola condivisa: nessun nome di GIF costruito a mano d
         assert.doesNotMatch(testo, /if \(pkmNameUrl === 'mr-mime'\)/, `${pagina}: niente più toppe sul solo Mr. Mime`);
     }
     // getGifUrl (hub e matches) passa dalla regola
-    for (const pagina of ['hub.html', 'matches.html']) assert.match(docs(pagina), /function getGifUrl\(pName\) \{\s*if \(!pName\) return "";\s*return SpritePkm\.gif\(pName\);/);
+    for (const pagina of ['hub.html', 'matches.html']) assert.match(docs(pagina), /function getGifUrl\(pName, shiny\) \{\s*if \(!pName\) return "";\s*return SpritePkm\.gif\(pName, !!shiny\);/);
     // il ripiego per il PNG usa l'id di Showdown, non il nome con i trattini
     for (const pagina of ['box.html', 'hub.html', 'matches.html']) {
         const t = docs(pagina);

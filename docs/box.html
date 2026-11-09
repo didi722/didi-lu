@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="box-incorporato.css">
 <script src="dettagli.js" defer></script>
 <script src="team-bloccati.js"></script>
+<script src="somiglianza-team.js"></script>
 <script src="iscrizioni-team.js"></script>
 <script src="editor-team.js"></script>
 <script src="mvp.js"></script>
@@ -850,9 +851,39 @@ async function caricaTeamBloccati() {
         // la stessa che usa il simulatore per decidere se a fine partita si può modificare il team
         const snap = await db.ref('seasons').once('value');
         window.nomiTeamBloccati = TeamBloccati.nomiBloccati(snap.val());
+        window.stagioniLette = snap.val();       // le stesse stagioni dicono anche chi è iscritto a stagioni con le iscrizioni aperte (salvataggio di un team iscritto)
     } catch (e) {
         console.error("Error retrieving blocked teams:", e);
     }
+}
+
+// La struttura di ogni formato (strutturaSito), per sapere dove vale la regola di somiglianza: categoria in minuscolo -> struttura ('' = custom)
+let struttureFormati = null;
+async function caricaStruttureFormati() {
+    if (struttureFormati) return struttureFormati;
+    const mappa = new Map();
+    try {
+        const snap = await db.ref('regolamenti').once('value');
+        snap.forEach(c => {
+            const r = c.val();
+            if (r && r.categoria) mappa.set(String(r.categoria).trim().toLowerCase(), String(r.strutturaSito || ''));
+        });
+        struttureFormati = mappa;      // si ricorda solo se si è letta bene: altrimenti la prossima volta si riprova
+    } catch (e) {
+        console.warn('Formats not loaded: no team is marked as too similar', e);
+    }
+    return mappa;
+}
+
+// I team ancora modificabili che hanno troppi Pokémon in comune con un team non modificabile (somiglianza-team.js): Map id -> [{ con, comuni }].
+// La regola vale solo verso i team bloccati (iscritti a una stagione iniziata: team-bloccati.js) e solo nei formati che la prevedono.
+async function conflittiSomiglianza() {
+    const strutture = await caricaStruttureFormati();
+    const struttura = t => strutture.get(String(t.categoria || '').trim().toLowerCase());
+    return SomiglianzaTeam.mappaConflitti(tuttiITeam, {
+        bloccato: t => TeamBloccati.eBloccato(window.nomiTeamBloccati, t.nome),
+        vale: t => struttura(t) !== undefined && SomiglianzaTeam.valeNelFormato(struttura(t))
+    });
 }
 
 // ---------- Aperto dal simulatore (iframe) per modificare un team ----------
@@ -906,6 +937,47 @@ function formattaEffettoNatura(natura) {
     return `<span style="white-space: nowrap; ">(<span style="color: #15803d; font-weight: bold;">+ ${effetto[0]}</span>, <span style="color: #b91c1c; font-weight: bold;">- ${effetto[1]}</span>)</span>`;
 }
 
+// Il fumetto dei team fuori regola di somiglianza: passando sulla card grigia compare quello del sito (tooltip.css) con il perché. Non compare sopra i
+// pulsanti, le note e i Pokémon della card, che hanno già il loro suggerimento; senza "passaggio" (telefono) il perché sta nel dettaglio del team.
+function avviaFumettoSimile(grid) {
+    if (!grid || grid.dataset.fumettoSimile) return;
+    if (typeof window.matchMedia !== 'function' || !window.matchMedia('(hover: hover)').matches) return;
+    grid.dataset.fumettoSimile = '1';
+    let fumetto = null;
+    let corrente = null;
+    const nascondi = () => { corrente = null; if (fumetto) fumetto.classList.remove('tip-visibile'); };
+    const mostra = card => {
+        if (corrente === card || typeof TooltipCoach === 'undefined') return;
+        corrente = card;
+        if (!fumetto) {
+            fumetto = document.createElement('div');
+            fumetto.className = 'tip-coach tip-globale';
+            fumetto.setAttribute('role', 'tooltip');
+            fumetto.style.whiteSpace = 'pre-line';
+            document.body.appendChild(fumetto);
+        }
+        const righe = String(card.dataset.simile || '').split('\n');
+        fumetto.textContent = '';
+        const titolo = document.createElement('strong');
+        titolo.textContent = righe[0];
+        fumetto.appendChild(titolo);
+        fumetto.appendChild(document.createTextNode(righe.slice(1).join('\n')));
+        fumetto.classList.remove('tip-visibile');
+        fumetto.style.left = '0px'; fumetto.style.top = '0px';
+        const p = TooltipCoach.posiziona(card.getBoundingClientRect(), { w: fumetto.offsetWidth, h: fumetto.offsetHeight }, { w: window.innerWidth, h: window.innerHeight });
+        fumetto.style.left = p.left + 'px';
+        fumetto.style.top = p.top + 'px';
+        fumetto.classList.add('tip-visibile');
+    };
+    grid.addEventListener('mouseover', e => {
+        const card = e.target.closest ? e.target.closest('.card-simile') : null;
+        if (!card || e.target.closest('.card-azione, .azione-note, .pkm-box, .bt-card')) return nascondi();
+        mostra(card);
+    });
+    grid.addEventListener('mouseleave', nascondi);
+    window.addEventListener('scroll', nascondi, true);
+}
+
 async function renderizza(lista) {
     // Ogni formato ha il suo colore (lo stesso per tutti i suoi team: contorno e sfumature della card nell'app), ricavato dal nome del formato
     const coloreFormato = formato => {
@@ -915,6 +987,9 @@ async function renderizza(lista) {
         return palette[h % palette.length];
     };
     await caricaTeamBloccati();
+    // i team modificabili troppo simili a uno non modificabile: card grigia e fumetto con il perché (la mappa serve anche al dettaglio del team)
+    const fuoriRegola = typeof conflittiSomiglianza === 'function' ? await conflittiSomiglianza() : new Map();
+    window.fuoriRegolaSomiglianza = fuoriRegola;
     const grid = document.getElementById('teamsGrid');
     if (!grid) return;
 
@@ -960,6 +1035,12 @@ async function renderizza(lista) {
             </div>
         `;
 
+        // fuori regola di somiglianza: la card diventa grigia e passandoci sopra si spiega con quale team (box-team.css, avviaFumettoSimile)
+        const conflittoSimile = fuoriRegola.get(team.id);
+        const attributoSimile = conflittoSimile
+            ? ` data-simile="${SomiglianzaTeam.testo(conflittoSimile).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}"`
+            : '';
+
         // la barra della percentuale di vittorie (solo se il team ha giocato)
         const vittorieTeam = Number(team.vittorie) || 0, sconfitteTeam = Number(team.sconfitte) || 0;
         const partiteTeam = vittorieTeam + sconfitteTeam;
@@ -968,7 +1049,7 @@ async function renderizza(lista) {
             `<div class="card-winrate" title="${percentualeTeam}% of matches won"><span style="width:${percentualeTeam}%"></span><b>${percentualeTeam}% wins</b></div>`;
 
         return `
-        <div class="card" style="--i: ${posizione}; --cc: ${coloreFormato(team.category || team.categoria || 'VGC')};" onclick="apriDettagli('${team.id}')">
+        <div class="card${conflittoSimile ? ' card-simile' : ''}" style="--i: ${posizione}; --cc: ${coloreFormato(team.category || team.categoria || 'VGC')};"${attributoSimile} onclick="apriDettagli('${team.id}')">
             <div class="card-header">
                 <span class="category">${team.category || team.categoria || 'VGC'}</span>
 
@@ -1029,6 +1110,8 @@ async function renderizza(lista) {
         </div>
         `;
     }).join('');
+
+    if (typeof avviaFumettoSimile === 'function') avviaFumettoSimile(grid);
 
     // le medagliette dei badge sulle card (arrivano appena sono pronte le statistiche reali)
     if (typeof BadgeTeam !== 'undefined' && typeof Fiocchi !== 'undefined' && playerID) {
@@ -1196,6 +1279,13 @@ async function apriDettagli(id, opzioni = {}) {
         console.warn('[Dati per generazione] dettaglio con i dati di oggi:', err);
     }
 
+    // fuori regola di somiglianza: il perché sta anche qui, per chi non ha il "passaggio" del mouse (telefono). Fuori dall'intestazione: nell'app sparisce tutta.
+    const conflittoSimile = window.fuoriRegolaSomiglianza ? window.fuoriRegolaSomiglianza.get(team.id) : null;
+    const righeSimile = conflittoSimile ? SomiglianzaTeam.testo(conflittoSimile).split('\n') : [];
+    const avvisoSimile = righeSimile.length
+        ? `<div class="team-simile-avviso" role="note"><b>${tbEsc(righeSimile[0])}</b>${righeSimile.slice(1).map(r => `<span>${tbEsc(r)}</span>`).join('')}</div>`
+        : '';
+
     content.innerHTML = `
         <div class="modal-header-container" style="position: relative;">
             <h2>${team.nome}</h2>
@@ -1207,6 +1297,7 @@ async function apriDettagli(id, opzioni = {}) {
             </div>
             ${tbHtmlTagDettaglio(team.id)}
         </div>
+        ${avvisoSimile}
         <div class="modal-grid">
             ${team.pokemon.map((p, pIndex) => {
                 const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
@@ -2463,7 +2554,7 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
         tuttiGliErrori = tuttiGliErrori.concat(erroriAvanzati);
     }
 
-    // Max 2 Pokémon in comune con gli altri team: formati custom e Anything Goes
+    // Max 2 Pokémon in comune con i team che non si possono più modificare (altriTeamEsistenti: li sceglie il salvataggio): formati custom e Anything Goes
     if ((strutturaFormato === 'custom' || isAnythingGoes) && altriTeamEsistenti.length > 0) {
         const erroriSovrapposizione = validaSovrapposizioneTeam(teamDatiPokeAPI, altriTeamEsistenti, currentTeamId);
         tuttiGliErrori = tuttiGliErrori.concat(erroriSovrapposizione);
@@ -2476,73 +2567,24 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
 }
 
 /**
- * Funzione Helper per verificare che il team non condivida più di 2 Pokémon con altri team
+ * Il team non può condividere più di 2 Pokémon con un team che non si può più modificare, né (se è iscritto a una stagione con le iscrizioni aperte) con un
+ * altro team iscritto a una stagione con le iscrizioni aperte: alla chiusura diventerebbero due team non modificabili che rompono la regola (somiglianza-team.js).
+ * `altriTeam` sono già solo quelli (li sceglie il salvataggio; quelli iscritti hanno `iscrittoA`, il nome della stagione): tra team ancora modificabili e non
+ * iscritti la regola non c'è.
  */
 function validaSovrapposizioneTeam(teamCorrente, altriTeam, currentTeamId = null) {
-    const errori = [];
-
-    const nomiTeamCorrente = teamCorrente
-        .map(p => (p.species?.name || p.name || p.nome || p.pokemon || '').toLowerCase())
-        .filter(Boolean);
-
     for (const teamEsistente of altriTeam) {
-        if (currentTeamId && teamEsistente.id && teamEsistente.id === currentTeamId) {
-            continue;
-        }
-
-        const listaPokemonEsistenti = teamEsistente.pokemon || teamEsistente.teamDati || [];
-        
-        const nomiTeamEsistente = listaPokemonEsistenti
-            .map(p => (typeof p === 'string' ? p : (p.species?.name || p.name || p.nome || p.pokemon || '')).toLowerCase())
-            .filter(Boolean);
-
-        const pokemonInComune = nomiTeamCorrente.filter(nome => nomiTeamEsistente.includes(nome));
-
-        if (pokemonInComune.length > 2) {
-            const listaNomiFormatted = pokemonInComune.map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(', ');
-            errori.push(
-                `Il team condivide troppi Pokémon (${pokemonInComune.length}: ${listaNomiFormatted}) con un altro team già registrato (${teamEsistente.nome || 'Team esistente'}). Nei formati custom sono consentiti al massimo 2 Pokémon uguali.`
-            );
-            break; 
+        if (currentTeamId && teamEsistente.id && teamEsistente.id === currentTeamId) continue;
+        const comuni = SomiglianzaTeam.inComune(teamCorrente, teamEsistente);
+        if (comuni.length > SomiglianzaTeam.MASSIMO_COMUNI) {
+            const nome = teamEsistente.nome || 'another team';
+            if (teamEsistente.iscrittoA) {
+                return [`This team is registered in a season with open registrations and would share too many Pokémon (${comuni.length}: ${comuni.join(', ')}) with "${nome}", also registered ("${teamEsistente.iscrittoA}"). Both would become non-editable when registrations close, and two such teams can share at most ${SomiglianzaTeam.MASSIMO_COMUNI} Pokémon: change some Pokémon, or withdraw one of the two teams from its season first.`];
+            }
+            return [`This team shares too many Pokémon (${comuni.length}: ${comuni.join(', ')}) with "${nome}", which is registered in a season and can no longer be edited. At most ${SomiglianzaTeam.MASSIMO_COMUNI} identical Pokémon are allowed with such a team.`];
         }
     }
-
-    return errori;
-}
-
-/**
- * Funzione Helper per verificare che il team non condivida più di 2 Pokémon con altri team
- */
-function validaSovrapposizioneTeam(teamCorrente, altriTeam, currentTeamId = null) {
-    const errori = [];
-
-    const nomiTeamCorrente = teamCorrente
-        .map(p => (p.species?.name || p.name || p.nome || p.pokemon || '').toLowerCase())
-        .filter(Boolean);
-
-    for (const teamEsistente of altriTeam) {
-        if (currentTeamId && teamEsistente.id && teamEsistente.id === currentTeamId) {
-            continue;
-        }
-
-        const listaPokemonEsistenti = teamEsistente.pokemon || teamEsistente.teamDati || [];
-        
-        const nomiTeamEsistente = listaPokemonEsistenti
-            .map(p => (typeof p === 'string' ? p : (p.species?.name || p.name || p.nome || p.pokemon || '')).toLowerCase())
-            .filter(Boolean);
-
-        const pokemonInComune = nomiTeamCorrente.filter(nome => nomiTeamEsistente.includes(nome));
-
-        if (pokemonInComune.length > 2) {
-            const listaNomiFormatted = pokemonInComune.map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(', ');
-            errori.push(
-                `Il team condivide troppi Pokémon (${pokemonInComune.length}: ${listaNomiFormatted}) con un altro team già registrato (${teamEsistente.nome || 'Team esistente'}). Nei formati custom sono consentiti al massimo 2 Pokémon uguali.`
-            );
-            break; 
-        }
-    }
-
-    return errori;
+    return [];
 }
 
 // ID stile Showdown: "Fake Out" / "fake-out" → "fakeout"
@@ -3108,17 +3150,34 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
         datiTeamDaSalvare.pokemon = pulisciCampiPokemon(parseShowdown(testoAdattato), regolamento);
         datiTeamDaSalvare.testoShowdown = testoAdattato;
 
+        // Il confronto di somiglianza è solo verso i team che non si possono più modificare (iscritti a una stagione iniziata): tra team ancora
+        // modificabili si prova quel che si vuole. Chi è bloccato si rilegge adesso: una stagione può essere partita da quando la pagina è aperta.
         let altriTeamEsistenti = [];
         const strutturaFormatoSalvataggio = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
-        if (strutturaFormatoSalvataggio === 'custom' || strutturaFormatoSalvataggio === 'anything_goes') {
+        if (SomiglianzaTeam.valeNelFormato(strutturaFormatoSalvataggio)) {
             try {
+                await caricaTeamBloccati();
                 const teamsSnap = await databaseRef.child(`players/${playerID}/teams`).once('value');
                 teamsSnap.forEach(childSnap => {
                     const teamVal = childSnap.val();
-                    if (teamVal.categoria && teamVal.categoria.toLowerCase() === regolamento.categoria.toLowerCase()) {
+                    if (teamVal.categoria && teamVal.categoria.toLowerCase() === regolamento.categoria.toLowerCase()
+                        && TeamBloccati.eBloccato(window.nomiTeamBloccati, teamVal.nome)) {
                         altriTeamEsistenti.push({ id: childSnap.key, ...teamVal });
                     }
                 });
+                // Un team iscritto a una stagione con le iscrizioni aperte si può ancora cambiare, ma alla chiusura diventa non modificabile insieme agli altri iscritti
+                // (nello stesso formato, anche di un'altra stagione aperta): non deve somigliare troppo a nessuno di loro, altrimenti si avrebbero due team non
+                // modificabili che rompono la regola. Un team non iscritto no: si prova quel che si vuole.
+                const iscrittiAperti = TeamBloccati.iscrittiInStagioniAperte(window.stagioniLette, { giocatore: playerID, formato: regolamento.categoria });
+                if (editingId && iscrittiAperti.some(i => i.id === editingId)) {
+                    const giaMessi = new Set(altriTeamEsistenti.map(t => t.id));
+                    for (const i of iscrittiAperti) {
+                        if (i.id === editingId || giaMessi.has(i.id)) continue;
+                        giaMessi.add(i.id);
+                        const nelBox = teamsSnap.child(i.id).val();      // il team com'è adesso nel Box; se non c'è più, la fotografia dell'iscrizione
+                        altriTeamEsistenti.push({ ...(nelBox || { nome: i.nome, pokemon: i.pokemon }), id: i.id, iscrittoA: i.nomeStagione });
+                    }
+                }
             } catch (e) {
                 console.warn("Error: Error during retrieval of existing teams:", e);
             }
