@@ -16,7 +16,10 @@
      - lo stile è uno solo, quello dell'app: il tema e il colore che il giocatore ha scelto per il sito non contano;
      - le altre pagine hanno l'interfaccia da gioco (app-gioco.css, app-gioco.js): il menù principale, il titolo, campanella e account in alto, niente
        barre del sito né freccia indietro (si torna sempre al menù).
-   Per vedere l'aspetto da app nel browser (anche da PC): aggiungi ?app=1 a un indirizzo del sito; ?app=0 per tornare indietro.
+   Il browser del telefono resta il sito di sempre: l'aspetto da app si accende solo nell'APK e, dall'icona sulla Home, con uno schermo da telefono (gli
+   stili dell'app sono scritti per quello). Su uno schermo largo (un PC, un tablet, il browser del telefono con "sito desktop") il sito è quello da PC.
+   Per vedere l'aspetto da app nel browser (da PC, con la finestra stretta come un telefono): aggiungi ?app=1 a un indirizzo del sito; vale per la scheda
+   aperta (chiusa quella, finisce), ?app=0 per tornare indietro subito.
    Non fa niente dentro un altro frame (il Box incorporato nel simulatore). Le parti pure (riconoscimento, pagine, orientamento...) sono provate in
    test/app.test.js; funziona nel browser (window.AppSito) e in Node (require).
    ===================================================================== */
@@ -31,7 +34,7 @@
     'use strict';
 
     const TOKEN_APK = 'SantAlviseApp';                 // lo aggiunge l'APK allo user agent (capacitor.config.json: android.appendUserAgent)
-    const CHIAVE_FORZATA = 'appForzata';               // ?app=1 / ?app=0, ricordato in questo browser
+    const CHIAVE_FORZATA = 'appForzata';               // ?app=1 / ?app=0, ricordato solo per questa scheda del browser (sessionStorage; il vecchio valore in localStorage si butta)
     const CHIAVE_INVITO = 'invitoApp';                 // quando si è chiuso l'invito a installare
     const GIORNI_INVITO = 14;                          // dopo averlo chiuso, l'invito torna dopo tanti giorni
     const CONDIZIONE_TELEFONO = '(max-width: 700px), (max-height: 520px)';   // com'è fatto uno schermo da telefono (la stessa degli stili)
@@ -79,14 +82,20 @@
 
     /**
      * Com'è aperto il sito: 'apk' (app Android), 'installata' (icona sulla schermata Home) o '' (browser).
-     * env: { ua, standalone (matchMedia display-mode: standalone o fullscreen), iosStandalone (navigator.standalone), referrer, forzata ('1' | '0' | '') }
+     * env: { ua, standalone (matchMedia display-mode: standalone o fullscreen), iosStandalone (navigator.standalone), telefono (lo schermo è da telefono?),
+     * forzata ('1' | '0' | '') }
+     * Fuori dall'APK l'aspetto da app vuole uno schermo da telefono: gli stili dell'app sono scritti per quello, e su uno schermo largo (un PC, un tablet, il
+     * browser del telefono con "sito desktop") script e tema da app senza i loro stili sono una pagina a metà. Lì resta il sito di sempre, anche con ?app=1
+     * o dall'icona. `telefono` non dato: non lo si sa, si presume di sì.
+     * Non conta da dove si arriva: un link aperto da un'altra app (WhatsApp, Gmail...) porta nel browser con la provenienza android-app://, ma resta il browser.
      */
     function modoApp(env) {
         const e = env || {};
         if (String(e.ua || '').includes(TOKEN_APK)) return 'apk';         // nell'APK l'aspetto da app non si toglie
+        if (e.telefono === false) return '';
         if (e.forzata === '0') return '';
         if (e.forzata === '1') return 'installata';
-        if (e.standalone || e.iosStandalone || /^android-app:\/\//.test(String(e.referrer || ''))) return 'installata';
+        if (e.standalone || e.iosStandalone) return 'installata';
         return '';
     }
 
@@ -274,11 +283,15 @@
         const leggi = k => { try { return win.localStorage.getItem(k); } catch (e) { return null; } };
         const scrivi = (k, v) => { try { if (v == null) win.localStorage.removeItem(k); else win.localStorage.setItem(k, v); } catch (e) { /* storage bloccato */ } };
 
-        // ?app=1 / ?app=0: per vedere (o togliere) l'aspetto da app anche nel browser; si ricorda per le pagine dopo
-        let forzata = leggi(CHIAVE_FORZATA) || '';
+        // ?app=1 / ?app=0: per vedere (o togliere) l'aspetto da app anche nel browser; si ricorda per le pagine dopo, ma solo in questa scheda (sessionStorage):
+        // un ?app=1 provato una volta non deve lasciare il browser in modalità app per sempre. Il vecchio valore, scritto nella memoria del browser, si butta.
+        const leggiScheda = k => { try { return win.sessionStorage.getItem(k); } catch (e) { return null; } };
+        const scriviScheda = (k, v) => { try { win.sessionStorage.setItem(k, v); } catch (e) { /* storage bloccato */ } };
+        scrivi(CHIAVE_FORZATA, null);
+        let forzata = leggiScheda(CHIAVE_FORZATA) || '';
         try {
             const q = new win.URLSearchParams(win.location.search).get('app');
-            if (q === '1' || q === '0') { scrivi(CHIAVE_FORZATA, q); forzata = q; }
+            if (q === '1' || q === '0') { scriviScheda(CHIAVE_FORZATA, q); forzata = q; }
         } catch (e) { /* indirizzo strano: niente */ }
 
         const nav = win.navigator || {};
@@ -287,7 +300,7 @@
             ua: nav.userAgent,
             standalone: dm('standalone') || dm('fullscreen'),
             iosStandalone: nav.standalone === true,
-            referrer: doc.referrer,
+            telefono: typeof win.matchMedia === 'function' ? !!win.matchMedia(CONDIZIONE_TELEFONO).matches : true,     // senza matchMedia non si può sapere: si presume di sì
             forzata
         });
         const os = sistema(nav.userAgent, nav.maxTouchPoints);

@@ -42,11 +42,13 @@ test('nomePagina: il file della pagina in minuscolo; la radice e le cartelle son
     assert.equal(A.nomePagina(undefined), 'index.html');
 });
 
-test('modoApp: APK dal suo user agent; icona sulla Home da display-mode, iOS o provenienza Android; altrimenti browser', () => {
+test('modoApp: APK dal suo user agent; icona sulla Home da display-mode o iOS; altrimenti browser (anche se si arriva da un\'altra app)', () => {
     assert.equal(A.modoApp({ ua: UA.apk }), 'apk');
     assert.equal(A.modoApp({ ua: UA.android, standalone: true }), 'installata');
     assert.equal(A.modoApp({ ua: UA.iphone, iosStandalone: true }), 'installata');
-    assert.equal(A.modoApp({ ua: UA.android, referrer: 'android-app://com.android.chrome' }), 'installata');
+    // un link aperto da un'altra app (WhatsApp, Gmail, la notifica del browser...) arriva con la provenienza android-app://: resta il browser, non è l'app
+    assert.equal(A.modoApp({ ua: UA.android, referrer: 'android-app://com.android.chrome' }), '');
+    assert.equal(A.modoApp({ ua: UA.android, referrer: 'android-app://com.brave.browser', telefono: true }), '');
     assert.equal(A.modoApp({ ua: UA.android, referrer: 'https://www.google.com/' }), '');
     assert.equal(A.modoApp({ ua: UA.pc }), '');
     assert.equal(A.modoApp({}), '');
@@ -58,6 +60,20 @@ test('modoApp: ?app=1 mostra l\'aspetto da app anche nel browser, ?app=0 lo togl
     assert.equal(A.modoApp({ ua: UA.android, standalone: true, forzata: '0' }), '');
     assert.equal(A.modoApp({ ua: UA.apk, forzata: '0' }), 'apk');
     assert.equal(A.modoApp({ ua: UA.pc, forzata: '' }), '');
+});
+
+test('modoApp: fuori dall\'APK l\'aspetto da app vuole uno schermo da telefono; su uno schermo largo (PC, tablet, "sito desktop") resta il sito', () => {
+    // schermo da telefono, o non si sa: come sempre
+    assert.equal(A.modoApp({ ua: UA.android, standalone: true, telefono: true }), 'installata');
+    assert.equal(A.modoApp({ ua: UA.android, standalone: true }), 'installata', 'non dato: si presume di sì');
+    assert.equal(A.modoApp({ ua: UA.pc, forzata: '1', telefono: true }), 'installata');
+    // schermo largo: niente app, né dall'icona, né da iOS, né con ?app=1
+    assert.equal(A.modoApp({ ua: UA.android, standalone: true, telefono: false }), '');
+    assert.equal(A.modoApp({ ua: UA.iphone, iosStandalone: true, telefono: false }), '');
+    assert.equal(A.modoApp({ ua: UA.pc, forzata: '1', telefono: false }), '');
+    assert.equal(A.modoApp({ ua: UA.pc, standalone: true, telefono: false }), '');
+    // l'APK resta app qualunque sia lo schermo
+    assert.equal(A.modoApp({ ua: UA.apk, telefono: false }), 'apk');
 });
 
 test('sistema: iPhone, iPad (anche quando si spaccia per Mac), Android; il resto no', () => {
@@ -191,8 +207,9 @@ function cerca(radice, id) {
 /**
  * Apre una pagina finta e fa partire app.js. Con `stato` si guardano classi, fogli e script caricati, reindirizzamenti, orientamento, barre, invito...
  * `srcApp`: come la pagina scrive l'indirizzo di app.js (con un numero di versione si vede che i file dell'app lo ereditano).
+ * `telefono`: lo schermo è da telefono (la condizione CONDIZIONE_TELEFONO); false = schermo largo (PC, tablet, il browser del telefono con "sito desktop").
  */
-function apri({ ua = UA.pc, percorso = '/didi-lu/index.html', search = '', protocollo = 'https:', host = 'didi722.github.io', standalone = false, fullscreen = false, iosStandalone,
+function apri({ ua = UA.pc, percorso = '/didi-lu/index.html', search = '', protocollo = 'https:', host = 'didi722.github.io', standalone = false, fullscreen = false, iosStandalone, telefono = true,
     referrer = '', memoria = {}, sessione = {}, caricamento = false, inFrame = false, punti = 0, serviceWorker = true, storageRotto = false, nativo = null, srcApp = 'app.js' } = {}) {
     const doc = { readyState: caricamento ? 'loading' : 'complete', referrer, documentElement: elemento('html'), body: elemento('body'), head: elemento('head'), ascoltatori: {}, scritture: [] };
     doc.scripts = [{ getAttribute: k => (k === 'src' ? srcApp : null) }];
@@ -210,7 +227,7 @@ function apri({ ua = UA.pc, percorso = '/didi-lu/index.html', search = '', proto
         document: doc, navigator, ascoltatori: {},
         location: { search, pathname: percorso, protocol: protocollo, hostname: host, replace(url) { stato.reindirizzato.push(url); } },
         localStorage: memo(memoria, storageRotto), sessionStorage: memo(sessione, storageRotto),
-        matchMedia: q => ({ matches: (standalone && /standalone/.test(q)) || (fullscreen && /fullscreen/.test(q)) }),
+        matchMedia: q => ({ matches: q === A.CONDIZIONE_TELEFONO ? telefono : (standalone && /standalone/.test(q)) || (fullscreen && /fullscreen/.test(q)) }),
         URLSearchParams,
         setTimeout: (f, ms) => { stato.timer.push({ f, ms }); return stato.timer.length; },
         clearTimeout: n => { if (stato.timer[n - 1]) stato.timer[n - 1].f = null; },
@@ -399,7 +416,7 @@ test('battaglia, accesso, amministrazione e modello vuoto: classe app, nessuna i
     assert.deepEqual(b.script(), ['app-suoni.js', 'app-musica.js', 'app-schede.js', 'app-battaglia.js'], 'le schede (Pokémon, mosse) prima dei comandi, che le usano');
 });
 
-test('il desktop installato come app (display-mode standalone, senza telefono): classe app e interfaccia da gioco, ma niente menù né avviso "gira il telefono"', () => {
+test('il PC con l\'app installata e la finestra stretta come un telefono (display-mode standalone, senza telefono vero): classe app e interfaccia da gioco, ma niente menù né avviso "gira il telefono"', () => {
     const s = apri({ ua: UA.pc, standalone: true, percorso: '/didi-lu/index.html' });
     assert.deepEqual(s.classi(), ['app', 'app-installata', 'app-shell']);
     assert.deepEqual(s.reindirizzato, []);
@@ -416,20 +433,64 @@ test('dentro un altro frame (il Box incorporato nel simulatore) non fa niente', 
     assert.deepEqual(s.registrazioni, []);
 });
 
-test('?app=1 accende l\'aspetto da app anche da PC e lo ricorda; ?app=0 lo spegne; altri valori non toccano niente', () => {
+test('?app=1 accende l\'aspetto da app anche da PC (finestra stretta) e lo ricorda solo in questa scheda; ?app=0 lo spegne; altri valori non toccano niente', () => {
     const memoria = {};
-    let s = apri({ ua: UA.pc, percorso: '/didi-lu/stats.html', search: '?app=1', memoria });
+    const sessione = {};
+    let s = apri({ ua: UA.pc, percorso: '/didi-lu/stats.html', search: '?app=1', memoria, sessione });
     assert.equal(s.risultato.modo, 'installata');
-    assert.equal(memoria.appForzata, '1');
+    assert.equal(sessione.appForzata, '1', 'si ricorda nella scheda');
+    assert.equal(memoria.appForzata, undefined, 'non per sempre nel browser');
     assert.deepEqual(s.script(), ['app-suoni.js', 'app-musica.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'nome-scorrevole.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-stats.js']);
+    s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', memoria, sessione });
+    assert.equal(s.risultato.modo, 'installata', 'la pagina dopo, nella stessa scheda, senza parametro, resta acceso');
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', memoria });
-    assert.equal(s.risultato.modo, 'installata', 'la volta dopo, senza parametro, resta acceso');
-    s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', search: '?app=0', memoria });
+    assert.equal(s.risultato.modo, '', 'in una scheda nuova (o dopo aver chiuso il browser) torna il sito di sempre');
+    s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', search: '?app=0', memoria, sessione });
     assert.equal(s.risultato.modo, '');
-    assert.equal(memoria.appForzata, '0');
+    assert.equal(sessione.appForzata, '0');
     assert.deepEqual(s.script(), []);
-    s = apri({ ua: UA.pc, search: '?app=boh', memoria: {} });
+    s = apri({ ua: UA.pc, search: '?app=boh', memoria: {}, sessione: {} });
     assert.equal(s.risultato.modo, '');
+});
+
+test('il vecchio ?app=1 ricordato per sempre nel browser (localStorage) si butta: il browser del telefono torna il sito di sempre', () => {
+    const memoria = { appForzata: '1', altro: 'resta' };
+    const s = apri({ ua: UA.android, percorso: '/didi-lu/matches.html', memoria, punti: 5 });
+    assert.deepEqual(s.risultato, { modo: '' });
+    assert.deepEqual(s.classi(), ['os-android']);
+    assert.deepEqual(s.script(), []);
+    assert.deepEqual(s.fogli(), []);
+    assert.equal(memoria.appForzata, undefined, 'tolto');
+    assert.equal(memoria.altro, 'resta', 'il resto della memoria non si tocca');
+});
+
+test('browser del telefono: né l\'arrivo da un\'altra app (android-app://), né "sito desktop" (schermo largo) lo fanno diventare l\'app', () => {
+    // un link aperto da WhatsApp/Gmail/notifica: provenienza android-app://, ma è il browser
+    const daAltraApp = apri({ ua: UA.android, percorso: '/didi-lu/matches.html', referrer: 'android-app://com.whatsapp', punti: 5 });
+    assert.deepEqual(daAltraApp.risultato, { modo: '' });
+    assert.deepEqual(daAltraApp.classi(), ['os-android']);
+    assert.deepEqual(daAltraApp.script(), []);
+    assert.deepEqual(daAltraApp.reindirizzato, []);
+    // "sito desktop" del browser del telefono: schermo largo, user agent da PC; nemmeno con un ?app=1 rimasto in un indirizzo salvato
+    for (const opz of [{}, { search: '?app=1' }, { sessione: { appForzata: '1' } }, { referrer: 'android-app://com.brave.browser' }]) {
+        const s = apri({ ua: UA.pc, percorso: '/didi-lu/matches.html', telefono: false, punti: 5, ...opz });
+        assert.deepEqual(s.risultato, { modo: '' }, JSON.stringify(opz));
+        assert.deepEqual(s.classi(), [], JSON.stringify(opz));
+        assert.deepEqual(s.script(), [], JSON.stringify(opz));
+        assert.deepEqual(s.fogli(), [], JSON.stringify(opz));
+        assert.deepEqual(s.reindirizzato, [], JSON.stringify(opz));
+    }
+});
+
+test('l\'icona sulla Home con uno schermo largo (tablet, finestra del PC): il sito di sempre; l\'APK resta app sempre', () => {
+    const tablet = apri({ ua: UA.android, standalone: true, telefono: false, percorso: '/didi-lu/box.html', punti: 5 });
+    assert.deepEqual(tablet.risultato, { modo: '' });
+    assert.deepEqual(tablet.script(), []);
+    const ipad = apri({ ua: UA.iphone, iosStandalone: true, telefono: false, percorso: '/didi-lu/matches.html', punti: 5 });
+    assert.deepEqual(ipad.risultato, { modo: '' });
+    assert.deepEqual(ipad.fogli(), []);
+    const apk = apri({ ua: UA.apk, telefono: false, percorso: '/didi-lu/box.html', punti: 5 });
+    assert.deepEqual(apk.risultato, { modo: 'apk' });
 });
 
 test('con lo storage del browser bloccato (navigazione privata...) il sito funziona uguale', () => {
