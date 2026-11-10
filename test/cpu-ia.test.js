@@ -336,7 +336,8 @@ test('doppio: Fake Out il primo turno, non il secondo', async () => {
     ];
     const avv = [{ specie: 'Dragapult' }, { specie: 'Gholdengo' }, { specie: 'Amoonguss' }, { specie: 'Kingambit' }];
     const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
-    const s1 = scelta(ia, r, [...logAvversario(avv, true), ...logMiaSquadra(squadra, [0, 1])]);
+    // i Pokémon iniziali entrano prima del turno 1 (Fake Out conta i turni in campo)
+    const s1 = scelta(ia, r, [...logAvversario(avv, true).slice(0, -1), ...logMiaSquadra(squadra, [0, 1]), '|turn|1']);
     assert.match(s1.split(', ')[0], /^move 1\b/, `turno 1: ${s1}`);
     // secondo turno: Incineroar ha già agito in campo, Fake Out non funziona più
     ia.osserva(['|move|p2a: Incineroar|Fake Out|p1a: Dragapult', '|turn|2']);
@@ -1342,4 +1343,67 @@ test('peso offensivo: con pesoOffesa un attaccante veloce pesa più di un muro c
     // Oranguru (attacco speciale 90, velocità 60) conta più di uno Shuckle (10, 5), e meno di Chien-Pao
     const peso = n => { const b = sim.Dex.species.get(n).baseStats; return nuovo._pesoMon({ basi: b }); };
     assert.ok(peso('Chien-Pao') > peso('Oranguru') && peso('Oranguru') > peso('Shuckle'));
+});
+
+// ===================================================
+// FAKE OUT: SOLO AL PRIMO TURNO IN CAMPO, ANCHE SE NON SI È RIUSCITI A MUOVERSI
+// ===================================================
+// Un Espurr che ha tentennato al turno 1 non ha fatto nessuna mossa, ma il suo primo turno è passato: al turno 2 Fake Out fallisce.
+async function sceltaEspurr(righeDopoIlTurno1) {
+    const { sim } = await caricaSim();
+    const squadra = [
+        { specie: 'Espurr', item: 'Leftovers', mosse: ['Fake Out', 'Psychic', 'Protect', 'Helping Hand'] },
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Dragon Claw', 'Rock Slide', 'Protect', 'Swords Dance'] }
+    ];
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, debug: true, avversario: true });
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], livello: 50 });
+    const apertura = logAvversario([{ specie: 'Incineroar' }, { specie: 'Rillaboom' }, { specie: 'Flutter Mane' }], true, 1, 50);
+    // i Pokémon iniziali entrano prima del turno 1
+    const righe = [...apertura.slice(0, -1), ...logMiaSquadra(squadra, [0, 1], 50), '|turn|1', ...righeDopoIlTurno1];
+    return { ia, scelta: scelta(ia, r, righe) };
+}
+const usaFakeOut = s => /^move 1 /.test(s);
+
+test('Fake Out: al secondo turno in campo non si usa nemmeno se al primo si è tentennato (non aveva fatto nessuna mossa, ma il turno era passato)', async () => {
+    const tentennato = await sceltaEspurr(['|cant|p2a: Espurr|flinch', '|upkeep', '|turn|2']);
+    assert.ok(!usaFakeOut(tentennato.scelta), `dopo il tentennamento: ${tentennato.scelta}`);
+    const mosso = await sceltaEspurr(['|move|p2a: Espurr|Psychic|p1a: Incineroar', '|upkeep', '|turn|2']);
+    assert.ok(!usaFakeOut(mosso.scelta), `dopo aver mosso: ${mosso.scelta}`);
+    const addormentato = await sceltaEspurr(['|cant|p2a: Espurr|slp', '|upkeep', '|turn|2']);
+    assert.ok(!usaFakeOut(addormentato.scelta), `dopo un turno di sonno: ${addormentato.scelta}`);
+    // al turno 1 invece è nel suo momento (la CPU lo valuta: tra i piani migliori c'è un Fake Out)
+    const primo = await sceltaEspurr([]);
+    assert.ok(primo.ia.ultimaValutazione.some(p => p.azioni.some(a => /\[Fake Out\]/.test(a))), 'al primo turno Fake Out è tra i piani migliori');
+});
+
+test('Fake Out: chi entra dopo (un cambio o un sostituto) ha il suo primo turno quello dopo l\'ingresso; _primoTurnoInCampo conta i turni, per i miei e per gli avversari', async () => {
+    const { sim } = await caricaSim();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    ia.osserva(['|gametype|doubles', '|switch|p1a: Incineroar|Incineroar, L50|100/100', '|turn|1']);
+    const inc = () => ia.lati.p1.mons.Incineroar;
+    assert.equal(ia._primoTurnoInCampo(inc()), true, 'iniziale al turno 1');
+    ia.osserva(['|cant|p1a: Incineroar|flinch', '|upkeep', '|turn|2']);
+    assert.equal(ia._primoTurnoInCampo(inc()), false, 'turno 2 dopo aver tentennato');
+    ia.osserva(['|switch|p1a: Rillaboom|Rillaboom, L50|100/100', '|upkeep', '|turn|3']);                  // un cambio durante il turno 2: il primo turno di Rillaboom è il 3
+    assert.equal(ia._primoTurnoInCampo(ia.lati.p1.mons.Rillaboom), true);
+    ia.osserva(['|move|p1a: Rillaboom|Grassy Glide|p2a: X', '|upkeep', '|turn|4']);
+    assert.equal(ia._primoTurnoInCampo(ia.lati.p1.mons.Rillaboom), false);
+    assert.equal(ia._primoTurnoInCampo(null), true);
+});
+
+test('Fake Out: la CPU non prevede un Fake Out dell\'avversario che è in campo dal turno scorso (e se è al primo turno sì)', async () => {
+    const { sim } = await caricaSim();
+    const squadra = [
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Dragonite', item: 'Leftovers', mosse: ['Dragon Claw', 'Extreme Speed', 'Protect'] }
+    ];
+    const previsti = async (righeTurno2) => {
+        const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, debug: true, avversario: true });
+        const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], livello: 50 });
+        const apertura = logAvversario([{ specie: 'Incineroar' }, { specie: 'Rillaboom' }, { specie: 'Flutter Mane' }], true, 1, 50);
+        ia.osserva([...apertura.slice(0, -1), ...logMiaSquadra(squadra, [0, 1], 50), '|turn|1', '|move|p1a: Incineroar|Fake Out|p2a: Garchomp', ...righeTurno2]);
+        ia.scegli(r);
+        return ia.ultimoStato.alternative.flatMap(sc => sc.azioni).filter(a => a.lato === 'avv' && a.mossa && a.mossa.id === 'fakeout').length;
+    };
+    assert.equal(await previsti(['|upkeep', '|turn|2']), 0, 'al secondo turno non può più farlo');
 });

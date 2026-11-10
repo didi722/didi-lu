@@ -1129,6 +1129,14 @@
             return migliore && migliore.p > 0 ? migliore : null;
         }
 
+        // Fake Out e Prima Impressione funzionano solo nel primo turno in cui il Pokémon è in campo: conta il turno, non le mosse riuscite. Chi ha tentennato, dormito o
+        // non ha potuto muoversi al primo turno ha già "usato" la sua occasione (è il turno dopo l'ingresso a contare: i Pokémon iniziali entrano al turno 0, un
+        // cambio o un sostituto al turno in cui avviene). Vale per i miei Pokémon e per quelli avversari.
+        _primoTurnoInCampo(m) {
+            if (!m) return true;
+            return this.turno - (m.turnoEntrata == null ? this.turno - 1 : m.turnoEntrata) <= 1;
+        }
+
         _ricorda(scelta, S) {
             scelta.forEach((a, slot) => {
                 this.ultimeAzioni[slot] = a;
@@ -1331,8 +1339,10 @@
             const bersagli = S.mie.map((v, i) => v ? i : -1).filter(i => i >= 0);
             const mosse = this.mosseAvversario(o);
             const forte = [];
+            const primoTurno = this._primoTurnoInCampo(o.ref);
             for (const m of mosse) {
                 if (m.categoria === 'Status') continue;
+                if ((m.id === 'fakeout' || m.id === 'firstimpression') && !primoTurno) continue;       // non può più farla: non si prevede
                 for (const b of bersagli) {
                     const dif = S.mie[b];
                     const d = C.danno(this.dex, o, dif, m, ctx, { bersagliMultipli: S.doppio && ['allAdjacent', 'allAdjacentFoes'].includes(m.target) });
@@ -1559,8 +1569,8 @@
                 }
                 if (m.id === 'wideguard') { me.protettoDaDiffusi = true; bonus -= lato === 'mie' ? this.par.costoProtezione : 0.08; return; }
                 if (m.id === 'fakeout' || m.id === 'firstimpression') {
-                    const primoTurno = lato === 'mie' ? (me.ref.turnoEntrata === this.turno || me.ref.ultimaMossa == null) : true;
-                    if (!primoTurno) { bonus -= 0.4; return; }
+                    const primoTurno = this._primoTurnoInCampo(me.ref);
+                    if (!primoTurno) { bonus -= lato === 'mie' ? 0.4 : -0.4; return; }       // la mossa fallisce: un turno sprecato per chi la fa
                 }
                 if (m.id === 'helpinghand') {
                     const altro = x.slot === 0 ? 1 : 0;
