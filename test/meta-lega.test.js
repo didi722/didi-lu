@@ -97,6 +97,22 @@ test('aggrega: quote di Pokémon e mosse, classi e media per team; sotto le sogl
     assert.ok(Object.keys(m3.specie).length >= Object.keys(m2.specie).length);
 });
 
+test('aggrega: i pivot (U-turn, Volt Switch, Flip Turn, Parting Shot...) si contano una volta per set, come quota e come media per team', () => {
+    const lega = legaFinta(20);
+    const meta = M.aggregaTeam(lega.map(t => M.leggiTeam(t)));
+    // nella lega finta hanno un pivot Incineroar (Parting Shot), Rillaboom e Landorus-Therian (U-turn): 3 Pokémon su 14
+    assert.ok(meta.classi.perno > 0.1 && meta.classi.perno < 0.35, `quota dei set con un pivot: ${meta.classi.perno}`);
+    assert.ok(meta.squadra.perno > 0.6 && meta.squadra.perno < 1.8, `pivot per team: ${meta.squadra.perno}`);
+    // un set con due pivot conta uno solo
+    const doppio = M.aggregaTeam([1, 2, 3].map(() => M.leggiTeam(team(mon('Rillaboom', ['U-turn', 'Volt Switch', 'Grassy Glide']), mon('Garchomp', ['Earthquake'])))));
+    assert.equal(doppio.squadra.perno, 1);
+    assert.equal(doppio.classi.perno, 0.5);
+    // una lega senza pivot
+    const nessuno = M.aggregaTeam([1, 2, 3].map(() => M.leggiTeam(team(mon('Garchomp', ['Earthquake', 'Protect'])))));
+    assert.equal(nessuno.squadra.perno, 0);
+    assert.equal(nessuno.classi.perno, 0);
+});
+
 test('aggrega: dal nodo seasons — solo stagioni chiuse, mai la beta né quella in corso; un formato per chiave; senza giocatori né team nell\'uscita', () => {
     const lega = legaFinta(20);
     const dieci = lega.slice(0, 10), altri = lega.slice(10);
@@ -202,6 +218,49 @@ test('manopole del team: Helping Hand al massimo uno, Protect non per tutti, mos
     assert.ok(nuovi.prot < 0.95 && nuovi.prot > 0.6, `Protect sul ${(nuovi.prot * 100).toFixed(0)}% dei Pokémon`);
     assert.ok(vecchi.prot > 0.97, 'prima su tutti');
     assert.ok(nuovi.prio > vecchi.prio + 0.15, `mosse prioritarie a team: ${nuovi.prio.toFixed(2)} contro ${vecchi.prio.toFixed(2)}`);
+});
+
+// ---------- il pivot nel doppio ----------
+const PERNI_D_ATTACCO = ['uturn', 'voltswitch', 'flipturn'];
+function pivotDi(sim, ts) {
+    let conPerno = 0, maxPerTeam = 0, senzaAltroAttacco = [];
+    const dex = sim.Dex.forGen(9);
+    for (const t of ts) {
+        let n = 0;
+        for (const s of mosseDi(sim, t)) {
+            if (!s.mosse.some(m => PERNI_D_ATTACCO.includes(m))) continue;
+            n++;
+            // chi porta il pivot ha anche un attacco vero (il pivot non è l'unica mossa che fa danno)
+            if (!s.mosse.some(m => !PERNI_D_ATTACCO.includes(m) && dex.moves.get(m).category !== 'Status' && dex.moves.get(m).basePower > 0)) senzaAltroAttacco.push(`${s.specie}: ${s.mosse.join(', ')}`);
+        }
+        if (n) conPerno++;
+        maxPerTeam = Math.max(maxPerTeam, n);
+    }
+    return { quotaTeam: conPerno / ts.length, maxPerTeam, senzaAltroAttacco };
+}
+
+test('pivot nel doppio: i team di base ne hanno uno in molti team (mai più di uno), il set ha sempre un attacco vero, e i parametri vecchi non ne mettono', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const nuovi = pivotDi(sim, await squadre(sim, { quanti: 60, seme: 'perno-test' }));
+    const vecchi = pivotDi(sim, await squadre(sim, { quanti: 60, seme: 'perno-test', parametriTeam: T.PARAMETRI_TEAM_VECCHI }));
+    assert.equal(vecchi.quotaTeam, 0, 'com\'era prima: nessun pivot nel doppio');
+    assert.ok(nuovi.quotaTeam >= 0.25 && nuovi.quotaTeam <= 0.85, `team con un pivot: ${(nuovi.quotaTeam * 100).toFixed(0)}%`);
+    assert.equal(nuovi.maxPerTeam, 1, 'al massimo uno per team');
+    assert.deepEqual(nuovi.senzaAltroAttacco, []);
+    // la manopola
+    const nessuno = pivotDi(sim, await squadre(sim, { quanti: 60, seme: 'perno-test', parametriTeam: { probPerno: 0 } }));
+    const sempre = pivotDi(sim, await squadre(sim, { quanti: 60, seme: 'perno-test', parametriTeam: { probPerno: 1 } }));
+    assert.equal(nessuno.quotaTeam, 0);
+    assert.ok(sempre.quotaTeam > nuovi.quotaTeam, `${sempre.quotaTeam} contro ${nuovi.quotaTeam}`);
+});
+
+test('pivot nel doppio: con la meta, più pivot gioca la lega più ne mette la CPU (e una lega che non ne gioca ne ha meno)', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const metaBase = M.aggregaTeam(legaFinta(24).map(t => M.leggiTeam(t)));
+    const conMeta = perno => squadre(sim, { quanti: 60, seme: 'perno-meta', meta: Object.assign({}, metaBase, { squadra: Object.assign({}, metaBase.squadra, { perno }) }) });
+    const pochi = pivotDi(sim, await conMeta(0)), tanti = pivotDi(sim, await conMeta(1.8));
+    assert.ok(tanti.quotaTeam > pochi.quotaTeam + 0.1, `lega con molti pivot: ${tanti.quotaTeam.toFixed(2)}, lega senza: ${pochi.quotaTeam.toFixed(2)}`);
+    assert.ok(tanti.maxPerTeam <= 2, 'mai più di due');
 });
 
 test('set dei team in doppio: nessun Pokémon senza un attacco (le mosse di supporto, schermi e Stanza Magica compresi, non riempiono tutti e quattro gli slot)', { timeout: 300000 }, async () => {

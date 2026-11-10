@@ -44,11 +44,16 @@
     //   sogliaPriorita    valore minimo (potenza × precisione × STAB × categoria) perché una mossa prioritaria valga un posto nel set: Sucker Punch, Extreme Speed sì;
     //                     Aqua Jet o Mach Punch senza forza no (non valgono il posto di un attacco di copertura)
     //   bonusPriorita     quanto vale in squadra avere chi ha una mossa prioritaria buona (punteggio del team)
+    //   probPerno         probabilità che un team del doppio abbia un Pokémon col pivot (U-turn, Volt Switch, Flip Turn: chi le usa esce e fa entrare un compagno senza
+    //                     perdere il turno), se c'è chi può; maxPerno: al massimo quanti per team (la seconda con probabilità minore). Prima non ce n'erano mai nel doppio
+    //   sogliaPerno       valore minimo (potenza × precisione × STAB × categoria) perché il pivot valga un posto nel set (U-turn con un Pokémon che non attacca non vale)
+    //   bonusPerno        quanto vale in squadra avere chi ha un pivot buono (punteggio del team)
     //   pesoSpecieMeta    con la meta della lega (opzioni.meta, vedi meta-lega.js): quanto pesa, nella scelta dei membri, l'essere un Pokémon che la lega gioca
     //                     (per un Pokémon in un terzo dei team: il peso intero); pesoMossaMeta: quanto pesano le mosse che la lega gioca su quel Pokémon
-    const PARAMETRI_TEAM = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.1, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5 };
+    const PARAMETRI_TEAM = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.1, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
+        probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1 };
     // com'era prima (per i confronti)
-    const PARAMETRI_TEAM_VECCHI = { maxAiuto: 99, probAiuto: 1, probProtezione: 1, maxSenzaProt: 0, priorita: 0, sogliaPriorita: 40, bonusPriorita: 0 };
+    const PARAMETRI_TEAM_VECCHI = { maxAiuto: 99, probAiuto: 1, probProtezione: 1, maxSenzaProt: 0, priorita: 0, sogliaPriorita: 40, bonusPriorita: 0, probPerno: 0, maxPerno: 0, sogliaPerno: 50, bonusPerno: 0 };
 
     // =================================================
     // UTILITÀ
@@ -396,6 +401,8 @@
             if (ha(c => c.opz.protezione)) s += 0.4;
             if (membri.filter(c => c.supporto).length > 3) s -= (membri.filter(c => c.supporto).length - 3) * 1.1;
             if (ha(c => c.opz.helpinghand)) s += 0.2;
+            const parP = ctx.parametriTeam || PARAMETRI_TEAM;
+            if (ha(c => c.opz.pivot && c.perni[0] && c.perni[0].v >= parP.sogliaPerno && c.offesa >= 70)) s += parP.bonusPerno || 0;
         } else {
             if (ha(c => c.opz.roccia || c.opz.spuntoni)) s += 0.9;
             if (ha(c => c.opz.recupero && c.robustezza > 70)) s += 0.6;
@@ -473,6 +480,7 @@
             if (ruolo.aiuto) supporto(get('helpinghand'));
             if (ruolo.rallenta) supporto(get(o.rallenta));
             if (ruolo.stato) supporto(get(o.paralisi) || get(o.sonno) || get('willowisp'));
+            if (ruolo.perno) supporto(o.pivot);
             if (ruolo.priorita) aggiungi(ruolo.priorita);
         } else {
             if (ruolo.trappola) aggiungi(get(o.roccia ? 'stealthrock' : 'spikes'));
@@ -542,7 +550,9 @@
             r.stato = assegnati.stato.includes(cand.id);
             r.priorita = (assegnati.priorita || {})[cand.id] || null;
             r.senzaProt = (assegnati.senzaProt || []).includes(cand.id);
-            const nSupp = [r.fakeout, r.velocita, r.redirezione, r.schermi, r.aiuto, r.rallenta, r.stato].filter(Boolean).length;
+            r.perno = (assegnati.perni || []).includes(cand.id);
+            // il pivot è un attacco che fa anche cambiare: ma occupa un posto che altrimenti sarebbe di un altro attacco
+            const nSupp = [r.fakeout, r.velocita, r.redirezione, r.schermi, r.aiuto, r.rallenta, r.stato, r.perno].filter(Boolean).length;
             // senza Protezione c'è una mossa in più per attaccare
             r.attacchi = ctx.goose ? Math.max(2, 4 - nSupp) : Math.max(1, (r.senzaProt ? 4 : 3) - nSupp);
             r.supporto = nSupp > 0;
@@ -561,7 +571,7 @@
     // Chi fa cosa: la squadra decide quale membro ha le mosse di supporto
     function assegnaRuoli(dex, membri, ctx, piano, rnd = Math.random, par = PARAMETRI_TEAM) {
         const a = { dex, fakeout: null, velocita: {}, redirezione: null, schermi: null, aiuto: [], rallenta: [], stato: [], priorita: {}, senzaProt: [],
-            trappola: null, recupero: [], setup: {}, perno: null };
+            trappola: null, recupero: [], setup: {}, perno: null, perni: [] };
         const per = (lista, f) => lista.slice().sort((x, y) => f(y) - f(x));
         if (ctx.doppio) {
             const conVel = piano.nome === 'trickroom' ? membri.filter(c => c.opz.trickroom) : membri.filter(c => c.opz.tailwind);
@@ -594,6 +604,16 @@
                 c => c.prioritarie[0].v * (c.offesa / 100) * (c.basi.spe < 70 ? 1.2 : 1));
             const quanteP = par.priorita <= 0 ? 0 : 1 + (rnd() < par.priorita - 1 ? 1 : 0);
             for (const c of conPrio.slice(0, quanteP)) a.priorita[c.id] = c.prioritarie[0].m;
+            // il pivot (U-turn, Volt Switch, Flip Turn): lo porta chi attacca già e non ha troppo altro da fare; uno per team, il secondo molto più di rado
+            if (!ctx.goose && par.maxPerno > 0 && par.probPerno > 0) {
+                const altriRuoli = c => [c.id === a.fakeout, !!a.velocita[c.id], c.id === a.redirezione, c.id === a.schermi, a.aiuto.includes(c.id), a.rallenta.includes(c.id), a.stato.includes(c.id)].filter(Boolean).length;
+                const conPerno = per(membri.filter(c => c.opz.pivot && c.perni[0] && c.perni[0].v >= par.sogliaPerno && c.offesa >= 70 && altriRuoli(c) <= 1),
+                    c => c.perni[0].v * (c.offesa / 100) + rnd() * 15);
+                for (const c of conPerno) {
+                    if (a.perni.length >= par.maxPerno || rnd() >= par.probPerno * (a.perni.length ? 0.4 : 1)) break;
+                    a.perni.push(c.id);
+                }
+            }
             // Protect non ce l'hanno tutti: chi attacca forte, con quattro buone mosse e senza ruoli di supporto, spesso gioca senza (Anything Goose già lo fa)
             if (!ctx.goose && par.probProtezione < 1) {
                 const liberi = membri.filter(c => !preso(c) && !a.aiuto.includes(c.id) && !a.rallenta.includes(c.id) && !a.stato.includes(c.id) && c.attacchi.length >= 3 && c.offesa >= 85);
@@ -1019,6 +1039,11 @@
                 if (meta.squadra.aiuto != null) {
                     daMeta.probAiuto = clamp(0.5 * PARAMETRI_TEAM.probAiuto + 0.5 * meta.squadra.aiuto / 0.55, 0.05, 0.95);
                     daMeta.maxAiuto = meta.squadra.aiuto > 1.2 ? 2 : 1;
+                }
+                // i pivot (U-turn, Parting Shot...): quanti ne portano i team della lega (0,8 a team è la norma dei team veri)
+                if (meta.squadra.perno != null) {
+                    daMeta.probPerno = clamp(0.5 * PARAMETRI_TEAM.probPerno + 0.5 * meta.squadra.perno / 0.8, 0.1, 0.95);
+                    daMeta.maxPerno = meta.squadra.perno > 1.3 ? 2 : 1;
                 }
                 if (meta.classi.protezione != null) daMeta.probProtezione = clamp(0.5 * PARAMETRI_TEAM.probProtezione + 0.5 * (meta.classi.protezione + 0.05), 0.5, 1);
             }
