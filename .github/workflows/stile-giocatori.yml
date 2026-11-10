@@ -15,6 +15,10 @@ on:
         description: 'Solo prova: stampa cosa scriverebbe, senza scrivere'
         type: boolean
         default: false
+      ricalcola:
+        description: 'Rifà le situazioni anche se i replay sono gli stessi e stampa come giocano le persone, per situazione'
+        type: boolean
+        default: false
 
 jobs:
   stile:
@@ -27,6 +31,6 @@ jobs:
       - name: Installa firebase-admin
         run: npm install firebase-admin
       - name: Calcola e salva lo stile
-        run: node .github/workflows/stile-giocatori.js ${{ inputs.prova && '--prova' || '' }}
+        run: node .github/workflows/stile-giocatori.js ${{ inputs.prova && '--prova' || '' }} ${{ inputs.ricalcola && '--ricalcola' || '' }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

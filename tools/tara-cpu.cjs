@@ -7,7 +7,7 @@
 //
 //   node tools/tara-cpu.cjs --formato singolo|doppio --parametri a,b,c            prova ogni manopola a metà e a una volta e mezza (per le manopole a zero: 0,15 e 0,3)
 //   node tools/tara-cpu.cjs --formato doppio --varianti "aggressivitaDoppio=0.15 | costoCambio=0.2,costoProtezione=0.05"     varianti scritte a mano (separate da |)
-//   altre opzioni: --coppie 100 (quante coppie di partite per variante)  --da 0 (da quale coppia: coppie diverse = partite nuove)  --lavoratori 4
+//   altre opzioni: --squadre vgc (team VGC composti dalla CPU, con anteprima: serve per le manopole delle aperture; senza, team casuali)  --coppie 100 (quante coppie di partite per variante)  --da 0 (da quale coppia: coppie diverse = partite nuove)  --lavoratori 4
 //                  --bot guardiano|ilaria|pivot|stratega|lega|aggressore (la base gioca con le abitudini di quel giocatore, vedi bot-abitudini.cjs: serve a
 //                  controllare che una modifica non funzioni solo contro una CPU uguale a sé)
 //
@@ -29,7 +29,7 @@ function argomenti() {
     const val = (nome, predefinito) => { const i = a.indexOf('--' + nome); return i >= 0 && a[i + 1] ? a[i + 1] : predefinito; };
     return {
         formato: val('formato', 'doppio'), coppie: parseInt(val('coppie', '100'), 10), da: parseInt(val('da', '0'), 10), lavoratori: parseInt(val('lavoratori', '4'), 10),
-        parametri: val('parametri', ''), varianti: val('varianti', ''), bot: val('bot', ''), lavoratore: val('lavoratore', ''), elenco: val('elenco', '')
+        parametri: val('parametri', ''), varianti: val('varianti', ''), bot: val('bot', ''), squadre: val('squadre', ''), lavoratore: val('lavoratore', ''), elenco: val('elenco', '')
     };
 }
 
@@ -68,13 +68,25 @@ async function lavora(opz) {
     const IA = require(path.join(MODULI, 'cpu-ia.js'));
     const K = require(path.join(MODULI, 'cpu-conoscenza.js'));
     const { sim } = await caricaRandoms();
-    const f = opz.formato === 'singolo' ? 'gen9randombattle' : 'gen9randomdoublesbattle';
+    let f = opz.formato === 'singolo' ? 'gen9randombattle' : 'gen9randomdoublesbattle';
+    // team VGC composti dalla CPU (gli stessi delle palestre e delle sfide): sempre gli stessi 36 (seme fisso), uno diverso per coppia
+    let squadre = null;
+    if (opz.squadre === 'vgc') {
+        const fs = require('node:fs');
+        const T = require(path.join(MODULI, 'team-cpu.js'));
+        const permessi = { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' } } };
+        const reg = { genRuleType: 'within', genRuleValue: '9', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen9', vgcFormat: 'doubles', restrizioni: permessi };
+        const leggi = q => JSON.parse(fs.readFileSync(path.join(MODULI, q), 'utf8'));
+        squadre = (await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: reg, caricaJson: async q => leggi(q), quanti: 36, seme: 'tara' })).team.map(t => t.testo);
+        f = 'gen9doublescustomgame@@@Picked Team Size = 4,HP Percentage Mod,Terastal Clause';
+    }
     const varianti = JSON.parse(opz.elenco);
     const abitudini = opz.bot ? BOT[opz.bot] : null;
     const [k, n] = (opz.lavoratore || '0/1').split('/').map(Number);
     let compito = 0;
     for (let p = opz.da; p < opz.da + opz.coppie; p++) {
-        const tA = sim.Teams.generate(f, { seed: [p * 7 + 31, 3, 5, 7] }), tB = sim.Teams.generate(f, { seed: [p * 7 + 32, 4, 6, 8] });
+        const tA = squadre ? squadre[(p * 7 + 3) % squadre.length] : sim.Teams.generate(f, { seed: [p * 7 + 31, 3, 5, 7] });
+        const tB = squadre ? squadre[(p * 11 + 5 + Math.floor(p / squadre.length)) % squadre.length] : sim.Teams.generate(f, { seed: [p * 7 + 32, 4, 6, 8] });
         for (const v of varianti) {
             if (compito++ % n !== k) continue;
             const gioca = async (latoVar, seme) => {
@@ -104,7 +116,7 @@ function eseguiLavoratori(opz, varianti) {
         let finiti = 0;
         for (let k = 0; k < opz.lavoratori; k++) {
             const figlio = fork(__filename, ['--lavoratore', `${k}/${opz.lavoratori}`, '--formato', opz.formato, '--coppie', String(opz.coppie), '--da', String(opz.da),
-                '--elenco', JSON.stringify(varianti), ...(opz.bot ? ['--bot', opz.bot] : [])]);
+                '--elenco', JSON.stringify(varianti), ...(opz.bot ? ['--bot', opz.bot] : []), ...(opz.squadre ? ['--squadre', opz.squadre] : [])]);
             figlio.on('message', m => risultati.push(m));
             figlio.on('error', no);
             figlio.on('exit', codice => { if (codice) return no(new Error(`lavoratore ${k} uscito con ${codice}`)); if (++finiti === opz.lavoratori) ok(risultati); });

@@ -229,6 +229,30 @@
         return fuori.filter(d => !opz.lato || d.lato === opz.lato).map(d => ({ lato: d.lato, doppio: d.doppio, f: d.f, categoria: d.categoria, giocatore: nomi[d.lato] || '', turno: d.turno }));
     }
 
+    /**
+     * Le percentuali di scelta per situazione: per ogni caratteristica (e in generale) quante decisioni e quante di attacco, protezione, cambio, altro.
+     * Serve a confrontare come gioca la CPU con come giocano le persone (stesso calcolo sui replay della lega e sulle partite della CPU).
+     * decisioni: l'elenco di decisioni() (anche di più set insieme), filtrabile con opz.doppio.
+     * Restituisce [{ nome, n, attacco, protezione, cambio, altro }] con le quote che sommano a 1; la prima riga è "tutte".
+     */
+    function tabella(lista, opz = {}) {
+        const righe = [{ nome: 'tutte', test: () => true }].concat(CARATTERISTICHE.map((nome, j) => ({ nome, test: d => d.f[j] === 1 })));
+        const base = (lista || []).filter(d => opz.doppio == null || d.doppio === opz.doppio);
+        return righe.map(r => {
+            const sel = base.filter(r.test);
+            const conto = { attacco: 0, protezione: 0, cambio: 0, altro: 0 };
+            for (const d of sel) conto[d.categoria]++;
+            const n = sel.length;
+            return { nome: r.nome, n, attacco: n ? conto.attacco / n : 0, protezione: n ? conto.protezione / n : 0, cambio: n ? conto.cambio / n : 0, altro: n ? conto.altro / n : 0 };
+        });
+    }
+
+    /** La tabella() in testo, per i log e le prove */
+    function tabellaInTesto(righe) {
+        const p = x => (100 * x).toFixed(1).padStart(5) + '%';
+        return righe.map(r => `${r.nome.padEnd(14)} ${String(r.n).padStart(6)}   attacco ${p(r.attacco)}   protezione ${p(r.protezione)}   cambio ${p(r.cambio)}   altro ${p(r.altro)}`).join('\n');
+    }
+
     // ---------------------------------------------------------------------------------
     // L'apprendimento: regressione softmax con la categoria BASE come riferimento, penalità L2 e una "partenza" (offset) per ogni decisione
     // ---------------------------------------------------------------------------------
@@ -401,6 +425,8 @@
         const guadagnoMinimo = opz.guadagnoMinimo != null ? opz.guadagnoMinimo : 0.002;
         const regole = { singoli: null, doppi: null };
         const validazione = {};
+        // come giocano le persone, per situazione (solo per i log: non si salva)
+        const tabelle = { singoli: tabella(grezzi, { doppio: false }), doppi: tabella(grezzi, { doppio: true }) };
         for (const doppio of [false, true]) {
             const chiave = doppio ? 'doppi' : 'singoli';
             const usati = grezzi.filter(c => c.doppio === doppio);
@@ -417,11 +443,11 @@
                 regole[chiave] = addestra(campioni, opz);
             }
         }
-        return { regole, validazione };
+        return { regole, validazione, tabelle };
     }
 
     return {
         VERSIONE, CATEGORIE, CARATTERISTICHE, MINIMO_DECISIONI, PENALITA,
-        crea, decisioni, addestra, moltiplicatori, applica, campioniDeiSet, validaIncrociata, costruisci
+        crea, decisioni, tabella, tabellaInTesto, addestra, moltiplicatori, applica, campioniDeiSet, validaIncrociata, costruisci
     };
 });

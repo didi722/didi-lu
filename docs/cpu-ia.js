@@ -69,7 +69,8 @@
     //                       cambiare costa un turno; se chi esce sta ancora bene costa di più (costoCambioSano, solo nel singolo): si cambia
     //                       per scappare da un guaio, non per ripicca. Nel doppio il cambio è raro e vale com'era (provato: costare di più
     //                       fa perdere partite)
-    //   costoProtezione     proteggersi non fa niente da solo: un piccolo costo fisso per ogni protezione
+    //   costoProtezione     proteggersi non fa niente da solo: un costo fisso per ogni protezione. Tarato sulla lega: con 0,08 la CPU si parava il 13-16% delle volte
+    //                       (le persone il 10%); con 0,3 l'11%, senza perdere partite contro se stessa (provato con tools/tara-cpu.cjs e tools/stile-cpu.cjs)
     //   sogliaRecupero      curarsi vale solo per gli HP che mancano oltre questa frazione (con quasi tutta la salute non serve)
     //   bonusDinamax, spesaDinamax
     //                       il Dynamax dura tre turni (HP doppi, mosse Max che non sbagliano): il turno in cui si fa vale subito per i danni
@@ -86,6 +87,11 @@
     //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
     //   pesoSituazioni      quanto contano le regole sulle situazioni imparate dai replay della lega (cpu-situazioni.js): 0 = niente, 1 = per intero
     //   spesaMossaZ         la Mossa Z si fa una volta sola per partita: costa questo (meno se restano pochi Pokémon)
+    //   antFakeOut          anteprima: chi ha Fake Out vale di più sia da portare (antFakeOut / 2) sia in campo per primo, insieme a un compagno che attacca: al primo
+    //                       turno toglie la mossa a un avversario. Si scala con gli avversari che ne sono immuni (Spettro). Solo nel doppio. 0 = come prima
+    //   temperatura         tra i piani quasi pari si sceglie a sorte, con più probabilità per i migliori (peso e^(differenza / temperatura)); i piani peggiori di
+    //                       4 volte la temperatura non si scelgono mai. Una CPU che sceglie sempre lo stesso piano nella stessa posizione si prevede (un turno
+    //                       si para con uno, il successivo con l'altro). 0 = sempre il migliore
     //   antMeccanica        anteprima: portare chi ha il Cristallo Z (se il formato ammette le Mosse Z) vale questo; chi ha la Megapietra
     //                       si valuta già con le statistiche della Mega (se il formato ammette la Mega Evoluzione)
     const PARAMETRI_BASE = {
@@ -93,8 +99,8 @@
         rispostaAlCambio: 0.4, rispostaAlCambioDoppio: 0.25, presunteDex: 0.5,
         antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
-        aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.08, sogliaRecupero: 0.25,
-        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2,
+        aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.3, sogliaRecupero: 0.25,
+        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0,
         pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40
     };
     // Abilità che agiscono quando il Pokémon entra in campo
@@ -796,6 +802,10 @@
             };
             const haSetter = Boolean(strat.piano === 'tailwind' || strat.piano === 'trickroom' || strat.meteo) && miei.some((x, i) => ruoloPiano(i) === 'setter');
 
+            // Fake Out è una mossa Normale: gli Spettro ne sono immuni (tra i loro sei, quanti sono: meno vale)
+            const conFakeOut = idx => (this.tipo === 'doubles' ? idx.filter(i => strat.fakeout.includes(miei[i].s.indice)) : []);
+            const fattoreFakeOut = avversari.length ? 1 - avversari.filter(o => o.tipiBase.includes('Ghost')).length / avversari.length : 1;
+
             const punteggioGruppo = idx => {
                 let copertura = 0;
                 if (!nessunoAvv) {
@@ -805,6 +815,8 @@
                 const media = idx.reduce((s, i) => s + forza(i), 0) / idx.length;
                 let s = this.par.antCopertura * copertura + this.par.antMedia * media;
                 if (idx.some(i => conCristalloZ[i])) s += this.par.antMeccanica;
+                // chi ha Fake Out porta un turno gratis al primo turno (solo nel doppio)
+                if (conFakeOut(idx).length) s += this.par.antFakeOut * 0.5 * fattoreFakeOut;
                 // debolezze condivise rispetto a ciò con cui colpiscono i loro
                 for (const tp of Object.keys(tipiLoro)) {
                     const deboli = idx.filter(i => debole(i, tp)).length;
@@ -845,6 +857,10 @@
                 for (let a = 0; a < migliore.length; a++) for (let b = a + 1; b < migliore.length; b++) {
                     const A = migliore[a], B = migliore[b];
                     let v = aperturaContro([A, B]);
+                    // in campo per primi: chi ha Fake Out insieme a uno che attacca (se hanno tutti e due Fake Out, vale meno: uno solo lo usa bene)
+                    const conFO = conFakeOut([A, B]);
+                    // se il team ha un piano con un setter, il setter in campo viene prima: Fake Out conta per intero solo se apre con lui (lo protegge)
+                    if (conFO.length) v += this.par.antFakeOut * fattoreFakeOut * (conFO.length === 2 ? 0.6 : 1) * (haSetter && ![A, B].some(i => ruoloPiano(i) === 'setter') ? 0.25 : 1);
                     if (haSetter) {
                         const ruoli = [ruoloPiano(A), ruoloPiano(B)];
                         if (ruoli.includes('setter')) v += this.par.antPiano * 0.8;
@@ -999,7 +1015,16 @@
             for (const x of migliori) x.val += this.casuale() * 0.02;
             migliori.sort((a, b) => b.val - a.val);
             // dopo un rifiuto del simulatore si passa alla seconda, terza scelta...
-            const pick = migliori[Math.min(errori, migliori.length - 1)];
+            let pick = migliori[Math.min(errori, migliori.length - 1)];
+            // tra i piani quasi pari si sceglie a sorte (non essere prevedibile), con più probabilità per i migliori
+            if (!errori && this.par.temperatura > 0 && migliori.length > 1) {
+                const T = this.par.temperatura, tetto = migliori[0].val;
+                const vicini = migliori.filter(x => tetto - x.val < 4 * T);
+                const pesi = vicini.map(x => Math.exp((x.val - tetto) / T));
+                let r = this.casuale() * pesi.reduce((a, b) => a + b, 0);
+                pick = vicini[vicini.length - 1];
+                for (let i = 0; i < vicini.length; i++) { r -= pesi[i]; if (r <= 0) { pick = vicini[i]; break; } }
+            }
             this._ricorda(pick.scelta, stato0);
             if (this.debug) this.ultimaValutazione = migliori.slice(0, 5).map(x => ({ val: +x.val.toFixed(3), azioni: x.scelta.map(a => a.testo + (a.nome ? ` [${a.nome}]` : '')) }));
             return pick.scelta.map(a => a.testo).join(', ');
