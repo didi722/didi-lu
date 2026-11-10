@@ -1,0 +1,6 @@
+{
+  "_nota": "Pesi imparati dai replay della lega, doppi (workflow Stile dei giocatori, 10 novembre 2026: 5313 decisioni in 270 set, 5 allenatori). Log-moltiplicatori delle quote rispetto all'attacco; 'base' è l'intercetta. Si rifanno con la stessa esecuzione (ricalcola).",
+  "protezione": { "base": -0.259, "primoTurno": 0.387, "appenaEntrato": -0.121, "psBassi": 0.843, "psMedi": 0.247, "inSvantaggio": 0.128, "inVantaggio": -0.03, "soloInCampo": 0.33, "conStato": -0.189, "finePartita": -0.003 },
+  "cambio":     { "base": 0.256, "primoTurno": -0.448, "appenaEntrato": -0.641, "psBassi": 0.252, "psMedi": 0.174, "inSvantaggio": -0.471, "inVantaggio": -0.011, "soloInCampo": -0.279, "conStato": -0.043, "finePartita": -0.523 },
+  "altro":      { "base": 0.117, "primoTurno": 0.633, "appenaEntrato": -0.253, "psBassi": -0.03, "psMedi": -0.128, "inSvantaggio": -0.331, "inVantaggio": -0.257, "soloInCampo": -0.528, "conStato": -0.304, "finePartita": -0.342 }
+}

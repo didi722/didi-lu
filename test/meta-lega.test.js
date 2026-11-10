@@ -194,3 +194,17 @@ test('manopole del team: Helping Hand al massimo uno, Protect non per tutti, mos
     assert.ok(vecchi.prot > 0.97, 'prima su tutti');
     assert.ok(nuovi.prio > vecchi.prio + 0.15, `mosse prioritarie a team: ${nuovi.prio.toFixed(2)} contro ${vecchi.prio.toFixed(2)}`);
 });
+
+test('set dei team in doppio: nessun Pokémon senza un attacco (le mosse di supporto, schermi e Stanza Magica compresi, non riempiono tutti e quattro gli slot)', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const dex = sim.Dex.forGen(9);
+    let totale = 0, senzaAttacco = [];
+    for (const t of await squadre(sim, { quanti: 60, seme: 'attacchi' })) {
+        for (const s of mosseDi(sim, t)) {
+            totale++;
+            if (!s.mosse.some(m => dex.moves.get(m).category !== 'Status')) senzaAttacco.push(`${s.specie}: ${s.mosse.join(', ')}`);
+        }
+    }
+    assert.ok(totale >= 300);
+    assert.deepEqual(senzaAttacco, [], 'ogni Pokémon ha almeno un attacco');
+});

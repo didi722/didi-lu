@@ -8,6 +8,15 @@
 //
 //   node tools/stile-cpu.cjs [--formato doppio|singolo] [--squadre vgc] [--partite 120] [--parametri '{"costoProtezione":0.3}'] [--modello]
 //        --modello   la CPU gioca con il modello dell'avversario acceso (come sul sito)
+//        --pesi      stampa anche i pesi per situazione della CPU (lo stesso calcolo della lega) e, con tools/dati/pesi-lega-doppi.json, la differenza lega - CPU
+//
+// Come si ritara la CPU sul modo di giocare della lega (docs/cpu-ia.js, STILE_LEGA_DOPPI e il parametro pesoStile):
+//   1. GitHub → Actions → "Stile dei giocatori" → Run workflow con "ricalcola": il log stampa "Pesi doppi" (il JSON ha le graffe nascoste: si riscrivono a mano in
+//      tools/dati/pesi-lega-doppi.json) e la tabella "Come giocano le persone";
+//   2. node tools/stile-cpu.cjs --formato doppio --squadre vgc --partite 600 --modello --pesi    (con pesoStile 0, cioè senza la correzione: --parametri '{"pesoStile":0}')
+//      stampa la riga DELTA = pesi della lega - pesi della CPU: è quella da copiare in STILE_LEGA_DOPPI;
+//   3. con la correzione accesa, rilanciare senza --pesi e confrontare la tabella con quella della lega; il peso giusto è quello che le avvicina senza far
+//      perdere partite (tools/tara-cpu.cjs --varianti 'pesoStile=0'): ora 0,5.
 // =====================================================
 const path = require('node:path');
 const fs = require('node:fs');
@@ -19,7 +28,7 @@ const T = require(path.join(MODULI, 'team-cpu.js'));
 
 const a = process.argv.slice(2);
 const val = (nome, predefinito) => { const i = a.indexOf('--' + nome); return i >= 0 && a[i + 1] ? a[i + 1] : predefinito; };
-const formato = val('formato', 'doppio'), partite = parseInt(val('partite', '120'), 10), squadreTipo = val('squadre', ''), parametri = JSON.parse(val('parametri', '{}')), modello = a.includes('--modello');
+const formato = val('formato', 'doppio'), partite = parseInt(val('partite', '120'), 10), squadreTipo = val('squadre', ''), parametri = JSON.parse(val('parametri', '{}')), modello = a.includes('--modello'), conPesi = a.includes('--pesi');
 
 (async () => {
     const { sim } = await caricaRandoms();
@@ -45,4 +54,25 @@ const formato = val('formato', 'doppio'), partite = parseInt(val('partite', '120
     }
     console.log(`CPU contro CPU, ${formato}${squadreTipo ? ' (' + squadreTipo + ')' : ''}${modello ? ', con il modello dell\'avversario' : ''}: ${partite} partite, ${(turni / partite).toFixed(1)} turni`);
     console.log(Sit.tabellaInTesto(Sit.tabella(tutte, { doppio: formato !== 'singolo' })));
+    // quali mosse di stato (e quali cambi) sono dietro alle percentuali, nelle situazioni più lontane dalle persone
+    for (const nome of ['soloInCampo', 'finePartita']) {
+        const j = Sit.CARATTERISTICHE.indexOf(nome);
+        const conto = {};
+        for (const d of tutte) if (d.categoria === 'altro' && d.f[j]) conto[d.dettaglio] = (conto[d.dettaglio] || 0) + 1;
+        console.log(`\nMosse di stato, ${nome}: ` + Object.entries(conto).sort((x, y) => y[1] - x[1]).slice(0, 10).map(([m, n]) => `${m} ${n}`).join(', '));
+    }
+    if (conPesi) {
+        const r = Sit.addestra(tutte.filter(d => d.doppio === (formato !== 'singolo')).map(d => ({ f: d.f, categoria: d.categoria })), { minimo: 200 });
+        if (!r) { console.log('\nPochi dati per i pesi.'); return; }
+        const lega = JSON.parse(fs.readFileSync(path.join(__dirname, 'dati', 'pesi-lega-doppi.json'), 'utf8'));
+        const nomi = ['base', ...Sit.CARATTERISTICHE];
+        console.log(`\nPesi della CPU (${r.n} decisioni) e differenza lega - CPU:`);
+        const out = {};
+        for (const k of ['protezione', 'cambio', 'altro']) {
+            out[k] = {};
+            console.log(`  ${k}`);
+            for (const n of nomi) { const d = Math.round((lega[k][n] - r.pesi[k][n]) * 1000) / 1000; out[k][n] = d; console.log(`    ${n.padEnd(14)} CPU ${String(r.pesi[k][n].toFixed(3)).padStart(7)}   lega ${String(lega[k][n].toFixed(3)).padStart(7)}   lega-CPU ${String(d.toFixed(3)).padStart(7)}`); }
+        }
+        console.log('\nDELTA ' + JSON.stringify(out));
+    }
 })().catch(e => { console.error(e); process.exit(1); });

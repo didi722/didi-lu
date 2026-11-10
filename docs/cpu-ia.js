@@ -45,6 +45,17 @@
     const STAT_NOMI = { atk: 'atk', def: 'def', spa: 'spa', spd: 'spd', spe: 'spe', accuracy: 'accuracy', evasion: 'evasion' };
     const lato2 = l => (l === 'p1' ? 'p2' : 'p1');
 
+    // Come la lega gioca rispetto alla CPU, per situazione (doppio): differenza tra i pesi imparati dai replay della lega (workflow "Stile dei giocatori", 5313 decisioni
+    // in 270 set, 10 novembre 2026: tools/dati/pesi-lega-doppi.json) e quelli della CPU stessa (tools/stile-cpu.cjs --pesi). Sono log-moltiplicatori della scelta
+    // (protezione, cambio, mosse di stato) rispetto all'attacco: dove sono positivi la lega sceglie quella cosa più spesso di quanto faceva la CPU, dove sono
+    // negativi meno spesso. Con il peso `pesoStile` entrano nel valore di ogni piano e avvicinano la CPU al modo di giocare delle persone (da sola in campo si para
+    // meno, al primo turno di più...). Vanno rifatti se cambia la CPU: la procedura è nel commento di tools/stile-cpu.cjs.
+    const STILE_LEGA_DOPPI = {
+        protezione: { base: 0.21, primoTurno: 0.562, appenaEntrato: -0.199, psBassi: 0.004, psMedi: -0.267, inSvantaggio: -0.182, inVantaggio: 0.274, soloInCampo: -0.828, conStato: 0, finePartita: -0.023 },
+        cambio: { base: 0.202, primoTurno: 0.172, appenaEntrato: 0.384, psBassi: -0.29, psMedi: -0.319, inSvantaggio: 0.167, inVantaggio: -0.419, soloInCampo: 0.311, conStato: 0, finePartita: 0.106 },
+        altro: { base: 0.299, primoTurno: 0.022, appenaEntrato: -0.125, psBassi: 0.13, psMedi: -0.09, inSvantaggio: -0.225, inVantaggio: -0.564, soloInCampo: -0.498, conStato: 0, finePartita: -0.455 }
+    };
+
     // Le "manopole" della valutazione. Si possono cambiare creando il cervello con { parametri: { ... } } (utile per provare).
     //   penalitaProt        una protezione ripetuta riesce una volta su tre (poi una su nove): si gioca solo se il vantaggio è enorme,
     //                       quindi ogni protezione di fila costa questo nel valore del piano (oltre alla probabilità di fallire, già contata)
@@ -85,6 +96,9 @@
     //   forzaLegaAvv, forzaPartitaAvv
     //                       quanto fidarsi delle abitudini di un avversario con pochi dati (decisioni che valgono quanto la media della lega) e
     //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
+    //   pesoStile           quanto la CPU si avvicina al modo di giocare delle persone della lega nelle varie situazioni (STILE_LEGA_DOPPI): ogni piano vale di più o di meno
+    //                       secondo se, in quella situazione, le persone fanno più o meno spesso quella cosa (si parano, cambiano, usano una mossa di stato) di quanto la
+    //                       CPU facesse. Valore del piano per ogni unità di log-moltiplicatore; 0 = come prima. Solo nel doppio
     //   pesoSituazioni      quanto contano le regole sulle situazioni imparate dai replay della lega (cpu-situazioni.js): 0 = niente, 1 = per intero
     //   spesaMossaZ         la Mossa Z si fa una volta sola per partita: costa questo (meno se restano pochi Pokémon)
     //   antFakeOut          anteprima: chi ha Fake Out vale di più sia da portare (antFakeOut / 2) sia in campo per primo, insieme a un compagno che attacca: al primo
@@ -100,7 +114,7 @@
         antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.3, sogliaRecupero: 0.25,
-        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0,
+        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5,
         pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40
     };
     // Abilità che agiscono quando il Pokémon entra in campo
@@ -1002,7 +1016,7 @@
                     if (new Set(cambi).size !== cambi.length) return;
                     if (scelta.filter(a => a.gimmick === 'terastallize').length > 1) return;
                     if (scelta.filter(a => a.gimmick && a.gimmick !== 'terastallize').length > 1) return;
-                    const val = this._valutaPiano(scelta, stato0, alternative);
+                    const val = this._valutaPiano(scelta, stato0, alternative) + this._bonusStile(scelta);
                     migliori.push({ scelta: scelta.slice(), val });
                     return;
                 }
@@ -1028,6 +1042,25 @@
             this._ricorda(pick.scelta, stato0);
             if (this.debug) this.ultimaValutazione = migliori.slice(0, 5).map(x => ({ val: +x.val.toFixed(3), azioni: x.scelta.map(a => a.testo + (a.nome ? ` [${a.nome}]` : '')) }));
             return pick.scelta.map(a => a.testo).join(', ');
+        }
+
+        // Quanto il piano somiglia al modo di giocare della lega, nelle situazioni in cui si trovano i miei Pokémon (STILE_LEGA_DOPPI)
+        _bonusStile(scelta) {
+            const peso = this.par.pesoStile;
+            if (!(peso > 0) || this.tipo !== 'doubles' || !this.situazioni) return 0;
+            let b = 0;
+            scelta.forEach((a, slot) => {
+                let cat = null;
+                if (a.tipo === 'cambio') cat = 'cambio';
+                else if (a.tipo === 'mossa' && a.mossa) cat = a.mossa.protezione || a.mossa.id === 'wideguard' || a.mossa.id === 'quickguard' ? 'protezione' : (a.mossa.categoria === 'Status' ? 'altro' : null);
+                const pesi = cat && STILE_LEGA_DOPPI[cat];
+                const f = pesi && this.situazioni.contesto(this.lato + 'abc'[slot]);
+                if (!f) return;
+                let z = pesi.base;
+                Sit.CARATTERISTICHE.forEach((nome, j) => { if (f[j]) z += pesi[nome] || 0; });
+                b += z;
+            });
+            return peso * b;
         }
 
         _ricorda(scelta, S) {
