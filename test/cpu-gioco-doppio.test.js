@@ -81,3 +81,45 @@ test('tabella: percentuali di scelta per situazione dai log; la prima riga è "t
     assert.match(Sit.tabellaInTesto(t), /tutte\s+4\s+attacco\s+75\.0%\s+protezione\s+25\.0%/);
     assert.deepEqual(Sit.tabella(null, {})[0].n, 0);
 });
+
+// ---------- il modo di giocare della lega (pesoStile) ----------
+const PROTEGGE = [{ tipo: 'mossa', mossa: { protezione: true, id: 'protect', categoria: 'Status' } }];
+const FA_ALTRO = [{ tipo: 'mossa', mossa: { protezione: false, id: 'lightscreen', categoria: 'Status' } }];
+const ATTACCA = [{ tipo: 'mossa', mossa: { protezione: false, id: 'earthquake', categoria: 'Physical' } }];
+const CAMBIA = [{ tipo: 'cambio', verso: 3 }];
+const squadraLog = (lato, n) => [`|switch|${lato}a: A${lato}|Garchomp, L50|100/100`, `|switch|${lato}b: B${lato}|Rillaboom, L50|100/100`];
+const apertura = ['|gametype|doubles', '|teamsize|p1|4', '|teamsize|p2|4', '|start', ...squadraLog('p1'), ...squadraLog('p2')];
+
+test('pesoStile: al primo turno proteggersi o fare altro vale di più, da soli in campo a fine partita di meno; attaccare non cambia mai; nel singolo e spento non c\'è niente', async () => {
+    const { sim } = await caricaSim();
+    const nuovo = parametri => IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: () => 0.5, parametri });
+    const a = nuovo({ pesoStile: 0.5 });
+    a.osserva([...apertura, '|turn|1']);
+    assert.ok(a._bonusStile(PROTEGGE) > 0.2, `proteggersi al primo turno: ${a._bonusStile(PROTEGGE)}`);
+    assert.equal(a._bonusStile(ATTACCA), 0, 'attaccare è il riferimento');
+    // il compagno cade, passano i turni: da solo in campo, a fine partita
+    const righe = ['|move|p2a: Ap2|Earthquake|p1b: Bp1', '|faint|p1b: Bp1', '|upkeep'];
+    for (let t = 2; t <= 8; t++) righe.push(`|turn|${t}`, '|move|p2a: Ap2|Earthquake|p1a: Ap1', '|upkeep');
+    righe.push('|turn|9');
+    a.osserva(righe);
+    const solo = a._bonusStile(PROTEGGE);
+    assert.ok(solo < -0.15, `da solo in campo, a fine partita, proteggersi vale meno: ${solo}`);
+    assert.ok(a._bonusStile(FA_ALTRO) < -0.1, 'e anche una mossa di stato');
+    assert.equal(typeof a._bonusStile(CAMBIA), 'number');
+    // pesi proporzionali; spento = 0; nel singolo = 0
+    const doppio = nuovo({ pesoStile: 1 });
+    doppio.osserva([...apertura, '|turn|1']);
+    assert.ok(Math.abs(doppio._bonusStile(PROTEGGE) - 2 * (() => { const m = nuovo({ pesoStile: 0.5 }); m.osserva([...apertura, '|turn|1']); return m._bonusStile(PROTEGGE); })()) < 1e-9);
+    const spento = nuovo({ pesoStile: 0 });
+    spento.osserva([...apertura, '|turn|1']);
+    assert.equal(spento._bonusStile(PROTEGGE), 0);
+    const singolo = nuovo({ pesoStile: 0.5 });
+    singolo.osserva(['|gametype|singles', '|switch|p1a: A|Garchomp, L50|100/100', '|switch|p2a: B|Rillaboom, L50|100/100', '|turn|1']);
+    assert.equal(singolo._bonusStile(PROTEGGE), 0);
+});
+
+test('pesoStile: una partita intera con la correzione accesa finisce senza scelte rifiutate', async () => {
+    const r = await gioca(7, { pesoStile: 0.5 });
+    assert.deepEqual(r.e.errori, []);
+    assert.ok(!r.e.bloccata && !r.e.scaduta);
+});

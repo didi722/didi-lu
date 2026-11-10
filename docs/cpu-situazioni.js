@@ -119,11 +119,11 @@
             }
         }
 
-        function registra(pos, categoria) {
+        function registra(pos, categoria, dettaglio) {
             const s = T.scatto[pos];
             if (!s || s.categoria) return;          // una sola decisione per Pokémon e turno (le mosse che ne seguono non sono scelte)
             s.categoria = categoria;
-            if (alDecisione) alDecisione({ lato: pos.slice(0, 2), pos, doppio: T.doppio, f: s.f, categoria, turno: T.turno });
+            if (alDecisione) alDecisione({ lato: pos.slice(0, 2), pos, doppio: T.doppio, f: s.f, categoria, turno: T.turno, dettaglio: dettaglio || '' });
         }
 
         function riga(r) {
@@ -144,7 +144,7 @@
                     const id = leggiIdent(p[2]);
                     if (!id || !id.pos || !T.dim.hasOwnProperty(id.lato)) break;
                     // un cambio scelto: a inizio turno, prima di qualunque mossa (dopo una mossa è U-turn o simili, dopo |upkeep| un KO sostituito)
-                    if (tipo === 'switch' && T.fase === 'scelte' && T.turno >= 1) registra(id.pos, 'cambio');
+                    if (tipo === 'switch' && T.fase === 'scelte' && T.turno >= 1) registra(id.pos, 'cambio', String(p[3] || '').split(',')[0]);
                     const ps = leggiPs(p[4]) || { pct: 100, stato: '' };
                     T.visti[id.lato].add(idDi(String(p[3] || '').split(',')[0]) + '|' + id.nick);
                     T.attivo[id.pos] = { nick: id.nick, pct: ps.pct, stato: ps.stato, entrata: T.turno };
@@ -154,7 +154,7 @@
                     const id = leggiIdent(p[2]);
                     if (!id || !id.pos || p.some(x => String(x).startsWith('[from]'))) break;
                     const cl = AzioniMosse ? AzioniMosse.classeDi(p[3]) : 'attacco';
-                    registra(id.pos, cl === 'attacco' ? 'attacco' : cl === 'protezione' ? 'protezione' : 'altro');
+                    registra(id.pos, cl === 'attacco' ? 'attacco' : cl === 'protezione' ? 'protezione' : 'altro', String(p[3] || ''));
                     break;
                 }
                 case 'faint': {
@@ -226,7 +226,7 @@
             }
             t.riga(r);
         }
-        return fuori.filter(d => !opz.lato || d.lato === opz.lato).map(d => ({ lato: d.lato, doppio: d.doppio, f: d.f, categoria: d.categoria, giocatore: nomi[d.lato] || '', turno: d.turno }));
+        return fuori.filter(d => !opz.lato || d.lato === opz.lato).map(d => ({ lato: d.lato, doppio: d.doppio, f: d.f, categoria: d.categoria, giocatore: nomi[d.lato] || '', turno: d.turno, dettaglio: d.dettaglio }));
     }
 
     /**

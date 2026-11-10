@@ -459,16 +459,20 @@
         const bonusCons = m => (posCons.has(m.id) ? Math.max(0.3, 0.9 - posCons.get(m.id) * 0.06) : 0) + pesoMeta * quotaMeta(m);
 
         if (ctx.doppio) {
+            // Le mosse di supporto non possono riempire tutti e quattro gli slot: almeno un attacco resta sempre (altrimenti, con gli schermi già su e la
+            // Stanza Magica già messa, il Pokémon non ha niente di utile da fare e perde i turni). Il supporto si aggiunge in ordine di importanza.
+            const attaccoRiservato = cand.attacchi.length ? 1 : 0;
+            const supporto = m => { if (m && scelte.length < 4 - attaccoRiservato) aggiungi(m); };
             // Anything Goose: solo chi ha un ruolo di supporto si protegge, gli altri attaccano con tutte e quattro le mosse
-            if (!(ctx.goose && !ruolo.supporto) && !ruolo.senzaProt) aggiungi(o.protezione);
-            if (ruolo.fakeout) aggiungi(get('fakeout'));
-            if (ruolo.velocita === 'tailwind') aggiungi(get('tailwind'));
-            if (ruolo.velocita === 'trickroom') aggiungi(get('trickroom'));
-            if (ruolo.redirezione) aggiungi(o.redirezione);
-            if (ruolo.schermi) { if (piano.nome === 'neve') aggiungi(get('auroraveil')); aggiungi(get('reflect')); aggiungi(get('lightscreen')); }
-            if (ruolo.aiuto) aggiungi(get('helpinghand'));
-            if (ruolo.rallenta) aggiungi(get(o.rallenta));
-            if (ruolo.stato) aggiungi(get(o.paralisi) || get(o.sonno) || get('willowisp'));
+            if (!(ctx.goose && !ruolo.supporto) && !ruolo.senzaProt) supporto(o.protezione);
+            if (ruolo.fakeout) supporto(get('fakeout'));
+            if (ruolo.velocita === 'tailwind') supporto(get('tailwind'));
+            if (ruolo.velocita === 'trickroom') supporto(get('trickroom'));
+            if (ruolo.redirezione) supporto(o.redirezione);
+            if (ruolo.schermi) { if (piano.nome === 'neve') supporto(get('auroraveil')); supporto(get('reflect')); supporto(get('lightscreen')); }
+            if (ruolo.aiuto) supporto(get('helpinghand'));
+            if (ruolo.rallenta) supporto(get(o.rallenta));
+            if (ruolo.stato) supporto(get(o.paralisi) || get(o.sonno) || get('willowisp'));
             if (ruolo.priorita) aggiungi(ruolo.priorita);
         } else {
             if (ruolo.trappola) aggiungi(get(o.roccia ? 'stealthrock' : 'spikes'));
