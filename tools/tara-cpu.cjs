@@ -10,6 +10,8 @@
 //   altre opzioni: --squadre vgc (team VGC composti dalla CPU, con anteprima: serve per le manopole delle aperture; senza, team casuali)  --coppie 100 (quante coppie di partite per variante)  --da 0 (da quale coppia: coppie diverse = partite nuove)  --lavoratori 4
 //                  --bot guardiano|ilaria|pivot|stratega|lega|aggressore (la base gioca con le abitudini di quel giocatore, vedi bot-abitudini.cjs: serve a
 //                  controllare che una modifica non funzioni solo contro una CPU uguale a sé)
+//                  --base file.js   la "base" è un altro cpu-ia.js (di solito quello di prima: git show HEAD:docs/cpu-ia.js > docs/cpu-ia-vecchio.js), per provare un
+//                  gruppo di modifiche insieme: la variante "nullo" è allora la CPU di adesso contro quella di prima
 //
 // Come si misura. Una coppia sono due partite con gli stessi due team: nella prima la variante è p1 col team A contro la base p2 col team B; nella seconda
 // la variante è p2 col team B contro la base p1 col team A. Il lato e la forza dei team si compensano. Il risultato della coppia è la media delle due partite
@@ -29,7 +31,7 @@ function argomenti() {
     const val = (nome, predefinito) => { const i = a.indexOf('--' + nome); return i >= 0 && a[i + 1] ? a[i + 1] : predefinito; };
     return {
         formato: val('formato', 'doppio'), coppie: parseInt(val('coppie', '100'), 10), da: parseInt(val('da', '0'), 10), lavoratori: parseInt(val('lavoratori', '4'), 10),
-        parametri: val('parametri', ''), varianti: val('varianti', ''), bot: val('bot', ''), squadre: val('squadre', ''), lavoratore: val('lavoratore', ''), elenco: val('elenco', '')
+        parametri: val('parametri', ''), varianti: val('varianti', ''), bot: val('bot', ''), squadre: val('squadre', ''), base: val('base', ''), lavoratore: val('lavoratore', ''), elenco: val('elenco', '')
     };
 }
 
@@ -66,6 +68,7 @@ function variantiDa(opz) {
 async function lavora(opz) {
     const { caricaRandoms, giocaPartita, creaCasuale } = require(AIUTI);
     const IA = require(path.join(MODULI, 'cpu-ia.js'));
+    const IABase = opz.base ? require(path.resolve(opz.base)) : IA;
     const K = require(path.join(MODULI, 'cpu-conoscenza.js'));
     const { sim } = await caricaRandoms();
     let f = opz.formato === 'singolo' ? 'gen9randombattle' : 'gen9randomdoublesbattle';
@@ -94,7 +97,7 @@ async function lavora(opz) {
                 const cerv = IA.crea({ Dex: sim.Dex, lato: latoVar, casuale: creaCasuale(p * 13 + seme), parametri: v.par });
                 const baseCerv = abitudini
                     ? creaGiocatore({ sim, IA, K, lato: latoBase, casuale: creaCasuale(p * 17 + seme), abitudini })
-                    : IA.crea({ Dex: sim.Dex, lato: latoBase, casuale: creaCasuale(p * 17 + seme) });
+                    : IABase.crea({ Dex: sim.Dex, lato: latoBase, casuale: creaCasuale(p * 17 + seme) });
                 // la variante ha sempre il team del suo lato: p1 col team A, p2 col team B (così lato e team si compensano tra le due partite)
                 const e = await giocaPartita({
                     sim, formato: f, team1: tA, team2: tB,
@@ -116,7 +119,7 @@ function eseguiLavoratori(opz, varianti) {
         let finiti = 0;
         for (let k = 0; k < opz.lavoratori; k++) {
             const figlio = fork(__filename, ['--lavoratore', `${k}/${opz.lavoratori}`, '--formato', opz.formato, '--coppie', String(opz.coppie), '--da', String(opz.da),
-                '--elenco', JSON.stringify(varianti), ...(opz.bot ? ['--bot', opz.bot] : []), ...(opz.squadre ? ['--squadre', opz.squadre] : [])]);
+                '--elenco', JSON.stringify(varianti), ...(opz.bot ? ['--bot', opz.bot] : []), ...(opz.squadre ? ['--squadre', opz.squadre] : []), ...(opz.base ? ['--base', opz.base] : [])]);
             figlio.on('message', m => risultati.push(m));
             figlio.on('error', no);
             figlio.on('exit', codice => { if (codice) return no(new Error(`lavoratore ${k} uscito con ${codice}`)); if (++finiti === opz.lavoratori) ok(risultati); });

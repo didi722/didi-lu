@@ -98,6 +98,11 @@
     //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
     //   pesoMinaccia        quanto pesa in più un Pokémon con attacco, attacco speciale o velocità potenziati (per ogni livello; la velocità metà): danno e KO su di lui valgono
     //                       di più, e se è mio proteggerlo vale di più. 0 = conta solo la forza di base
+    //   pesoSetter          quanto è più probabile che un Pokémon che probabilmente mette Stanza Magica o Tailwind (lo si presume dalla specie, vedi _setterProbabile) lo faccia
+    //                       al suo primo turno: la sua probabilità di "mossa di stato" si moltiplica per 1 + pesoSetter × p. Nella previsione la mossa diventa quella vera, e
+    //                       impedirla (Fake Out, KO prima che muova) vale. 0 = come prima, una mossa di stato qualunque non fa niente
+    //   pesoOffesa          quanto, nel peso di un Pokémon, contano le sue statistiche offensive (attacco o attacco speciale più metà velocità) invece della forza in generale:
+    //                       un attaccante veloce pesa più di un muro con le stesse statistiche totali. 0 = solo la forza generale (com'era), 1 = solo la minaccia
     //   pesoStile           quanto la CPU si avvicina al modo di giocare delle persone della lega nelle varie situazioni (STILE_LEGA_DOPPI): ogni piano vale di più o di meno
     //                       secondo se, in quella situazione, le persone fanno più o meno spesso quella cosa (si parano, cambiano, usano una mossa di stato) di quanto la
     //                       CPU facesse. Valore del piano per ogni unità di log-moltiplicatore; 0 = come prima. Solo nel doppio
@@ -116,7 +121,7 @@
         antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.3, sogliaRecupero: 0.25,
-        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3,
+        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5,
         pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40
     };
     // Abilità che agiscono quando il Pokémon entra in campo
@@ -436,8 +441,10 @@
                     if (pos) { this.lati[pos.lato].caduti++; if (this.lati[pos.lato].attivi[pos.slot] === pos.nome) this.lati[pos.lato].attivi[pos.slot] = null; }
                     break;
                 }
-                case '-status': { const m = this._mon(p[1]); if (m) m.stato = p[2]; break; }
-                case '-curestatus': { const m = this._mon(p[1]); if (m) m.stato = ''; break; }
+                case '-status': { const m = this._mon(p[1]); if (m) { m.stato = p[2]; m.sonnoTentativi = 0; } break; }
+                case '-curestatus': { const m = this._mon(p[1]); if (m) { m.stato = ''; m.sonnoTentativi = 0; } break; }
+                // "non può muoversi": ogni turno di sonno già passato (serve a sapere quanto è probabile che si svegli, _probAgire)
+                case 'cant': { const m = this._mon(p[1]); if (m && p[2] === 'slp') m.sonnoTentativi = (m.sonnoTentativi || 0) + 1; break; }
                 case '-cureteam': {
                     const pos = posizione(p[1]);
                     if (pos) Object.values(this.lati[pos.lato].mons).forEach(m => { if (m.vivo) m.stato = ''; });
@@ -1065,6 +1072,63 @@
             return peso * b;
         }
 
+        // Quanto è probabile che questo Pokémon riesca ad agire in questo turno, per il suo stato: addormentato non si muove il primo turno di sonno, poi si sveglia
+        // con una probabilità che cresce (il sonno dura da uno a tre turni: al secondo turno una volta su tre, al terzo una su due, al quarto sempre); congelato
+        // si scongela una volta su cinque; paralizzato muove tre volte su quattro. Chi dorme può comunque usare Sleep Talk e Snore (vedi _simula).
+        _probAgire(v) {
+            const st = v && v.stato;
+            if (!st) return 1;
+            if (st === 'slp') {
+                const n = ((v.ref && v.ref.sonnoTentativi) || 0) + 1;       // il tentativo di muoversi di questo turno
+                return n <= 1 ? 0 : n === 2 ? 1 / 3 : n === 3 ? 0.5 : 1;
+            }
+            if (st === 'frz') return 0.2;
+            if (st === 'par') return 0.75;
+            return 1;
+        }
+
+        // Quanto è probabile che questo Pokémon non tentenni sotto Fake Out e simili: abilità o strumento noti, altrimenti le abilità che la specie può avere
+        // (le normali pesano uno, la nascosta un terzo)
+        _pImmuneFlinch(v) {
+            const blocca = a => a === 'innerfocus' || a === 'shielddust';
+            if (v.strumento === 'covertcloak') return 1;
+            if (v.abilita) return blocca(v.abilita) ? 1 : 0;
+            const sp = this.specie(v.specie);
+            const ab = sp && sp.abilities ? sp.abilities : null;
+            if (!ab) return 0;
+            let tot = 0, bloccanti = 0;
+            for (const [k, nome] of Object.entries(ab)) {
+                if (!nome) continue;
+                const w = k === 'H' ? 0.35 : k === 'S' ? 0 : 1;
+                tot += w;
+                if (blocca(id(nome))) bloccanti += w;
+            }
+            return tot ? bloccanti / tot : 0;
+        }
+
+        // Chi, tra gli avversari in campo, probabilmente sta per mettere Stanza Magica o Tailwind: lo sappiamo se l'ha già fatto vedere, altrimenti lo si presume dalla
+        // specie (può imparare quella mossa e ha la velocità giusta: lenta per la Stanza Magica, veloce per Tailwind) e solo finché non ha ancora agito.
+        // Restituisce { mossa: 'trickroom' | 'tailwind', p } o null. Se l'effetto è già attivo non c'è niente da impedire.
+        _setterProbabile(o) {
+            if (!o || !o.ref || !(this.par.pesoSetter > 0)) return null;
+            const visti = o.ref.mosseViste || new Set();
+            const fresco = o.ref.ultimaMossa == null;                       // non ha ancora fatto niente da quando è in campo
+            const imp = this._mosseImparabili(o.specie);
+            const spe = o.basi ? o.basi.spe : 100;
+            const campoAvv = this.lati[lato2(this.lato)].campo;
+            const prova = [];
+            if (!this.stanzaMagica) {
+                if (visti.has('trickroom')) prova.push({ mossa: 'trickroom', p: 0.7 });
+                else if (fresco && imp.has('trickroom')) prova.push({ mossa: 'trickroom', p: spe <= 60 ? 0.5 : spe <= 85 ? 0.12 : 0 });
+            }
+            if (!(campoAvv.tailwind > 0)) {
+                if (visti.has('tailwind')) prova.push({ mossa: 'tailwind', p: 0.7 });
+                else if (fresco && imp.has('tailwind')) prova.push({ mossa: 'tailwind', p: spe >= 70 ? 0.3 : 0.12 });
+            }
+            const migliore = prova.sort((a, b) => b.p - a.p)[0];
+            return migliore && migliore.p > 0 ? migliore : null;
+        }
+
         _ricorda(scelta, S) {
             scelta.forEach((a, slot) => {
                 this.ultimeAzioni[slot] = a;
@@ -1209,6 +1273,12 @@
                     const e = this.par.pesoSituazioni;
                     s.moltiplicatori = e === 1 ? m : { attacco: Math.pow(m.attacco, e), protezione: Math.pow(m.protezione, e), cambio: Math.pow(m.cambio, e), altro: Math.pow(m.altro, e) };
                 }
+                // chi probabilmente sta per mettere Stanza Magica o Tailwind lo fa molto più spesso di un Pokémon qualunque che usa una mossa di stato
+                const setter = this._setterProbabile(o);
+                if (setter) {
+                    const m = s.moltiplicatori || { attacco: 1, protezione: 1, cambio: 1, altro: 1 };
+                    s.moltiplicatori = { attacco: m.attacco * (1 - 0.4 * setter.p), protezione: m.protezione, cambio: m.cambio, altro: m.altro * (1 + this.par.pesoSetter * setter.p) };
+                }
                 return s;
             });
             const lista = Avv.scenari(this.modelloAvv.quote(), slot, { doppio: S.doppio, soglia: this.par.sogliaScenario, max: this.par.maxScenari });
@@ -1247,7 +1317,12 @@
                 return mossa ? { tipo: 'mossa', slot, mossa, bersaglio: null, lato: 'avv' } : { tipo: 'passa', slot };
             }
             if (categoria === 'cambio') return { tipo: 'cambio', slot, lato: 'avv' };
-            if (categoria === 'altro') return { tipo: 'passa', slot };
+            if (categoria === 'altro') {
+                // una mossa di stato di cui non si sa niente non fa niente; ma se è chi probabilmente mette Stanza Magica o Tailwind, quella è la mossa
+                const setter = this._setterProbabile(o);
+                const mossa = setter && this.mossa(setter.mossa);
+                return mossa ? { tipo: 'mossa', slot, mossa, bersaglio: null, lato: 'avv' } : { tipo: 'passa', slot };
+            }
             return this._azioneAvversaria(o, slot, S, variante);
         }
 
@@ -1356,7 +1431,16 @@
         // potenziati, `pesoMinaccia`). Un Crustle a +2/+2 vale più di un Illumise che ha solo messo la pioggia, per chi lo gioca come per chi lo affronta.
         // Le difese abbassate (Shell Smash) non lo rendono meno pericoloso: contano solo i potenziamenti.
         _pesoMon(v) {
-            const base = 0.7 + (v.basi ? (v.basi.hp + v.basi.atk + v.basi.def + v.basi.spa + v.basi.spd + v.basi.spe) / 1500 : 0.3);
+            // la forza di base: statistiche in generale; la minaccia: soprattutto cosa colpisce e quanto è veloce (attacco o attacco speciale, e metà della velocità).
+            // `pesoOffesa` dice quanto conta la seconda (0 = solo la forza generale come prima, 1 = solo la minaccia)
+            let base = 0.7 + 0.3;
+            if (v.basi) {
+                const b = v.basi;
+                const generale = (b.hp + b.atk + b.def + b.spa + b.spd + b.spe) / 1500;
+                const minaccia = (Math.max(b.atk, b.spa) + 0.5 * b.spe) / 450;
+                const k = Math.max(0, Math.min(1, this.par.pesoOffesa || 0));
+                base = 0.7 + (1 - k) * generale + k * minaccia;
+            }
             const b = v.boost;
             if (!b || !(this.par.pesoMinaccia > 0)) return base;
             const off = Math.min(6, Math.max(0, b.atk || 0, b.spa || 0)), vel = Math.min(6, Math.max(0, b.spe || 0));
@@ -1460,6 +1544,8 @@
             // Un Pokémon colpito prima da una mossa che fa tentennare al 30% agisce con probabilità 0,7: la sua mossa
             // pesa il 70% (danni, KO, effetti), non tutto o niente.
             const agisce = { mie: [1, 1, 1], avv: [1, 1, 1] };
+            // lo stato di chi agisce (sonno, congelamento, paralisi): un compagno addormentato non muove, quindi nemmeno beneficia di Helping Hand
+            const perStato = { mie: mie.map(v => (v ? this._probAgire(v) : 1)), avv: avv.map(v => (v ? this._probAgire(v) : 1)) };
             const usatiDaPerno = new Set(scelta.filter(a => a.tipo === 'cambio').map(a => a.verso));
 
             // Una singola azione dell'ordine, applicata allo stato. `f` = probabilità che l'attore agisca (per i tentennamenti).
@@ -1552,8 +1638,13 @@
                         valore += (latoKo === 'avv' ? 1 : -1) * colpo.pKO * (0.7 + 0.45 * frazPrima) * (peso[latoKo][b.slot] || 1);
                     }
                     if ((m.id === 'fakeout' || m.id === 'firstimpression') && dif.hp > 0) {
-                        flinch[b.lato === 'mie' ? 'mie' : 'avv'][b.slot] = true;
-                        bonus += (lato === 'mie' ? 1 : -1) * 0.3;   // un turno gratis per il compagno e niente mossa di apertura per chi è colpito
+                        // il tentennamento non riesce a chi ha Presenza Mentale (Inner Focus) o Polvere Scudo, o Mantello Occulto: se non si sa, quanto è probabile
+                        // dalle abilità che quella specie può avere (Oranguru ne ha una su tre che lo salva, ad esempio)
+                        const riesce = 1 - this._pImmuneFlinch(dif);
+                        const kb = b.lato === 'mie' ? 'mie' : 'avv';
+                        if (riesce >= 0.98) flinch[kb][b.slot] = true;
+                        else if (riesce > 0.02) agisce[kb][b.slot] *= 1 - riesce;
+                        bonus += (lato === 'mie' ? 1 : -1) * 0.3 * riesce;   // un turno gratis per il compagno e niente mossa di apertura per chi è colpito
                     }
                     // effetti secondari
                     if (m.secondari && dif.hp > 0) {
@@ -1604,7 +1695,9 @@
                 if (a.tipo !== 'mossa') continue;
                 const m = a.mossa;
                 if (!m) continue;
-                const f = agisce[keyL(lato)][x.slot];
+                // chi dorme può usare solo Sleep Talk e Snore
+                const dormeEUsa = (m.id === 'sleeptalk' || m.id === 'snore') && ((lato === 'mie' ? mie : avv)[x.slot] || {}).stato === 'slp';
+                const f = agisce[keyL(lato)][x.slot] * (dormeEUsa ? 1 : perStato[keyL(lato)][x.slot]);
                 if (f <= 0.02) continue;
                 if (f >= 0.98) { eseguiAzione(x, lato, a, me, m, 1); continue; }
                 // agisce solo con probabilità f: stato e valore sono la media tra "agisce" e "non agisce"
