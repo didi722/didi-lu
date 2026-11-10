@@ -56,7 +56,11 @@ const formato = val('formato', 'doppio'), partite = parseInt(val('partite', '120
     }
     console.log(`CPU contro CPU, ${formato}${squadreTipo ? ' (' + squadreTipo + ')' : ''}${modello ? ', con il modello dell\'avversario' : ''}: ${partite} partite, ${(turni / partite).toFixed(1)} turni`);
     console.log(Sit.tabellaInTesto(Sit.tabella(tutte, { doppio: formato !== 'singolo' })));
-    if (formato !== 'singolo') console.log(`\nChi colpisce la CPU (a caso sarebbe il 50%):\n${Sit.tabellaBersagliInTesto(Sit.tabellaBersagli(colpi))}`);
+    if (formato !== 'singolo') {
+        const lega = JSON.parse(fs.readFileSync(path.join(__dirname, 'dati', 'bersagli-lega-doppi.json'), 'utf8'));
+        console.log('\nChi colpisce la CPU, con le persone della lega a fianco (a caso sarebbe il 50%):');
+        for (const r of Sit.tabellaBersagli(colpi)) console.log(`${r.nome.padEnd(18)} CPU ${String(r.n).padStart(5)} ${(100 * r.quota).toFixed(1).padStart(5)}%    lega ${String(lega[r.nome].n).padStart(5)} ${(100 * lega[r.nome].quota).toFixed(1).padStart(5)}%`);
+    }
     // quali mosse di stato (e quali cambi) sono dietro alle percentuali, nelle situazioni più lontane dalle persone
     for (const nome of ['soloInCampo', 'finePartita']) {
         const j = Sit.CARATTERISTICHE.indexOf(nome);
