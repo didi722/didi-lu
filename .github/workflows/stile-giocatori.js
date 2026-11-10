@@ -15,6 +15,7 @@ const Situazioni = require(path.join(__dirname, '..', '..', 'docs', 'cpu-situazi
 const ReplaySito = require(path.join(__dirname, '..', '..', 'docs', 'replay-sito.js'));
 
 const prova = process.argv.includes('--prova');
+const ricalcola = process.argv.includes('--ricalcola');      // rifà le situazioni anche se i replay sono gli stessi (e stampa come giocano le persone)
 
 initializeApp({
   credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
@@ -37,7 +38,7 @@ async function main() {
 
   // le regole sulle situazioni: uguali per tutti, quindi si leggono da un nodo che le ha già e si rifanno solo se ci sono replay nuovi
   let precedente = null;
-  for (const id of ids) {
+  for (const id of ricalcola ? [] : ids) {
     const s = (await db.ref(`players/${id}/stile/situazioni`).once('value')).val();
     if (s && s.firma) { precedente = s; break; }
   }
@@ -55,6 +56,8 @@ async function main() {
       console.log(`Situazioni: imparate da ${r.scaricati} replay (${r.falliti} non letti).`);
       console.log(`  singoli: ${riga(situazioni.validazione && situazioni.validazione.singoli)}`);
       console.log(`  doppi:   ${riga(situazioni.validazione && situazioni.validazione.doppi)}`);
+      // come giocano le persone, per situazione: serve a confrontarle con la CPU (tools/stile-cpu.cjs stampa la stessa tabella)
+      if (r.tabelle) for (const k of ['singoli', 'doppi']) if (r.tabelle[k][0].n) console.log(`\nCome giocano le persone, ${k}:\n${Situazioni.tabellaInTesto(r.tabelle[k])}\n`);
     }
   } catch (e) {
     // le abitudini di ognuno si aggiornano comunque; le regole sulle situazioni restano quelle di prima

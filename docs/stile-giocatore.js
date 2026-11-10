@@ -101,8 +101,8 @@
      * Le regole sulle situazioni (cpu-situazioni.js) imparate dai replay dei set della lega.
      *   seasons        il nodo "seasons" di Firebase
      *   scarica(url)   -> testo del replay (async); leggiReplay(testo) -> { log } oppure null (replay-sito.js); Situazioni: cpu-situazioni.js
-     *   precedente     le regole già salvate: se i replay sono gli stessi non si rifà niente; se molti non si scaricano (rete) si tengono quelle
-     * Restituisce { situazioni, riusate, scaricati, falliti }: `situazioni` è il nodo da salvare in players/<id>/stile/situazioni
+     *   precedente     le regole già salvate: se i replay sono gli stessi non si rifà niente; se molti non si scaricano (rete) si tengono quelle (null = si rifà sempre)
+     * Restituisce { situazioni, riusate, scaricati, falliti, tabelle }: `situazioni` è il nodo da salvare in players/<id>/stile/situazioni
      * ({ v, firma, set, singoli?, doppi?, validazione }; singoli e doppi ci sono solo se la prova incrociata dice che servono) oppure null.
      */
     async function situazioniDaiReplay(seasons, { scarica, leggiReplay, Situazioni, precedente = null, concorrenza = 6, opzioni = {} } = {}) {
@@ -125,11 +125,11 @@
         // se la rete ha fatto cilecca per molti replay, le regole nuove si baserebbero su un pezzo di lega: meglio tenere le vecchie
         if (precedente && falliti > lista.length * 0.2) return { situazioni: precedente, riusate: true, scaricati: set.length, falliti };
         set.sort((a, b) => (a.id < b.id ? -1 : 1));
-        const { regole, validazione } = Situazioni.costruisci(set, opzioni);
+        const { regole, validazione, tabelle } = Situazioni.costruisci(set, opzioni);
         const nodo = { v: Situazioni.VERSIONE, firma, set: set.length, validazione };
         if (regole.singoli) nodo.singoli = regole.singoli;
         if (regole.doppi) nodo.doppi = regole.doppi;
-        return { situazioni: nodo, riusate: false, scaricati: set.length, falliti };
+        return { situazioni: nodo, riusate: false, scaricati: set.length, falliti, tabelle };
     }
 
     /** I nodi da salvare, uno per allenatore con almeno un set con le scelte registrate */
