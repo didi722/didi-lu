@@ -1006,6 +1006,24 @@
 
         // la meta della lega per questo formato (meta-lega.js): senza, o di un'altra versione, tutto è come prima
         const meta = opzioni.meta && opzioni.meta.v === 1 && opzioni.meta.specie ? opzioni.meta : null;
+        // con la meta, Helping Hand e Protezione seguono quanto li giocano in lega (a metà con le manopole): chi li gioca poco ne ha meno.
+        // Pokémon e mosse pesano tanto meno quanto più piccola è la lega (sotto i dodici team): con pochi team le quote coincidono quasi con quelle di un team
+        // vero, e la CPU non deve copiare.
+        const daMeta = {};
+        if (meta) {
+            const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+            const scala = clamp((meta.team || 0) / 12, 0, 1);
+            daMeta.pesoSpecieMeta = PARAMETRI_TEAM.pesoSpecieMeta * scala;
+            daMeta.pesoMossaMeta = PARAMETRI_TEAM.pesoMossaMeta * scala;
+            if (meta.squadra && meta.classi) {
+                if (meta.squadra.aiuto != null) {
+                    daMeta.probAiuto = clamp(0.5 * PARAMETRI_TEAM.probAiuto + 0.5 * meta.squadra.aiuto / 0.55, 0.05, 0.95);
+                    daMeta.maxAiuto = meta.squadra.aiuto > 1.2 ? 2 : 1;
+                }
+                if (meta.classi.protezione != null) daMeta.probProtezione = clamp(0.5 * PARAMETRI_TEAM.probProtezione + 0.5 * (meta.classi.protezione + 0.05), 0.5, 1);
+            }
+        }
+        const parametriTeam = Object.assign({}, PARAMETRI_TEAM, daMeta, opzioni.parametriTeam || {});
 
         // 1) i candidati: i più forti del formato, più qualche scelta fuori dal comune
         const ordinati = opzioni.pool.map(v => {
@@ -1015,7 +1033,7 @@
             const potenza = ctx.goose ? Math.max(s.baseStats.atk, s.baseStats.spa) / 10 : 0;
             // la lega gioca questo Pokémon: tra i candidati ci entra anche se il suo tier è basso (fino a +12 punti, come un tier in più)
             const usoLega = meta && meta.specie ? (meta.specie[id(v.id)] || 0) : 0;
-            return { v, valore: puntiTier(t) * 18 + (s.bst || 0) / 12 + potenza + rnd() * 4 + Math.min(1, usoLega / 0.3) * 12 * ((opzioni.parametriTeam || {}).pesoSpecieMeta != null ? opzioni.parametriTeam.pesoSpecieMeta : PARAMETRI_TEAM.pesoSpecieMeta) };
+            return { v, valore: puntiTier(t) * 18 + (s.bst || 0) / 12 + potenza + rnd() * 4 + Math.min(1, usoLega / 0.3) * 12 * parametriTeam.pesoSpecieMeta };
         }).sort((a, b) => b.valore - a.valore);
         const MAX_CAND = 170;
         const NUM_FISSI = ctx.goose ? 95 : 110;
@@ -1038,17 +1056,6 @@
             return { insufficiente: true, avvisi: avvisi.concat(`Not enough Pokémon in this format for the CPU (${cand.length} usable)`) };
         }
 
-        // con la meta, Helping Hand e Protezione seguono quanto li giocano in lega (a metà con le manopole): chi li gioca poco ne ha meno
-        const daMeta = {};
-        if (meta && meta.squadra && meta.classi) {
-            const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-            if (meta.squadra.aiuto != null) {
-                daMeta.probAiuto = clamp(0.5 * PARAMETRI_TEAM.probAiuto + 0.5 * meta.squadra.aiuto / 0.55, 0.05, 0.95);
-                daMeta.maxAiuto = meta.squadra.aiuto > 1.2 ? 2 : 1;
-            }
-            if (meta.classi.protezione != null) daMeta.probProtezione = clamp(0.5 * PARAMETRI_TEAM.probProtezione + 0.5 * (meta.classi.protezione + 0.05), 0.5, 1);
-        }
-        const parametriTeam = Object.assign({}, PARAMETRI_TEAM, daMeta, opzioni.parametriTeam || {});
         ctx.parametriTeam = parametriTeam;
         return {
             insufficiente: false, avvisi, dex, ctx, restrizioni, cand, parametriTeam,

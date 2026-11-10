@@ -5,12 +5,14 @@
 // punto di partenza quando compone i suoi team (team-cpu.js), così non gioca più "da manuale" ma si avvicina a quello che si vede nelle stagioni vere.
 //
 // Solo numeri aggregati, mai team: per ogni formato (categoria) si contano i Pokémon e le mosse di TUTTI i team iscritti, senza nomi di giocatori e senza
-// sapere chi ha portato cosa. Dai numeri non si ricostruisce nessun team (non ci sono né accoppiamenti né set completi): la CPU non può copiare i team dei
-// giocatori, può solo scegliere con più gusto. Si contano solo le stagioni chiuse (mai la beta, mai quella in corso), e si tiene solo ciò che compare
-// abbastanza volte (SOGLIA_*), arrotondato.
+// sapere chi ha portato cosa, e non ci sono accoppiamenti né set completi. Si contano solo le stagioni chiuse (mai la beta, mai quella in corso).
+// Le soglie di riservatezza (SOGLIE: un Pokémon solo se sta in almeno tre team, le sue mosse solo con tre set, quote a passi di 0,05, formati con almeno otto
+// team) sono SPENTE di base: la CPU usa tutto ciò che c'è (SENZA_SOGLIE: ogni Pokémon e ogni mossa visti anche una volta sola, quote al centesimo, formati da tre
+// team in su). Con { riservatezza: true } tornano. Il minimo di tre team resta perché con meno la "meta" sarebbe un team solo, e la CPU non deve copiare:
+// team-cpu.js poi pesa la meta tanto meno quanto più piccola è la lega.
 //
-//   MetaLega.aggrega(seasons, opz?)  -> { [chiaveCategoria]: meta }      dal nodo "seasons" di Firebase
-//   MetaLega.aggregaTeam(team[])     -> meta                              da un elenco di team ({ set: [{ specie, mosse, strumento, abilita }] })
+//   MetaLega.aggrega(seasons, opz?)  -> { [chiaveCategoria]: meta }      dal nodo "seasons" di Firebase (opz: { escludi, soloChiuse, riservatezza })
+//   MetaLega.aggregaTeam(team[], opz?) -> meta | null                     da un elenco di team ({ set: [{ specie, mosse, strumento, abilita }] })
 //   MetaLega.leggiTeam(voce)         -> { set: [...] } | null             un team iscritto ({ pokemon: [...] } oppure { testoShowdown })
 //   MetaLega.chiaveCategoria(testo)  -> 'vgcgen9'                         la chiave con cui il nodo si salva e si ritrova
 //   meta = { v, team, set, specie: { id: quota dei team }, mosse: { id: { mossa: quota dei set di quella specie } },
@@ -26,11 +28,10 @@
     'use strict';
 
     const VERSIONE = 1;
-    const SOGLIA_TEAM_PER_SPECIE = 3;      // un Pokémon compare nella meta solo se sta in almeno tre team
-    const SOGLIA_SET_PER_MOSSE = 3;        // le mosse di un Pokémon si danno solo se ne esistono almeno tre set
-    const SOGLIA_TEAM_TOTALI = 8;          // un formato con meno team non ha una meta (troppo pochi per non rivelare qualcuno)
-    const QUOTA_MINIMA_MOSSA = 0.2;
-    const MOSSE_PER_SPECIE = 6;
+    // teamPerSpecie: un Pokémon compare solo se sta in almeno tanti team; setPerMosse: le sue mosse si danno solo se ne esistono tanti set; teamTotali: un formato
+    // con meno team non ha una meta; quotaMinimaMossa: le mosse meno frequenti si scartano; passo: le quote si arrotondano a multipli di questo
+    const SOGLIE = { teamPerSpecie: 3, setPerMosse: 3, teamTotali: 8, quotaMinimaMossa: 0.2, passo: 0.05, mossePerSpecie: 6 };
+    const SENZA_SOGLIE = { teamPerSpecie: 1, setPerMosse: 1, teamTotali: 3, quotaMinimaMossa: 0, passo: 0.01, mossePerSpecie: 8 };
     const BETA = 'sbeta';
 
     const id = t => String(t == null ? '' : t).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -80,9 +81,10 @@
     }
 
     // ---------- aggregare ----------
-    function aggregaTeam(team) {
+    function aggregaTeam(team, opz = {}) {
+        const soglie = opz.riservatezza ? SOGLIE : SENZA_SOGLIE;
         const lista = (team || []).filter(t => t && Array.isArray(t.set) && t.set.length);
-        if (lista.length < SOGLIA_TEAM_TOTALI) return null;
+        if (lista.length < soglie.teamTotali) return null;
         const nSet = lista.reduce((n, t) => n + t.set.length, 0);
         const inTeam = {};        // specie -> in quanti team compare (una volta per team)
         const perSpecie = {};     // specie -> { set, mosse: { mossa: n } }
@@ -106,19 +108,19 @@
             }
         }
         const meta = { v: VERSIONE, team: lista.length, set: nSet, specie: {}, mosse: {}, classi: {}, squadra: {} };
-        for (const [s, n] of Object.entries(inTeam)) if (n >= SOGLIA_TEAM_PER_SPECIE) meta.specie[s] = Math.max(0.05, arrotonda(n / lista.length));
+        for (const [s, n] of Object.entries(inTeam)) if (n >= soglie.teamPerSpecie) meta.specie[s] = Math.max(soglie.passo, arrotonda(n / lista.length, soglie.passo));
         for (const [s, p] of Object.entries(perSpecie)) {
-            if (!meta.specie[s] || p.set < SOGLIA_SET_PER_MOSSE) continue;
-            const migliori = Object.entries(p.mosse).map(([m, n]) => [m, n / p.set]).filter(([, q]) => q >= QUOTA_MINIMA_MOSSA)
-                .sort((a, b) => b[1] - a[1]).slice(0, MOSSE_PER_SPECIE);
-            if (migliori.length) meta.mosse[s] = Object.fromEntries(migliori.map(([m, q]) => [m, arrotonda(q)]));
+            if (!meta.specie[s] || p.set < soglie.setPerMosse) continue;
+            const migliori = Object.entries(p.mosse).map(([m, n]) => [m, n / p.set]).filter(([, q]) => q >= soglie.quotaMinimaMossa)
+                .sort((a, b) => b[1] - a[1]).slice(0, soglie.mossePerSpecie);
+            if (migliori.length) meta.mosse[s] = Object.fromEntries(migliori.map(([m, q]) => [m, arrotonda(q, soglie.passo)]));
         }
         for (const k of Object.keys(classi)) meta.classi[k] = rotondo2(classi[k] / nSet);
         meta.squadra = { aiuto: rotondo2(tot.aiuto / lista.length), priorita: rotondo2(tot.priorita / lista.length), protezioni: rotondo2(tot.protezioni / lista.length) };
         return meta;
     }
 
-    /** Dal nodo "seasons": un'aggregazione per formato. opz.escludi: stagioni da saltare (di base la beta); opz.soloChiuse (di base sì): solo le stagioni finite */
+    /** Dal nodo "seasons": un'aggregazione per formato. opz.escludi: stagioni da saltare (di base la beta); opz.soloChiuse (di base sì): solo le stagioni finite; opz.riservatezza: rimette le soglie */
     function aggrega(seasons, opz = {}) {
         const escludi = opz.escludi || [BETA];
         const soloChiuse = opz.soloChiuse !== false;
@@ -138,9 +140,9 @@
             }
         }
         const out = {};
-        for (const [chiave, team] of Object.entries(perFormato)) { const m = aggregaTeam(team); if (m) out[chiave] = m; }
+        for (const [chiave, team] of Object.entries(perFormato)) { const m = aggregaTeam(team, opz); if (m) out[chiave] = m; }
         return out;
     }
 
-    return { VERSIONE, SOGLIA_TEAM_PER_SPECIE, SOGLIA_SET_PER_MOSSE, SOGLIA_TEAM_TOTALI, chiaveCategoria, leggiTeam, setDaTesto, aggregaTeam, aggrega };
+    return { VERSIONE, SOGLIE, SENZA_SOGLIE, chiaveCategoria, leggiTeam, setDaTesto, aggregaTeam, aggrega };
 });
