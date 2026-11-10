@@ -1,7 +1,7 @@
 'use strict';
 // La meta della lega (meta-lega.js) e il suo uso nel team building della CPU (team-cpu.js):
 //   - si contano Pokémon, mosse, Helping Hand, Protezioni e mosse prioritarie di tutti i team iscritti, senza giocatori, senza accoppiamenti, solo stagioni chiuse;
-//   - ciò che compare poco non si dà (soglie), le quote sono arrotondate: dai numeri non si ricostruisce nessun team;
+//   - le soglie di riservatezza sono spente di base (la CPU usa tutto); con { riservatezza: true } tornano: ciò che compare poco non si dà, quote arrotondate;
 //   - il builder con la meta sceglie più spesso ciò che la lega gioca, ma non copia mai un team della lega;
 //   - le manopole nuove (Helping Hand al massimo uno, Protect non per tutti, mosse prioritarie forti) funzionano e le vecchie si possono rimettere.
 //
@@ -81,12 +81,20 @@ test('aggrega: quote di Pokémon e mosse, classi e media per team; sotto le sogl
     assert.equal(meta.classi.aiuto, 0);
     assert.ok(meta.squadra.protezioni > 2 && meta.squadra.protezioni < 5);
     assert.ok(meta.squadra.priorita > 0);
-    // troppo pochi team: niente meta
-    assert.equal(M.aggregaTeam(lega.slice(0, 7).map(t => M.leggiTeam(t))), null);
-    // un Pokémon in meno di tre team non compare, e le sue mosse nemmeno
+    // con la riservatezza: troppo pochi team (sotto otto) niente meta; un Pokémon in meno di tre team non compare, e le sue mosse nemmeno
+    const tutti = lega.map(t => M.leggiTeam(t));
+    assert.equal(M.aggregaTeam(tutti.slice(0, 7), { riservatezza: true }), null);
     const rari = lega.map(t => M.leggiTeam(t)); rari[0].set.push({ specie: 'smeargle', mosse: ['spore'], strumento: '', abilita: '' }); rari[1].set.push({ specie: 'smeargle', mosse: ['spore'], strumento: '', abilita: '' });
-    const m2 = M.aggregaTeam(rari);
+    const m2 = M.aggregaTeam(rari, { riservatezza: true });
     assert.ok(!('smeargle' in m2.specie) && !('smeargle' in m2.mosse));
+    assert.ok(Object.values(m2.specie).every(q => Math.abs(q * 20 - Math.round(q * 20)) < 1e-6), 'quote a passi di 0,05');
+    // di base niente soglie: anche sette team hanno una meta, e un Pokémon in due team compare con le sue mosse; il minimo di tre team resta (con meno, la meta sarebbe un team)
+    assert.ok(M.aggregaTeam(tutti.slice(0, 7)));
+    assert.equal(M.aggregaTeam(tutti.slice(0, 2)), null);
+    const m3 = M.aggregaTeam(rari);
+    assert.equal(m3.specie.smeargle, 0.1);
+    assert.equal(m3.mosse.smeargle.spore, 1);
+    assert.ok(Object.keys(m3.specie).length >= Object.keys(m2.specie).length);
 });
 
 test('aggrega: dal nodo seasons — solo stagioni chiuse, mai la beta né quella in corso; un formato per chiave; senza giocatori né team nell\'uscita', () => {
@@ -101,11 +109,12 @@ test('aggrega: dal nodo seasons — solo stagioni chiuse, mai la beta né quella
         s5: null
     };
     const m = M.aggrega(seasons);
-    assert.deepEqual(Object.keys(m), ['vgcgen9']);
+    assert.deepEqual(Object.keys(m).sort(), ['piccolo', 'vgcgen9'], 'senza soglie anche un formato con tre team ha la sua meta');
+    assert.deepEqual(Object.keys(M.aggrega(seasons, { riservatezza: true })), ['vgcgen9'], 'con la riservatezza no');
     assert.equal(m.vgcgen9.team, 20, 'solo le due stagioni chiuse (10 + 10)');
     const testo = JSON.stringify(m);
     for (const vietato of ['dodo', 'didi', 'luciano', 'sitrus', 'abilita', 'strumento', 'Piccolo']) assert.ok(!testo.includes(vietato), `non deve comparire "${vietato}"`);
-    assert.equal(Object.keys(M.aggrega(seasons, { soloChiuse: false })).length, 1);
+    assert.equal(Object.keys(M.aggrega(seasons, { soloChiuse: false })).length, 2);
     assert.equal(M.aggrega(seasons, { soloChiuse: false }).vgcgen9.team, 40, 'senza il filtro conta anche quella in corso (la beta resta fuori)');
     assert.deepEqual(M.aggrega(null), {});
     assert.deepEqual(M.aggrega({ x: { teams_iscritti: 'boh' } }), {});
@@ -116,7 +125,7 @@ test('nella meta non c\'è niente per ricostruire un team: nessun accoppiamento,
     const meta = M.aggregaTeam(legaFinta(20).map(t => M.leggiTeam(t)));
     assert.deepEqual(Object.keys(meta).sort(), ['classi', 'mosse', 'set', 'specie', 'squadra', 'team', 'v']);
     for (const q of Object.values(meta.specie)) assert.equal(typeof q, 'number');
-    for (const mosse of Object.values(meta.mosse)) assert.ok(Object.keys(mosse).length <= 6);
+    for (const mosse of Object.values(meta.mosse)) assert.ok(Object.keys(mosse).length <= 8);
 });
 
 // ---------- il builder ----------
@@ -207,4 +216,21 @@ test('set dei team in doppio: nessun Pokémon senza un attacco (le mosse di supp
     }
     assert.ok(totale >= 300);
     assert.deepEqual(senzaAttacco, [], 'ogni Pokémon ha almeno un attacco');
+});
+
+test('anti-copia anche con la lega più piccola ammessa (4 team) e senza soglie: nessun team della CPU è una copia di uno della lega', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const lega = legaFinta(4, 21);
+    const meta = M.aggregaTeam(lega.map(t => M.leggiTeam(t)));
+    assert.ok(meta && meta.team === 4);
+    const con = await squadre(sim, { meta, quanti: 36 });
+    const leghe = lega.map(t => new Set(t.pokemon.map(p => p.nome.toLowerCase().replace(/[^a-z0-9]/g, ''))));
+    let somma = 0;
+    for (const t of con) {
+        const mie = specieDi(t);
+        const max = Math.max(...leghe.map(l => mie.filter(s => l.has(s)).length));
+        assert.ok(max < 6, `copia di un team della lega: ${t.specie.join(', ')}`);
+        somma += max;
+    }
+    assert.ok(somma / con.length < 3.5, `in media al massimo ${(somma / con.length).toFixed(2)} Pokémon in comune con il team più vicino`);
 });

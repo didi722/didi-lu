@@ -4,8 +4,9 @@
 // e le salva in players/<id>/stile/situazioni (le stesse in ogni nodo). Le pubblica solo se la prova incrociata (impara su una parte dei set, prevede gli altri)
 // dice che prevedono meglio delle sole abitudini; i replay si scaricano solo quando ne arrivano di nuovi.
 // Pubblica anche cosa si gioca nella lega (docs/meta-lega.js): per ogni formato, quanto compare ogni Pokémon, con quali mosse, quanti Helping Hand, Protezioni e mosse
-// prioritarie per team, in settings/cpuMeta. Solo numeri aggregati delle stagioni chiuse, mai team né nomi: la CPU li usa per comporre team più vicini a quelli
-// che si vedono nelle stagioni vere, senza poterli copiare.
+// prioritarie per team, in settings/cpuMeta. Solo numeri aggregati delle stagioni chiuse, mai team né nomi, e senza soglie di riservatezza (la CPU usa tutto ciò che
+// c'è; vedi meta-lega.js): la CPU li usa per comporre team più vicini a quelli che si vedono nelle stagioni vere, con un peso che scende se la lega è piccola
+// (così non li copia).
 // La logica del calcolo è in docs/stile-giocatore.js, docs/cpu-situazioni.js e docs/meta-lega.js (provate in test/); qui si legge, si confronta e si scrive.
 //
 //   node .github/workflows/stile-giocatori.js            scrive solo dove qualcosa è cambiato
