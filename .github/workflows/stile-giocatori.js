@@ -3,8 +3,8 @@
 // Oltre alle abitudini di ognuno, impara dai replay dei set della lega come cambiano le scelte nelle varie situazioni (turno, PS, vantaggio...: docs/cpu-situazioni.js)
 // e le salva in players/<id>/stile/situazioni (le stesse in ogni nodo). Le pubblica solo se la prova incrociata (impara su una parte dei set, prevede gli altri)
 // dice che prevedono meglio delle sole abitudini; i replay si scaricano solo quando ne arrivano di nuovi.
-// Pubblica anche cosa si gioca nella lega (docs/meta-lega.js): per ogni formato, quanto compare ogni Pokémon, con quali mosse, quanti Helping Hand, Protezioni e mosse
-// prioritarie per team, in settings/cpuMeta. Solo numeri aggregati delle stagioni chiuse, mai team né nomi, e senza soglie di riservatezza (la CPU usa tutto ciò che
+// Pubblica anche cosa si gioca nella lega (docs/meta-lega.js): per ogni formato, quanto compare ogni Pokémon, con quali mosse, quanti Helping Hand, Protezioni, mosse
+// prioritarie e pivot (U-turn, Volt Switch...) per team, in settings/cpuMeta. Solo numeri aggregati delle stagioni chiuse, mai team né nomi, e senza soglie di riservatezza (la CPU usa tutto ciò che
 // c'è; vedi meta-lega.js): la CPU li usa per comporre team più vicini a quelli che si vedono nelle stagioni vere, con un peso che scende se la lega è piccola
 // (così non li copia).
 // La logica del calcolo è in docs/stile-giocatore.js, docs/cpu-situazioni.js e docs/meta-lega.js (provate in test/); qui si legge, si confronta e si scrive.
@@ -42,8 +42,8 @@ async function pubblicaMeta(stagioni) {
   if (!chiavi.length) { console.log('Meta della lega: nessun formato con abbastanza team nelle stagioni chiuse.'); return; }
   for (const k of chiavi) {
     const m = nuova[k];
-    console.log(`Meta della lega, ${k}: ${m.team} team, ${m.set} set, ${Object.keys(m.specie).length} Pokémon; per team ${m.squadra.aiuto} Helping Hand, ${m.squadra.protezioni} Protezioni, ${m.squadra.priorita} mosse prioritarie; ` +
-      `set con Fake Out ${Math.round(m.classi.fakeout * 100)}%, deviatore ${Math.round(m.classi.redirezione * 100)}%, Tailwind ${Math.round(m.classi.vento * 100)}%, Stanza Magica ${Math.round(m.classi.stanza * 100)}%`);
+    console.log(`Meta della lega, ${k}: ${m.team} team, ${m.set} set, ${Object.keys(m.specie).length} Pokémon; per team ${m.squadra.aiuto} Helping Hand, ${m.squadra.protezioni} Protezioni, ${m.squadra.priorita} mosse prioritarie, ${m.squadra.perno} pivot; ` +
+      `set con Fake Out ${Math.round(m.classi.fakeout * 100)}%, deviatore ${Math.round(m.classi.redirezione * 100)}%, Tailwind ${Math.round(m.classi.vento * 100)}%, Stanza Magica ${Math.round(m.classi.stanza * 100)}%, pivot ${Math.round(m.classi.perno * 100)}%`);
   }
   const attuale = (await db.ref('settings/cpuMeta/formati').once('value')).val();
   if (JSON.stringify(Stile.ordina(attuale)) === JSON.stringify(Stile.ordina(nuova))) { console.log('Meta della lega: invariata.'); return; }

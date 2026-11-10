@@ -16,8 +16,8 @@
 //   MetaLega.leggiTeam(voce)         -> { set: [...] } | null             un team iscritto ({ pokemon: [...] } oppure { testoShowdown })
 //   MetaLega.chiaveCategoria(testo)  -> 'vgcgen9'                         la chiave con cui il nodo si salva e si ritrova
 //   meta = { v, team, set, specie: { id: quota dei team }, mosse: { id: { mossa: quota dei set di quella specie } },
-//            classi: { quota dei set con: aiuto, protezione, fakeout, redirezione, vento, stanza, priorita },
-//            squadra: { aiuto, priorita, protezioni: quante per team in media } }
+//            classi: { quota dei set con: aiuto, protezione, fakeout, redirezione, vento, stanza, priorita, perno (una mossa pivot: U-turn, Volt Switch...) },
+//            squadra: { aiuto, priorita, protezioni, perno: quante per team in media } }
 //
 // Funziona nel browser (window.MetaLega) e in Node (workflow "Stile dei giocatori").
 // =====================================================
@@ -45,6 +45,8 @@
     const PRIORITARIE = new Set(['suckerpunch', 'aquajet', 'bulletpunch', 'machpunch', 'extremespeed', 'iceshard', 'shadowsneak', 'quickattack', 'accelerock',
         'jetpunch', 'thunderclap', 'vacuumwave', 'watershuriken', 'upperhand', 'feint', 'grassyglide']);
     const RIPARO = new Set(['followme', 'ragepowder']);
+    // le mosse con cui chi le usa esce dal campo e fa entrare un compagno senza perdere il turno (il "pivot")
+    const PERNI = new Set(['uturn', 'voltswitch', 'flipturn', 'partingshot', 'teleport', 'batonpass', 'shedtail', 'chillyreception']);
 
     function chiaveCategoria(testo) { return id(testo); }
 
@@ -88,8 +90,8 @@
         const nSet = lista.reduce((n, t) => n + t.set.length, 0);
         const inTeam = {};        // specie -> in quanti team compare (una volta per team)
         const perSpecie = {};     // specie -> { set, mosse: { mossa: n } }
-        const classi = { aiuto: 0, protezione: 0, fakeout: 0, redirezione: 0, vento: 0, stanza: 0, priorita: 0 };
-        const tot = { aiuto: 0, priorita: 0, protezioni: 0 };
+        const classi = { aiuto: 0, protezione: 0, fakeout: 0, redirezione: 0, vento: 0, stanza: 0, priorita: 0, perno: 0 };
+        const tot = { aiuto: 0, priorita: 0, protezioni: 0, perno: 0 };
         for (const t of lista) {
             for (const s of new Set(t.set.map(x => x.specie))) inTeam[s] = (inTeam[s] || 0) + 1;
             for (const s of t.set) {
@@ -103,6 +105,7 @@
                 if (ha(m => RIPARO.has(m))) classi.redirezione++;
                 if (ha(m => m === 'tailwind')) classi.vento++;
                 if (ha(m => m === 'trickroom')) classi.stanza++;
+                if (ha(m => PERNI.has(m))) { classi.perno++; tot.perno++; }
                 const prio = s.mosse.filter(m => PRIORITARIE.has(m)).length;
                 if (prio) { classi.priorita++; tot.priorita += prio; }
             }
@@ -116,7 +119,7 @@
             if (migliori.length) meta.mosse[s] = Object.fromEntries(migliori.map(([m, q]) => [m, arrotonda(q, soglie.passo)]));
         }
         for (const k of Object.keys(classi)) meta.classi[k] = rotondo2(classi[k] / nSet);
-        meta.squadra = { aiuto: rotondo2(tot.aiuto / lista.length), priorita: rotondo2(tot.priorita / lista.length), protezioni: rotondo2(tot.protezioni / lista.length) };
+        meta.squadra = { aiuto: rotondo2(tot.aiuto / lista.length), priorita: rotondo2(tot.priorita / lista.length), protezioni: rotondo2(tot.protezioni / lista.length), perno: rotondo2(tot.perno / lista.length) };
         return meta;
     }
 

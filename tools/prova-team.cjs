@@ -11,7 +11,7 @@
 //                     di qualche punto da una serie all'altra, quindi per un confronto serio si ripete con più semi
 //        --variante   i parametri del team della variante (di base: quelli attuali)
 //        --confronto  con cosa si confronta: "vecchi" (com'era prima: tutti Protect, tutti gli Helping Hand, niente priorità) o altri parametri in JSON
-// Stampa anche com'è fatta ogni serie: Helping Hand, mosse prioritarie e Protezioni per team.
+// Stampa anche com'è fatta ogni serie: Helping Hand, mosse prioritarie, pivot e Protezioni per team.
 // =====================================================
 const path = require('node:path');
 const fs = require('node:fs');
@@ -64,7 +64,8 @@ const devSt = v => { const m = media(v); return Math.sqrt(v.reduce((t, x) => t +
 
 function descrivi(nome, squadre, sim) {
     const dex = sim.Dex.forGen(9);
-    let aiuto = 0, prio = 0, prot = 0, mon = 0, senzaPrio = 0, fo = 0;
+    let aiuto = 0, prio = 0, prot = 0, mon = 0, senzaPrio = 0, fo = 0, perni = 0;
+    const PERNI = new Set(['uturn', 'voltswitch', 'flipturn', 'partingshot', 'teleport', 'batonpass', 'shedtail', 'chillyreception']);
     const PROT = new Set(['protect', 'detect', 'spikyshield', 'kingsshield', 'banefulbunker', 'silktrap', 'burningbulwark', 'obstruct']);
     for (const t of squadre) {
         let p = 0;
@@ -73,6 +74,7 @@ function descrivi(nome, squadre, sim) {
             for (const mv of s.moves) {
                 const m = dex.moves.get(mv);
                 if (m.id === 'helpinghand') aiuto++;
+                if (PERNI.has(m.id)) perni++;
                 if (m.id === 'fakeout') fo++;
                 else if (m.priority > 0 && m.category !== 'Status') { prio++; p++; }
                 if (PROT.has(m.id)) prot++;
@@ -81,7 +83,7 @@ function descrivi(nome, squadre, sim) {
         if (!p) senzaPrio++;
     }
     const n = squadre.length;
-    return `${nome.padEnd(10)} ${n} team: Helping Hand ${(aiuto / n).toFixed(2)} a team, mosse prioritarie ${(prio / n).toFixed(2)} (nessuna nel ${Math.round(100 * senzaPrio / n)}%), Fake Out ${(fo / n).toFixed(2)}, Protezione sul ${Math.round(100 * prot / mon)}% dei Pokémon`;
+    return `${nome.padEnd(10)} ${n} team: Helping Hand ${(aiuto / n).toFixed(2)} a team, mosse prioritarie ${(prio / n).toFixed(2)} (nessuna nel ${Math.round(100 * senzaPrio / n)}%), Fake Out ${(fo / n).toFixed(2)}, pivot ${(perni / n).toFixed(2)}, Protezione sul ${Math.round(100 * prot / mon)}% dei Pokémon`;
 }
 
 async function principale() {
