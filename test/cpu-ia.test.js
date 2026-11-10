@@ -1218,3 +1218,128 @@ test('potenziamenti: il peso di un Pokémon sale con attacco, attacco speciale e
     assert.equal(ia._pesoMon({ basi: v().basi }), base, 'senza boost nello stato, il peso di base');
     assert.equal(IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, parametri: { pesoMinaccia: 0 } })._pesoMon(v({ atk: 2, spe: 2 })), base, 'spento = come prima');
 });
+
+// ===================================================
+// STATO DI CHI AGISCE (sonno, gelo, paralisi), FAKE OUT E SETTER
+// ===================================================
+// Un Pokémon addormentato nel suo primo turno di sonno non si muove: Helping Hand su di lui non serve a niente, e un suo attacco non vale niente.
+function squadraAiuto(statoCompagno) {
+    return [
+        { specie: 'Whimsicott', item: 'Leftovers', mosse: ['Helping Hand', 'Moonblast', 'Protect', 'Tailwind'] },
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Dragon Claw', 'Protect', 'Rock Slide', 'Swords Dance'], stato: statoCompagno }
+    ];
+}
+async function sceltaAiuto(sim, { statoCompagno, tentativi = 0 }) {
+    const squadra = squadraAiuto(statoCompagno);
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, debug: true });
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], livello: 100 });
+    const extra = [];
+    if (statoCompagno) { extra.push(`|-status|p2b: Garchomp|${statoCompagno}`); for (let i = 0; i < tentativi; i++) extra.push(`|cant|p2b: Garchomp|${statoCompagno}`); }
+    const avversari = [{ specie: 'Incineroar', hp: 40 }, { specie: 'Rillaboom', hp: 40 }, { specie: 'Flutter Mane' }];
+    return scelta(ia, r, [...logAvversario(avversari, true, 1, 100), ...logMiaSquadra(squadra, [0, 1], 100), ...extra]);
+}
+
+test('sonno: la CPU non usa Helping Hand su un compagno che non può muoversi (primo turno di sonno), lo usa se è sveglio o se ormai si sveglia di sicuro', async () => {
+    const { sim } = await caricaSim();
+    const sveglio = await sceltaAiuto(sim, {});
+    assert.match(sveglio, /^move 1 -2,/, `sveglio, con gli avversari a poca salute, l'aiuto serve: ${sveglio}`);
+    const dorme = await sceltaAiuto(sim, { statoCompagno: 'slp' });
+    assert.ok(!/^move 1 -2,/.test(dorme), `addormentato al primo turno: ${dorme}`);
+    const dorme2 = await sceltaAiuto(sim, { statoCompagno: 'slp', tentativi: 1 });
+    assert.ok(!/^move 1 -2,/.test(dorme2), `al secondo turno si sveglia solo una volta su tre: ${dorme2}`);
+    const quarto = await sceltaAiuto(sim, { statoCompagno: 'slp', tentativi: 3 });
+    assert.match(quarto, /^move 1 -2,/, `dopo tre turni di sonno si sveglia di sicuro: ${quarto}`);
+    // gelo: si scongela una volta su cinque, non basta per aiutarlo
+    const gelo = await sceltaAiuto(sim, { statoCompagno: 'frz' });
+    assert.ok(!/^move 1 -2,/.test(gelo), `congelato: ${gelo}`);
+});
+
+test('sonno: _probAgire (primo turno 0, poi 1/3, 1/2, sicuro), gelo 1/5, paralisi 3/4; i turni di sonno si contano dal log e ricominciano con un nuovo stato', async () => {
+    const { sim } = await caricaSim();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    const v = (stato, tentativi) => ({ stato, ref: { sonnoTentativi: tentativi } });
+    assert.equal(ia._probAgire(v('', 0)), 1);
+    assert.equal(ia._probAgire(null), 1);
+    assert.deepEqual([0, 1, 2, 3, 7].map(n => ia._probAgire(v('slp', n))), [0, 1 / 3, 0.5, 1, 1]);
+    assert.equal(ia._probAgire(v('frz', 0)), 0.2);
+    assert.equal(ia._probAgire(v('par', 0)), 0.75);
+    assert.equal(ia._probAgire(v('brn', 0)), 1);
+    // dal log
+    ia.osserva(['|gametype|doubles', '|switch|p1a: Crustle|Crustle, L50|100/100', '|-status|p1a: Crustle|slp']);
+    const m = ia.lati.p1.mons.Crustle;
+    assert.equal(m.sonnoTentativi, 0);
+    ia.osserva(['|turn|2', '|cant|p1a: Crustle|slp', '|turn|3', '|cant|p1a: Crustle|slp']);
+    assert.equal(m.sonnoTentativi, 2);
+    ia.osserva(['|cant|p1a: Crustle|par']);              // un altro motivo non conta come turno di sonno
+    assert.equal(m.sonnoTentativi, 2);
+    ia.osserva(['|-curestatus|p1a: Crustle|slp']);
+    assert.equal(m.sonnoTentativi, 0);
+});
+
+test('Fake Out: non riesce a chi ha Presenza Mentale o Polvere Scudo o Mantello Occulto; se l\'abilità non si sa, vale la probabilità dalle abilità possibili della specie (Oranguru: una su tre circa)', async () => {
+    const { sim } = await caricaSim();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    assert.equal(ia._pImmuneFlinch({ specie: 'Oranguru', abilita: 'innerfocus' }), 1);
+    assert.equal(ia._pImmuneFlinch({ specie: 'Oranguru', abilita: 'shielddust' }), 1);
+    assert.equal(ia._pImmuneFlinch({ specie: 'Incineroar', strumento: 'covertcloak' }), 1);
+    assert.equal(ia._pImmuneFlinch({ specie: 'Oranguru', abilita: 'telepathy' }), 0, 'abilità nota che non lo salva');
+    assert.equal(ia._pImmuneFlinch({ specie: 'Incineroar', abilita: null }), 0);
+    const oranguru = ia._pImmuneFlinch({ specie: 'Oranguru', abilita: null });         // Inner Focus, Telepathy, Symbiosis (nascosta): 1 / 2,35
+    assert.ok(oranguru > 0.35 && oranguru < 0.5, `Oranguru: ${oranguru}`);
+    assert.equal(ia._pImmuneFlinch({ specie: 'Specie Inesistente', abilita: null }), 0);
+});
+
+// chi probabilmente mette Stanza Magica o Tailwind al primo turno
+async function scenariSetter(parametri, righeExtra = [], avversari = [{ specie: 'Oranguru' }, { specie: 'Rillaboom' }, { specie: 'Flutter Mane' }]) {
+    const { sim } = await caricaSim();
+    const squadra = [
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Dragonite', item: 'Leftovers', mosse: ['Dragon Claw', 'Extreme Speed', 'Protect'] }
+    ];
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, debug: true, avversario: true, ...(parametri ? { parametri } : {}) });
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], livello: 50 });
+    scelta(ia, r, [...logAvversario(avversari, true, 1, 50), ...logMiaSquadra(squadra, [0, 1], 50), ...righeExtra]);
+    return ia;
+}
+const setterPrevisti = ia => ia.ultimoStato.alternative.flatMap(sc => sc.azioni).filter(a => a.mossa && ['trickroom', 'tailwind'].includes(a.mossa.id));
+
+test('setter: Oranguru al primo turno è un probabile Trick Room (lenta, lo impara): la previsione ha la sua Stanza Magica con un peso alto; Rillaboom no; spento (pesoSetter 0) niente', async () => {
+    const ia = await scenariSetter();
+    const oranguru = ia.ultimoStato.stato0.avv[0];
+    assert.equal(ia._setterProbabile(oranguru).mossa, 'trickroom');
+    assert.equal(ia._setterProbabile(oranguru).p, 0.5);
+    assert.equal(ia._setterProbabile(ia.ultimoStato.stato0.avv[1]), null, 'Rillaboom non la impara');
+    const previste = setterPrevisti(ia);
+    assert.ok(previste.length > 0 && previste.every(a => a.slot === 0 && a.mossa.id === 'trickroom'));
+    const peso = ia.ultimoStato.alternative.filter(sc => sc.azioni.some(a => a.mossa && a.mossa.id === 'trickroom')).reduce((t, sc) => t + sc.peso, 0);
+    assert.ok(peso > 0.3, `peso degli scenari con la Stanza Magica: ${peso}`);
+    const spento = await scenariSetter({ pesoSetter: 0 });
+    assert.deepEqual(setterPrevisti(spento), []);
+    assert.equal(spento._setterProbabile(spento.ultimoStato.stato0.avv[0]), null);
+});
+
+test('setter: non c\'è niente da impedire se la Stanza Magica è già attiva, se ha già agito, se il Tailwind è già su; se l\'ha già usata prima è quasi certo che la rifà; Tailwind per chi lo impara ed è veloce', async () => {
+    const attiva = await scenariSetter(null, ['|-fieldstart|move: Trick Room']);
+    assert.equal(attiva._setterProbabile(attiva.ultimoStato.stato0.avv[0]), null, 'Stanza Magica già attiva');
+    const gia = await scenariSetter(null, ['|move|p1a: Oranguru|Psychic|p2a: Garchomp']);
+    assert.equal(gia._setterProbabile(gia.ultimoStato.stato0.avv[0]), null, 'ha già agito: se non l\'ha messa al primo turno non è più il suo momento');
+    const vista = await scenariSetter(null, ['|move|p1a: Oranguru|Trick Room|p1a: Oranguru', '|-fieldend|move: Trick Room']);
+    assert.equal(vista._setterProbabile(vista.ultimoStato.stato0.avv[0]).p, 0.7, 'l\'ha già usata: la sa');
+    const vento = await scenariSetter(null, [], [{ specie: 'Whimsicott' }, { specie: 'Rillaboom' }, { specie: 'Flutter Mane' }]);
+    assert.deepEqual([vento._setterProbabile(vento.ultimoStato.stato0.avv[0]).mossa, vento._setterProbabile(vento.ultimoStato.stato0.avv[0]).p], ['tailwind', 0.3]);
+    const ventoSu = await scenariSetter(null, ['|-sidestart|p1: P1|move: Tailwind'], [{ specie: 'Whimsicott' }, { specie: 'Rillaboom' }, { specie: 'Flutter Mane' }]);
+    assert.equal(ventoSu._setterProbabile(ventoSu.ultimoStato.stato0.avv[0]), null, 'Tailwind già su');
+});
+
+test('peso offensivo: con pesoOffesa un attaccante veloce pesa più di un muro con le stesse statistiche totali; a 0 il peso è quello di sempre', async () => {
+    const { sim } = await caricaSim();
+    const attaccante = { basi: { hp: 60, atk: 130, def: 60, spa: 50, spd: 60, spe: 120 } };       // BST 480
+    const muro = { basi: { hp: 110, atk: 50, def: 120, spa: 50, spd: 100, spe: 50 } };          // BST 480
+    const classico = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, parametri: { pesoOffesa: 0 } });
+    assert.ok(Math.abs(classico._pesoMon(attaccante) - classico._pesoMon(muro)) < 1e-9, 'a parità di statistiche totali pesano uguale, come prima');
+    const nuovo = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, parametri: { pesoOffesa: 0.6 } });
+    assert.ok(nuovo._pesoMon(attaccante) > nuovo._pesoMon(muro) + 0.1, `${nuovo._pesoMon(attaccante)} contro ${nuovo._pesoMon(muro)}`);
+    // Oranguru (attacco speciale 90, velocità 60) conta più di uno Shuckle (10, 5), e meno di Chien-Pao
+    const peso = n => { const b = sim.Dex.species.get(n).baseStats; return nuovo._pesoMon({ basi: b }); };
+    assert.ok(peso('Chien-Pao') > peso('Oranguru') && peso('Oranguru') > peso('Shuckle'));
+});
