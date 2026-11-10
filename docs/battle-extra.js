@@ -140,6 +140,7 @@ function collegaFumettiFiocchi() {
 function risolviSquadre() {
     for (const lato of ['p1', 'p2']) {
         if (S.squadre[lato].length) continue;
+        if (S.senzaAnteprima && !puoVedereSet(lato)) continue;      // Random: il team che non si può vedere non si riconosce nemmeno dall'anteprima
         const candidati = S.candidati[lato] || [];
         if (!candidati.length) continue;
         // con un solo team registrato si sa già qual è, ma solo di chi si può vedere (il proprio lato, o una partita a team aperti): quello dell'avversario si scopre dall'anteprima, non prima
@@ -823,10 +824,14 @@ function spriteDiRiserva(img) {
 
 // I 6 da mostrare: dal set (se lo conosco), altrimenti dal team preview di Showdown
 function elencoLato(lato) {
-    const squadra = S.squadre[lato];
+    // Random: del lato che non si può vedere (l'avversario, o entrambi per chi guarda) conta solo chi è già sceso in campo, qualunque dato arrivi
+    // (una squadra registrata, un team preview, delle righe |poke|): gli altri restano caselle ignote
+    const nascosto = !!S.senzaAnteprima && !puoVedereSet(lato);
+    const squadra = nascosto ? null : S.squadre[lato];
     if (squadra?.length) return squadra.map(s => ({ specie: s.species, nome: s.name || s.species, set: s }));
     const side = S.battle?.[lato];
-    const elenco = (side?.pokemon || []).map(p => ({ specie: p.speciesForme, nome: p.name, set: null }));
+    const comparsi = (side?.pokemon || []).filter(p => !nascosto || visti.has(p) || !!p.ident || !!p.fainted);
+    const elenco = comparsi.map(p => ({ specie: p.speciesForme, nome: p.name, set: null }));
     if (S.senzaAnteprima && side) {
         // niente anteprima: si conosce solo chi è già sceso in campo, gli altri sono caselle col punto interrogativo
         while (elenco.length < (side.totalPokemon || 6)) elenco.push({ specie: '', nome: 'Unknown Pokémon', set: null, ignoto: true });
