@@ -492,8 +492,7 @@ function azioniCpu() {
     // dopo una modifica il team può non essere più giocabile nel simulatore: allora niente rivincita finché non si sistema
     if (!cpu.problemi.length) {
         azioni.push(
-            el('button', { type: 'button', class: 'btn primario', onclick: () => iniziaContro(cpu.team) }, 'Rematch · same CPU team'),
-            el('button', { type: 'button', class: 'btn secondario', onclick: ev => { ev.currentTarget.disabled = true; altroTeamCpu(); } }, 'Another random CPU team'));
+            el('button', { type: 'button', class: 'btn primario', onclick: ev => { ev.currentTarget.disabled = true; altroTeamCpu(); } }, 'Another random CPU team'));
     }
     // Come nel Box, il team si modifica solo se non è già iscritto a una stagione iniziata (team-bloccati.js)
     if (cpu.modificabile === true) azioni.push(el('button', { type: 'button', class: 'btn secondario', onclick: apriEditorTeam }, 'Edit my team'));
@@ -505,16 +504,22 @@ function azioniCpu() {
 function riepilogoFineCpu() {
     if (cpu.random) return `${cpu.random.nome} · random teams, new every battle`;
     const nota = cpu.avviso || (cpu.modificabile === false ? '🔒 Locked team: it can\'t be edited' : '');
-    // la CPU ha imparato qualcosa da questa serie di partite: lo dice (si perde uscendo dalla pagina)
-    const visti = cpu.conMemoria && cpu.memoria ? cpu.memoria.partite : 0;
-    const impara = visti ? `🧠 The CPU remembers how you play this team (${visti} game${visti > 1 ? 's' : ''})` : '';
-    const note = [nota, impara].filter(Boolean).join(' · ');
+    // il conto della sessione di prova di questo team (si perde uscendo dalla pagina)
+    const q = cpu.conMemoria && cpu.sessione;
+    const conto = q && (q.v + q.p + q.n) ? `Session: ${q.v} won · ${q.p} lost${q.n ? ` · ${q.n} tied` : ''}` : '';
+    const note = [nota, conto].filter(Boolean).join(' · ');
     return `${config.p1.nomeTeam} vs ${config.p2.nomeTeam}${note ? ` · ${note}` : ''}`;
 }
 
 function mostraFineCpu(vincitore) {
     cpu.ultimoVincitore = vincitore;
     ricordaLaPartita();
+    // la partita entra nel conto della sessione una volta sola (il cartello si può ridisegnare)
+    if (cpu.conMemoria && !cpu.palestra && cpu.cerebro && !cpu.cerebro.contata) {
+        cpu.cerebro.contata = true;
+        const q = cpu.sessione || (cpu.sessione = { v: 0, p: 0, n: 0 });
+        if (!vincitore) q.n++; else if (vincitore === config.p1.nome) q.v++; else q.p++;
+    }
     if (cpu.palestra) return mostraFinePalestra(vincitore);
     const vinto = !!vincitore && vincitore === config.p1.nome;
     const titolo = !vincitore ? "It's a tie!" : vinto ? 'You win!' : 'The CPU wins!';

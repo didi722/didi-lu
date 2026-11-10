@@ -325,7 +325,8 @@ test('battle-ui.js: la CPU compone un team a caso quando inizia la sfida; a fine
     assert.match(ui, /primo = await nuovoTeamCpu\(dati\.regolamento, \{ iniziali: dati\.iniziali, db: dbPerLaMeta\(\) \}\);/);
     assert.match(ui, /async function iniziaContro\(team\) \{\s*await assegnaPersonaCpu\(\);\s*cpu\.team = team;/);
     // rivincita: lo stesso team; altro team: se ne compone uno nuovo (il pulsante si disabilita mentre lavora)
-    assert.match(ui, /iniziaContro\(cpu\.team\) \}, 'Rematch · same CPU team'/);
+    assert.ok(!/same CPU team/.test(ui), 'niente rivincita con lo stesso team della CPU');
+    assert.match(ui, /Session: \$\{q\.v\} won/);
     assert.match(ui, /ev\.currentTarget\.disabled = true; altroTeamCpu\(\); \} \}, 'Another random CPU team'/);
     assert.match(ui, /async function altroTeamCpu\(\) \{[\s\S]*nuovoTeamCpu\(cpu\.giocatore\.regolamento, \{ iniziali: cpu\.giocatore\.iniziali, db: dbPerLaMeta\(\) \}\)[\s\S]*iniziaContro\(r\.team\)/);
     // se non si riesce, resta il cartello con un avviso (e i pulsanti tornano attivi)
