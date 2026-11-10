@@ -152,5 +152,5 @@
         return x;
     }
 
-    return { VERSIONE, AZIONI, somme, profili, uguali, setConReplay, firmaDi, situazioniDaiReplay };
+    return { VERSIONE, AZIONI, somme, profili, uguali, setConReplay, firmaDi, situazioniDaiReplay, ordina };
 });

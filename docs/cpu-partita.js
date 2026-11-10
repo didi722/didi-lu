@@ -7,6 +7,8 @@
 //     il primo team costa una frazione di secondo, quelli dopo ancora meno. Niente più team ricordati nel browser.
 //   - nuovoCervello(): chi sceglie le mosse della CPU in battaglia (cpu-ia.js), che può conoscere le abitudini di chi ha davanti.
 //   - caricaStile(db, id): le abitudini di un giocatore (players/<id>/stile, le somma il workflow "Stile dei giocatori") nella forma che il cervello legge.
+//   - caricaMetaLega(db, regolamento): cosa si gioca nella lega per quel formato (settings/cpuMeta, la scrive lo stesso workflow): numeri aggregati, mai team.
+//     La CPU li usa per comporre team più vicini a quelli che si vedono nelle stagioni vere (senza copiarli).
 // Nessun riferimento al DOM.
 // =====================================================
 
@@ -16,6 +18,7 @@ import './cpu-calcolo.js';       // self.CpuCalcolo
 import './azioni-mosse.js';      // self.AzioniMosse (come le statistiche dividono le mosse: attacco, protezione...)
 import './cpu-avversario.js';    // self.CpuAvversario (le abitudini di chi ha davanti)
 import './cpu-situazioni.js';    // self.CpuSituazioni (come cambiano le abitudini nelle varie situazioni, imparato dai replay della lega)
+import './meta-lega.js';         // self.MetaLega (cosa si gioca nella lega: Pokémon, mosse, Helping Hand, Protezioni...)
 import './cpu-ia.js';            // self.CpuIa
 import './formato-pool.js';      // self.FormatoPool
 import './consigli.js';          // self.Consigli
@@ -60,13 +63,14 @@ function ripulisciVecchiaMemoria() {
 // Restituisce { team: { nome, piano, strategia, testo, specie[], numero } | null, avvisi: [] }
 // iniziali: iniziali del nome e del cognome del giocatore, per i formati con la regola "iniziale del nome"
 // seme: solo per le prove (di solito il team è a caso)
-export async function nuovoTeamCpu(regolamento, { iniziali = [], seme } = {}) {
+export async function nuovoTeamCpu(regolamento, { iniziali = [], seme, db = null } = {}) {
     ripulisciVecchiaMemoria();
     const inizialiPulite = iniziali.map(x => String(x || '').trim().charAt(0).toLowerCase()).filter(Boolean);
     const firma = firmaRegolamento(regolamento, inizialiPulite);
 
     if (!sessioni.has(firma)) {
-        const promessa = self.TeamCpu.preparaSessione({ Dex, TeamValidator, regolamento, caricaJson, iniziali: inizialiPulite });
+        // la meta della lega (se c'è e il database risponde) si legge una volta sola, insieme alla parte lenta
+        const promessa = caricaMetaLega(db, regolamento).then(meta => self.TeamCpu.preparaSessione({ Dex, TeamValidator, regolamento, caricaJson, iniziali: inizialiPulite, meta }));
         promessa.catch(() => sessioni.delete(firma));       // se il caricamento fallisce (rete) la volta dopo si riprova
         sessioni.set(firma, promessa);
     }
@@ -78,6 +82,20 @@ export async function nuovoTeamCpu(regolamento, { iniziali = [], seme } = {}) {
         recenti.set(firma, [...ultimi, team.chiavi].slice(-RECENTI_MAX));
     }
     return { team, avvisi };
+}
+
+// Cosa si gioca nella lega per quel formato (settings/cpuMeta/formati/<chiave>, meta-lega.js). Senza database, senza dati o con un errore di rete: null, e la CPU
+// compone i team come prima.
+export async function caricaMetaLega(db, regolamento) {
+    try {
+        const chiave = self.MetaLega.chiaveCategoria(regolamento && regolamento.categoria);
+        if (!db || !chiave) return null;
+        const meta = (await db.ref(`settings/cpuMeta/formati/${chiave}`).once('value')).val();
+        return meta && meta.v === self.MetaLega.VERSIONE ? meta : null;
+    } catch (errore) {
+        console.warn("Couldn't read what the league plays, the CPU builds its team as usual", errore);
+        return null;
+    }
 }
 
 // Chi sceglie le mosse della CPU (uno per battaglia: tiene a mente com'è andata).

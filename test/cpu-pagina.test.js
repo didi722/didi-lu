@@ -121,7 +121,7 @@ async function creaCpuPartita({ fetchFallisce = 0 } = {}) {
     const scaricati = [];
     let fallimenti = fetchFallisce;
     const ambiente = {
-        self: { TeamCpu: T, CpuIa: require('../docs/cpu-ia.js'), CpuAvversario: require('../docs/cpu-avversario.js') },
+        self: { TeamCpu: T, CpuIa: require('../docs/cpu-ia.js'), CpuAvversario: require('../docs/cpu-avversario.js'), MetaLega: require('../docs/meta-lega.js') },
         Dex: sim.Dex, TeamValidator: sim.TeamValidator, localStorage,
         fetch: async p => {
             scaricati.push(p);
@@ -129,7 +129,7 @@ async function creaCpuPartita({ fetchFallisce = 0 } = {}) {
             return { ok: true, json: async () => leggiJson(p) };
         }
     };
-    const modulo = new Function(...Object.keys(ambiente), src + '\nreturn { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile };')(...Object.values(ambiente));
+    const modulo = new Function(...Object.keys(ambiente), src + '\nreturn { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile, caricaMetaLega };')(...Object.values(ambiente));
     return { modulo, memoriaBrowser, localStorage, scaricati };
 }
 const regPiccolo = (extra = {}) => ({ ...regOU, restrizioni: { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' } } }, ...extra });
@@ -322,12 +322,12 @@ test('battle-ui.js: il team della CPU compare ovunque col nome neutro, mai col s
 test('battle-ui.js: la CPU compone un team a caso quando inizia la sfida; a fine partita rivincita (stesso team), un team nuovo, ritorno al Box', () => {
     const ui = leggi('battle-ui.js');
     // all'inizio della prova: un team, composto adesso (non più uno scelto da un elenco già pronto)
-    assert.match(ui, /primo = await nuovoTeamCpu\(dati\.regolamento, \{ iniziali: dati\.iniziali \}\);/);
+    assert.match(ui, /primo = await nuovoTeamCpu\(dati\.regolamento, \{ iniziali: dati\.iniziali, db: dbPerLaMeta\(\) \}\);/);
     assert.match(ui, /async function iniziaContro\(team\) \{\s*await assegnaPersonaCpu\(\);\s*cpu\.team = team;/);
     // rivincita: lo stesso team; altro team: se ne compone uno nuovo (il pulsante si disabilita mentre lavora)
     assert.match(ui, /iniziaContro\(cpu\.team\) \}, 'Rematch · same CPU team'/);
     assert.match(ui, /ev\.currentTarget\.disabled = true; altroTeamCpu\(\); \} \}, 'Another random CPU team'/);
-    assert.match(ui, /async function altroTeamCpu\(\) \{[\s\S]*nuovoTeamCpu\(cpu\.giocatore\.regolamento, \{ iniziali: cpu\.giocatore\.iniziali \}\)[\s\S]*iniziaContro\(r\.team\)/);
+    assert.match(ui, /async function altroTeamCpu\(\) \{[\s\S]*nuovoTeamCpu\(cpu\.giocatore\.regolamento, \{ iniziali: cpu\.giocatore\.iniziali, db: dbPerLaMeta\(\) \}\)[\s\S]*iniziaContro\(r\.team\)/);
     // se non si riesce, resta il cartello con un avviso (e i pulsanti tornano attivi)
     assert.match(ui, /cpu\.avviso = `Couldn't build another CPU team: \$\{errore\.message\}`;\s*aggiornaFineCpu\(\);/);
     assert.ok(!/sceglieTeam|squadreCpu/.test(ui), 'i team in anticipo non ci sono più');
@@ -374,4 +374,42 @@ test('battle.html ha i pezzi che la modalità CPU usa e nessun file nuovo da car
     // i moduli della CPU si caricano da soli dagli import di battle-ui.js
     const partita = leggi('cpu-partita.js');
     for (const f of ['cpu-conoscenza.js', 'cpu-calcolo.js', 'azioni-mosse.js', 'cpu-avversario.js', 'cpu-ia.js', 'formato-pool.js', 'consigli.js', 'team-cpu.js', 'pkmn-sim.js']) assert.match(partita, new RegExp(`import '?[^;]*\\./${f.replace('.', '\\.')}`), f);
+});
+
+// ===================================================
+// caricaMetaLega e nuovoTeamCpu con la meta della lega (settings/cpuMeta)
+// ===================================================
+const dbMeta = (formati, { fallisce = false } = {}) => ({
+    ref: percorso => ({
+        once: async () => {
+            if (fallisce) throw new Error('rete assente');
+            const nodo = percorso.replace(/^settings\/cpuMeta\/formati\//, '');
+            return { val: () => (percorso.startsWith('settings/cpuMeta/formati/') ? (formati[nodo] || null) : null) };
+        }
+    })
+});
+
+test('caricaMetaLega: la meta del formato dalla chiave della categoria; senza dati, di un\'altra versione, senza database o con la rete che cade: null', async () => {
+    const { modulo } = await creaCpuPartita();
+    const meta = { v: 1, team: 20, set: 120, specie: { incineroar: 0.5 }, mosse: {}, classi: {}, squadra: {} };
+    assert.deepEqual(await modulo.caricaMetaLega(dbMeta({ ou: meta }), { categoria: 'OU' }), meta);
+    assert.deepEqual(await modulo.caricaMetaLega(dbMeta({ vgcgen9: meta }), { categoria: 'VGC Gen 9' }), meta);
+    assert.equal(await modulo.caricaMetaLega(dbMeta({}), { categoria: 'OU' }), null);
+    assert.equal(await modulo.caricaMetaLega(dbMeta({ ou: { ...meta, v: 2 } }), { categoria: 'OU' }), null);
+    assert.equal(await modulo.caricaMetaLega(null, { categoria: 'OU' }), null);
+    assert.equal(await modulo.caricaMetaLega(dbMeta({ ou: meta }), {}), null);
+    assert.equal(await modulo.caricaMetaLega(dbMeta({ ou: meta }, { fallisce: true }), { categoria: 'OU' }), null);
+});
+
+test('nuovoTeamCpu con il database: la meta si legge una volta sola per formato e il team esce lo stesso; se il database non risponde, la CPU compone come prima', async () => {
+    const { modulo } = await creaCpuPartita();
+    let letture = 0;
+    const db = { ref: () => ({ once: async () => { letture++; return { val: () => null }; } }) };
+    const a = await modulo.nuovoTeamCpu(regPiccolo(), { db, seme: 'meta-1' });
+    const b = await modulo.nuovoTeamCpu(regPiccolo(), { db, seme: 'meta-2' });
+    assert.ok(a.team && b.team);
+    assert.equal(letture, 1, 'una lettura per formato, non una per team');
+    const { modulo: altro } = await creaCpuPartita();
+    const c = await altro.nuovoTeamCpu(regPiccolo(), { db: dbMeta({}, { fallisce: true }), seme: 'meta-3' });
+    assert.ok(c.team && c.team.testo, 'con la rete che cade il team esce comunque');
 });
