@@ -1407,3 +1407,61 @@ test('Fake Out: la CPU non prevede un Fake Out dell\'avversario che è in campo 
     };
     assert.equal(await previsti(['|upkeep', '|turn|2']), 0, 'al secondo turno non può più farlo');
 });
+
+// Chi entra a metà partita (un cambio, un sostituto dopo un KO, un trascinamento) ha il suo primo turno quello DOPO l'ingresso: lì Fake Out riesce
+// (nel simulatore: Espurr entra al turno 1, Fake Out riesce al 2 e fallisce al 3). Il turno in cui entra non conta: non ha mosso.
+test('Fake Out: chi entra con un cambio, un sostituto o un trascinamento lo usa il turno dopo l\'ingresso, non quello ancora dopo', async () => {
+    const { sim } = await caricaSim();
+    // Espurr è nel primo posto della richiesta (è in campo adesso); Garchomp era in campo all'inizio
+    const squadra = [
+        { specie: 'Espurr', item: 'Leftovers', mosse: ['Fake Out', 'Psychic', 'Protect', 'Helping Hand'] },
+        { specie: 'Dragonite', item: 'Leftovers', mosse: ['Dragon Claw', 'Extreme Speed', 'Protect'] },
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Dragon Claw', 'Rock Slide', 'Protect'] }
+    ];
+    const ingresso = '|switch|p2a: Espurr|Espurr, L50, F|100/100';
+    const modi = {
+        'un cambio scelto': ['|switch|p2a: Espurr|Espurr, L50, F|100/100', '|move|p1b: Rillaboom|Grassy Glide|p2b: Dragonite', '|-damage|p2b: Dragonite|90/100', '|upkeep'],
+        'un sostituto dopo un KO': ['|move|p1a: Incineroar|Flare Blitz|p2a: Garchomp', '|-damage|p2a: Garchomp|0 fnt', '|faint|p2a: Garchomp', '|upkeep', ingresso],
+        'un trascinamento': ['|move|p1a: Incineroar|Dragon Tail|p2a: Garchomp', '|drag|p2a: Espurr|Espurr, L50, F|100/100', '|upkeep']
+    };
+    // righe del turno 1 e del turno 2 (dopo l'ingresso), richiesta del turno in corso
+    const valuta = async (righeTurno1, righeTurno2 = []) => {
+        const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, debug: true, avversario: true });
+        const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], livello: 50 });
+        const apertura = logAvversario([{ specie: 'Incineroar' }, { specie: 'Rillaboom' }, { specie: 'Flutter Mane' }], true, 1, 50);
+        const miaApertura = logMiaSquadra([squadra[2], squadra[1], squadra[0]], [0, 1], 50);        // Garchomp e Dragonite in campo
+        const righe = [...apertura.slice(0, -1), ...miaApertura, '|turn|1', ...righeTurno1, '|turn|2', ...righeTurno2];
+        if (righeTurno2.length) righe.push('|turn|3');
+        ia.osserva(righe);
+        ia.scegli(r);
+        return ia.ultimaValutazione.some(p => p.azioni.some(a => /\[Fake Out\]/.test(a)));
+    };
+    for (const [modo, righe] of Object.entries(modi)) {
+        assert.equal(await valuta(righe), true, `turno dopo l'ingresso (${modo}): Fake Out è tra i piani`);
+        // un turno dopo ancora (ha tentennato): non più
+        assert.equal(await valuta(righe, ['|cant|p2a: Espurr|flinch', '|upkeep']), false, `due turni dopo l'ingresso (${modo}): niente Fake Out`);
+    }
+});
+
+test('Fake Out: per un avversario entrato con un cambio, un sostituto o un trascinamento il primo turno è quello dopo l\'ingresso (e non quello ancora dopo)', async () => {
+    const { sim } = await caricaSim();
+    const apertura = ['|gametype|doubles', '|poke|p1|Rillaboom, L50|', '|poke|p1|Flutter Mane, L50|', '|poke|p1|Incineroar, L50|',
+        '|switch|p1a: Rillaboom|Rillaboom, L50|100/100', '|switch|p1b: Flutter Mane|Flutter Mane, L50|100/100'];
+    const ingresso = '|switch|p1a: Incineroar|Incineroar, L50, M|100/100';
+    const modi = {
+        'un cambio scelto': [ingresso, '|upkeep'],
+        'un sostituto dopo un KO': ['|move|p2a: X|Earthquake|p1a: Rillaboom', '|-damage|p1a: Rillaboom|0 fnt', '|faint|p1a: Rillaboom', '|upkeep', ingresso],
+        'un trascinamento': ['|move|p2a: X|Roar|p1a: Rillaboom', '|drag|p1a: Incineroar|Incineroar, L50, M|100/100', '|upkeep']
+    };
+    for (const [modo, righe] of Object.entries(modi)) {
+        const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+        ia.osserva([...apertura, '|turn|1', ...righe, '|turn|2']);
+        const inc = () => ia.lati.p1.mons.Incineroar;
+        assert.equal(ia._primoTurnoInCampo(inc()), true, `turno dopo l'ingresso (${modo})`);
+        ia.osserva(['|move|p1a: Incineroar|Flare Blitz|p2a: X', '|upkeep', '|turn|3']);
+        assert.equal(ia._primoTurnoInCampo(inc()), false, `due turni dopo l'ingresso (${modo})`);
+        // esce e rientra: il conto riparte
+        ia.osserva(['|switch|p1a: Rillaboom|Rillaboom, L50|100/100', '|upkeep', '|turn|4', '|switch|p1a: Incineroar|Incineroar, L50, M|100/100', '|upkeep', '|turn|5']);
+        assert.equal(ia._primoTurnoInCampo(inc()), true, `rientrato (${modo}): il primo turno è quello dopo il rientro`);
+    }
+});
