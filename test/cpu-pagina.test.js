@@ -188,7 +188,7 @@ test('battle-ui.js: la CPU studia chi gioca — legge il suo stile una volta, lo
     assert.match(ui, /function studiaGiocatore\(id\) \{\s*if \(!id \|\| stileCpu\.id === id\) return;/, 'una volta per giocatore, e non per chi non ha il login');
     assert.match(ui, /caricaStile\(firebase\.database\(\), id\)/);
     assert.match(ui, /if \(cpu && cpu\.cerebro\) cpu\.cerebro\.impostaAvversario\(profilo\);/);
-    assert.match(ui, /studiaGiocatore\(config\.p1 && config\.p1\.id\);\s*cpu\.cerebro = nuovoCervello\('p2', \{[^}]*avversario: stileCpu\.profilo \|\| true \}\);/, 'il cervello parte con le abitudini, o con la media della lega');
+    assert.match(ui, /studiaGiocatore\(config\.p1 && config\.p1\.id\);[^\n]*\n\s*ricordaLaPartita\(\);[^\n]*\n\s*cpu\.cerebro = nuovoCervello\('p2', \{[^}]*avversario: stileCpu\.profilo \|\| true[^}]*\}\);/, 'il cervello parte con le abitudini, o con la media della lega');
 });
 
 test('nuovoTeamCpu: un team legale, nuovo a ogni chiamata, numerato "Team 1", "Team 2"...', async () => {
@@ -302,7 +302,7 @@ test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori
     assert.match(ui, /if \(cpu && lato === 'p2'\) cpu\.errori\+\+/, 'dopo un rifiuto prova la scelta successiva');
     assert.match(ui, /richiesta\.rqid !== cpu\.rqid/, 'ogni richiesta nuova riparte dalla scelta migliore');
     assert.match(ui, /else if \(cpu\) \{\s*mostraFineCpu\(vincitore\);/);
-    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2', \{ piano: cpu\.team && cpu\.team\.piano, meccaniche: meccanicheDelFormato\(cpu\.giocatore && cpu\.giocatore\.regolamento\), avversario: stileCpu\.profilo \|\| true \}\)/,
+    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2', \{ piano: cpu\.team && cpu\.team\.piano, meccaniche: meccanicheDelFormato\(cpu\.giocatore && cpu\.giocatore\.regolamento\), avversario: stileCpu\.profilo \|\| true, memoria: cpu\.conMemoria \? cpu\.memoria : null \}\)/,
         'un cervello nuovo a ogni partita, che conosce il piano del team, le meccaniche di generazione del formato e le abitudini di chi gioca');
     // il giocatore non vede il team della CPU (solo le specie, come in una partita vera)
     assert.match(ui, /openSheet: false,\s*latiNoti: \['p1'\]/);
@@ -313,7 +313,7 @@ test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori
 test('battle-ui.js: il team della CPU compare ovunque col nome neutro, mai col suo nome vero', () => {
     const ui = leggi('battle-ui.js');
     assert.match(ui, /config\.p2\.nomeTeam = nomeNeutro\(team\)/);
-    assert.match(ui, /return `\$\{config\.p1\.nomeTeam\} vs \$\{config\.p2\.nomeTeam\}\$\{nota \? ` · \$\{nota\}` : ''\}`/, 'anche nel cartello di fine partita');
+    assert.match(ui, /return `\$\{config\.p1\.nomeTeam\} vs \$\{config\.p2\.nomeTeam\}\$\{note \? ` · \$\{note\}` : ''\}`/, 'anche nel cartello di fine partita');
     assert.match(ui, /mostraEsito\(titolo, \{ sotto: riepilogoFineCpu\(\), azioni: azioniCpu\(\) \}\)/);
     assert.ok(!/cpu\.team\.nome/.test(ui), 'nessun punto legge il nome vero del team della CPU');
     assert.ok(!/config\.p2\.nomeTeam = t\.nome/.test(ui));
