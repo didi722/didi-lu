@@ -74,13 +74,16 @@
     // ---------------------------------------------------------------------------------
     function crea(opz = {}) {
         const alDecisione = typeof opz.alDecisione === 'function' ? opz.alDecisione : null;
+        const alBersaglio = typeof opz.alBersaglio === 'function' ? opz.alBersaglio : null;
         const T = {
             turno: 0, fase: '', iniziata: false, doppio: false,
             attivo: {},          // 'p1a' -> { nick, pct, stato, entrata (turno in cui è entrato) }
             dim: { p1: 0, p2: 0 }, caduti: { p1: 0, p2: 0 },
             visti: { p1: new Set(), p2: new Set() },
             scatto: {},          // 'p1a' -> { f, categoria } la situazione del turno e cosa ha scelto
-            contestoAttuale: {}
+            contestoAttuale: {},
+            bersagli: {},        // 'p1a' -> com'è all'inizio del turno chi può essere colpito: { potenziato, psBassi, nuovo } (per il bersaglio scelto, vedi tabellaBersagli)
+            attacchiDelTurno: {} // 'p1' -> i bersagli (posizioni) scelti dai suoi Pokémon con un attacco a bersaglio singolo in questo turno
         };
 
         const posti = lato => (T.doppio ? ['a', 'b'] : ['a']).map(x => lato + x);
@@ -109,6 +112,14 @@
         function apriTurno() {
             T.scatto = {};
             T.contestoAttuale = {};
+            T.bersagli = {};
+            T.attacchiDelTurno = {};
+            for (const pos of Object.keys(T.attivo)) {
+                const m = T.attivo[pos];
+                if (!m) continue;
+                const b = m.boost || {};
+                T.bersagli[pos] = { potenziato: Math.max(b.atk || 0, b.spa || 0, b.spe || 0) > 0, psBassi: m.pct < 34, nuovo: T.turno > 1 && m.entrata === T.turno - 1 };
+            }
             for (const lato of ['p1', 'p2']) {
                 for (const pos of posti(lato)) {
                     const f = caratteristiche(pos);
@@ -147,14 +158,24 @@
                     if (tipo === 'switch' && T.fase === 'scelte' && T.turno >= 1) registra(id.pos, 'cambio', String(p[3] || '').split(',')[0]);
                     const ps = leggiPs(p[4]) || { pct: 100, stato: '' };
                     T.visti[id.lato].add(idDi(String(p[3] || '').split(',')[0]) + '|' + id.nick);
-                    T.attivo[id.pos] = { nick: id.nick, pct: ps.pct, stato: ps.stato, entrata: T.turno };
+                    T.attivo[id.pos] = { nick: id.nick, pct: ps.pct, stato: ps.stato, entrata: T.turno, boost: {} };
                     break;
                 }
                 case 'move': {
                     const id = leggiIdent(p[2]);
                     if (!id || !id.pos || p.some(x => String(x).startsWith('[from]'))) break;
                     const cl = AzioniMosse ? AzioniMosse.classeDi(p[3]) : 'attacco';
+                    const primaDecisione = !!(T.scatto[id.pos] && !T.scatto[id.pos].categoria);
                     registra(id.pos, cl === 'attacco' ? 'attacco' : cl === 'protezione' ? 'protezione' : 'altro', String(p[3] || ''));
+                    // un attacco a bersaglio singolo contro un avversario (non a più bersagli, non contro il compagno): chi sceglie di colpire?
+                    const bers = leggiIdent(p[4]);
+                    if (primaDecisione && cl === 'attacco' && T.doppio && bers && bers.pos && bers.lato !== id.lato && !p.some(x => String(x).startsWith('[spread]'))) {
+                        const avversari = posti(bers.lato).filter(q => T.bersagli[q]);
+                        if (avversari.length === 2) {
+                            (T.attacchiDelTurno[id.lato] = T.attacchiDelTurno[id.lato] || []).push(bers.pos);
+                            if (alBersaglio) alBersaglio({ lato: id.lato, pos: id.pos, turno: T.turno, scelto: bers.pos, avversari: avversari.map(q => Object.assign({ pos: q }, T.bersagli[q])), compagni: (T.attacchiDelTurno[id.lato] || []).slice() });
+                        }
+                    }
                     break;
                 }
                 case 'faint': {
@@ -169,6 +190,23 @@
                     const m = id && id.pos && T.attivo[id.pos];
                     const ps = leggiPs(p[3]);
                     if (m && ps && !ps.ko) { m.pct = ps.pct; if (ps.stato) m.stato = ps.stato; }
+                    break;
+                }
+                case '-boost': case '-unboost': case '-setboost': {
+                    const id = leggiIdent(p[2]);
+                    const m = id && id.pos && T.attivo[id.pos];
+                    const stat = String(p[3] || '');
+                    if (m && stat) {
+                        m.boost = m.boost || {};
+                        const n = parseInt(p[4], 10) || 0;
+                        m.boost[stat] = tipo === '-setboost' ? n : (m.boost[stat] || 0) + (tipo === '-boost' ? n : -n);
+                    }
+                    break;
+                }
+                case '-clearboost': case '-clearnegativeboost': {
+                    const id = leggiIdent(p[2]);
+                    const m = id && id.pos && T.attivo[id.pos];
+                    if (m) m.boost = {};
                     break;
                 }
                 case '-status': {
@@ -245,6 +283,43 @@
             const n = sel.length;
             return { nome: r.nome, n, attacco: n ? conto.attacco / n : 0, protezione: n ? conto.protezione / n : 0, cambio: n ? conto.cambio / n : 0, altro: n ? conto.altro / n : 0 };
         });
+    }
+
+    /**
+     * Chi sceglie di colpire: per ogni attacco a bersaglio singolo di un Pokémon in un doppio contro uno dei due avversari in campo, com'erano i due avversari a inizio
+     * turno (potenziato = attacco, attacco speciale o velocità sopra zero; PS bassi = meno di un terzo; appena entrato) e chi è stato colpito.
+     * `idSet` distingue i set quando se ne mettono insieme più (serve a riconoscere i due attacchi dello stesso turno). Ogni elemento:
+     * { set, lato, turno, scelto: 'p2a', avversari: [{ pos, potenziato, psBassi, nuovo }, ...] }
+     */
+    function bersagli(log, idSet = 0) {
+        const righe = Array.isArray(log) ? log : String(log || '').split('\n');
+        const out = [];
+        const t = crea({ alBersaglio: r => out.push({ set: idSet, lato: r.lato, turno: r.turno, scelto: r.scelto, avversari: r.avversari }) });
+        for (const r of righe) t.riga(r);
+        return out;
+    }
+
+    /**
+     * Le percentuali dei bersagli: [{ nome, n, quota }]. Con due avversari in campo, a caso la quota sarebbe il 50%.
+     *   fuocoConcentrato   nei turni in cui due Pokémon dello stesso lato attaccano con mosse a bersaglio singolo: quante volte colpiscono lo stesso
+     *   vsPotenziato       quando uno solo dei due avversari è potenziato: quante volte è lui il bersaglio (idem vsPsBassi, vsAppenaEntrato)
+     */
+    function tabellaBersagli(lista) {
+        const righe = [];
+        const gruppi = {};
+        for (const r of lista || []) (gruppi[`${r.set}|${r.lato}|${r.turno}`] = gruppi[`${r.set}|${r.lato}|${r.turno}`] || []).push(r);
+        const coppie = Object.values(gruppi).filter(g => g.length >= 2);
+        righe.push({ nome: 'fuocoConcentrato', n: coppie.length, quota: coppie.length ? coppie.filter(g => g[0].scelto === g[1].scelto).length / coppie.length : 0 });
+        for (const [nome, f] of [['vsPotenziato', 'potenziato'], ['vsPsBassi', 'psBassi'], ['vsAppenaEntrato', 'nuovo']]) {
+            const sel = (lista || []).filter(r => r.avversari.length === 2 && r.avversari[0][f] !== r.avversari[1][f]);
+            const giusti = sel.filter(r => (r.avversari.find(a => a.pos === r.scelto) || {})[f]).length;
+            righe.push({ nome, n: sel.length, quota: sel.length ? giusti / sel.length : 0 });
+        }
+        return righe;
+    }
+
+    function tabellaBersagliInTesto(righe) {
+        return righe.map(r => `${r.nome.padEnd(18)} ${String(r.n).padStart(6)}   ${(100 * r.quota).toFixed(1).padStart(5)}%`).join('\n');
     }
 
     /** La tabella() in testo, per i log e le prove */
@@ -426,7 +501,7 @@
         const regole = { singoli: null, doppi: null };
         const validazione = {};
         // come giocano le persone, per situazione (solo per i log: non si salva)
-        const tabelle = { singoli: tabella(grezzi, { doppio: false }), doppi: tabella(grezzi, { doppio: true }) };
+        const tabelle = { singoli: tabella(grezzi, { doppio: false }), doppi: tabella(grezzi, { doppio: true }), bersagli: tabellaBersagli(set.flatMap((x, i) => bersagli(x.log, i))) };
         for (const doppio of [false, true]) {
             const chiave = doppio ? 'doppi' : 'singoli';
             const usati = grezzi.filter(c => c.doppio === doppio);
@@ -448,6 +523,6 @@
 
     return {
         VERSIONE, CATEGORIE, CARATTERISTICHE, MINIMO_DECISIONI, PENALITA,
-        crea, decisioni, tabella, tabellaInTesto, addestra, moltiplicatori, applica, campioniDeiSet, validaIncrociata, costruisci
+        crea, decisioni, tabella, tabellaInTesto, bersagli, tabellaBersagli, tabellaBersagliInTesto, addestra, moltiplicatori, applica, campioniDeiSet, validaIncrociata, costruisci
     };
 });

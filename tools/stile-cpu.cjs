@@ -42,6 +42,7 @@ const formato = val('formato', 'doppio'), partite = parseInt(val('partite', '120
         f = 'gen9doublescustomgame@@@Picked Team Size = 4,HP Percentage Mod,Terastal Clause';
     }
     const tutte = [];
+    const colpi = [];
     let turni = 0;
     for (let i = 0; i < partite; i++) {
         const t1 = squadre ? squadre[(i * 7 + 3) % squadre.length] : sim.Teams.generate(f, { seed: [i * 7 + 31, 3, 5, 7] });
@@ -50,10 +51,12 @@ const formato = val('formato', 'doppio'), partite = parseInt(val('partite', '120
         const c1 = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(i * 3 + 1), parametri, ...extra }), c2 = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(i * 5 + 2), parametri, ...extra });
         const e = await giocaPartita({ sim, formato: f, team1: t1, team2: t2, agente1: { tipo: 'cpu', cerebro: c1 }, agente2: { tipo: 'cpu', cerebro: c2 }, casuale: creaCasuale(i * 11 + 9), seme: [i + 1, 7, 11, 13] });
         tutte.push(...Sit.decisioni(e.righe));
+        colpi.push(...Sit.bersagli(e.righe, i));
         turni += e.turni;
     }
     console.log(`CPU contro CPU, ${formato}${squadreTipo ? ' (' + squadreTipo + ')' : ''}${modello ? ', con il modello dell\'avversario' : ''}: ${partite} partite, ${(turni / partite).toFixed(1)} turni`);
     console.log(Sit.tabellaInTesto(Sit.tabella(tutte, { doppio: formato !== 'singolo' })));
+    if (formato !== 'singolo') console.log(`\nChi colpisce la CPU (a caso sarebbe il 50%):\n${Sit.tabellaBersagliInTesto(Sit.tabellaBersagli(colpi))}`);
     // quali mosse di stato (e quali cambi) sono dietro alle percentuali, nelle situazioni più lontane dalle persone
     for (const nome of ['soloInCampo', 'finePartita']) {
         const j = Sit.CARATTERISTICHE.indexOf(nome);

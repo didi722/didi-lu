@@ -81,6 +81,8 @@ async function main() {
       for (const k of ['singoli', 'doppi']) if (situazioni[k] && situazioni[k].pesi) console.log(`Pesi ${k}: ${JSON.stringify(situazioni[k].pesi)}`);
       // come giocano le persone, per situazione: serve a confrontarle con la CPU (tools/stile-cpu.cjs stampa la stessa tabella)
       if (r.tabelle) for (const k of ['singoli', 'doppi']) if (r.tabelle[k][0].n) console.log(`\nCome giocano le persone, ${k}:\n${Situazioni.tabellaInTesto(r.tabelle[k])}\n`);
+      // chi scelgono di colpire nel doppio (a caso sarebbe il 50%)
+      if (r.tabelle && r.tabelle.bersagli) console.log(`Chi colpiscono le persone, doppi (con due avversari in campo, a caso sarebbe il 50%):\n${Situazioni.tabellaBersagliInTesto(r.tabelle.bersagli)}\n`);
     }
   } catch (e) {
     // le abitudini di ognuno si aggiornano comunque; le regole sulle situazioni restano quelle di prima
