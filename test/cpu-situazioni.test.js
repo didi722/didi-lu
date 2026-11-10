@@ -195,3 +195,59 @@ test('versione: cambia quando cambiano le caratteristiche (le regole salvate si 
     assert.equal(S.CARATTERISTICHE.length, 9);
 });
 
+
+// ---------- chi si sceglie di colpire ----------
+const LOG_BERSAGLI = [
+    '|gametype|doubles', '|teamsize|p1|4', '|teamsize|p2|4', '|start',
+    '|switch|p1a: Illumise|Illumise, L50|100/100', '|switch|p1b: Crustle|Crustle, L50|100/100',
+    '|switch|p2a: Garchomp|Garchomp, L50|100/100', '|switch|p2b: Dragonite|Dragonite, L50|100/100',
+    '|turn|1',
+    '|move|p1a: Illumise|Rain Dance|p1a: Illumise', '|move|p1b: Crustle|Shell Smash|p1b: Crustle',
+    '|-boost|p1b: Crustle|atk|2', '|-boost|p1b: Crustle|spe|2', '|-unboost|p1b: Crustle|def|1',
+    '|move|p2a: Garchomp|Protect|p2a: Garchomp', '|move|p2b: Dragonite|Protect|p2b: Dragonite', '|upkeep',
+    '|turn|2',
+    '|move|p2a: Garchomp|Dragon Claw|p1b: Crustle', '|move|p2b: Dragonite|Dragon Claw|p1b: Crustle',          // tutti e due sul potenziato
+    '|move|p1b: Crustle|X-Scissor|p2a: Garchomp', '|move|p1a: Illumise|Bug Buzz|p2b: Dragonite',
+    '|-damage|p1b: Crustle|20/100', '|upkeep',
+    '|turn|3',
+    '|move|p2a: Garchomp|Dragon Claw|p1a: Illumise', '|move|p2b: Dragonite|Dragon Claw|p1b: Crustle',          // uno per parte: Crustle ha pochi PS
+    '|move|p2b: Dragonite|Rock Slide|p1a: Illumise|[spread] p1a,p1b',                                         // a più bersagli: non conta
+    '|upkeep'
+];
+
+test('bersagli: ogni attacco a bersaglio singolo contro un avversario, con com\'erano i due avversari a inizio turno; non contano mosse a più bersagli, mosse contro il compagno, di stato', () => {
+    const b = S.bersagli(LOG_BERSAGLI, 4);
+    const t2 = b.filter(x => x.turno === 2 && x.lato === 'p2');
+    assert.equal(t2.length, 2);
+    assert.deepEqual(t2.map(x => x.scelto), ['p1b', 'p1b']);
+    assert.ok(t2.every(x => x.set === 4));
+    const [illumise, crustle] = t2[0].avversari;
+    assert.equal(illumise.potenziato, false);
+    assert.equal(crustle.potenziato, true, 'Shell Smash: attacco e velocità sopra zero (le difese abbassate non contano)');
+    assert.equal(b.filter(x => x.lato === 'p1' && x.turno === 2).length, 2, 'anche i miei attacchi singoli contano');
+    const t3 = b.filter(x => x.turno === 3 && x.lato === 'p2');
+    assert.equal(t3.length, 2, 'la Rock Slide a più bersagli non conta come attacco a bersaglio singolo');
+    assert.equal(t3[0].avversari.find(a => a.pos === 'p1b').psBassi, true, 'Crustle è a 20/100 a inizio turno 3');
+    assert.equal(t3[0].avversari.find(a => a.pos === 'p1a').psBassi, false);
+    assert.deepEqual(S.bersagli('', 0), []);
+    assert.deepEqual(S.bersagli(null), []);
+});
+
+test('tabellaBersagli: fuoco concentrato e quanto si colpisce chi è potenziato, ha pochi PS o è appena entrato (la partita finta: due attacchi sul potenziato, poi uno per parte)', () => {
+    const t = S.tabellaBersagli(S.bersagli(LOG_BERSAGLI, 0));
+    const riga = nome => t.find(r => r.nome === nome);
+    // turno 2: i miei p2 colpiscono lo stesso (1 su 1); p1 colpiscono due bersagli diversi; turno 3: p2 colpiscono due diversi
+    assert.deepEqual([riga('fuocoConcentrato').n, riga('fuocoConcentrato').quota], [3, 1 / 3]);
+    // Crustle resta potenziato anche al turno 3: gli attacchi di p2 sono quattro (due per turno), tre su di lui; quelli di p1 non hanno un solo avversario potenziato
+    assert.deepEqual([riga('vsPotenziato').n, riga('vsPotenziato').quota], [4, 0.75]);
+    assert.ok(riga('vsPsBassi').n >= 2);
+    assert.match(S.tabellaBersagliInTesto(t), /fuocoConcentrato\s+3\s+33\.3%/);
+    assert.deepEqual(S.tabellaBersagli([]).map(r => r.n), [0, 0, 0, 0]);
+    assert.deepEqual(S.tabellaBersagli(null).map(r => r.quota), [0, 0, 0, 0]);
+});
+
+test('costruisci porta anche la tabella dei bersagli (per i log del workflow)', () => {
+    const c = S.costruisci([{ id: 'a', log: LOG_BERSAGLI }]);
+    assert.ok(Array.isArray(c.tabelle.bersagli));
+    assert.equal(c.tabelle.bersagli[0].nome, 'fuocoConcentrato');
+});
