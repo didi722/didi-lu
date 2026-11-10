@@ -20,7 +20,7 @@
 //
 //   CpuAvversario.CATEGORIE, QUOTE_LEGA
 //   CpuAvversario.daStile(stile)               -> { giocatore: { n, quote } | null, lega: { n, quote } | null, set }   (da players/<id>/stile; null = nessun dato)
-//   CpuAvversario.crea(profilo, opzioni?)      -> il modello: .quote() .osserva(categoria) .visti() .nVisti() .partenza()
+//   CpuAvversario.crea(profilo, opzioni?)      -> il modello: .quote() .osserva(categoria) .visti() .nVisti() .nPrecedenti() .partenza()
 //   CpuAvversario.scenari(quote, slot, opz)    -> [{ peso, categorie: { [slot]: categoria }, variante }]  gli scenari di un turno
 //   CpuAvversario.categoriaMossa(mossa)        -> 'attacco' | 'protezione' | 'altro'   (per le mosse viste in battaglia)
 //
@@ -40,6 +40,7 @@
 
     const FORZA_LEGA = 100;        // decisioni di un allenatore che valgono quanto la media della lega (con 100 decisioni, metà e metà)
     const FORZA_PARTITA = 40;      // decisioni viste in partita che valgono quanto il punto di partenza
+    const FORZA_PRECEDENTI = 60;   // al massimo quante decisioni delle partite di prima (memoria della serie) contano come punto di partenza
 
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
@@ -92,7 +93,9 @@
 
     /**
      * Il modello dell'avversario per una partita. profilo: il risultato di daStile (o null: si parte dalla media della lega).
-     * opzioni: { forzaLega, forzaPartita }.
+     * opzioni: { forzaLega, forzaPartita, precedenti }. precedenti: le decisioni viste nelle partite di prima contro lo stesso allenatore
+     * ({ attacco, protezione, cambio, altro }, dalla memoria della CPU: cpu-memoria.js); si sommano a quelle di questa partita, ma al massimo
+     * valgono `forzaPrecedenti` decisioni, così durante la partita ci si adatta ancora.
      */
     function crea(profilo, opzioni = {}) {
         const forzaLega = opzioni.forzaLega != null ? opzioni.forzaLega : FORZA_LEGA;
@@ -101,12 +104,23 @@
         let situazioni = profilo && profilo.situazioni ? profilo.situazioni : null;
         const visti = { attacco: 0, protezione: 0, cambio: 0, altro: 0 };
         let nVisti = 0;
+        // le partite di prima: le decisioni viste, tenute entro un tetto (le proporzioni restano)
+        const forzaPrec = opzioni.forzaPrecedenti != null ? opzioni.forzaPrecedenti : FORZA_PRECEDENTI;
+        const prec = { attacco: 0, protezione: 0, cambio: 0, altro: 0 };
+        let nPrec = 0;
+        if (opzioni.precedenti && typeof opzioni.precedenti === 'object') {
+            const somma = CATEGORIE.reduce((t, k) => t + Math.max(0, num(opzioni.precedenti[k])), 0);
+            if (somma > 0) {
+                const f = Math.min(1, forzaPrec / somma);
+                for (const k of CATEGORIE) { prec[k] = Math.max(0, num(opzioni.precedenti[k])) * f; nPrec += prec[k]; }
+            }
+        }
         return {
-            /** Le quote di adesso: la partenza, più quello che si è visto fare in questa partita */
+            /** Le quote di adesso: la partenza, più quello che si è visto fare nelle partite di prima e in questa */
             quote() {
-                if (!nVisti) return Object.assign({}, partenza);
+                if (!nVisti && !nPrec) return Object.assign({}, partenza);
                 const out = {};
-                for (const k of CATEGORIE) out[k] = (forzaPartita * partenza[k] + visti[k]) / (forzaPartita + nVisti);
+                for (const k of CATEGORIE) out[k] = (forzaPartita * partenza[k] + prec[k] + visti[k]) / (forzaPartita + nPrec + nVisti);
                 return normalizza(out);
             },
             /** Una decisione vista in partita ('attacco' | 'protezione' | 'cambio' | 'altro') */
@@ -115,6 +129,7 @@
             },
             visti: () => Object.assign({}, visti),
             nVisti: () => nVisti,
+            nPrecedenti: () => nPrec,
             partenza: () => Object.assign({}, partenza),
             /** Le regole sulle situazioni del profilo ({ singoli, doppi }), o null */
             situazioni: () => situazioni,
@@ -187,5 +202,5 @@
         return tenuti.map(s => ({ peso: s.peso / somma, categorie: s.categorie, variante: s.variante }));
     }
 
-    return { CATEGORIE, QUOTE_LEGA, FORZA_LEGA, FORZA_PARTITA, normalizza, quoteDaAzioni, daStile, stima, crea, categoriaMossa, scenari };
+    return { CATEGORIE, QUOTE_LEGA, FORZA_LEGA, FORZA_PARTITA, FORZA_PRECEDENTI, normalizza, quoteDaAzioni, daStile, stima, crea, categoriaMossa, scenari };
 });

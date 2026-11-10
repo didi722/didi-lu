@@ -18,6 +18,7 @@ import './cpu-calcolo.js';       // self.CpuCalcolo
 import './azioni-mosse.js';      // self.AzioniMosse (come le statistiche dividono le mosse: attacco, protezione...)
 import './cpu-avversario.js';    // self.CpuAvversario (le abitudini di chi ha davanti)
 import './cpu-situazioni.js';    // self.CpuSituazioni (come cambiano le abitudini nelle varie situazioni, imparato dai replay della lega)
+import './cpu-memoria.js';       // self.CpuMemoria (cosa la CPU ricorda di come hai giocato con un team nelle partite di una serie)
 import './meta-lega.js';         // self.MetaLega (cosa si gioca nella lega: Pokémon, mosse, Helping Hand, Protezioni...)
 import './cpu-ia.js';            // self.CpuIa
 import './formato-pool.js';      // self.FormatoPool
@@ -104,8 +105,10 @@ export async function caricaMetaLega(db, regolamento) {
 // non le ammette (generationalMechanics spento), altrimenti ci pensa il simulatore a offrirle (e a scrivere nel log le clausole che le vietano)
 // `avversario`: le abitudini di chi gioca contro (il risultato di caricaStile): con quelle la CPU non prevede più solo il suo attacco migliore ma anche se
 // si para, cambia o usa una mossa di stato; senza (null) è la CPU di sempre.
-export function nuovoCervello(lato = 'p2', { piano = null, meccaniche, avversario = null } = {}) {
-    return self.CpuIa.crea({ Dex, lato, piano, meccaniche, avversario });
+// `memoria`: cosa la CPU ha visto di come hai giocato con questo team nelle partite di prima (cpu-memoria.js, solo per la prova di un team contro la CPU): i tuoi set,
+// cosa fanno di solito i tuoi Pokémon, chi porti e chi metti in apertura. Senza (null) la prima partita di una serie, o fuori dalla prova di un team.
+export function nuovoCervello(lato = 'p2', { piano = null, meccaniche, avversario = null, memoria = null } = {}) {
+    return self.CpuIa.crea({ Dex, lato, piano, meccaniche, avversario, memoria });
 }
 
 // Le abitudini di un giocatore, nella forma che il cervello legge (cpu-avversario.js): quelle sue tirate verso la media della lega se ha pochi set, la

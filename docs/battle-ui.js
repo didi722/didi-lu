@@ -257,7 +257,9 @@ async function preparaCpu(chiaveTeam) {
     document.body.classList.add('prova-cpu');
     cpu = {
         cerebro: null, team: primo.team, giocatore: dati, errori: 0, rqid: null,
-        chiaveTeam, modificabile: null, avviso: '', problemi: [], ultimoVincitore: null, generando: false
+        chiaveTeam, modificabile: null, avviso: '', problemi: [], ultimoVincitore: null, generando: false,
+        // la memoria della serie: la CPU si ricorda come hai giocato con questo team nelle partite di prima (rivincita, un altro team della CPU) finché resti qui
+        conMemoria: true, memoria: null
     };
     config = {
         formato: dati.formato,
@@ -464,6 +466,18 @@ function schedeCpu() {
     });
 }
 
+// La memoria della serie: a fine partita (o all'avvio della prossima, se la pagina è stata lasciata a metà) quello che la CPU ha visto del tuo team entra nella sua
+// memoria, che dura finché resti su questa pagina (rivincita, "Another random CPU team"). Solo nella prova di un team del Box: mai nei Random, nelle palestre, online.
+function ricordaLaPartita() {
+    if (!cpu || !cpu.conMemoria || cpu.palestra || cpu.random || !cpu.cerebro || cpu.cerebro.memorizzata || !self.CpuMemoria) return;
+    try {
+        const vista = cpu.cerebro.memoriaDellaPartita && cpu.cerebro.memoriaDellaPartita();
+        if (vista) { cpu.memoria = self.CpuMemoria.fondi(cpu.memoria, vista); cpu.cerebro.memorizzata = true; }
+    } catch (errore) {
+        console.warn("The CPU couldn't update what it remembers of your team", errore);
+    }
+}
+
 // I pulsanti di fine partita: rivincita, un altro team della CPU, modifica del proprio team (solo se si può) e ritorno al Box.
 // Su schermi larghi stanno nel cartello sullo schermo, sui telefoni (dove il cartello è piccolo) nel pannello sotto lo
 // schermo: vedi style-battle.css
@@ -491,11 +505,16 @@ function azioniCpu() {
 function riepilogoFineCpu() {
     if (cpu.random) return `${cpu.random.nome} · random teams, new every battle`;
     const nota = cpu.avviso || (cpu.modificabile === false ? '🔒 Locked team: it can\'t be edited' : '');
-    return `${config.p1.nomeTeam} vs ${config.p2.nomeTeam}${nota ? ` · ${nota}` : ''}`;
+    // la CPU ha imparato qualcosa da questa serie di partite: lo dice (si perde uscendo dalla pagina)
+    const visti = cpu.conMemoria && cpu.memoria ? cpu.memoria.partite : 0;
+    const impara = visti ? `🧠 The CPU remembers how you play this team (${visti} game${visti > 1 ? 's' : ''})` : '';
+    const note = [nota, impara].filter(Boolean).join(' · ');
+    return `${config.p1.nomeTeam} vs ${config.p2.nomeTeam}${note ? ` · ${note}` : ''}`;
 }
 
 function mostraFineCpu(vincitore) {
     cpu.ultimoVincitore = vincitore;
+    ricordaLaPartita();
     if (cpu.palestra) return mostraFinePalestra(vincitore);
     const vinto = !!vincitore && vincitore === config.p1.nome;
     const titolo = !vincitore ? "It's a tie!" : vinto ? 'You win!' : 'The CPU wins!';
@@ -590,6 +609,7 @@ async function dopoModificaTeam() {
     if (dati.formato !== config.formato) return location.reload();
     cpu.giocatore = dati;
     cpu.problemi = dati.problemi;
+    cpu.memoria = null;           // il team è cambiato: ciò che la CPU ricordava non vale più
     config.p1.team = dati.team.testo;
     config.p1.nomeTeam = dati.team.nome;
     cpu.avviso = dati.problemi.length ? `Team updated, but it can't be used here: ${dati.problemi.join('; ')}` : 'Team updated ✓';
@@ -1577,7 +1597,8 @@ function avviaBattaglia() {
     // ...e quali meccaniche di generazione ammette il formato (Dynamax, Mosse Z, Mega, Teracristal): se è spento, la CPU non ci pensa nemmeno
     if (cpu) {
         studiaGiocatore(config.p1 && config.p1.id);
-        cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento), avversario: stileCpu.profilo || true });
+        ricordaLaPartita();      // la partita di prima (se è stata giocata) entra nella memoria della serie
+        cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento), avversario: stileCpu.profilo || true, memoria: cpu.conMemoria ? cpu.memoria : null });
         cpu.errori = 0; cpu.rqid = null;
     }
     battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2, vantaggio: cpu && cpu.palestra && cpu.palestra.vantaggio ? { id: cpu.palestra.vantaggio.id, lato: 'p2', nome: cpu.palestra.nome } : null });

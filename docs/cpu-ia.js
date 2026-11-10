@@ -24,6 +24,11 @@
 // abitudini vengono dai suoi set giocati sul sito (players/<id>/stile) e si correggono con quello che fa in partita. Senza (opzione
 // `avversario` assente) la previsione è quella di sempre.
 //
+// La memoria della serie (cpu-memoria.js): chi prova un team contro la CPU e rigioca (rivincita, un altro team della CPU) è sempre lo stesso team. Con
+// l'opzione `memoria` il cervello parte sapendo come l'avversario ha giocato nelle partite di prima (i suoi set, cosa fa di solito ogni Pokémon e cosa fa
+// al primo turno in campo, chi porta e chi mette in apertura, quanto si para o cambia) e alla fine della partita dice cosa ha visto di nuovo
+// (memoriaDellaPartita). Senza l'opzione tutto è come prima.
+//
 // Strategia del team: ogni team ha un piano (Tailwind, Stanza Magica, pioggia, sole, sabbia, neve, bilanciato...) deciso da
 // team-cpu.js. L'IA lo legge dai set (chi lo imposta, chi ne approfitta) e lo applica: in anteprima porta il nucleo del piano e
 // manda in campo per primo chi lo imposta; in battaglia valuta di più Tailwind, Stanza Magica e il proprio meteo, anche
@@ -35,9 +40,9 @@
 // Il Dex di @pkmn/sim arriva da fuori. Funziona nel browser (window.CpuIa) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'), require('./cpu-avversario.js'), require('./cpu-situazioni.js'));
-    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo, radice.CpuAvversario, radice.CpuSituazioni);
-})(typeof self !== 'undefined' ? self : this, function (K, C, Avv, Sit) {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'), require('./cpu-avversario.js'), require('./cpu-situazioni.js'), require('./cpu-memoria.js'));
+    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo, radice.CpuAvversario, radice.CpuSituazioni, radice.CpuMemoria);
+})(typeof self !== 'undefined' ? self : this, function (K, C, Avv, Sit, Mem) {
     'use strict';
 
     const id = K.id;
@@ -115,6 +120,13 @@
     //                       si para con uno, il successivo con l'altro). 0 = sempre il migliore
     //   antMeccanica        anteprima: portare chi ha il Cristallo Z (se il formato ammette le Mosse Z) vale questo; chi ha la Megapietra
     //                       si valuta già con le statistiche della Mega (se il formato ammette la Mega Evoluzione)
+    // Con la memoria della serie (opzione `memoria`):
+    //   memoria              1 = la si usa se c'è, 0 = la si ignora
+    //   memoriaPesoMosse     quanto pesa, nella mossa che si prevede da un suo Pokémon, ciò che di solito gioca (al massimo questo valore in più, in unità di "danno")
+    //   memoriaFiducia       dopo quanti usi osservati la memoria di un Pokémon conta a metà (n / (n + fiducia))
+    //   memoriaForzaCategorie  quanti usi "di partenza" valgono le abitudini medie contro quelle viste di un Pokémon (attacco, protezione, altro) nel decidere cosa farà
+    //   memoriaPesoPortato, memoriaPesoLead
+    //                        in anteprima: quanto conta chi di solito porta e chi di solito mette in apertura (i Pokémon mai portati valgono meno nella scelta dei miei)
     const PARAMETRI_BASE = {
         penalitaProt: 1.5, bonusSE2: 0.4, bonusSE4: 0.6, malusRes05: 0.3, malusRes025: 0.5, pesoPosizione: 0.3,
         rispostaAlCambio: 0.4, rispostaAlCambioDoppio: 0.25, presunteDex: 0.5,
@@ -122,7 +134,8 @@
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.3, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5,
-        pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40
+        pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
+        memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2
     };
     // Abilità che agiscono quando il Pokémon entra in campo
     const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
@@ -181,6 +194,7 @@
             this.par = Object.assign({}, PARAMETRI_BASE, opzioni.parametri || {});
             this.pianoDato = opzioni.piano || null;     // il piano del team deciso da chi lo ha composto (team-cpu.js), se c'è
             // le abitudini di chi ha davanti (cpu-avversario.js): il profilo da players/<id>/stile (daStile) oppure true (la media della lega); senza, nessun modello
+            this.memoria = Mem && opzioni.memoria && this.par.memoria > 0 ? Mem.normalizza(opzioni.memoria) : null;      // cosa si sa dalle partite di prima (cpu-memoria.js)
             this.modelloAvv = null;
             this.impostaAvversario(opzioni.avversario);
             this.meccOpzioni = leggiMeccaniche(opzioni.meccaniche);
@@ -205,13 +219,49 @@
             if (!Avv || !profilo) { if (!profilo) this.modelloAvv = null; return; }
             const p = profilo === true ? null : profilo;
             if (this.modelloAvv) { this.modelloAvv.impostaProfilo(p); return; }
-            this.modelloAvv = Avv.crea(p, { forzaLega: this.par.forzaLegaAvv, forzaPartita: this.par.forzaPartitaAvv });
+            this.modelloAvv = Avv.crea(p, { forzaLega: this.par.forzaLegaAvv, forzaPartita: this.par.forzaPartitaAvv, precedenti: this.memoria && this.memoria.categorie });
         }
 
         /** Cosa pensa dell'avversario: { quote, partenza, visti, nVisti }, o null se non conosce le sue abitudini (per le prove e la diagnosi) */
         modelloAvversario() {
             const m = this.modelloAvv;
             return m ? { quote: m.quote(), partenza: m.partenza(), visti: m.visti(), nVisti: m.nVisti() } : null;
+        }
+
+        /**
+         * Cosa ha visto la CPU di chi ha davanti in questa partita, nella forma della memoria della serie (cpu-memoria.js): per ogni Pokémon della sua squadra se è
+         * sceso in campo, se ha aperto, che mosse ha usato (e quali al primo turno in campo), abilità e strumento; più quanto si è parato, ha cambiato, ha usato mosse
+         * di stato. null se la partita è durata troppo poco per dire qualcosa. Si unisce alla memoria di prima con CpuMemoria.fondi.
+         */
+        memoriaDellaPartita() {
+            if (!Mem || this.turno < 2) return null;
+            const l = this.lati[lato2(this.lato)];
+            const out = { v: Mem.VERSIONE, partite: 1, categorie: this.modelloAvv ? this.modelloAvv.visti() : { attacco: 0, protezione: 0, cambio: 0, altro: 0 }, specie: {} };
+            const record = k => out.specie[k] || (out.specie[k] = { n: 1, portato: 0, apertura: 0, mosse: {}, mosseT1: {}, abilita: null, strumento: null, tera: null });
+            for (const nome of l.squadra || []) { const sp = this.specie(nome); if (sp && sp.name) record(id(sp.name)); }
+            for (const m of Object.values(l.mons)) {
+                const sp = this.specie(m.specieOrig || m.specie);
+                const r = record(id((sp && sp.name) || m.specieOrig || m.specie));
+                r.portato = 1;
+                if (m.apertura) r.apertura = 1;
+                for (const [k, v] of Object.entries(m.usi)) r.mosse[k] = (r.mosse[k] || 0) + v;
+                for (const [k, v] of Object.entries(m.usiT1)) r.mosseT1[k] = (r.mosseT1[k] || 0) + v;
+                // l'abilità solo se è una di quelle della specie (un'abilità presa in prestito da Mummia o Traccia non è la sua)
+                const possibili = sp && sp.abilities ? Object.values(sp.abilities).map(id) : [];
+                if (m.abilita && possibili.includes(m.abilita)) r.abilita = m.abilita;
+                if (m.strumentoVisto) r.strumento = m.strumentoVisto;
+                if (m.tera) r.tera = String(m.tera);
+            }
+            return out;
+        }
+
+        // Cosa so di un Pokémon avversario per prevedere le sue mosse: quello che faceva nelle partite di prima più quello che ha fatto in questa (solo con la memoria della serie)
+        _registroAvv(m) {
+            if (!this.memoria || !m || m.lato === this.lato) return null;
+            const prima = m.memoria;
+            if (!prima && !Object.keys(m.usi).length) return null;
+            const somma = (a, b) => { const o = Object.assign({}, a || {}); for (const [k, v] of Object.entries(b || {})) o[k] = (o[k] || 0) + v; return o; };
+            return { mosse: somma(prima && prima.mosse, m.usi), mosseT1: somma(prima && prima.mosseT1, m.usiT1) };
         }
 
         // Le regole delle situazioni (cpu-situazioni.js) per il tipo di partita in corso, se il profilo dell'avversario le ha
@@ -311,14 +361,27 @@
         }
 
         _nuovoMon(lato, nome, specie, livello) {
-            return {
+            const m = {
                 lato, nome, specie, livello: livello || 100, pct: 100, stato: '', boost: boostVuoti(), mosseViste: new Set(),
                 abilita: null, strumento: null, tera: null, vivo: true, turnoEntrata: this.turno, ultimaMossa: null, protettoNelTurno: -9,
                 posto: -1, megaDi: null, protezioniDiFila: 0, ultimaProtezione: -9,
                 // cosa ha già "non avuto effetto" contro di lui (|-immune|): i tipi delle mosse, e le mosse di stato di chi le ha provate.
                 // Vale finché resta in campo: sotto Illusion il suo tipo vero non si vede, ma una mossa che non fa niente lo dice
-                immuneTipi: new Set(), immuneMosse: new Set()
+                immuneTipi: new Set(), immuneMosse: new Set(),
+                // per la memoria della serie (solo dell'avversario): la specie con cui è entrato (le Mega cambiano), quante volte ha usato ogni mossa
+                // (e quante al primo turno in campo), se ha aperto la partita, lo strumento che aveva, e cosa ricordavo di lui dalle partite di prima
+                specieOrig: specie, usi: {}, usiT1: {}, apertura: false, strumentoVisto: null, memoria: null
             };
+            if (this.memoria && lato !== this.lato) {
+                const r = this.memoria.specie[id(specie)];
+                if (r) {
+                    m.memoria = r;
+                    for (const k of Object.keys(r.mosse)) m.mosseViste.add(k);       // i suoi set li conosco già: le mosse, l'abilità e lo strumento
+                    if (r.abilita) m.abilita = r.abilita;
+                    if (r.strumento) { m.strumento = r.strumento; m.strumentoVisto = r.strumento; }
+                }
+            }
+            return m;
         }
 
         _riga(p) {
@@ -359,6 +422,7 @@
                         m.boost = boostVuoti(); m.turnoEntrata = this.turno; m.ultimaMossa = null; m.posto = pos.slot; m.dinamax = false;
                         m.protezioniDiFila = 0; m.ultimaProtezione = -9;
                     }
+                    if (this.turno === 0 && pos.lato !== this.lato && cmd === 'switch') m.apertura = true;      // in campo prima del turno 1: l'apertura
                     m.specie = d.specie; m.livello = d.livello;
                     const h = leggiHp(p[3]);
                     if (cmd === 'replace' && !p[3]) {
@@ -409,6 +473,11 @@
                     const mossa = id(p[2]);
                     this._ultimaMossa = { da: m.nome, mossa, turno: this.turno };      // serve a capire a cosa si riferisce un |-immune|
                     m.mosseViste.add(mossa);
+                    // per la memoria della serie: ogni mossa scelta (non quelle che partono da sole) e se era il primo turno in campo
+                    if (m.lato !== this.lato && !p.some(x => String(x).startsWith('[from]'))) {
+                        m.usi[mossa] = (m.usi[mossa] || 0) + 1;
+                        if (this._primoTurnoInCampo(m)) m.usiT1[mossa] = (m.usiT1[mossa] || 0) + 1;
+                    }
                     m.ultimaMossa = mossa;
                     if (K.PROTEZIONI.has(mossa) || K.PROTEZIONI_DI_AREA.has(mossa)) {
                         this._registraProtezione(m);
@@ -523,8 +592,12 @@
                     if (cmd === '-immune' && m && p.length === 2) this._imparaImmunita(m);
                     break;
                 }
-                case '-item': { const m = this._mon(p[1]); if (m && p[2]) m.strumento = id(p[2]); break; }
-                case '-enditem': { const m = this._mon(p[1]); if (m) m.strumento = ''; break; }
+                case '-item': {
+                    const m = this._mon(p[1]);
+                    if (m && p[2]) { m.strumento = id(p[2]); if (!m.strumentoVisto && !p.some(x => /\[from\] move:/i.test(String(x)))) m.strumentoVisto = id(p[2]); }
+                    break;
+                }
+                case '-enditem': { const m = this._mon(p[1]); if (m) { if (p[2] && !m.strumentoVisto) m.strumentoVisto = id(p[2]); m.strumento = ''; } break; }
                 case '-terastallize': {
                     const m = this._mon(p[1]);
                     if (m) { m.tera = p[2]; m.immuneTipi.clear(); }
@@ -797,7 +870,8 @@
             const nessunoAvv = !avversari.length;
             const M = miei.map(x => avversari.map(o => {
                 const dato = this._miglioreSu(x.v, o, x.mosse, ctx);
-                const preso = this._miglioreSu(o, x.v, this.mosseAvversario(Object.assign({}, o, { ref: { mosseViste: new Set() } })), ctx);
+                // le sue mosse: senza memoria nessuna è nota (si presume dal tipo); con la memoria della serie quelle che ha già mostrato nelle partite di prima
+                const preso = this._miglioreSu(o, x.v, this.mosseAvversario(this.memoria ? o : Object.assign({}, o, { ref: { mosseViste: new Set() } })), ctx);
                 const prima = C.confrontoVelocita(x.v, o, ctx) > 0;
                 // vantaggio dello scontro: quanto fa (al massimo il 120% dell'avversario), quanto prende, chi muove prima
                 const adv = Math.min(1.2, dato) - 0.85 * Math.min(1.2, preso) + (prima ? 0.25 : -0.1);
@@ -805,7 +879,22 @@
             }));
             // chi fa più paura: pesa di più nella ricerca delle risposte
             const peso = avversari.map((o, j) => 1 + this.par.antPesoMinaccia * 0.5 * Math.min(1.5, miei.reduce((s, x, i) => s + M[i][j].preso, 0) / Math.max(1, n)));
+            // la memoria della serie: chi di solito porta pesa di più, chi non porta mai di meno; chi di solito apre pesa di più nella scelta di chi mandare in campo
+            const aperturaAvv = avversari.map(() => 0);
+            if (this.memoria) {
+                avversari.forEach((o, j) => {
+                    const r = this.memoria.specie[id(o.specie)];
+                    if (!r || !(r.n > 0.3)) return;
+                    const conf = r.n / (r.n + 1.5);
+                    const quota = Math.min(1, r.portato / r.n);
+                    const pp = this.par.memoriaPesoPortato * conf;
+                    peso[j] *= (1 - pp) + pp * 1.5 * quota;
+                    aperturaAvv[j] = conf * Math.min(1, r.apertura / r.n);
+                });
+            }
             const pesoTot = peso.reduce((s, x) => s + x, 0) || 1;
+            const pesoAper = peso.map((w, j) => w * (1 + this.par.memoriaPesoLead * aperturaAvv[j]));
+            const pesoAperTot = pesoAper.reduce((s, x) => s + x, 0) || 1;
             const forza = i => nessunoAvv ? this._bst(miei[i].s.p.details) / 600 : M[i].reduce((s, e) => s + e.adv, 0) / M[i].length;
 
             // i tipi con cui colpiscono (STAB) e quanti dei loro li hanno: servono a non portare 3 Pokémon deboli alla stessa cosa
@@ -871,8 +960,8 @@
             const aperturaContro = idx => {
                 if (nessunoAvv) return idx.reduce((s, i) => s + forza(i), 0) / idx.length;
                 let s = 0;
-                avversari.forEach((o, j) => { s += peso[j] * Math.max(...idx.map(i => M[i][j].adv)); });
-                return s / pesoTot;
+                avversari.forEach((o, j) => { s += pesoAper[j] * Math.max(...idx.map(i => M[i][j].adv)); });
+                return s / pesoAperTot;
             };
             let ordine;
             if (nCampo === 2 && migliore.length >= 2) {
@@ -1287,6 +1376,24 @@
                     const m = s.moltiplicatori || { attacco: 1, protezione: 1, cambio: 1, altro: 1 };
                     s.moltiplicatori = { attacco: m.attacco * (1 - 0.4 * setter.p), protezione: m.protezione, cambio: m.cambio, altro: m.altro * (1 + this.par.pesoSetter * setter.p) };
                 }
+                // la memoria della serie: questo Pokémon, al primo turno in campo (o dopo), si para / attacca / usa mosse di stato più o meno della media
+                const registro = this._registroAvv(o.ref);
+                if (registro && Mem) {
+                    const qc = Mem.quoteCategorie(registro, this._primoTurnoInCampo(o.ref), k => Avv.categoriaMossa(k));
+                    if (qc.n > 0) {
+                        const q = this.modelloAvv.quote();
+                        const resto = 1 - q.cambio > 0.05 ? 1 - q.cambio : 1;
+                        const m = s.moltiplicatori || { attacco: 1, protezione: 1, cambio: 1, altro: 1 };
+                        const nuovo = Object.assign({}, m);
+                        for (const k of ['attacco', 'protezione', 'altro']) {
+                            const media = q[k] / resto;
+                            if (!(media > 0)) continue;
+                            const sua = (qc[k] + this.par.memoriaForzaCategorie * media) / (qc.n + this.par.memoriaForzaCategorie);
+                            nuovo[k] = m[k] * Math.max(0.3, Math.min(3, sua / media));
+                        }
+                        s.moltiplicatori = nuovo;
+                    }
+                }
                 return s;
             });
             const lista = Avv.scenari(this.modelloAvv.quote(), slot, { doppio: S.doppio, soglia: this.par.sogliaScenario, max: this.par.maxScenari });
@@ -1340,9 +1447,15 @@
             const mosse = this.mosseAvversario(o);
             const forte = [];
             const primoTurno = this._primoTurnoInCampo(o.ref);
+            const registro = this._registroAvv(o.ref);        // con la memoria della serie: cosa gioca di solito questo Pokémon (al primo turno in campo, o dopo)
             for (const m of mosse) {
                 if (m.categoria === 'Status') continue;
                 if ((m.id === 'fakeout' || m.id === 'firstimpression') && !primoTurno) continue;       // non può più farla: non si prevede
+                let abitudine = 0;
+                if (registro && this.par.memoriaPesoMosse > 0) {
+                    const q = Mem.quotaMossa(registro, m.id, primoTurno);
+                    abitudine = this.par.memoriaPesoMosse * (q.n / (q.n + this.par.memoriaFiducia)) * q.quota;
+                }
                 for (const b of bersagli) {
                     const dif = S.mie[b];
                     const d = C.danno(this.dex, o, dif, m, ctx, { bersagliMultipli: S.doppio && ['allAdjacent', 'allAdjacentFoes'].includes(m.target) });
@@ -1351,7 +1464,7 @@
                     // chi si farebbe male da solo (rinculo) non usa quella mossa se rischia di cadere per questo
                     if (m.rinculoMax && o.hp <= o.hpMax * m.rinculoMax) v *= 0.1;
                     else if (m.rinculo && o.abilita !== 'rockhead' && o.abilita !== 'magicguard' && d.medio * m.rinculo[0] / m.rinculo[1] >= o.hp) v *= 0.4;
-                    forte.push({ m, b, v });
+                    forte.push({ m, b, v: v + abitudine });
                 }
             }
             forte.sort((a, b) => b.v - a.v);
