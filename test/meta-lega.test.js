@@ -1,0 +1,196 @@
+'use strict';
+// La meta della lega (meta-lega.js) e il suo uso nel team building della CPU (team-cpu.js):
+//   - si contano Pokémon, mosse, Helping Hand, Protezioni e mosse prioritarie di tutti i team iscritti, senza giocatori, senza accoppiamenti, solo stagioni chiuse;
+//   - ciò che compare poco non si dà (soglie), le quote sono arrotondate: dai numeri non si ricostruisce nessun team;
+//   - il builder con la meta sceglie più spesso ciò che la lega gioca, ma non copia mai un team della lega;
+//   - le manopole nuove (Helping Hand al massimo uno, Protect non per tutti, mosse prioritarie forti) funzionano e le vecchie si possono rimettere.
+//
+//   npm test        (dalla cartella principale)
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const M = require('../docs/meta-lega.js');
+const T = require('../docs/team-cpu.js');
+const { caricaSim } = require('./ayuda-sim.js');
+
+// ---------- un piccolo mondo di team scritti a mano ----------
+const mon = (nome, mosse, extra = {}) => Object.assign({ nome, mosse, strumento: 'Sitrus Berry', abilita: 'Pressure' }, extra);
+function team(...pokemon) { return { id: 't' + Math.random(), nome: 'x', pokemon }; }
+const stagione = (stato, formato, giocatori) => ({ info: { status: stato }, teams_iscritti: { [formato]: giocatori } });
+const gioc = (...teams) => ({ datiTeams: teams });
+
+function casuale(seme) {
+    let a = seme >>> 0 || 1;
+    return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+// una lega finta: 20 team presi a caso tra 14 Pokémon, ognuno con le sue mosse tipiche
+const POPOLARI = {
+    Incineroar: ['Fake Out', 'Flare Blitz', 'Knock Off', 'Parting Shot'],
+    Rillaboom: ['Fake Out', 'Grassy Glide', 'Wood Hammer', 'U-turn'],
+    'Flutter Mane': ['Protect', 'Moonblast', 'Shadow Ball', 'Dazzling Gleam'],
+    'Urshifu-Rapid-Strike': ['Protect', 'Surging Strikes', 'Close Combat', 'Aqua Jet'],
+    'Landorus-Therian': ['Earthquake', 'Rock Slide', 'U-turn', 'Protect'],
+    Amoonguss: ['Protect', 'Spore', 'Rage Powder', 'Pollen Puff'],
+    Garchomp: ['Protect', 'Earthquake', 'Dragon Claw', 'Rock Slide'],
+    Tornadus: ['Tailwind', 'Bleakwind Storm', 'Taunt', 'Protect'],
+    'Ogerpon-Wellspring': ['Ivy Cudgel', 'Follow Me', 'Spiky Shield', 'Horn Leech'],
+    'Chien-Pao': ['Protect', 'Icicle Crash', 'Sucker Punch', 'Sacred Sword'],
+    Kingambit: ['Kowtow Cleave', 'Sucker Punch', 'Iron Head', 'Protect'],
+    Gholdengo: ['Make It Rain', 'Shadow Ball', 'Trick', 'Protect'],
+    Grimmsnarl: ['Thunder Wave', 'Spirit Break', 'Foul Play', 'Light Screen'],
+    'Iron Hands': ['Fake Out', 'Wild Charge', 'Drain Punch', 'Heavy Slam']
+};
+function legaFinta(n = 20, seme = 5) {
+    const rnd = casuale(seme);
+    const nomi = Object.keys(POPOLARI);
+    return Array.from({ length: n }, () => {
+        const scelti = nomi.slice().sort(() => rnd() - 0.5).slice(0, 6);
+        return team(...scelti.map(nome => mon(nome, POPOLARI[nome])));
+    });
+}
+
+// ---------- l'aggregazione ----------
+test('leggiTeam: da pokemon[] o dal testo di Showdown (con soprannomi, sesso, strumenti), senza rompersi', () => {
+    const t = M.leggiTeam(team(mon('Incineroar', ['Fake Out', 'Flare Blitz']), mon('Rillaboom', ['Grassy Glide'])));
+    assert.deepEqual(t.set.map(s => s.specie), ['incineroar', 'rillaboom']);
+    assert.deepEqual(t.set[0].mosse, ['fakeout', 'flareblitz']);
+    const testo = M.leggiTeam({ testoShowdown: 'Mimmo (Incineroar) (M) @ Safety Goggles\nAbility: Intimidate\n- Fake Out\n- Hidden Power [Fire]\n\nRillaboom @ Assault Vest\nAbility: Grassy Surge\n- Grassy Glide' });
+    assert.deepEqual(testo.set.map(s => s.specie), ['incineroar', 'rillaboom']);
+    assert.deepEqual(testo.set[0].mosse, ['fakeout', 'hiddenpower']);
+    assert.equal(testo.set[0].strumento, 'safetygoggles');
+    for (const strano of [null, undefined, {}, { pokemon: [] }, { pokemon: [null, {}] }, { testoShowdown: '   ' }, 'boh', 5]) assert.equal(M.leggiTeam(strano), null);
+});
+
+test('aggrega: quote di Pokémon e mosse, classi e media per team; sotto le soglie non si dà niente; quote arrotondate', () => {
+    const lega = legaFinta(20);
+    const meta = M.aggregaTeam(lega.map(t => M.leggiTeam(t)));
+    assert.equal(meta.v, M.VERSIONE);
+    assert.equal(meta.team, 20);
+    assert.equal(meta.set, 120);
+    // ogni Pokémon sta in circa 6/14 dei team
+    for (const nome of Object.keys(POPOLARI)) {
+        const q = meta.specie[nome.toLowerCase().replace(/[^a-z0-9]/g, '')];
+        assert.ok(q > 0.1 && q < 0.8, `${nome}: ${q}`);
+        assert.ok(Math.abs(q * 20 - Math.round(q * 20)) < 1e-6, 'arrotondata a un ventesimo');
+    }
+    assert.deepEqual(Object.keys(meta.mosse.incineroar).sort(), ['fakeout', 'flareblitz', 'knockoff', 'partingshot']);
+    assert.equal(meta.mosse.incineroar.fakeout, 1);
+    assert.ok(meta.classi.protezione > 0.3 && meta.classi.protezione < 0.8);
+    assert.ok(meta.classi.fakeout > 0 && meta.classi.redirezione > 0 && meta.classi.vento > 0 && meta.classi.priorita > 0);
+    assert.equal(meta.classi.aiuto, 0);
+    assert.ok(meta.squadra.protezioni > 2 && meta.squadra.protezioni < 5);
+    assert.ok(meta.squadra.priorita > 0);
+    // troppo pochi team: niente meta
+    assert.equal(M.aggregaTeam(lega.slice(0, 7).map(t => M.leggiTeam(t))), null);
+    // un Pokémon in meno di tre team non compare, e le sue mosse nemmeno
+    const rari = lega.map(t => M.leggiTeam(t)); rari[0].set.push({ specie: 'smeargle', mosse: ['spore'], strumento: '', abilita: '' }); rari[1].set.push({ specie: 'smeargle', mosse: ['spore'], strumento: '', abilita: '' });
+    const m2 = M.aggregaTeam(rari);
+    assert.ok(!('smeargle' in m2.specie) && !('smeargle' in m2.mosse));
+});
+
+test('aggrega: dal nodo seasons — solo stagioni chiuse, mai la beta né quella in corso; un formato per chiave; senza giocatori né team nell\'uscita', () => {
+    const lega = legaFinta(20);
+    const dieci = lega.slice(0, 10), altri = lega.slice(10);
+    const seasons = {
+        s1: stagione('closed', 'VGC Gen 9', { dodo: gioc(...dieci.slice(0, 5)), didi: gioc(...dieci.slice(5)) }),
+        s2: stagione('closed', 'VGC Gen 9', { dodo: gioc(...altri) }),
+        s3: stagione('playing', 'VGC Gen 9', { dodo: gioc(...legaFinta(20, 99)) }),                  // in corso: non conta
+        sbeta: stagione('closed', 'VGC Gen 9', { dodo: gioc(...legaFinta(20, 77)) }),                // beta: non conta
+        s4: stagione('closed', 'Piccolo', { luciano: gioc(...lega.slice(0, 3)) }),                        // pochi team: niente meta
+        s5: null
+    };
+    const m = M.aggrega(seasons);
+    assert.deepEqual(Object.keys(m), ['vgcgen9']);
+    assert.equal(m.vgcgen9.team, 20, 'solo le due stagioni chiuse (10 + 10)');
+    const testo = JSON.stringify(m);
+    for (const vietato of ['dodo', 'didi', 'luciano', 'sitrus', 'abilita', 'strumento', 'Piccolo']) assert.ok(!testo.includes(vietato), `non deve comparire "${vietato}"`);
+    assert.equal(Object.keys(M.aggrega(seasons, { soloChiuse: false })).length, 1);
+    assert.equal(M.aggrega(seasons, { soloChiuse: false }).vgcgen9.team, 40, 'senza il filtro conta anche quella in corso (la beta resta fuori)');
+    assert.deepEqual(M.aggrega(null), {});
+    assert.deepEqual(M.aggrega({ x: { teams_iscritti: 'boh' } }), {});
+    assert.equal(M.chiaveCategoria('VGC Gen 9'), 'vgcgen9');
+});
+
+test('nella meta non c\'è niente per ricostruire un team: nessun accoppiamento, nessun set completo', () => {
+    const meta = M.aggregaTeam(legaFinta(20).map(t => M.leggiTeam(t)));
+    assert.deepEqual(Object.keys(meta).sort(), ['classi', 'mosse', 'set', 'specie', 'squadra', 'team', 'v']);
+    for (const q of Object.values(meta.specie)) assert.equal(typeof q, 'number');
+    for (const mosse of Object.values(meta.mosse)) assert.ok(Object.keys(mosse).length <= 6);
+});
+
+// ---------- il builder ----------
+const permessi = { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' } } };
+const VGC = { genRuleType: 'within', genRuleValue: '9', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen9', vgcFormat: 'doubles', restrizioni: permessi, categoria: 'VGC Gen 9' };
+const leggi = p => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', p), 'utf8'));
+async function squadre(sim, opz = {}) {
+    return (await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: VGC, caricaJson: async p => leggi(p), quanti: 36, seme: 'meta-test', ...opz })).team;
+}
+const specieDi = t => t.specie.map(x => x.toLowerCase().replace(/[^a-z0-9]/g, ''));
+const mosseDi = (sim, t) => sim.Teams.import(t.testo).map(s => ({ specie: s.species.toLowerCase().replace(/[^a-z0-9]/g, ''), mosse: s.moves.map(m => sim.Dex.moves.get(m).id) }));
+
+test('team con la meta: i Pokémon e le mosse che la lega gioca si vedono di più, ma nessun team della lega viene copiato', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const lega = legaFinta(24);
+    const meta = M.aggregaTeam(lega.map(t => M.leggiTeam(t)));
+    const popolari = new Set(Object.keys(POPOLARI).map(n => n.toLowerCase().replace(/[^a-z0-9]/g, '')));
+    const conta = ts => ts.reduce((n, t) => n + specieDi(t).filter(s => popolari.has(s)).length, 0) / ts.length;
+    const senza = await squadre(sim);
+    const con = await squadre(sim, { meta });
+    assert.ok(conta(con) > conta(senza) + 0.5, `Pokémon della lega per team: ${conta(con).toFixed(2)} contro ${conta(senza).toFixed(2)}`);
+    // le mosse tipiche su un Pokémon della lega (Incineroar con Fake Out e Knock Off...)
+    const quoteMossa = (ts, specie, mossa) => { const tutti = ts.flatMap(t => mosseDi(sim, t)).filter(s => s.specie === specie); return tutti.length ? tutti.filter(s => s.mosse.includes(mossa)).length / tutti.length : null; };
+    const knockCon = quoteMossa(con, 'incineroar', 'knockoff');
+    assert.ok(knockCon == null || knockCon >= 0.5, `Knock Off su Incineroar: ${knockCon}`);
+
+    // niente copie: nessun team uguale (per specie) a uno della lega, e di solito ne ha in comune al massimo quattro
+    const leghe = lega.map(t => new Set(t.pokemon.map(p => p.nome.toLowerCase().replace(/[^a-z0-9]/g, ''))));
+    let sommaMax = 0;
+    for (const t of con) {
+        const mie = specieDi(t);
+        const sovrap = leghe.map(l => mie.filter(s => l.has(s)).length);
+        const max = Math.max(...sovrap);
+        assert.ok(max < 6, `copia di un team della lega: ${t.specie.join(', ')}`);
+        sommaMax += max;
+    }
+    assert.ok(sommaMax / con.length < 4.2, `in media al massimo ${(sommaMax / con.length).toFixed(2)} Pokémon in comune con il team più vicino`);
+});
+
+test('team con la meta: quanto Helping Hand e Protect gioca la lega cambia i team (e una meta di un\'altra versione si ignora)', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const conta = (ts, id) => ts.reduce((n, t) => n + mosseDi(sim, t).filter(s => s.mosse.includes(id)).length, 0) / ts.length;
+    const metaBase = M.aggregaTeam(legaFinta(24).map(t => M.leggiTeam(t)));
+    const senzaAiuto = await squadre(sim, { meta: Object.assign({}, metaBase, { squadra: Object.assign({}, metaBase.squadra, { aiuto: 0 }) }) });
+    const moltiAiuti = await squadre(sim, { meta: Object.assign({}, metaBase, { squadra: Object.assign({}, metaBase.squadra, { aiuto: 1.8 }) }) });
+    assert.ok(conta(moltiAiuti, 'helpinghand') > conta(senzaAiuto, 'helpinghand'), 'se la lega ne gioca di più, anche la CPU');
+    const vecchia = await squadre(sim, { meta: Object.assign({}, metaBase, { v: 99 }) });
+    const nessuna = await squadre(sim);
+    assert.deepEqual(vecchia.map(t => t.testo), nessuna.map(t => t.testo), 'una meta di un\'altra versione non cambia niente');
+});
+
+test('manopole del team: Helping Hand al massimo uno, Protect non per tutti, mosse prioritarie forti; i parametri vecchi rimettono il comportamento di prima', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const stat = ts => {
+        let aiuto = 0, maxAiuto = 0, prot = 0, mon = 0, prio = 0;
+        const dex = sim.Dex.forGen(9);
+        for (const t of ts) {
+            let a = 0;
+            for (const s of mosseDi(sim, t)) {
+                mon++;
+                if (s.mosse.includes('helpinghand')) a++;
+                if (s.mosse.some(m => dex.moves.get(m).flags && dex.moves.get(m).flags.protect === undefined && ['protect', 'detect', 'spikyshield', 'kingsshield', 'banefulbunker', 'silktrap', 'burningbulwark', 'obstruct'].includes(m))) prot++;
+                prio += s.mosse.filter(m => { const d = dex.moves.get(m); return d.priority > 0 && d.category !== 'Status' && m !== 'fakeout'; }).length;
+            }
+            aiuto += a; maxAiuto = Math.max(maxAiuto, a);
+        }
+        return { aiuto: aiuto / ts.length, maxAiuto, prot: prot / mon, prio: prio / ts.length };
+    };
+    const nuovi = stat(await squadre(sim, { quanti: 48 }));
+    const vecchi = stat(await squadre(sim, { quanti: 48, parametriTeam: T.PARAMETRI_TEAM_VECCHI }));
+    assert.ok(nuovi.maxAiuto <= 1, `mai più di un Helping Hand per team (${nuovi.maxAiuto})`);
+    assert.ok(nuovi.aiuto < 0.7, `Helping Hand a team: ${nuovi.aiuto.toFixed(2)}`);
+    assert.ok(vecchi.aiuto > nuovi.aiuto + 0.5, `prima: ${vecchi.aiuto.toFixed(2)}`);
+    assert.ok(nuovi.prot < 0.95 && nuovi.prot > 0.6, `Protect sul ${(nuovi.prot * 100).toFixed(0)}% dei Pokémon`);
+    assert.ok(vecchi.prot > 0.97, 'prima su tutti');
+    assert.ok(nuovi.prio > vecchi.prio + 0.15, `mosse prioritarie a team: ${nuovi.prio.toFixed(2)} contro ${vecchi.prio.toFixed(2)}`);
+});

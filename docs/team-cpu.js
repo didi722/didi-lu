@@ -32,6 +32,24 @@
 
     const id = K.id;
 
+    // Le "manopole" del team (come i parametri della CPU in battaglia: si possono cambiare con opzioni.parametriTeam, e si provano con tools/prova-team.cjs).
+    // Servono a far somigliare i team della CPU a quelli di chi gioca davvero: in un team vero non tutti hanno Protect, c'è al massimo un Helping Hand e
+    // quasi sempre qualcuno con una mossa prioritaria.
+    //   maxAiuto          quanti Pokémon per team possono avere Helping Hand (prima: tutti quelli che potevano)
+    //   probAiuto         probabilità che un team ne abbia uno, se c'è chi può (meno se ha già un altro supporto: Fake Out, Tailwind, deviatore...)
+    //   probProtezione    probabilità che un Pokémon senza ruolo di supporto abbia la Protezione (doppio; prima: sempre)
+    //   maxSenzaProt      al massimo quanti Pokémon per team ne sono privi
+    //   priorita          quante mosse d'attacco prioritarie (Aqua Jet, Sucker Punch, Extreme Speed...) cerca il team: la prima quasi sempre, la seconda
+    //                     con probabilità priorita - 1 (Fake Out è un ruolo a parte)
+    //   sogliaPriorita    valore minimo (potenza × precisione × STAB × categoria) perché una mossa prioritaria valga un posto nel set: Sucker Punch, Extreme Speed sì;
+    //                     Aqua Jet o Mach Punch senza forza no (non valgono il posto di un attacco di copertura)
+    //   bonusPriorita     quanto vale in squadra avere chi ha una mossa prioritaria buona (punteggio del team)
+    //   pesoSpecieMeta    con la meta della lega (opzioni.meta, vedi meta-lega.js): quanto pesa, nella scelta dei membri, l'essere un Pokémon che la lega gioca
+    //                     (per un Pokémon in un terzo dei team: il peso intero); pesoMossaMeta: quanto pesano le mosse che la lega gioca su quel Pokémon
+    const PARAMETRI_TEAM = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.1, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5 };
+    // com'era prima (per i confronti)
+    const PARAMETRI_TEAM_VECCHI = { maxAiuto: 99, probAiuto: 1, probProtezione: 1, maxSenzaProt: 0, priorita: 0, sogliaPriorita: 40, bonusPriorita: 0 };
+
     // =================================================
     // UTILITÀ
     // =================================================
@@ -289,6 +307,8 @@
         const perni = mosse.filter(m => m.perno && m.categoria !== 'Status').map(m => ({ m, v: valoreAttacco(m, cand, ctx) }));
         cand.attacchi = attacchi;
         cand.perni = perni;
+        // le mosse d'attacco prioritarie (Fake Out e Prima Impressione sono già un ruolo a parte; fuori dagli attacchi anche le mosse che non fanno danno vero)
+        cand.prioritarie = attacchi.filter(a => a.m.priorita > 0 && a.m.potenza >= 30 && !a.m.ricarica && !a.m.dueTurni);
         cand.tipiAttacco = Array.from(new Set(attacchi.slice(0, 5).filter(a => a.v >= 40).map(a => a.m.tipo)));
         const ha = k => cand.mosseDa.has(k);
         cand.opz = {
@@ -415,6 +435,10 @@
         } else if (p === 'bulky') {
             s += membri.filter(c => c.robustezza >= 75).length * 0.6;
         }
+        // chi ha una buona mossa prioritaria (finisce i Pokémon quasi KO e batte la velocità): il primo vale, il secondo molto meno
+        const parT = ctx.parametriTeam || PARAMETRI_TEAM;
+        const conPriorita = membri.filter(c => c.prioritarie && c.prioritarie[0] && c.prioritarie[0].v >= parT.sogliaPriorita && c.offesa >= 75).length;
+        if (conPriorita) s += parT.bonusPriorita * (1 + Math.min(1, conPriorita - 1) * 0.4);
         return s;
     }
 
@@ -429,11 +453,14 @@
         // le mosse consigliate che la CPU può davvero usare (legali, ammesse dal formato, che sa giocare), dalla più consigliata
         const consigliate = ((cand.cons && cand.cons.mosse) || []).map(k => cand.mosseDa.get(k)).filter(Boolean);
         const posCons = new Map(consigliate.map((m, k) => [m.id, k]));
-        const bonusCons = m => (posCons.has(m.id) ? Math.max(0.3, 0.9 - posCons.get(m.id) * 0.06) : 0);
+        // le mosse che la lega gioca su questo Pokémon (meta-lega.js), se ci sono i dati: quota dei suoi set che le hanno
+        const pesoMeta = (ctx.parametriTeam || PARAMETRI_TEAM).pesoMossaMeta;
+        const quotaMeta = m => (cand.metaMosse && cand.metaMosse[m.id]) || 0;
+        const bonusCons = m => (posCons.has(m.id) ? Math.max(0.3, 0.9 - posCons.get(m.id) * 0.06) : 0) + pesoMeta * quotaMeta(m);
 
         if (ctx.doppio) {
             // Anything Goose: solo chi ha un ruolo di supporto si protegge, gli altri attaccano con tutte e quattro le mosse
-            if (!(ctx.goose && !ruolo.supporto)) aggiungi(o.protezione);
+            if (!(ctx.goose && !ruolo.supporto) && !ruolo.senzaProt) aggiungi(o.protezione);
             if (ruolo.fakeout) aggiungi(get('fakeout'));
             if (ruolo.velocita === 'tailwind') aggiungi(get('tailwind'));
             if (ruolo.velocita === 'trickroom') aggiungi(get('trickroom'));
@@ -442,6 +469,7 @@
             if (ruolo.aiuto) aggiungi(get('helpinghand'));
             if (ruolo.rallenta) aggiungi(get(o.rallenta));
             if (ruolo.stato) aggiungi(get(o.paralisi) || get(o.sonno) || get('willowisp'));
+            if (ruolo.priorita) aggiungi(ruolo.priorita);
         } else {
             if (ruolo.trappola) aggiungi(get(o.roccia ? 'stealthrock' : 'spikes'));
             if (ruolo.recupero) aggiungi(o.recupero);
@@ -458,14 +486,15 @@
         const daFare = Math.max(ruolo.attacchi != null ? ruolo.attacchi : liberi, 0);
         const usabili = cand.attacchi.filter(a => a.m.categoria !== 'Status');
         const preferita = cand.basi.atk >= cand.basi.spa ? 'Physical' : 'Special';
-        let presi = 0;
+        let presi = ruolo.priorita && scelte.some(m => m.id === ruolo.priorita.id) ? 1 : 0;      // la mossa prioritaria è già un attacco
         // STAB: il migliore per ogni tipo (il valore tiene già conto della categoria)
         for (const t of cand.tipiBase) {
             if (presi >= daFare || scelte.length >= 4) break;
             const dellTipo = usabili.filter(x => x.m.tipo === t && !scelte.some(s => s.id === x.m.id));
             // tra gli attacchi di quel tipo vince quello consigliato, se non è molto più debole del migliore
-            const consigliato = dellTipo.filter(x => posCons.has(x.m.id) && dellTipo[0] && x.v >= dellTipo[0].v * 0.6)
-                .sort((x, y) => posCons.get(x.m.id) - posCons.get(y.m.id))[0];
+            const chiave = x => (posCons.has(x.m.id) ? posCons.get(x.m.id) : 30 - quotaMeta(x.m) * 30);       // prima i consigliati, poi quelli della lega
+            const consigliato = dellTipo.filter(x => (posCons.has(x.m.id) || quotaMeta(x.m) >= 0.4) && dellTipo[0] && x.v >= dellTipo[0].v * 0.6)
+                .sort((x, y) => chiave(x) - chiave(y))[0];
             const a = consigliato || dellTipo[0];
             if (a && a.v >= 55) { aggiungi(a.m); copre(a.m); presi++; }
         }
@@ -507,8 +536,11 @@
             r.aiuto = assegnati.aiuto.includes(cand.id);
             r.rallenta = assegnati.rallenta.includes(cand.id);
             r.stato = assegnati.stato.includes(cand.id);
+            r.priorita = (assegnati.priorita || {})[cand.id] || null;
+            r.senzaProt = (assegnati.senzaProt || []).includes(cand.id);
             const nSupp = [r.fakeout, r.velocita, r.redirezione, r.schermi, r.aiuto, r.rallenta, r.stato].filter(Boolean).length;
-            r.attacchi = ctx.goose ? Math.max(2, 4 - nSupp) : Math.max(1, 3 - nSupp);
+            // senza Protezione c'è una mossa in più per attaccare
+            r.attacchi = ctx.goose ? Math.max(2, 4 - nSupp) : Math.max(1, (r.senzaProt ? 4 : 3) - nSupp);
             r.supporto = nSupp > 0;
         } else {
             r.trappola = assegnati.trappola === cand.id;
@@ -523,8 +555,8 @@
     }
 
     // Chi fa cosa: la squadra decide quale membro ha le mosse di supporto
-    function assegnaRuoli(dex, membri, ctx, piano) {
-        const a = { dex, fakeout: null, velocita: {}, redirezione: null, schermi: null, aiuto: [], rallenta: [], stato: [],
+    function assegnaRuoli(dex, membri, ctx, piano, rnd = Math.random, par = PARAMETRI_TEAM) {
+        const a = { dex, fakeout: null, velocita: {}, redirezione: null, schermi: null, aiuto: [], rallenta: [], stato: [], priorita: {}, senzaProt: [],
             trappola: null, recupero: [], setup: {}, perno: null };
         const per = (lista, f) => lista.slice().sort((x, y) => f(y) - f(x));
         if (ctx.doppio) {
@@ -541,12 +573,30 @@
             const sch = ctx.goose ? null : membri.find(c => c.opz.schermi && ![fo, red].some(x => x && x.id === c.id) && c.supporto &&
                 (c.offesa < 105 || abilitaPossibili(c).includes('prankster')));
             if (sch) a.schermi = sch.id;
+            const preso = c => c.id === a.fakeout || a.velocita[c.id] || c.id === a.redirezione || c.id === a.schermi;
+            // Helping Hand: al massimo par.maxAiuto per team, e non sempre (chi ha già altro supporto ne ha meno bisogno). Lo prende chi attacca meno.
+            const nSupportoPreso = membri.filter(preso).length;
+            const possono = per(membri.filter(c => c.opz.helpinghand && c.supporto && !preso(c) && c.opz.helpinghand), c => -c.offesa);
+            const pAiuto = par.probAiuto >= 1 ? 1 : par.probAiuto * (nSupportoPreso >= 2 ? 0.5 : nSupportoPreso === 1 ? 0.8 : 1);
+            for (const c of possono) { if (a.aiuto.length >= par.maxAiuto || rnd() >= pAiuto) break; a.aiuto.push(c.id); }
             for (const c of membri) {
-                const preso = c.id === a.fakeout || a.velocita[c.id] || c.id === a.redirezione || c.id === a.schermi;
-                if (c.opz.helpinghand && c.supporto && !preso) a.aiuto.push(c.id);
-                else if (ctx.goose) continue;                       // Anything Goose: niente rallentamenti e stati, si attacca
-                else if (!preso && c.opz.rallenta === 'icywind') a.rallenta.push(c.id);
-                else if (!preso && (c.opz.paralisi || c.opz.sonno) && c.offesa < 100) a.stato.push(c.id);
+                if (a.aiuto.includes(c.id)) continue;
+                if (ctx.goose) continue;                       // Anything Goose: niente rallentamenti e stati, si attacca
+                else if (!preso(c) && c.opz.rallenta === 'icywind') a.rallenta.push(c.id);
+                else if (!preso(c) && (c.opz.paralisi || c.opz.sonno) && c.offesa < 100) a.stato.push(c.id);
+            }
+            // la mossa prioritaria: uno, spesso due Pokémon che attaccano (chi ha già un ruolo di supporto no). Vale di più per i lenti, che non muovono mai prima.
+            const conPrio = per(membri.filter(c => c.prioritarie && c.prioritarie[0] && c.prioritarie[0].v >= par.sogliaPriorita && c.offesa >= 75 && !preso(c) && !a.aiuto.includes(c.id)),
+                c => c.prioritarie[0].v * (c.offesa / 100) * (c.basi.spe < 70 ? 1.2 : 1));
+            const quanteP = par.priorita <= 0 ? 0 : 1 + (rnd() < par.priorita - 1 ? 1 : 0);
+            for (const c of conPrio.slice(0, quanteP)) a.priorita[c.id] = c.prioritarie[0].m;
+            // Protect non ce l'hanno tutti: chi attacca forte, con quattro buone mosse e senza ruoli di supporto, spesso gioca senza (Anything Goose già lo fa)
+            if (!ctx.goose && par.probProtezione < 1) {
+                const liberi = membri.filter(c => !preso(c) && !a.aiuto.includes(c.id) && !a.rallenta.includes(c.id) && !a.stato.includes(c.id) && c.attacchi.length >= 3 && c.offesa >= 85);
+                for (const c of per(liberi, c => c.offesa + c.basi.spe / 2 + rnd() * 20)) {
+                    if (a.senzaProt.length >= par.maxSenzaProt) break;
+                    if (rnd() < (1 - par.probProtezione) * 2.4) a.senzaProt.push(c.id);
+                }
             }
         } else {
             const mu = membri.filter(c => c.opz.roccia || c.opz.spuntoni);
@@ -820,6 +870,9 @@
         // Anything Goose: circa un team su tre ha apposta una copia di un suo Pokémon (le copie in più, mai senza motivo, costano)
         let cercaCopia = ctx.goose && rnd() < PROBABILITA_COPIA;
         const costoCopia = c => { const n = copie(c); return n ? (n === 1 && cercaCopia ? -2.2 : 0.8 + (n - 1) * 2.2) : 0; };
+        // un Pokémon che la lega gioca (meta-lega.js) vale un po' di più; uno che nessuno ha mai portato non perde niente: la CPU può sempre inventare
+        const pesoSpecie = (ctx.parametriTeam || PARAMETRI_TEAM).pesoSpecieMeta;
+        const bonusMeta = c => (c.uso ? pesoSpecie * Math.min(1, c.uso / 0.3) : 0);
         const aggiungi = scelto => {
             const n = ctx.goose ? copie(scelto) : 0;
             if (n) cercaCopia = false;                    // una copia sola per volta: il bonus finisce qui
@@ -835,7 +888,7 @@
                 if (!impostaIlPiano(piano, c) || !libero(c)) continue;
                 if (ctx.standard && eUberDi(c) && uber >= 2) continue;
                 const uso = usoGlobale.get(chiaveUso(c)) || 0;
-                let v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * pesoUso) - costoCopia(c);
+                let v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * pesoUso) - costoCopia(c) + bonusMeta(c);
                 if (piano.nome === 'trickroom' && c.basi.spe <= 80) v += 0.6;
                 if (v > mv) { mv = v; scelto = c; }
             }
@@ -850,7 +903,7 @@
                 if (!sfruttaIlPiano(piano, c) || (SETTER[piano.nome] && impostaIlPiano(piano, c)) || !libero(c)) continue;
                 if (ctx.standard && eUberDi(c) && uber >= 2) continue;
                 const uso = usoGlobale.get(chiaveUso(c)) || 0;
-                const v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * pesoUso) - costoCopia(c);
+                const v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * pesoUso) - costoCopia(c) + bonusMeta(c);
                 if (v > mv) { mv = v; scelto = c; }
             }
             if (!scelto) break;
@@ -867,6 +920,7 @@
                 if (uso >= massimo) v -= 3 + (uso - massimo) * 2;
                 else v -= uso * pesoUso;
                 v -= costoCopia(c);
+                v += bonusMeta(c);
                 v += (rnd() - 0.5) * 1.1;
                 migliori.push({ c, v });
             }
@@ -946,13 +1000,18 @@
             if (f) validatore = TeamValidator.get(f);
         }
 
+        // la meta della lega per questo formato (meta-lega.js): senza, o di un'altra versione, tutto è come prima
+        const meta = opzioni.meta && opzioni.meta.v === 1 && opzioni.meta.specie ? opzioni.meta : null;
+
         // 1) i candidati: i più forti del formato, più qualche scelta fuori dal comune
         const ordinati = opzioni.pool.map(v => {
             const s = dex.species.get(v.id);
             const t = ctx.doppio ? s.doublesTier : s.tier;
             // Anything Goose: conta anche quanto il Pokémon colpisce forte (a parità di tier vince chi attacca di più)
             const potenza = ctx.goose ? Math.max(s.baseStats.atk, s.baseStats.spa) / 10 : 0;
-            return { v, valore: puntiTier(t) * 18 + (s.bst || 0) / 12 + potenza + rnd() * 4 };
+            // la lega gioca questo Pokémon: tra i candidati ci entra anche se il suo tier è basso (fino a +12 punti, come un tier in più)
+            const usoLega = meta && meta.specie ? (meta.specie[id(v.id)] || 0) : 0;
+            return { v, valore: puntiTier(t) * 18 + (s.bst || 0) / 12 + potenza + rnd() * 4 + Math.min(1, usoLega / 0.3) * 12 * ((opzioni.parametriTeam || {}).pesoSpecieMeta != null ? opzioni.parametriTeam.pesoSpecieMeta : PARAMETRI_TEAM.pesoSpecieMeta) };
         }).sort((a, b) => b.valore - a.valore);
         const MAX_CAND = 170;
         const NUM_FISSI = ctx.goose ? 95 : 110;
@@ -965,14 +1024,30 @@
         const cand = [];
         for (const voce of voci) {
             const c = await analizza(dex, validatore, voce, ctx, restrizioni, mosseBandite, abilitaBandite, opzioni.pokedexBase);
-            if (c) { c.cons = consigliDi(opzioni.consigli, c, ctx); cand.push(c); }
+            if (c) {
+                c.cons = consigliDi(opzioni.consigli, c, ctx);
+                if (meta) { c.uso = meta.specie[id(c.id)] || 0; c.metaMosse = (meta.mosse || {})[id(c.id)] || null; }
+                cand.push(c);
+            }
         }
         if (cand.length < 6) {
             return { insufficiente: true, avvisi: avvisi.concat(`Not enough Pokémon in this format for the CPU (${cand.length} usable)`) };
         }
 
+        // con la meta, Helping Hand e Protezione seguono quanto li giocano in lega (a metà con le manopole): chi li gioca poco ne ha meno
+        const daMeta = {};
+        if (meta && meta.squadra && meta.classi) {
+            const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+            if (meta.squadra.aiuto != null) {
+                daMeta.probAiuto = clamp(0.5 * PARAMETRI_TEAM.probAiuto + 0.5 * meta.squadra.aiuto / 0.55, 0.05, 0.95);
+                daMeta.maxAiuto = meta.squadra.aiuto > 1.2 ? 2 : 1;
+            }
+            if (meta.classi.protezione != null) daMeta.probProtezione = clamp(0.5 * PARAMETRI_TEAM.probProtezione + 0.5 * (meta.classi.protezione + 0.05), 0.5, 1);
+        }
+        const parametriTeam = Object.assign({}, PARAMETRI_TEAM, daMeta, opzioni.parametriTeam || {});
+        ctx.parametriTeam = parametriTeam;
         return {
-            insufficiente: false, avvisi, dex, ctx, restrizioni, cand,
+            insufficiente: false, avvisi, dex, ctx, restrizioni, cand, parametriTeam,
             tipi: K.tipiDellaGenerazione(dex),
             piani: pianiDelFormato(cand, ctx),
             natura: naturaImposta(restrizioni),
@@ -984,7 +1059,7 @@
     // Dai sei membri e dal piano: set e strategia. null se un Pokémon non riesce ad avere nemmeno una mossa.
     function costruisciTeam(prep, rnd, membri, piano, asso) {
         const { dex, ctx, restrizioni, natura } = prep;
-        const assegnati = assegnaRuoli(dex, membri, ctx, piano);
+        const assegnati = assegnaRuoli(dex, membri, ctx, piano, rnd, prep.parametriTeam);
         const usati = new Set();
         const testi = [];
         const infoMembri = [];
@@ -1205,7 +1280,7 @@
             const quantiQui = Math.min(perVariante, quanti - out.length);
             const r = await generaTeam({
                 Dex: opzioni.Dex, TeamValidator: opzioni.TeamValidator, pool, regolamento: v.regolamento,
-                quanti: quantiQui, seme: `${seme}|${i}|${v.etichetta}`, pokedexBase, consigli
+                quanti: quantiQui, seme: `${seme}|${i}|${v.etichetta}`, pokedexBase, consigli, parametriTeam: opzioni.parametriTeam, meta: opzioni.meta
             });
             r.avvisi.forEach(a => avvisi.push(a));
             r.team.forEach(t => out.push(Object.assign(t, v.etichetta ? { nome: `${t.nome} (${v.etichetta})` } : {})));
@@ -1239,7 +1314,7 @@
                 // la scelta dei candidati fuori dal comune dipende solo dal formato: così la preparazione è sempre la stessa
                 return preparaFormato({
                     Dex: sessione.opzioni.Dex, TeamValidator: sessione.opzioni.TeamValidator, pool, regolamento: v.regolamento,
-                    pokedexBase: sessione.pokedexBase, consigli: sessione.consigli
+                    pokedexBase: sessione.pokedexBase, consigli: sessione.consigli, parametriTeam: sessione.opzioni.parametriTeam, meta: sessione.opzioni.meta
                 }, creaCasuale(`${sessione.semeBase}|prep|${indice}|${v.etichetta}`));
             })();
             // un errore (rete...) non si ricorda: la volta dopo si riprova
@@ -1273,6 +1348,6 @@
     return {
         generaTeam, squadrePerFormato, preparaFormato, unTeam, preparaSessione, nuovoTeam,
         contestoDa, generazioneFormato, livelloFormato, formatoInDoppio, meccaniche, mosseApprese,
-        voceBannata, creaCasuale, puntiTier, datiStrumento, strategiaDelTeam
+        voceBannata, creaCasuale, puntiTier, datiStrumento, strategiaDelTeam, PARAMETRI_TEAM, PARAMETRI_TEAM_VECCHI
     };
 });

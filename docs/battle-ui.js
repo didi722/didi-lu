@@ -77,6 +77,8 @@ function studiaGiocatore(id) {
         if (cpu && cpu.cerebro) cpu.cerebro.impostaAvversario(profilo);      // arrivate a partita iniziata: da adesso le usa
     }).catch(() => { /* senza le sue abitudini la CPU parte dalla media della lega */ });
 }
+// Il database per leggere cosa si gioca nella lega (la CPU ne compone i team): se Firebase non c'è, la CPU compone come sempre
+function dbPerLaMeta() { try { return typeof firebase !== 'undefined' ? firebase.database() : null; } catch (e) { return null; } }
 let editor = null;          // { frame, pronto } mentre la finestra dell'editor del team è aperta
 let generatoriRandom = null; // la promessa del caricamento di pkmn-randoms.js (i team dei formati Random), solo quando serve
 
@@ -242,7 +244,7 @@ async function preparaCpu(chiaveTeam) {
         }
         if (dati.problemi.length) throw new Error(`This team can't be used in ${dati.categoria}: ${dati.problemi.join('; ')}`);
         mostraMessaggioCampo(`Building a CPU team for ${dati.categoria}…`);
-        primo = await nuovoTeamCpu(dati.regolamento, { iniziali: dati.iniziali });
+        primo = await nuovoTeamCpu(dati.regolamento, { iniziali: dati.iniziali, db: dbPerLaMeta() });
         if (!primo.team) {
             throw new Error(`The CPU couldn't build a team for ${dati.categoria}${primo.avvisi.length ? ' (' + primo.avvisi[0] + ')' : ''}.`);
         }
@@ -437,7 +439,7 @@ async function altroTeamCpu() {
     if (!cpu || cpu.generando) return;
     cpu.generando = true;
     try {
-        const r = await nuovoTeamCpu(cpu.giocatore.regolamento, { iniziali: cpu.giocatore.iniziali });
+        const r = await nuovoTeamCpu(cpu.giocatore.regolamento, { iniziali: cpu.giocatore.iniziali, db: dbPerLaMeta() });
         if (!r.team) throw new Error(r.avvisi[0] || 'no team available');
         cpu.generando = false;
         iniziaContro(r.team);

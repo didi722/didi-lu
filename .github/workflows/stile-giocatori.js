@@ -3,7 +3,10 @@
 // Oltre alle abitudini di ognuno, impara dai replay dei set della lega come cambiano le scelte nelle varie situazioni (turno, PS, vantaggio...: docs/cpu-situazioni.js)
 // e le salva in players/<id>/stile/situazioni (le stesse in ogni nodo). Le pubblica solo se la prova incrociata (impara su una parte dei set, prevede gli altri)
 // dice che prevedono meglio delle sole abitudini; i replay si scaricano solo quando ne arrivano di nuovi.
-// La logica del calcolo è in docs/stile-giocatore.js e docs/cpu-situazioni.js (provate in test/); qui si legge, si confronta e si scrive.
+// Pubblica anche cosa si gioca nella lega (docs/meta-lega.js): per ogni formato, quanto compare ogni Pokémon, con quali mosse, quanti Helping Hand, Protezioni e mosse
+// prioritarie per team, in settings/cpuMeta. Solo numeri aggregati delle stagioni chiuse, mai team né nomi: la CPU li usa per comporre team più vicini a quelli
+// che si vedono nelle stagioni vere, senza poterli copiare.
+// La logica del calcolo è in docs/stile-giocatore.js, docs/cpu-situazioni.js e docs/meta-lega.js (provate in test/); qui si legge, si confronta e si scrive.
 //
 //   node .github/workflows/stile-giocatori.js            scrive solo dove qualcosa è cambiato
 //   node .github/workflows/stile-giocatori.js --prova    non scrive niente: dice cosa scriverebbe
@@ -13,6 +16,7 @@ const path = require('path');
 const Stile = require(path.join(__dirname, '..', '..', 'docs', 'stile-giocatore.js'));
 const Situazioni = require(path.join(__dirname, '..', '..', 'docs', 'cpu-situazioni.js'));
 const ReplaySito = require(path.join(__dirname, '..', '..', 'docs', 'replay-sito.js'));
+const MetaLega = require(path.join(__dirname, '..', '..', 'docs', 'meta-lega.js'));
 
 const prova = process.argv.includes('--prova');
 const ricalcola = process.argv.includes('--ricalcola');      // rifà le situazioni anche se i replay sono gli stessi (e stampa come giocano le persone)
@@ -28,6 +32,22 @@ function riga(v) {
   if (!v) return 'niente';
   if (v.guadagno == null) return `${v.decisioni} decisioni in ${v.set} set: ${v.esito}`;
   return `${v.decisioni} decisioni in ${v.set} set, log-verosimiglianza ${v.senza.toFixed(4)} → ${v.con.toFixed(4)} (${v.guadagno >= 0 ? '+' : ''}${v.guadagno.toFixed(4)}, migliore in ${v.gruppiMigliori} gruppi su ${v.gruppi}): ${v.esito}`;
+}
+
+// Cosa si gioca nella lega, per formato: settings/cpuMeta/formati/<chiave>. Si riscrive solo se qualcosa è cambiato.
+async function pubblicaMeta(stagioni) {
+  const nuova = MetaLega.aggrega(stagioni);
+  const chiavi = Object.keys(nuova).sort();
+  if (!chiavi.length) { console.log('Meta della lega: nessun formato con abbastanza team nelle stagioni chiuse.'); return; }
+  for (const k of chiavi) {
+    const m = nuova[k];
+    console.log(`Meta della lega, ${k}: ${m.team} team, ${m.set} set, ${Object.keys(m.specie).length} Pokémon; per team ${m.squadra.aiuto} Helping Hand, ${m.squadra.protezioni} Protezioni, ${m.squadra.priorita} mosse prioritarie; ` +
+      `set con Fake Out ${Math.round(m.classi.fakeout * 100)}%, deviatore ${Math.round(m.classi.redirezione * 100)}%, Tailwind ${Math.round(m.classi.vento * 100)}%, Stanza Magica ${Math.round(m.classi.stanza * 100)}%`);
+  }
+  const attuale = (await db.ref('settings/cpuMeta/formati').once('value')).val();
+  if (JSON.stringify(Stile.ordina(attuale)) === JSON.stringify(Stile.ordina(nuova))) { console.log('Meta della lega: invariata.'); return; }
+  if (!prova) await db.ref('settings/cpuMeta').set({ v: MetaLega.VERSIONE, aggiornato: Date.now(), formati: nuova });
+  console.log(`Meta della lega: ${prova ? 'da scrivere' : 'scritta'} (${chiavi.length} formati).`);
 }
 
 async function main() {
@@ -56,6 +76,8 @@ async function main() {
       console.log(`Situazioni: imparate da ${r.scaricati} replay (${r.falliti} non letti).`);
       console.log(`  singoli: ${riga(situazioni.validazione && situazioni.validazione.singoli)}`);
       console.log(`  doppi:   ${riga(situazioni.validazione && situazioni.validazione.doppi)}`);
+      // i pesi imparati (per rifare i calcoli a mano, e per tarare la CPU): un JSON per tipo di partita
+      for (const k of ['singoli', 'doppi']) if (situazioni[k] && situazioni[k].pesi) console.log(`Pesi ${k}: ${JSON.stringify(situazioni[k].pesi)}`);
       // come giocano le persone, per situazione: serve a confrontarle con la CPU (tools/stile-cpu.cjs stampa la stessa tabella)
       if (r.tabelle) for (const k of ['singoli', 'doppi']) if (r.tabelle[k][0].n) console.log(`\nCome giocano le persone, ${k}:\n${Situazioni.tabellaInTesto(r.tabelle[k])}\n`);
     }
@@ -64,6 +86,8 @@ async function main() {
     console.error('Situazioni: non imparate, restano quelle di prima.', e);
     situazioni = precedente;
   }
+
+  await pubblicaMeta(stagioni);
 
   let scritti = 0, invariati = 0, senzaPagina = 0;
   for (const id of ids) {
