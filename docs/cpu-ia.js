@@ -96,6 +96,8 @@
     //   forzaLegaAvv, forzaPartitaAvv
     //                       quanto fidarsi delle abitudini di un avversario con pochi dati (decisioni che valgono quanto la media della lega) e
     //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
+    //   pesoMinaccia        quanto pesa in più un Pokémon con attacco, attacco speciale o velocità potenziati (per ogni livello; la velocità metà): danno e KO su di lui valgono
+    //                       di più, e se è mio proteggerlo vale di più. 0 = conta solo la forza di base
     //   pesoStile           quanto la CPU si avvicina al modo di giocare delle persone della lega nelle varie situazioni (STILE_LEGA_DOPPI): ogni piano vale di più o di meno
     //                       secondo se, in quella situazione, le persone fanno più o meno spesso quella cosa (si parano, cambiano, usano una mossa di stato) di quanto la
     //                       CPU facesse. Valore del piano per ogni unità di log-moltiplicatore; 0 = come prima. Solo nel doppio
@@ -114,7 +116,7 @@
         antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.3, sogliaRecupero: 0.25,
-        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5,
+        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3,
         pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40
     };
     // Abilità che agiscono quando il Pokémon entra in campo
@@ -1350,7 +1352,16 @@
             return azioni;
         }
 
-        _pesoMon(v) { return 0.7 + (v.basi ? (v.basi.hp + v.basi.atk + v.basi.def + v.basi.spa + v.basi.spd + v.basi.spe) / 1500 : 0.3); }
+        // Quanto pesa un Pokémon nel valutare danno e KO: dalle sue statistiche, e di più se è una minaccia adesso (attacco, attacco speciale e velocità
+        // potenziati, `pesoMinaccia`). Un Crustle a +2/+2 vale più di un Illumise che ha solo messo la pioggia, per chi lo gioca come per chi lo affronta.
+        // Le difese abbassate (Shell Smash) non lo rendono meno pericoloso: contano solo i potenziamenti.
+        _pesoMon(v) {
+            const base = 0.7 + (v.basi ? (v.basi.hp + v.basi.atk + v.basi.def + v.basi.spa + v.basi.spd + v.basi.spe) / 1500 : 0.3);
+            const b = v.boost;
+            if (!b || !(this.par.pesoMinaccia > 0)) return base;
+            const off = Math.min(6, Math.max(0, b.atk || 0, b.spa || 0)), vel = Math.min(6, Math.max(0, b.spe || 0));
+            return base * (1 + this.par.pesoMinaccia * (off + 0.5 * vel));
+        }
 
         _simula(scelta, S, azioniAvv, riesceProtezione) {
             const ctx = Object.assign({}, S.ctx);

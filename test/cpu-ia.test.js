@@ -1176,3 +1176,45 @@ test('partite vere: la CPU batte il bot casuale la gran parte delle volte (singo
         assert.ok(vinte >= Math.ceil(N * 0.7), `${f.nome}: ${vinte}/${N}`);
     }
 });
+
+// ===================================================
+// POTENZIAMENTI DELL'AVVERSARIO: UNA MINACCIA IMMINENTE PESA DI PIÙ
+// ===================================================
+// Il giocatore apre con Illumise (Rain Dance) e Crustle (Shell Smash: +2 attacco, attacco speciale e velocità). Con la stessa mossa e quasi lo stesso danno
+// su tutti e due, la CPU non deve attaccare il Pokémon che ha solo messo la pioggia: il pericolo è Crustle.
+async function sceltaControCrustle(parametri) {
+    const { sim } = await caricaSim();
+    const squadra = [
+        { specie: 'Talonflame', item: 'Leftovers', mosse: ['Brave Bird', 'Flare Blitz'] },
+        { specie: 'Corviknight', item: 'Leftovers', mosse: ['Brave Bird', 'Crunch'] }
+    ];      // Fuoco e Volante: colpiscono Illumise (Coleottero) il doppio, Crustle (Coleottero e Roccia) normalmente
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, ...(parametri ? { parametri } : {}) });
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], livello: 100 });
+    const righe = [...logAvversario([{ specie: 'Illumise' }, { specie: 'Crustle' }, { specie: 'Rillaboom' }, { specie: 'Flutter Mane' }], true, 1, 100),
+        '|-boost|p1b: Crustle|atk|2', '|-boost|p1b: Crustle|spa|2', '|-boost|p1b: Crustle|spe|2', '|-unboost|p1b: Crustle|def|1', '|-unboost|p1b: Crustle|spd|1',
+        '|-weather|RainDance', ...logMiaSquadra(squadra, [0, 1], 100)];
+    return { ia, scelta: scelta(ia, r, righe) };
+}
+
+test('potenziamenti: contro Crustle a +2 in attacco e velocità la CPU lo attacca, non l\'Illumise che ha solo messo la pioggia', async () => {
+    const { scelta: s } = await sceltaControCrustle();
+    assert.equal(s, 'move 1 2, move 1 2', 'tutti e due su Crustle (il bersaglio 2)');
+    // com'era prima, con il peso spento: i due piani valevano quasi uguale (1,139 contro 1,066) e uno dei due attaccava comunque Illumise
+    const prima = await sceltaControCrustle({ pesoMinaccia: 0 });
+    assert.notEqual(prima.scelta, 'move 1 2, move 1 2');
+});
+
+test('potenziamenti: il peso di un Pokémon sale con attacco, attacco speciale e velocità potenziati; le difese abbassate non contano; il tetto è +6', async () => {
+    const { sim } = await caricaSim();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    const v = (boost = {}) => ({ basi: { hp: 70, atk: 105, def: 125, spa: 65, spd: 75, spe: 45 }, boost: Object.assign({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }, boost) });
+    const base = ia._pesoMon(v());
+    assert.ok(ia._pesoMon(v({ atk: 2 })) > base);
+    assert.ok(ia._pesoMon(v({ atk: 2, spe: 2 })) > ia._pesoMon(v({ atk: 2 })));
+    assert.ok(ia._pesoMon(v({ spa: 2 })) > base, 'anche l\'attacco speciale');
+    assert.equal(ia._pesoMon(v({ def: -1, spd: -1 })), base, 'le difese abbassate non rendono meno pericoloso');
+    assert.equal(ia._pesoMon(v({ atk: -2, spe: -1 })), base, 'e un Pokémon indebolito non pesa meno della sua forza di base');
+    assert.equal(ia._pesoMon(v({ atk: 6, spe: 6 })), ia._pesoMon(v({ atk: 9, spe: 9 })), 'tetto a +6');
+    assert.equal(ia._pesoMon({ basi: v().basi }), base, 'senza boost nello stato, il peso di base');
+    assert.equal(IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, parametri: { pesoMinaccia: 0 } })._pesoMon(v({ atk: 2, spe: 2 })), base, 'spento = come prima');
+});
