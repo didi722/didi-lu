@@ -49,3 +49,24 @@
 .cartella-testa h2 { margin: 0; padding: 4px 14px 2px; background: var(--nb-ink, #000); color: #fff; border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-titolo, 4px 4px 0 rgba(0, 0, 0, .3)); font: 900 1.4rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); }
 .cartella-chiudi { border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); background: var(--nb-giallo, #ffbd44); color: #000; font: 900 1rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); padding: 8px 14px; cursor: pointer; }
 .cartella-finestra .grid { margin-top: 10px; }
+
+/* ---------- I tre pulsanti della vista (sotto i menù dei filtri) ---------- */
+.vista-bottoni { display: flex; gap: 8px; }
+.vista-bottoni button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 38px;
+    padding: 0;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    cursor: pointer;
+    transition: translate .12s ease, box-shadow .12s ease;
+}
+.vista-bottoni button svg { width: 22px; height: 22px; fill: currentColor; }
+.vista-bottoni button:hover { translate: -1px -2px; }
+.vista-bottoni button.attivo { background: var(--nb-giallo, #ffbd44); color: #000; translate: 2px 2px; box-shadow: none; }
+.vista-bottoni button:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 2px; }
