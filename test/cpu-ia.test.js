@@ -334,13 +334,14 @@ test('doppio: Fake Out il primo turno, non il secondo', async () => {
         { specie: 'Rillaboom', item: 'Miracle Seed', mosse: ['Grassy Glide', 'Protect', 'Wood Hammer', 'High Horsepower'] },
         { specie: 'Gholdengo', item: 'Leftovers', mosse: ['Make It Rain', 'Shadow Ball', 'Protect', 'Trick'] }
     ];
-    const avv = [{ specie: 'Dragapult' }, { specie: 'Gholdengo' }, { specie: 'Amoonguss' }, { specie: 'Kingambit' }];
+    // (non Spettri: contro Dragapult e Gholdengo Fake Out non ha effetto e la CPU non lo prova)
+    const avv = [{ specie: 'Urshifu-Rapid-Strike' }, { specie: 'Rillaboom' }, { specie: 'Amoonguss' }, { specie: 'Kingambit' }];
     const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
     // i Pokémon iniziali entrano prima del turno 1 (Fake Out conta i turni in campo)
     const s1 = scelta(ia, r, [...logAvversario(avv, true).slice(0, -1), ...logMiaSquadra(squadra, [0, 1]), '|turn|1']);
     assert.match(s1.split(', ')[0], /^move 1\b/, `turno 1: ${s1}`);
     // secondo turno: Incineroar ha già agito in campo, Fake Out non funziona più
-    ia.osserva(['|move|p2a: Incineroar|Fake Out|p1a: Dragapult', '|turn|2']);
+    ia.osserva(['|move|p2a: Incineroar|Fake Out|p1a: Urshifu', '|turn|2']);
     const s2 = ia.scegli(r);
     assert.ok(!/^move 1\b/.test(s2.split(', ')[0]), `turno 2: ${s2}`);
 });
@@ -1595,4 +1596,97 @@ test('priorità bloccate: l\'avversario non è previsto usare Fake Out contro il
     ]);
     assert.ok(senza.includes('fakeout'), `senza il blocco: ${senza}`);
     assert.ok(!con.includes('fakeout'), `con Armor Tail in campo: ${con}`);
+});
+
+// ===================================================
+// MOSSE SENZA EFFETTO: IMMUNITÀ DI TIPO E ABILITÀ NOTE
+// ===================================================
+// Una mossa che di sicuro non fa niente al bersaglio (Ground su un Volante, Wild Charge su un Terra, Fake Out su uno Spettro...) non si prova:
+// nelle partite CPU contro CPU circa un colpo su cinquanta andava a vuoto contro un'immunità che la CPU conosceva (a parità di valore con le altre mosse
+// del piano, quando il compagno doveva già eliminare il bersaglio prima, la scelta cadeva a caso anche su di lei).
+async function opzioniContro({ squadra, attivi = [0, 1], doppio = true, avversari, attiviAvv, extraLog = [], richiesta = {} }) {
+    const { sim } = await caricaSim();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, debug: true, avversario: true });
+    const r = creaRichiesta(sim.Dex, { squadra, attivi, livello: 50, ...(richiesta.extra ? { extra: richiesta.extra } : {}) });
+    const righe = ['|gen|9', `|gametype|${doppio ? 'doubles' : 'singles'}`, ...avversari.map(a => `|poke|p1|${a}, L50|`),
+        ...attiviAvv.map((a, i) => `|switch|p1${'ab'[i]}: ${a}|${a}, L50|100/100`),
+        ...logMiaSquadra(squadra, attivi, 50), '|turn|1', ...extraLog];
+    ia.osserva(righe);
+    const scelta = ia.scegli(r);
+    return { ia, scelta, opzioni: ia.ultimoStato.opzioni, piani: ia.ultimaValutazione };
+}
+const di = (opzioni, nome) => opzioni.filter(a => a.nome === nome);
+
+test('mosse senza effetto: Swampert contro Dragonite non prova High Horsepower su di lui (in singolo non la prova affatto, in doppio solo sull\'altro avversario)', async () => {
+    const swampert = { specie: 'Swampert', item: 'Leftovers', abilita: 'Torrent', mosse: ['Waterfall', 'High Horsepower', 'Ice Punch', 'Protect'] };
+    const compagno = { specie: 'Gholdengo', item: 'Leftovers', mosse: ['Make It Rain', 'Shadow Ball', 'Protect', 'Nasty Plot'] };
+    const singolo = await opzioniContro({ squadra: [swampert, compagno], attivi: [0], doppio: false, avversari: ['Dragonite', 'Heatran'], attiviAvv: ['Dragonite'] });
+    assert.equal(di(singolo.opzioni[0], 'High Horsepower').length, 0, 'Dragonite è Volante: immune');
+    assert.ok(di(singolo.opzioni[0], 'Ice Punch').length > 0, 'le altre mosse restano');
+    const doppio = await opzioniContro({ squadra: [swampert, compagno], avversari: ['Dragonite', 'Rillaboom', 'Flutter Mane'], attiviAvv: ['Dragonite', 'Rillaboom'] });
+    const hh = di(doppio.opzioni[0], 'High Horsepower');
+    assert.ok(hh.length > 0 && hh.every(a => a.bersaglio === 2), `solo su Rillaboom (secondo posto): ${hh.map(a => a.testo)}`);
+    assert.ok(di(doppio.opzioni[0], 'Ice Punch').some(a => a.bersaglio === 1), 'Ice Punch su Dragonite resta (4x)');
+    // nessun piano valutato punta High Horsepower su Dragonite
+    assert.ok(!doppio.piani.some(p => p.azioni.some(a => /move 2 1 \[High Horsepower\]/.test(a))));
+});
+
+test('mosse senza effetto: con un solo avversario vivo (Landorus, Terra/Volante) Wild Charge e Fake Out non si provano; il compagno che lo elimina da solo non lascia una mossa inutile a parità', async () => {
+    const squadra = [
+        { specie: 'Rillaboom', item: 'Assault Vest', abilita: 'Grassy Surge', mosse: ['U-turn', 'Wood Hammer', 'High Horsepower', 'Superpower'] },
+        { specie: 'Iron Hands', item: 'Sitrus Berry', abilita: 'Quark Drive', hp: 53, mosse: ['Protect', 'Fake Out', 'Drain Punch', 'Wild Charge'] }
+    ];
+    const r = await opzioniContro({
+        squadra, avversari: ['Kingambit', 'Landorus-Therian'], attiviAvv: ['Kingambit', 'Landorus-Therian'],
+        extraLog: ['|move|p2b: Iron Hands|Fake Out|p1a: Kingambit', '|-damage|p1a: Kingambit|60/100', '|faint|p1a: Kingambit', '|-damage|p1b: Landorus|23/100|[from] item: Life Orb', '|upkeep', '|turn|2'],
+        richiesta: { extra: { active: [{}, { moves: ['Protect', 'Fake Out', 'Drain Punch', 'Wild Charge'].map(n => ({ move: n, id: K.id(n), pp: 16, maxpp: 16, target: n === 'Protect' ? 'self' : 'normal', disabled: n === 'Fake Out' })) }] } }
+    });
+    assert.equal(di(r.opzioni[1], 'Wild Charge').length, 0, 'Elettro contro un Terra');
+    assert.ok(di(r.opzioni[1], 'Drain Punch').length > 0, 'la resistita resta');
+    assert.ok(!r.piani.some(p => p.azioni.some(a => /Wild Charge/.test(a))));
+    // Fake Out contro uno Spettro: nemmeno (non fa tentennare nessuno)
+    const fo = await opzioniContro({
+        squadra: [{ specie: 'Incineroar', item: 'Safety Goggles', mosse: ['Fake Out', 'Flare Blitz', 'Knock Off', 'Parting Shot'] }, { specie: 'Rillaboom', item: 'Assault Vest', mosse: ['Wood Hammer', 'Grassy Glide', 'U-turn', 'Superpower'] }],
+        avversari: ['Gholdengo', 'Rillaboom', 'Flutter Mane'], attiviAvv: ['Gholdengo', 'Rillaboom']
+    });
+    const fakeOut = di(fo.opzioni[0], 'Fake Out');
+    assert.ok(fakeOut.length > 0 && fakeOut.every(a => a.bersaglio === 2), `Fake Out solo su Rillaboom: ${fakeOut.map(a => a.testo)}`);
+    assert.ok(!fo.piani.some(p => p.azioni.some(a => /move 1 1 \[Fake Out\]/.test(a))), 'nessun piano lo prova su Gholdengo');
+});
+
+test('mosse senza effetto: le mosse a più bersagli restano se ne colpiscono almeno uno; la mossa obbligata resta (con i cambi accanto)', async () => {
+    const garchomp = { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Protect', 'Rock Slide'] };
+    const compagno = { specie: 'Rillaboom', item: 'Leftovers', mosse: ['Wood Hammer', 'Protect', 'U-turn', 'Superpower'] };
+    const due = await opzioniContro({ squadra: [garchomp, compagno], avversari: ['Tornadus', 'Corviknight', 'Flutter Mane'], attiviAvv: ['Tornadus', 'Corviknight'] });
+    assert.equal(di(due.opzioni[0], 'Earthquake').length, 0, 'Terremoto contro due Volanti: niente');
+    const uno = await opzioniContro({ squadra: [garchomp, compagno], avversari: ['Tornadus', 'Incineroar', 'Flutter Mane'], attiviAvv: ['Tornadus', 'Incineroar'] });
+    assert.ok(di(uno.opzioni[0], 'Earthquake').length > 0, 'contro un Volante e un Incineroar colpisce Incineroar');
+    // Swampert bloccato (Choice) su High Horsepower contro Dragonite: l'unica mossa resta tra le opzioni, e i cambi con lei
+    const bloccato = await opzioniContro({
+        squadra: [{ specie: 'Swampert', item: 'Choice Band', mosse: ['Waterfall', 'High Horsepower', 'Ice Punch', 'Protect'] }, { specie: 'Weavile', item: 'Leftovers', mosse: ['Icicle Crash', 'Knock Off', 'Protect', 'Ice Shard'] }],
+        attivi: [0], doppio: false, avversari: ['Dragonite', 'Heatran'], attiviAvv: ['Dragonite'],
+        richiesta: { extra: { active: [{ moves: ['Waterfall', 'High Horsepower', 'Ice Punch', 'Protect'].map(n => ({ move: n, id: K.id(n), pp: 16, maxpp: 16, target: 'normal', disabled: n !== 'High Horsepower' })) }] } }
+    });
+    assert.ok(di(bloccato.opzioni[0], 'High Horsepower').length > 0, 'mossa obbligata: resta');
+    assert.ok(bloccato.opzioni[0].some(a => a.tipo === 'cambio'), 'e il cambio');
+    assert.ok(/^(move 2|switch 2)$/.test(bloccato.scelta), bloccato.scelta);
+});
+
+test('_senzaEffetto: solo mosse di danno, mai su alleati, mai con un\'abilità che non si sa (Bronzong può non avere Levitate)', async () => {
+    const { sim } = await caricaSim();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    ia.osserva(['|gametype|doubles', '|switch|p1a: Bronzong|Bronzong, L50|100/100', '|switch|p1b: Mismagius|Mismagius, L50|100/100', '|turn|1']);
+    const ctx = ia.contesto(); ctx.doppio = true;
+    const vista = n => ia.vista(ia.lati.p1.mons[n]);
+    const mio = Object.assign(ia.vista(ia._nuovoMon('p2', 'Garchomp', 'Garchomp', 50)), { hp: 100, hpMax: 100 });
+    const avv = [vista('Bronzong'), vista('Mismagius')];
+    const eq = ia.mossa('Earthquake'), thunder = ia.mossa('Thunder Wave'), tb = ia.mossa('Tera Blast');
+    assert.equal(ia._senzaEffetto(mio, eq, 2, avv, ctx), true, 'Mismagius ha solo Levitate: immune');
+    assert.equal(ia._senzaEffetto(mio, eq, 1, avv, ctx), false, 'Bronzong: Levitate, Heatproof o Heavy Metal, non si sa');
+    assert.equal(ia._senzaEffetto(mio, thunder, 2, avv, ctx), false, 'una mossa di stato non è "senza effetto" qui');
+    assert.equal(ia._senzaEffetto(mio, tb, 2, avv, ctx), false, 'Tera Blast cambia tipo');
+    assert.equal(ia._senzaEffetto(mio, eq, -1, avv, ctx), false, 'gli alleati non contano');
+    assert.equal(ia._senzaEffetto(mio, eq, null, avv, ctx), false, 'a più bersagli: ne basta uno colpibile (Bronzong è incerto)');
+    assert.equal(ia._senzaEffetto(mio, eq, null, [null, avv[1]], ctx), true, 'a più bersagli, tutti immuni: sì');
+    assert.equal(ia._senzaEffetto(mio, eq, null, [null, null], ctx), false, 'nessun bersaglio vivo');
 });

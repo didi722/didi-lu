@@ -1313,6 +1313,7 @@
             if (req.canDynamax && maxMosse && this.ammette('dynamax')) gimmicks.push('dynamax');
             if (req.canTerastallize && !this.teraUsata && this.ammette('tera')) gimmicks.push('terastallize');
 
+            const daParte = [];         // le mosse senza effetto su nessun bersaglio: tornano solo se non resta altro da fare (mossa obbligata)
             for (const { m, j } of usabili) {
                 const d = this.mossa(m.id || m.move);
                 if (!d) { azioni.push({ tipo: 'mossa', testo: `move ${j + 1}`, slot, mossa: null, nome: m.move, mossaIdx: j + 1 }); continue; }
@@ -1326,7 +1327,11 @@
                     }
                     continue;
                 }
-                const bersagli = this._bersagli(m.target, slot, doppio, avv, mie);
+                const tutti = this._bersagli(m.target, slot, doppio, avv, mie);
+                // contro un bersaglio su cui di sicuro non ha effetto (immunità di tipo, abilità nota) una mossa non si prova: nel piano poteva "non servire" (il compagno ha già
+                // eliminato il bersaglio) e, a parità di valore, la scelta cadeva a caso anche su di lei; se poi l'ordine non è quello previsto il turno va sprecato
+                const bersagli = tutti.filter(t => !this._senzaEffetto(v, d, t, avv, ctx));
+                if (!bersagli.length && tutti.length) { daParte.push({ j, d, tutti }); continue; }
                 for (const g of gimmicks) {
                     if (g === 'terastallize' && d.categoria === 'Status' && !d.potenziamento) continue;
                     if (g === 'dynamax') {
@@ -1358,6 +1363,11 @@
                 }
             }
 
+            // se nessuna mossa può fare qualcosa (bloccato da uno strumento Choice su una mossa immune, tutte le mosse inutili) si offrono comunque, accanto ai cambi
+            if (!azioni.some(a => a.tipo === 'mossa')) {
+                for (const { j, d, tutti } of daParte) for (const t of tutti) azioni.push({ tipo: 'mossa', slot, mossa: d, nome: d.nome, mossaIdx: j + 1, bersaglio: t, gimmick: null, testo: conTarget(j, t, '') });
+            }
+
             // cambi
             if (!req.trapped) {
                 for (const s of squadra) {
@@ -1366,6 +1376,20 @@
                 }
             }
             return azioni;
+        }
+
+        // La mossa d (di v) non può fare niente al bersaglio t (numerazione del simulatore; null = chi c'è davanti o tutti gli avversari): immunità di tipo o abilità nota
+        // di ogni bersaglio che colpirebbe. Mai per le mosse di stato, per i bersagli alleati e quando non si sa nulla del bersaglio.
+        _senzaEffetto(v, d, t, avv, ctx) {
+            if (!d || d.categoria === 'Status' || d.id === 'terablast') return false;
+            if (t != null && t < 0) return false;
+            const bersagli = t != null ? [avv[t - 1]] : avv;
+            const vivi = bersagli.filter(o => o && o.hp > 0);
+            if (!vivi.length) return false;
+            return vivi.every(o => {
+                const r = C.danno(this.dex, v, o, d, ctx, { bersagliMultipli: vivi.length > 1 });
+                return !!r && r.immune === true;
+            });
         }
 
         // Quali bersagli ha senso provare (numerazione del simulatore: avversari 1,2; alleati -1,-2)
@@ -1807,6 +1831,9 @@
                     const pBlocco = b.lato !== keyL(lato) ? this._pBloccoPriorita(priorita(x), me, insiemi(b.lato), dif, ctx) : 0;
                     if (pBlocco >= 0.98) { bonus -= lato === 'mie' ? 0.3 : -0.3; continue; }      // il turno è sprecato
                     const colpo = this._colpo(me, dif, m, ctx, piu, lato, aiuto, x.slot, schermiDi(b.lato));
+                    // un bersaglio che di sicuro non subisce niente (immunità di tipo, abilità nota): né danno né tentennamento né effetti secondari (Fake Out su uno Spettro
+                    // non fa tentennare nessuno); se è l'unico bersaglio il turno è sprecato
+                    if (colpo.immune) { if (!piu) bonus -= lato === 'mie' ? 0.3 : -0.3; continue; }
                     if (pBlocco > 0) {
                         colpo.atteso *= 1 - pBlocco; colpo.pKO *= 1 - pBlocco;
                         bonus -= (lato === 'mie' ? 0.3 : -0.3) * pBlocco;
@@ -2029,7 +2056,7 @@
             if (dif.strumento === 'focussash' && dif.hp >= dif.hpMax) { max = Math.min(max, dif.hp - 1); min = Math.min(min, dif.hp - 1); medio = Math.min(medio, dif.hp - 1); }
             let pTiro = 0;
             if (max >= dif.hp) pTiro = min >= dif.hp ? 1 : max > min ? (max - dif.hp) / (max - min) : 1;
-            return { atteso: medio * prec, pKO: pTiro * prec, medio, mult: d.mult };
+            return { atteso: medio * prec, pKO: pTiro * prec, medio, mult: d.mult, immune: !!d.immune };
         }
 
         // Quanto in più (o in meno) vale un colpo per la sua efficacia: la super efficace si preferisce a una neutra quasi pari,
