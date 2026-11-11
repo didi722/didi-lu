@@ -72,13 +72,13 @@ test('style-box.css non ha più le regole delle vecchie azioni a capo (due fogli
 
 // ---------- il markup che scrive renderizza() ----------
 function eseguiRenderizza(lista, { bloccati = [], grid } = {}) {
-    const inizio = box.indexOf('async function renderizza(lista)');
+    const inizio = box.indexOf('async function renderizza(lista, contenitore)');
     const fine = box.indexOf('async function caricaInfoAbilita');
     assert.ok(inizio > 0 && fine > inizio, 'renderizza non trovata');
     const sorgente = box.slice(inizio, fine) + '\nreturn renderizza;';
     const griglia = grid || {
         innerHTML: '', dataset: {}, _classi: new Set(),
-        classList: { toggle(c, on) { if (on) griglia._classi.add(c); else griglia._classi.delete(c); } }
+        id: 'teamsGrid', classList: { toggle(c, on) { if (on) griglia._classi.add(c); else griglia._classi.delete(c); }, remove(c) { griglia._classi.delete(c); }, add(c) { griglia._classi.add(c); } }
     };
     const finestra = { nomiTeamBloccati: new Set(bloccati), coloriPokemonNoti: undefined };
     const ambiente = {
@@ -89,7 +89,7 @@ function eseguiRenderizza(lista, { bloccati = [], grid } = {}) {
         setTimeout: () => 0,
         EFFETTI_NATURE: {},
         formattaEffettoNatura: () => '',
-        EtichetteTeam: require('../docs/etichette-team.js'), etichetteDef: {}, escEtichetta: t => String(t), SpritePkm: require('../docs/sprite-pkm.js')     // il nome della GIF lo decide la regola condivisa
+        vistaBox: 'griglia', renderizzaCartelle() {}, EtichetteTeam: require('../docs/etichette-team.js'), etichetteDef: {}, escEtichetta: t => String(t), SpritePkm: require('../docs/sprite-pkm.js')     // il nome della GIF lo decide la regola condivisa
     };
     const renderizza = new Function(...Object.keys(ambiente), sorgente)(...Object.values(ambiente));
     return renderizza(lista).then(() => ({ griglia, finestra, html: griglia.innerHTML }));
@@ -133,12 +133,12 @@ test('renderizza: un team bloccato (in una stagione) ha solo la prova contro la 
 });
 
 test('renderizza: una tessera il cui colore è già noto nasce colorata (niente lampeggio quando si ridisegna)', async () => {
-    const inizio = box.indexOf('async function renderizza(lista)');
+    const inizio = box.indexOf('async function renderizza(lista, contenitore)');
     assert.ok(inizio > 0);
-    const griglia = { innerHTML: '', dataset: {}, classList: { toggle() {} } };
+    const griglia = { innerHTML: '', dataset: {}, id: 'teamsGrid', classList: { toggle() {}, remove() {}, add() {} } };
     const finestra = { nomiTeamBloccati: new Set(), coloriPokemonNoti: { 'Calyrex-Shadow': '#ff5599' } };
     const sorgente = box.slice(inizio, box.indexOf('async function caricaInfoAbilita')) + '\nreturn renderizza;';
-    const amb = { window: finestra, document: { getElementById: () => griglia }, caricaTeamBloccati: async () => {}, applicaColoreBordo() {}, setTimeout: () => 0, formattaEffettoNatura: () => '', EtichetteTeam: require('../docs/etichette-team.js'), etichetteDef: {}, escEtichetta: t => String(t), SpritePkm: require('../docs/sprite-pkm.js') };
+    const amb = { window: finestra, document: { getElementById: () => griglia }, caricaTeamBloccati: async () => {}, applicaColoreBordo() {}, setTimeout: () => 0, formattaEffettoNatura: () => '', vistaBox: 'griglia', renderizzaCartelle() {}, EtichetteTeam: require('../docs/etichette-team.js'), etichetteDef: {}, escEtichetta: t => String(t), SpritePkm: require('../docs/sprite-pkm.js') };
     await new Function(...Object.keys(amb), sorgente)(...Object.values(amb))([squadra('t1', 'A', 1, 0)]);
     assert.match(griglia.innerHTML, /id="box-t1-0" style="--tipo: #ff5599; --tipo2: #ff5599;"/);
     assert.ok(!/id="box-t1-1" style=/.test(griglia.innerHTML), 'il Pokémon di cui non si sa il tipo non ha stile');
@@ -167,7 +167,7 @@ test('applicaColoreBordo: il primo tipo di PokéAPI diventa il colore (--tipo) d
 });
 
 test('card del team: il clic su un Pokémon apre il team (non il Pokémon: quello si apre dal dettaglio del team), i badge no; ogni formato ha il suo colore', () => {
-    const inizio = box.indexOf('async function renderizza(lista)');
+    const inizio = box.indexOf('async function renderizza(lista, contenitore)');
     const fn = box.slice(inizio, box.indexOf('\n}\n', inizio));
     assert.doesNotMatch(fn, /class="pkm-box"[^>]*onclick/, 'le tessere non hanno un clic loro: sale alla card');
     assert.doesNotMatch(fn, /preparaAperturaPkm/);
