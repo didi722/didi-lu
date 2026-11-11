@@ -676,7 +676,7 @@ async function inizializzaPaginaBox() {
         if (sortFilter) {
             sortFilter.value = 'win';
         }
-        ripristinaPreferenze();     // i filtri, l'ordine e la vista di come l'ha lasciato (anche dopo un salvataggio che ricarica la pagina)
+        ripristinaPreferenze();     // l'ordine e la vista di come li ha lasciati
 
         // Lancia il rendering effettivo
         if (typeof applicaFiltri === "function") {
@@ -1288,19 +1288,16 @@ function apriShinyTeam(id) {
 }
 
 // ---------- Preferenze del Box e viste (griglia, lista, cartelle) ----------
-// Ricerca, formato, etichetta, ordine e vista restano salvati in questo browser, per giocatore: dopo un salvataggio (o ogni volta che si riapre il Box) si torna a come era.
+// Restano salvati in questo browser, per giocatore, solo l'ordine e la vista (griglia, lista, cartelle): gli altri filtri (ricerca, formato, etichetta) ogni volta ripartono da zero.
 const VISTE = ['griglia', 'lista', 'cartelle'];
-let vistaBox = 'griglia', prefsPronte = false, etichettaPendente = '', cartellaAperta = null, ultimiFiltrati = [];
+let vistaBox = 'griglia', prefsPronte = false, cartellaAperta = null, ultimiFiltrati = [];
 const chiavePrefs = () => `boxPrefs:${playerID}`;
 const campoBox = id => document.getElementById(id);
 
 function salvaPreferenze() {
     if (!prefsPronte || !playerID) return;
     try {
-        localStorage.setItem(chiavePrefs(), JSON.stringify({
-            q: campoBox('searchInput').value, cat: campoBox('categoryFilter').value, label: campoBox('labelFilter').value || etichettaPendente,
-            sort: campoBox('sortFilter').value, vista: vistaBox
-        }));
+        localStorage.setItem(chiavePrefs(), JSON.stringify({ sort: campoBox('sortFilter').value, vista: vistaBox }));
     } catch (e) { /* memoria del browser bloccata: pazienza */ }
 }
 
@@ -1318,13 +1315,10 @@ function ripristinaPreferenze() {
     const vista = campoBox('viewFilter');
     if (app) { [...vista.options].forEach(o => { if (o.value === 'lista') o.remove(); }); const b = document.querySelector('.vista-bottoni [data-vista="lista"]'); if (b) b.remove(); }
     if (p && typeof p === 'object') {
-        campoBox('searchInput').value = typeof p.q === 'string' ? p.q : '';
-        for (const [id, v] of [['categoryFilter', p.cat], ['sortFilter', p.sort], ['viewFilter', p.vista]]) {
+        for (const [id, v] of [['sortFilter', p.sort], ['viewFilter', p.vista]]) {
             const sel = campoBox(id);
             if (typeof v === 'string' && nelleOpzioni(sel, v)) sel.value = v;
         }
-        const lab = campoBox('labelFilter');
-        if (typeof p.label === 'string' && p.label) { if (nelleOpzioni(lab, p.label)) lab.value = p.label; else etichettaPendente = p.label; }
     }
     vistaBox = VISTE.includes(vista.value) ? vista.value : 'griglia';
     prefsPronte = true;
@@ -1395,13 +1389,11 @@ const escEtichetta = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 function aggiornaFiltroEtichette() {
     const sel = document.getElementById('labelFilter');
     if (!sel) return;
-    const prima = sel.value || etichettaPendente;
+    const prima = sel.value;
     const el = EtichetteTeam.elenco(etichetteDef);
     sel.innerHTML = '<option value="">All labels</option><option value="' + EtichetteTeam.NESSUNA + '">No label</option>' +
         el.map(e => `<option value="${escEtichetta(e.id)}">${escEtichetta(e.nome)}</option>`).join('');
-    const esiste = [...sel.options].some(o => o.value === prima);
-    sel.value = esiste ? prima : '';
-    if (esiste) etichettaPendente = '';
+    sel.value = [...sel.options].some(o => o.value === prima) ? prima : '';
 }
 
 // La finestra di un team: spunta le etichette che ha, cambia nome e colore, ne crea di nuove, le cancella
