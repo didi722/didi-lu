@@ -685,10 +685,17 @@ async function inizializzaPaginaBox() {
             sortFilter.value = 'win';
         }
         ripristinaPreferenze();     // l'ordine e la vista di come li ha lasciati
+        // si riapre dopo l'update di un team: il Box com'era prima (filtri, vista, cartella, scorrimento)
+        const comeEra = leggiBoxMessoDaParte();
+        if (comeEra) {
+            rimettiIlBox(comeEra);
+            if (comeEra.bloccati) await caricaTeamBloccati();
+        }
 
         // Lancia il rendering effettivo
         if (typeof applicaFiltri === "function") {
-            applicaFiltri();
+            await applicaFiltri();
+            if (comeEra) rimettiIlPuntoDelBox(comeEra);
         } else if (typeof renderizza === "function") {
             renderizza(tuttiITeam);
         }
@@ -1332,6 +1339,89 @@ function ripristinaPreferenze() {
     prefsPronte = true;
 }
 
+// ---------- Dopo l'update di un team la pagina si ricarica: deve tornare com'era ----------
+// Solo in quel caso (modifica di un team): come stava il Box quando si è premuto la matita (ricerca, formato, etichetta, ordine, vista, spunta dei bloccati,
+// cartella aperta, punto di scorrimento) si mette da parte in questa scheda e si rimette una volta sola alla riapertura, così il team appena
+// modificato non si perde in mezzo agli altri. In ogni altro caso il Box riparte da zero (restano solo ordine e vista, vedi sopra).
+const CHIAVE_DOPO_UPDATE = () => `boxDopoUpdate:${playerID}`;
+let fotoBoxPrimaDiModificare = null;
+
+function fotografiaBox(teamId) {
+    const fondo = document.getElementById('cartella-fondo');
+    const valore = id => { const el = campoBox(id); return el ? el.value : ''; };
+    return {
+        t: Date.now(), team: teamId || '',
+        cerca: valore('searchInput'), formato: valore('categoryFilter'), etichetta: valore('labelFilter'), ordine: valore('sortFilter'), vista: vistaBox,
+        bloccati: !!(campoBox('hideLockedFilter') || {}).checked,
+        cartella: vistaBox === 'cartelle' ? cartellaAperta : null,
+        scorri: Math.round(window.scrollY || document.documentElement.scrollTop || 0),
+        scorriCartella: fondo ? Math.round(fondo.scrollTop) : 0
+    };
+}
+
+// poco prima del ricaricamento di un update: la fotografia presa all'apertura della modifica (il Box dietro non è cambiato), o una presa adesso
+function mettiDaParteIlBox(teamId) {
+    try {
+        const foto = fotoBoxPrimaDiModificare && fotoBoxPrimaDiModificare.team === teamId ? fotoBoxPrimaDiModificare : fotografiaBox(teamId);
+        sessionStorage.setItem(CHIAVE_DOPO_UPDATE(), JSON.stringify(foto));
+    } catch (e) { /* memoria della scheda bloccata: pazienza */ }
+}
+
+// Letta una sola volta (si cancella subito) e valida per pochi minuti: un'apertura qualunque più tardi non deve ritrovarsi filtri vecchi
+function leggiBoxMessoDaParte() {
+    try {
+        const chiave = CHIAVE_DOPO_UPDATE();
+        const s = JSON.parse(sessionStorage.getItem(chiave) || 'null');
+        sessionStorage.removeItem(chiave);
+        return s && typeof s === 'object' && Date.now() - Number(s.t) < 10 * 60 * 1000 ? s : null;
+    } catch (e) { return null; }
+}
+
+// I campi come erano. Formato ed etichetta possono non avere ancora le opzioni (si caricano da Firebase in parallelo): se mancano si aggiungono, e i caricamenti
+// che le riscrivono mantengono la scelta se esiste ancora. Ordine e vista si rimettono solo se la scelta c'è (nell'app, per esempio, la lista non c'è).
+function rimettiIlBox(s) {
+    const metti = (id, v, creaSeManca) => {
+        const el = campoBox(id);
+        if (!el || typeof v !== 'string') return;
+        if (el.tagName === 'SELECT' && ![...el.options].some(o => o.value === v)) { if (!creaSeManca || !v) return; el.appendChild(new Option(v, v)); }
+        el.value = v;
+    };
+    metti('searchInput', s.cerca);
+    metti('categoryFilter', s.formato, true);
+    metti('labelFilter', s.etichetta, true);
+    metti('sortFilter', s.ordine);
+    metti('viewFilter', s.vista);
+    const bloccati = campoBox('hideLockedFilter');
+    if (bloccati) bloccati.checked = !!s.bloccati;
+    vistaBox = VISTE.includes(campoBox('viewFilter').value) ? campoBox('viewFilter').value : vistaBox;
+    cartellaAperta = vistaBox === 'cartelle' && s.cartella ? s.cartella : null;      // la finestra della cartella la ridisegna applicaFiltri
+}
+
+// Dopo il disegno: la pagina (e la finestra della cartella) allo stesso punto. L'altezza può assestarsi ancora per un attimo (immagini, loader che sparisce),
+// quindi si riprova un paio di volte, ma solo finché chi guarda non ha cominciato a scorrere da solo.
+function rimettiIlPuntoDelBox(s) {
+    let toccato = false;
+    const segna = () => { toccato = true; };
+    ['wheel', 'touchstart', 'mousedown', 'keydown'].forEach(e => window.addEventListener(e, segna, { once: true, passive: true }));
+    const vai = () => {
+        if (toccato) return;
+        const fondo = document.getElementById('cartella-fondo');
+        if (fondo && s.scorriCartella) fondo.scrollTop = s.scorriCartella;
+        window.scrollTo(0, s.scorri || 0);
+    };
+    vai();
+    // se il team modificato non è in vista (la pagina può essere cambiata) lo si porta al centro
+    const inVista = () => {
+        const marca = s.team && document.querySelector(`[data-team-badge="${s.team}"]`);
+        const card = marca && (marca.closest('.card') || marca.parentElement);
+        if (!card) return;
+        const r = card.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight) card.scrollIntoView({ block: 'center' });
+    };
+    setTimeout(() => { vai(); inVista(); }, 400);
+    setTimeout(() => { vai(); }, 1200);
+}
+
 // La card di una cartella: un formato, con dentro i suoi team come le app di una cartella dello smartphone (un Pokémon per team)
 function renderizzaCartelle(lista, grid, coloreFormato) {
     const gruppi = new Map();
@@ -1807,7 +1897,7 @@ function chiudiModale() {
     }
 
     
-function applicaFiltri() {
+async function applicaFiltri() {
     const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
     
@@ -1857,8 +1947,8 @@ function applicaFiltri() {
     ultimiFiltrati = filtrati;
     document.querySelectorAll('.vista-bottoni button').forEach(b => { const on = b.dataset.vista === vistaBox; b.classList.toggle('attivo', on); b.setAttribute('aria-pressed', String(on)); });
     salvaPreferenze();
-    renderizza(filtrati);
-    if (cartellaAperta) disegnaCartellaAperta();
+    await renderizza(filtrati);
+    if (cartellaAperta) await disegnaCartellaAperta();
 }
 
 async function applicaColoreBordo(pokemonNome, elemento) {
@@ -3503,6 +3593,7 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
             notificaSimulatore('salvato', { id: editingId || '' });
             return;
         }
+        if (editingId) mettiDaParteIlBox(editingId);        // solo per l'update di un team: dopo il ricaricamento il Box torna com'era
         location.reload();
 
     } catch (error) { 
@@ -7953,6 +8044,8 @@ async function modificaTeamNelBuilder(teamId) {
     const select = document.getElementById('helper-format-select');
     const grid = document.getElementById('helper-pkm-grid');
     if (!helper || !select || !grid) return;
+
+    fotoBoxPrimaDiModificare = fotografiaBox(teamId);       // com'è il Box adesso: dopo l'update la pagina si ricarica e deve tornare così
 
     // I Pokémon sono quelli salvati nel team: si rileggono dal testo di Showdown (c'è tutto), se manca dall'elenco salvato nel box
     const testo = String(team.testoShowdown || '').trim();
