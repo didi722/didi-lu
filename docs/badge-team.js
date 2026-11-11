@@ -317,7 +317,7 @@
         casella.innerHTML =
             `<span class="bt-barra-mini">${htmlMini(lista, 4)}</span>` +
             `<button type="button" class="bt-apri" aria-expanded="false" aria-haspopup="dialog">🏅 Badges <b>${presi}/${lista.length}</b></button>` +
-            `<div class="bt-pop" role="dialog" aria-label="Team badges" hidden>${htmlScaffale(lista, { titolo: 'TEAM BADGES' })}${nota ? `<p class="bt-nota">${esc(nota)}</p>` : ''}</div>`;
+            `<div class="bt-pop" role="dialog" aria-label="Team badges" hidden><button type="button" class="bt-chiudi" aria-label="Close the badges" title="Close">&times;</button>${htmlScaffale(lista, { titolo: 'TEAM BADGES' })}${nota ? `<p class="bt-nota">${esc(nota)}</p>` : ''}</div>`;
         const tasto = casella.querySelector('.bt-apri'), pop = casella.querySelector('.bt-pop');
         // Si chiude con un clic fuori, con Esc e di nuovo col tasto; aprendosi resta dentro lo schermo (il pannello è largo)
         const fuori = e => { if (!pop.contains(e.target) && !tasto.contains(e.target)) chiudi(); };
@@ -340,6 +340,7 @@
             document.addEventListener('keydown', tastiera);
         }
         tasto.addEventListener('click', e => { e.stopPropagation(); pop.hidden ? apri() : chiudi(); });
+        pop.querySelector('.bt-chiudi').addEventListener('click', () => { chiudi(); tasto.focus(); });      // la X in alto a destra
         return true;
     }
 

@@ -184,7 +184,7 @@ test('htmlMedaglietta: cerchio del livello con l\'immagine, descrizione al passa
 function casellaFinta() {
     const elementi = {
         '.bt-apri': { setAttribute() {}, addEventListener() {}, contains: () => false, focus() {} },
-        '.bt-pop': { hidden: true, style: {}, contains: () => false, getBoundingClientRect: () => ({ right: 0, top: 0 }) }
+        '.bt-pop': { hidden: true, style: {}, contains: () => false, getBoundingClientRect: () => ({ right: 0, top: 0 }), querySelector: sel => (sel === '.bt-chiudi' ? { addEventListener() {} } : null) }
     };
     return { innerHTML: '', querySelector: sel => elementi[sel] || null };
 }
@@ -200,6 +200,7 @@ test('montaBarra: senza "progresso" solo le medagliette vinte; con "progresso" (
     assert.equal(await B.montaBarra(null, col, { giocatore: 'didi', team: { nome: 'Alfa' }, progresso: true }), true);
     assert.match(col.innerHTML, /<button type="button" class="bt-apri" aria-expanded="false" aria-haspopup="dialog">🏅 Badges <b>0\/10<\/b><\/button>/);
     assert.match(col.innerHTML, /<div class="bt-pop" role="dialog" aria-label="Team badges" hidden>/);
+    assert.match(col.innerHTML, /<div class="bt-pop"[^>]*hidden><button type="button" class="bt-chiudi" aria-label="Close the badges" title="Close">&times;<\/button>/, 'la X in alto a destra del pannello');
     assert.equal((col.innerHTML.match(/data-badge="/g) || []).length, 10, 'lo scaffale ha tutti e dieci i badge, con il progresso');
     assert.match(col.innerHTML, /class="bt-nota"/, 'e la nota che i dati dal vivo non ci sono');
 
