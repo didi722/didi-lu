@@ -1358,9 +1358,9 @@ function ripristinaPreferenze() {
     prefsPronte = true;
 }
 
-// ---------- Dopo l'update di un team, o dopo una prova contro la CPU, il Box deve tornare com'era ----------
-// Solo in questi due casi: come stava il Box quando si è premuta la matita (la pagina si ricarica dopo il salvataggio) o il tasto della prova contro la CPU (si va nel
-// simulatore e si torna): ricerca, formato, etichetta, ordine, vista, spunta dei bloccati, cartella aperta, punto di scorrimento (e il dettaglio del team, se la prova
+// ---------- Dopo il salvataggio di un team (nuovo o modificato), o dopo una prova contro la CPU, il Box deve tornare com'era ----------
+// Solo in questi casi: come stava il Box quando si è premuto "Team builder" o la matita (la pagina si ricarica dopo il salvataggio) o il tasto della prova contro la CPU
+// (si va nel simulatore e si torna): ricerca, formato, etichetta, ordine, vista, spunta dei bloccati, cartella aperta, punto di scorrimento (e il dettaglio del team, se la prova
 // è partita da lì) si mettono da parte in questa scheda e si rimettono una volta sola alla riapertura, così il team su cui si lavorava non si perde in mezzo agli
 // altri. In ogni altro caso il Box riparte da zero (restano solo ordine e vista, vedi sopra).
 const CHIAVE_DOPO_UPDATE = () => `boxDopoUpdate:${playerID}`;
@@ -1394,6 +1394,7 @@ function mettiDaParteIlBox(teamId, tipo = 'update') {
     try {
         const foto = tipo === 'update' && fotoBoxPrimaDiModificare && fotoBoxPrimaDiModificare.team === teamId ? { ...fotoBoxPrimaDiModificare } : fotografiaBox(teamId);
         foto.tipo = tipo;
+        foto.t = Date.now();          // la validità conta da adesso: la fotografia può essere stata presa molti minuti fa, all'apertura del builder
         if (tipo === 'simulatore') foto.dettaglio = dettaglioAperto();
         sessionStorage.setItem(CHIAVE_DOPO_UPDATE(), JSON.stringify(foto));
     } catch (e) { /* memoria della scheda bloccata: pazienza */ }
@@ -3644,7 +3645,7 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
             notificaSimulatore('salvato', { id: editingId || '' });
             return;
         }
-        if (editingId) mettiDaParteIlBox(editingId);        // solo per l'update di un team: dopo il ricaricamento il Box torna com'era
+        mettiDaParteIlBox(editingId || '');        // team nuovo o update: dopo il ricaricamento il Box torna com'era (all'apertura del Team builder o della modifica)
         location.reload();
 
     } catch (error) { 
@@ -3807,6 +3808,7 @@ function toggleTeambuilderHelper() {
     if (!modal) return;
 
     if (modal.style.display === 'none' || modal.style.display === '') {
+        fotoBoxPrimaDiModificare = fotografiaBox('');      // com'è il Box adesso: se poi si salva un team nuovo la pagina si ricarica e deve tornare così
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden'; // 🌟 BLOCCA lo schermo dietro
         popolaSelettoreFormati(); 

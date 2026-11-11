@@ -13,10 +13,10 @@ const vm = require('node:vm');
 const box = fs.readFileSync(path.join(__dirname, '..', 'docs', 'box.html'), 'utf8');
 const estrai = (testo, da, a) => { const i = testo.indexOf(da); const j = testo.indexOf(a, i + da.length); assert.ok(i >= 0 && j > i, `non trovo ${da} … ${a}`); return testo.slice(i, j); };
 
-test('cablaggio: lo stato si mette da parte solo nell\'update di un team (dopo il ritorno al simulatore, prima del reload), non nella cancellazione', () => {
+test('cablaggio: lo stato si mette da parte nel salvataggio di un team, nuovo o modificato (dopo il ritorno al simulatore, prima del reload), non nella cancellazione', () => {
     const salva = estrai(box, 'async function salvaTeamSuFirebase', '// Funzione per ELIMINARE');
-    const parte = salva.indexOf('if (editingId) mettiDaParteIlBox(editingId);');
-    assert.ok(parte > 0, 'chiamata sotto if (editingId)');
+    const parte = salva.indexOf("mettiDaParteIlBox(editingId || '');");
+    assert.ok(parte > 0, 'chiamata sia per l\'update (id del team) sia per un team nuovo (id vuoto)');
     assert.ok(salva.indexOf('if (INCORPORATO)') < parte && parte < salva.indexOf('location.reload()'));
     assert.equal((salva.match(/mettiDaParteIlBox/g) || []).length, 1);
     const elimina = estrai(box, 'function cancellaTeamDaFirebase', '// MODIFICA uno specifico team');
@@ -24,6 +24,11 @@ test('cablaggio: lo stato si mette da parte solo nell\'update di un team (dopo i
     // la fotografia si prende all'apertura della modifica
     const apri = estrai(box, 'async function modificaTeamNelBuilder', 'tbModifica = {');
     assert.match(apri, /fotoBoxPrimaDiModificare = fotografiaBox\(teamId\)/);
+    // e per un team nuovo all'apertura del Team builder (il pulsante in basso): solo quando si apre, non quando si chiude
+    const helper = estrai(box, 'function toggleTeambuilderHelper', 'async function popolaSelettoreFormati');
+    assert.ok(helper.indexOf("fotoBoxPrimaDiModificare = fotografiaBox('')") > helper.indexOf("if (modal.style.display === 'none'"), 'nel ramo che apre');
+    assert.ok(helper.indexOf("fotoBoxPrimaDiModificare = fotografiaBox('')") < helper.indexOf("modal.style.display = 'flex'"), 'prima che il Box dietro venga bloccato');
+    assert.equal((helper.match(/fotografiaBox\(/g) || []).length, 1);
 });
 
 test('cablaggio: all\'apertura si legge una volta lo stato messo da parte, dopo ordine e vista salvati e prima del disegno, e si rimette il punto dopo il disegno', () => {
@@ -198,4 +203,28 @@ test('pageshow: se il browser rimette la pagina intera (tasto indietro) la fotog
     assert.ok(a.archivio.has('boxDopoUpdate:didi'), 'caricamento normale: resta');
     a.ascoltatori.pageshow[0]({ persisted: true });
     assert.ok(!a.archivio.has('boxDopoUpdate:didi'), 'pagina rimessa com\'era: non serve più');
+});
+
+test('un team nuovo: si usa la fotografia presa all\'apertura del Team builder (team vuoto); se è di un\'altra modifica se ne prende una adesso', () => {
+    const a = pagina({ scorri: 40 });
+    a.fn.imposta({ ...a.fn.fotografiaBox(''), scorri: 777 });             // com'era quando si è premuto "Team builder"
+    a.fn.mettiDaParteIlBox('');
+    assert.equal(a.fn.leggiBoxMessoDaParte().scorri, 777);
+    // una fotografia rimasta da una modifica annullata (di un altro team) non vale per un team nuovo
+    a.fn.imposta({ ...a.fn.fotografiaBox('T9'), scorri: 555 });
+    a.fn.mettiDaParteIlBox('');
+    assert.equal(a.fn.leggiBoxMessoDaParte().scorri, 40);
+});
+
+test('la validità conta dal salvataggio, non da quando è stata presa la fotografia: un team costruito in venti minuti torna lo stesso com\'era', () => {
+    const a = pagina({ scorri: 5 });
+    a.fn.imposta({ ...a.fn.fotografiaBox(''), scorri: 321, t: Date.now() - 20 * 60 * 1000 });      // presa venti minuti fa, all'apertura del builder
+    a.fn.mettiDaParteIlBox('');
+    const f = a.fn.leggiBoxMessoDaParte();
+    assert.ok(f, 'ancora valida: il tempo conta da quando si salva');
+    assert.equal(f.scorri, 321);
+    // lo stesso per l'update di un team
+    a.fn.imposta({ ...a.fn.fotografiaBox('T1'), scorri: 654, t: Date.now() - 45 * 60 * 1000 });
+    a.fn.mettiDaParteIlBox('T1');
+    assert.equal(a.fn.leggiBoxMessoDaParte().scorri, 654);
 });
