@@ -124,6 +124,7 @@
                         <select id="sortFilter" onchange="applicaFiltri()">
                             <option value="win">Max Wins</option>
                             <option value="alpha">A-Z</option>
+                            <option value="format">Format</option>
                         </select>
                     </label>
                 </div>
@@ -1838,6 +1839,9 @@ function applicaFiltri() {
     filtrati.sort((a, b) => {
         switch (sort) {
             case 'alpha': return (a.nome || "").localeCompare(b.nome || "");
+            // per formato (alfabetico) e, dentro ogni formato, dai più vittoriosi; a pari vittorie per nome
+            case 'format': return String(a.categoria || '').localeCompare(String(b.categoria || ''), undefined, { sensitivity: 'base' })
+                || Number(b.vittorie || 0) - Number(a.vittorie || 0) || (a.nome || '').localeCompare(b.nome || '');
             case 'win': return Number(b.vittorie || 0) - Number(a.vittorie || 0);
             case 'loss': return Number(b.sconfitte || 0) - Number(a.sconfitte || 0);
             case 'setV': return Number(b.setVinti || 0) - Number(a.setVinti || 0);
