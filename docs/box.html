@@ -1314,6 +1314,10 @@ function provaControCpu(id) {
 /** Il team come immagine da mandare in chat (scheda-condivisione.js): nome, formato, i Pokémon con strumento e mosse, il record */
 // ✨ Lo shiny di un Pokémon del team si compra nello Shop (monete): si apre sulla scheda Pokémon, già sul team giusto
 function apriShinyTeam(id) {
+    // lo shiny si compra nello Shop: prima si avvisa che si lascia il Box (con "Cancel" si resta qui)
+    const team = tuttiITeam.find(t => t.id === id);
+    const nome = team && team.nome ? ` "${team.nome}"` : '';
+    if (!confirm(`Shiny Pokémon are bought in the Shop. You're about to be taken to the Shop to make a Pokémon of your team${nome} shiny. Continue?`)) return;
     window.location.href = `shop.html?tab=pokemon&team=${encodeURIComponent(id)}`;
 }
 
