@@ -40,6 +40,8 @@
     font: 900 1rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
 }
 .cartella-mini > span img { max-width: 78%; max-height: 78%; filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, .35)); }
+.cartella-mini > span.mini-team { aspect-ratio: 4 / 3; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; align-content: center; gap: 2px; padding: 4px; }
+.cartella-mini > span.mini-team img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, .3)); }
 .cartella-mini > span.vuota { background: transparent; border-style: dashed; opacity: .5; }
 .cartella-conta { margin: 10px 0 0; color: var(--nb-ink, #000); font: 800 .75rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
 
