@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="badge-team.css">
 <link rel="stylesheet" href="box-team.css">
 <link rel="stylesheet" href="note-team.css">
+<link rel="stylesheet" href="etichette-team.css">
 <link rel="stylesheet" href="box-incorporato.css">
 <script src="dettagli.js" defer></script>
 <script src="team-bloccati.js"></script>
@@ -36,6 +37,7 @@
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
 <script src="note-team.js"></script>
+<script src="etichette-team.js"></script>
 <script src="formato-pool.js"></script>
 <script src="dati-gen.js"></script>
 <script src="sprites/indice.js"></script>
@@ -108,6 +110,12 @@
                         <span>Format</span>
                         <select id="categoryFilter" onchange="applicaFiltri()">
                             <option value="">All formats</option>
+                        </select>
+                    </label>
+                    <label class="box-filtro">
+                        <span>Label</span>
+                        <select id="labelFilter" onchange="applicaFiltri()">
+                            <option value="">All labels</option>
                         </select>
                     </label>
                     <label class="box-filtro">
@@ -547,6 +555,14 @@ async function scaricaDati() {
         }
 
         // Usiamo .once('value') all'avvio o lasciamo l'ascoltatore .on
+        // le etichette del giocatore (etichette-team.js): si ridisegna quando cambiano
+        db.ref(`players/${playerID}/etichette`).on('value', s => {
+            etichetteDef = s.val() || {};
+            aggiornaFiltroEtichette();
+            if (tuttiITeam.length) applicaFiltri();
+            const f = document.getElementById('etichette-fondo');
+            if (f && f.dataset.team) apriEtichette(f.dataset.team);
+        });
         db.ref(`players/${playerID}/teams`).on('value', (snapshot) => {
             const dataTeams = snapshot.val();
             
@@ -1022,9 +1038,16 @@ async function renderizza(lista) {
         const htmlCondividi = `
                 <button type="button" class="card-azione azione-condividi" onclick="event.stopPropagation(); condividiTeam('${team.id}')"
                         title="Copy this team (Showdown text) to the clipboard" aria-label="Copy this team to the clipboard">📤</button>`;
+        const htmlEtichette = `
+                <button type="button" class="card-azione azione-etichette" onclick="event.stopPropagation(); apriEtichette('${team.id}')"
+                        title="Labels of this team" aria-label="Labels of this team">🏷️</button>`;
+        const pillole = EtichetteTeam.diTeam(team, etichetteDef).map(e =>
+            `<span class="etichetta-pillola" style="background:${e.colore};color:${EtichetteTeam.coloreTesto(e.colore)}">${escEtichetta(e.nome)}</span>`).join('');
+        const htmlPillole = pillole ? `<div class="card-etichette">${pillole}</div>` : '';
         const htmlAzioni = `
             <div class="card-actions">
                 ${htmlProvaCpu}
+                ${htmlEtichette}
                 ${htmlShiny}
                 ${htmlCondividi}
                 ${!isBloccato ? `
@@ -1059,6 +1082,7 @@ async function renderizza(lista) {
                 <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
             </div>
             <h3>${team.nome || 'No teams yet'}</h3>
+            ${htmlPillole}
             ${htmlBarra}
             <div class="pkm-grid">
                 ${pokemonList.map((p, index) => {
@@ -1234,6 +1258,90 @@ function provaControCpu(id) {
 // ✨ Lo shiny di un Pokémon del team si compra nello Shop (monete): si apre sulla scheda Pokémon, già sul team giusto
 function apriShinyTeam(id) {
     window.location.href = `shop.html?tab=pokemon&team=${encodeURIComponent(id)}`;
+}
+
+// ---------- Etichette dei team (etichette-team.js) ----------
+let etichetteDef = {};
+const escEtichetta = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// Il filtro del Box: tutte, senza etichette, o una; se quella scelta non esiste più si torna a "tutte"
+function aggiornaFiltroEtichette() {
+    const sel = document.getElementById('labelFilter');
+    if (!sel) return;
+    const prima = sel.value;
+    const el = EtichetteTeam.elenco(etichetteDef);
+    sel.innerHTML = '<option value="">All labels</option><option value="' + EtichetteTeam.NESSUNA + '">No label</option>' +
+        el.map(e => `<option value="${escEtichetta(e.id)}">${escEtichetta(e.nome)}</option>`).join('');
+    sel.value = [...sel.options].some(o => o.value === prima) ? prima : '';
+}
+
+// La finestra di un team: spunta le etichette che ha, cambia nome e colore, ne crea di nuove, le cancella
+function apriEtichette(teamId) {
+    const team = tuttiITeam.find(t => t.id === teamId);
+    if (!team) return;
+    let fondo = document.getElementById('etichette-fondo');
+    if (!fondo) {
+        fondo = document.createElement('div');
+        fondo.id = 'etichette-fondo';
+        fondo.className = 'etichette-fondo';
+        fondo.addEventListener('click', e => { if (e.target === fondo) fondo.remove(); });
+        document.body.appendChild(fondo);
+    }
+    fondo.dataset.team = teamId;
+    const base = `players/${playerID}`;
+    const el = EtichetteTeam.elenco(etichetteDef);
+    const mie = team.etichette || {};
+    const righe = el.map(e => `
+        <div class="etichette-riga" data-id="${escEtichetta(e.id)}">
+            <input type="checkbox" ${mie[e.id] ? 'checked' : ''} aria-label="Use on this team">
+            <input type="color" value="${e.colore}" aria-label="Colour">
+            <input type="text" value="${escEtichetta(e.nome)}" maxlength="20" aria-label="Label name">
+            <button type="button" data-azione="elimina" title="Delete this label from all teams">🗑️</button>
+        </div>`).join('');
+    fondo.innerHTML = `
+        <div class="etichette-finestra" role="dialog" aria-label="Labels">
+            <h3>Labels · ${escEtichetta(team.nome || '')}</h3>
+            <p>Tick the labels this team has. Names and colours are yours: change them any time.</p>
+            ${righe || '<p>No labels yet: create the first one below.</p>'}
+            <div class="etichette-nuova">
+                ${el.length >= EtichetteTeam.MASSIMO ? `<p>You can have up to ${EtichetteTeam.MASSIMO} labels.</p>` : `
+                <div class="etichette-riga">
+                    <input type="color" id="etichetta-nuova-colore" value="${EtichetteTeam.COLORI[el.length % EtichetteTeam.COLORI.length]}" aria-label="Colour">
+                    <input type="text" id="etichetta-nuova-nome" placeholder="New label name" maxlength="20">
+                    <button type="button" data-azione="crea">Add</button>
+                </div>`}
+            </div>
+            <button type="button" class="etichette-chiudi" data-azione="chiudi">Done</button>
+        </div>`;
+    fondo.querySelector('[data-azione="chiudi"]').onclick = () => fondo.remove();
+    fondo.querySelectorAll('.etichette-riga[data-id]').forEach(riga => {
+        const id = riga.dataset.id;
+        const [spunta, colore, nome] = riga.querySelectorAll('input');
+        spunta.onchange = () => db.ref(`${base}/teams/${teamId}/etichette/${id}`).set(spunta.checked ? true : null).then(() => applicaFiltri());
+        colore.onchange = () => db.ref(`${base}/etichette/${id}/colore`).set(EtichetteTeam.coloreValido(colore.value));
+        nome.onchange = () => {
+            const n = EtichetteTeam.pulisciNome(nome.value);
+            if (n) db.ref(`${base}/etichette/${id}/nome`).set(n); else nome.value = (etichetteDef[id] || {}).nome || '';
+        };
+        riga.querySelector('[data-azione="elimina"]').onclick = async () => {
+            if (!confirm(`Delete the label "${(etichetteDef[id] || {}).nome || ''}" from all your teams?`)) return;
+            const agg = { [`${base}/etichette/${id}`]: null };
+            tuttiITeam.forEach(t => { if (t.etichette && t.etichette[id]) agg[`${base}/teams/${t.id}/etichette/${id}`] = null; });
+            await db.ref().update(agg);
+            applicaFiltri();
+        };
+    });
+    const crea = fondo.querySelector('[data-azione="crea"]');
+    if (crea) crea.onclick = async () => {
+        const n = EtichetteTeam.pulisciNome(document.getElementById('etichetta-nuova-nome').value);
+        if (!n) return document.getElementById('etichetta-nuova-nome').focus();
+        const id = EtichetteTeam.nuovoId(etichetteDef);
+        await db.ref().update({
+            [`${base}/etichette/${id}`]: { nome: n, colore: EtichetteTeam.coloreValido(document.getElementById('etichetta-nuova-colore').value) },
+            [`${base}/teams/${teamId}/etichette/${id}`]: true
+        });
+        applicaFiltri();
+    };
 }
 
 // Il tasto 📤 copia negli appunti il testo di Showdown del team (anche se non è modificabile) e lo dice con un messaggio che poi sparisce
@@ -1580,6 +1688,7 @@ function applicaFiltri() {
     const search = searchInput.value.toLowerCase().trim();
     const cat = categoryFilter.value;
     const sort = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'default';
+    const etichetta = document.getElementById('labelFilter') ? document.getElementById('labelFilter').value : '';
 
     console.log("Ricerca attiva per:", search); // Debug: guarda la console F12
 
@@ -1587,7 +1696,8 @@ function applicaFiltri() {
         // Se la ricerca è vuota, passa sempre. Se non è vuota, cerca nel testo.
         const matchesSearch = search === "" || team.tuttoIlTesto.includes(search);
         const matchesCat = cat === "" || team.categoria === cat;
-        return matchesSearch && matchesCat;
+        const matchesLabel = EtichetteTeam.corrisponde(team, etichetteDef, etichetta);
+        return matchesSearch && matchesCat && matchesLabel;
     });
 
     // Ordinamento
