@@ -1465,3 +1465,134 @@ test('Fake Out: per un avversario entrato con un cambio, un sostituto o un trasc
         assert.equal(ia._primoTurnoInCampo(inc()), true, `rientrato (${modo}): il primo turno è quello dopo il rientro`);
     }
 });
+
+// ===================================================
+// ARMOR TAIL, QUEENLY MAJESTY, DAZZLING, PSYCHIC TERRAIN: LE MOSSE PRIORITARIE VENGONO ANNULLATE
+// ===================================================
+test('priorità bloccate: l\'abilità si impara dal log (cant|ability), e senza saperla Farigiraf ha quasi sempre Armor Tail mentre Incineroar no', async () => {
+    const { sim } = await caricaSim();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    ia.osserva(['|gametype|doubles', '|switch|p1a: Farigiraf|Farigiraf, L50, F|100/100', '|switch|p1b: Incineroar|Incineroar, L50, M|100/100', '|turn|1']);
+    const fari = ia.lati.p1.mons.Farigiraf;
+    assert.ok(!fari.abilita);
+    ia.osserva(['|cant|p1a: Farigiraf|ability: Armor Tail|Fake Out|[of] p2a: Kingambit']);
+    assert.equal(fari.abilita, 'armortail', 'chi blocca la mossa rivela l\'abilità (è il primo nome del cant, non il bersaglio)');
+    assert.ok(!ia.lati.p1.mons.Incineroar.abilita, 'gli altri restano ignoti');
+    // probabilità
+    assert.equal(ia._pBloccaPriorita({ specie: 'Farigiraf', abilita: 'armortail', hp: 50 }), 1);
+    assert.equal(ia._pBloccaPriorita({ specie: 'Farigiraf', abilita: 'cudchew', hp: 50 }), 0, 'abilità nota diversa');
+    assert.equal(ia._pBloccaPriorita({ specie: 'Farigiraf', abilita: 'armortail', hp: 0 }), 0, 'caduto');
+    const fariIgnoto = ia._pBloccaPriorita({ specie: 'Farigiraf', abilita: null, hp: 50 });
+    assert.ok(fariIgnoto > 0.75 && fariIgnoto < 0.95, `Farigiraf senza abilità nota: ${fariIgnoto}`);
+    assert.ok(ia._pBloccaPriorita({ specie: 'Tsareena', abilita: null, hp: 50 }) > 0.75, 'Queenly Majesty');
+    assert.ok(ia._pBloccaPriorita({ specie: 'Bruxish', abilita: null, hp: 50 }) > 0.75, 'Dazzling');
+    assert.equal(ia._pBloccaPriorita({ specie: 'Incineroar', abilita: null, hp: 50 }), 0);
+    assert.equal(ia._pBloccaPriorita({ specie: 'Specie Inesistente', abilita: null, hp: 50 }), 0);
+    // con la manopola a 1 si torna alla sola proporzione delle abilità (Cud Chew e Armor Tail pari, Sap Sipper nascosta un terzo)
+    const piatta = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, parametri: { priorBloccoPriorita: 1 } });
+    const p = piatta._pBloccaPriorita({ specie: 'Farigiraf', abilita: null, hp: 50 });
+    assert.ok(p > 0.38 && p < 0.48, `senza il pregiudizio: ${p}`);
+});
+
+test('priorità bloccate: contro un bersaglio protetto la probabilità sale solo con mosse prioritarie; Psychic Terrain tocca chi è a terra; Mold Breaker ignora le abilità', async () => {
+    const { sim } = await caricaSim();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    const fari = { specie: 'Farigiraf', abilita: 'armortail', hp: 100 };
+    const compagno = { specie: 'Incineroar', abilita: 'blaze', hp: 100 };
+    const sneak = { specie: 'Kingambit', abilita: 'defiant', hp: 100 };
+    assert.equal(ia._pBloccoPriorita(1, sneak, [fari, compagno], compagno, {}), 1, 'protegge anche il compagno');
+    assert.equal(ia._pBloccoPriorita(0, sneak, [fari, compagno], compagno, {}), 0, 'una mossa normale passa');
+    assert.equal(ia._pBloccoPriorita(-1, sneak, [fari, compagno], compagno, {}), 0);
+    assert.equal(ia._pBloccoPriorita(1, { specie: 'Haxorus', abilita: 'moldbreaker', hp: 100 }, [fari, compagno], compagno, {}), 0, 'Mold Breaker passa sopra Armor Tail');
+    assert.equal(ia._pBloccoPriorita(1, sneak, [compagno], compagno, {}), 0, 'nessuno con l\'abilità');
+    // Psychic Terrain: solo chi tocca terra, e senza bisogno di abilità
+    const volante = { specie: 'Charizard', abilita: 'blaze', hp: 100, tipi: ['Fire', 'Flying'], ref: {} };
+    const aTerra = { specie: 'Incineroar', abilita: 'blaze', hp: 100, tipi: ['Fire', 'Dark'], ref: {} };
+    const psy = { terreno: 'psychic' };
+    assert.equal(ia._pBloccoPriorita(1, sneak, [aTerra], aTerra, psy), 1, 'a terra');
+    assert.equal(ia._pBloccoPriorita(1, sneak, [volante], volante, psy), 0, 'volante');
+    assert.equal(ia._pBloccoPriorita(1, sneak, [aTerra], aTerra, { terreno: 'grassy' }), 0, 'un altro terreno');
+    // e con più possibili: 1 - (1-p)(1-q)
+    const mezzo = ia._pBloccaPriorita({ specie: 'Farigiraf', abilita: null, hp: 100 });
+    const due = ia._pBloccoPriorita(1, sneak, [{ specie: 'Farigiraf', abilita: null, hp: 100 }, { specie: 'Farigiraf', abilita: null, hp: 100 }], compagno, {});
+    assert.ok(Math.abs(due - (1 - (1 - mezzo) * (1 - mezzo))) < 1e-9);
+});
+
+// la CPU gioca Kingambit (Sucker Punch) e Dragonite (Extreme Speed): contro un Farigiraf non deve attaccare con le mosse prioritarie
+async function pianiContro(avversari, righeExtra = [], miei) {
+    const { sim } = await caricaSim();
+    const squadra = miei || [
+        { specie: 'Kingambit', item: 'Leftovers', abilita: 'Defiant', mosse: ['Sucker Punch', 'Iron Head', 'Protect', 'Swords Dance'] },
+        { specie: 'Dragonite', item: 'Leftovers', abilita: 'Multiscale', mosse: ['Extreme Speed', 'Dragon Claw', 'Protect', 'Earthquake'] },
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Dragon Claw', 'Rock Slide', 'Protect'] }
+    ];
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, debug: true, avversario: true });
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], livello: 50 });
+    const apertura = logAvversario(avversari, true, 1, 50);
+    const righe = [...apertura.slice(0, -1), ...logMiaSquadra(squadra, [0, 1], 50), '|turn|1', ...righeExtra];
+    ia.osserva(righe);
+    const s = ia.scegli(r);
+    return { ia, s, piani: ia.ultimaValutazione };
+}
+const conPrioritaria = p => p.azioni.some(a => /\[(Sucker Punch|Extreme Speed)\]/.test(a));
+const fuori = { specie: 'Incineroar' };
+
+test('priorità bloccate: con Armor Tail già rivelata la CPU non fa Sucker Punch né Extreme Speed contro Farigiraf (né contro il suo compagno)', async () => {
+    const rivelata = await pianiContro([{ specie: 'Farigiraf' }, fuori, { specie: 'Rillaboom' }],
+        ['|cant|p1a: Farigiraf|ability: Armor Tail|Fake Out|[of] p2a: Kingambit', '|upkeep', '|turn|2']);
+    assert.ok(!rivelata.piani.slice(0, 3).some(conPrioritaria), `piani migliori: ${rivelata.piani.slice(0, 3).map(p => p.azioni.join(' / ')).join(' | ')}`);
+    assert.ok(!/move 1 /.test(rivelata.s.split(',')[0]) && !/move 1 /.test(rivelata.s.split(',')[1]), `scelta: ${rivelata.s}`);
+    // controllo: davanti a un Gholdengo (senza il blocco) una mossa prioritaria è tra i piani migliori
+    const libero = await pianiContro([{ specie: 'Gholdengo' }, fuori, { specie: 'Rillaboom' }]);
+    assert.ok(libero.piani.slice(0, 4).some(conPrioritaria), `senza Armor Tail: ${libero.piani.slice(0, 4).map(p => p.azioni.join(' / ')).join(' | ')}`);
+});
+
+test('priorità bloccate: anche con l\'abilità ancora ignota Farigiraf pesa quasi come una certezza, e nessun piano migliore usa mosse prioritarie su di lui', async () => {
+    const ignota = await pianiContro([{ specie: 'Farigiraf' }, fuori, { specie: 'Rillaboom' }]);
+    assert.ok(!ignota.piani.slice(0, 3).some(conPrioritaria), `piani migliori: ${ignota.piani.slice(0, 3).map(p => p.azioni.join(' / ')).join(' | ')}`);
+});
+
+// il valore del miglior piano che usa Sucker Punch (meno infinito se tra i piani valutati non c'è)
+const valoreConSuckerPunch = piani => Math.max(-Infinity, ...piani.filter(p => p.azioni.some(a => /\[Sucker Punch\]/.test(a))).map(p => p.val));
+const KINGAMBIT_E_GARCHOMP = [
+    { specie: 'Kingambit', item: 'Leftovers', abilita: 'Defiant', mosse: ['Sucker Punch', 'Iron Head', 'Protect', 'Swords Dance'] },
+    { specie: 'Garchomp', item: 'Leftovers', mosse: ['Dragon Claw', 'Rock Slide', 'Protect'] }
+];
+
+test('priorità bloccate: Psychic Terrain toglie valore a Sucker Punch contro chi è a terra, ma non contro un volante', async () => {
+    const senza = ['|upkeep', '|turn|2'], con = ['|-fieldstart|move: Psychic Terrain', '|upkeep', '|turn|2'];
+    const terra = [{ specie: 'Gholdengo' }, { specie: 'Rillaboom' }, fuori];
+    const cielo = [{ specie: 'Drifblim' }, { specie: 'Tornadus' }, fuori];
+    const aTerraLibero = valoreConSuckerPunch((await pianiContro(terra, senza, KINGAMBIT_E_GARCHOMP)).piani);
+    const aTerraPsy = valoreConSuckerPunch((await pianiContro(terra, con, KINGAMBIT_E_GARCHOMP)).piani);
+    assert.ok(aTerraLibero > -Infinity, 'senza terreno Sucker Punch è tra i piani');
+    assert.ok(aTerraPsy < aTerraLibero - 0.3, `a terra: ${aTerraPsy} con Psychic Terrain contro ${aTerraLibero} senza`);
+    const voloLibero = valoreConSuckerPunch((await pianiContro(cielo, senza, KINGAMBIT_E_GARCHOMP)).piani);
+    const voloPsy = valoreConSuckerPunch((await pianiContro(cielo, con, KINGAMBIT_E_GARCHOMP)).piani);
+    assert.ok(voloLibero > -Infinity && voloPsy > voloLibero - 0.1, `volanti: ${voloPsy} con Psychic Terrain contro ${voloLibero} senza`);
+});
+
+test('priorità bloccate: l\'avversario non è previsto usare Fake Out contro il Farigiraf con Armor Tail della CPU (né contro il suo compagno), mentre senza il blocco sì', async () => {
+    const { sim } = await caricaSim();
+    const scelte = async (squadra) => {
+        const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, debug: true, avversario: true });
+        const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], livello: 50 });
+        const apertura = logAvversario([{ specie: 'Incineroar' }, { specie: 'Rillaboom' }, { specie: 'Flutter Mane' }], true, 1, 50);
+        ia.osserva([...apertura.slice(0, -1), ...logMiaSquadra(squadra, [0, 1], 50), '|turn|1']);
+        ia.scegli(r);
+        const S = ia.ultimoStato.stato0;
+        // l'avversario ha solo due mosse da scegliere, a parità di potenza: Fake Out (prioritaria) e Tackle
+        ia.mosseAvversario = () => [ia.mossa('Fake Out'), ia.mossa('Tackle')];
+        return [0, 1].map(b => ia._azioneAvversaria(S.avv[0], 0, S, 0)).concat([ia._azioneAvversaria(S.avv[1], 1, S, 0)]).map(a => a.mossa && a.mossa.id);
+    };
+    const senza = await scelte([
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Dragonite', item: 'Leftovers', mosse: ['Dragon Claw', 'Extreme Speed', 'Protect'] }
+    ]);
+    const con = await scelte([
+        { specie: 'Farigiraf', item: 'Leftovers', abilita: 'Armor Tail', mosse: ['Psychic', 'Hyper Voice', 'Protect', 'Trick Room'] },
+        { specie: 'Dragonite', item: 'Leftovers', mosse: ['Dragon Claw', 'Extreme Speed', 'Protect'] }
+    ]);
+    assert.ok(senza.includes('fakeout'), `senza il blocco: ${senza}`);
+    assert.ok(!con.includes('fakeout'), `con Armor Tail in campo: ${con}`);
+});

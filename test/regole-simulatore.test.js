@@ -60,3 +60,28 @@ test('Fake Out al secondo turno in campo dopo un primo turno perso per un tenten
     assert.ok(t2.includes('|-fail|p2a: Mienfoo'), 'e fallisce');
     assert.ok(!t2.some(r => /^\|cant\|p1a: Mienfoo\|flinch/.test(r)), 'il mio Mienfoo non tentenna');
 });
+
+// 3. Armor Tail (e Queenly Majesty, Dazzling) annulla le mosse prioritarie dirette a chi le ha o al suo compagno, e lo fa vedere con una riga
+//    "|cant|<chi ha l'abilità>|ability: Armor Tail|<mossa>|[of] <chi l'ha usata>": la CPU impara l'abilità da lì (cpu-ia.js, case 'cant')
+test('Armor Tail: Fake Out contro il Farigiraf o contro il suo compagno viene annullato e la riga del log nomina chi ha l\'abilità; la CPU la impara', async () => {
+    const { sim } = await caricaSim();
+    const IA = require('../docs/cpu-ia.js');
+    const mienfoo = 'Mienfoo @ Leftovers\nAbility: Inner Focus\nLevel: 50\n- Fake Out\n- Tackle\n- Protect\n- Drain Punch\n\n' +
+        'Whimsicott @ Leftovers\nAbility: Prankster\nLevel: 50\n- Tackle\n- Protect\n- Moonblast\n- Encore';
+    const farigiraf = 'Farigiraf @ Leftovers\nAbility: Armor Tail\nLevel: 50\n- Psychic\n- Protect\n- Hyper Voice\n- Trick Room\n\n' +
+        'Garchomp @ Leftovers\nAbility: Rough Skin\nLevel: 50\n- Dragon Claw\n- Protect\n- Earthquake\n- Rock Slide';
+    // Mienfoo (p1a) usa Fake Out sul compagno di Farigiraf (p2b), poi nel turno 2 la CPU ha già visto l'abilità
+    const e = await giocaPartita({
+        sim, formato: FORMATO, team1: mienfoo, team2: farigiraf, maxTurni: 3,
+        agente1: scelte({ p1: ['team 12', 'move 1 2, move 2'] })('p1'),
+        agente2: scelte({ p2: ['team 12', 'move 2, move 2'] })('p2')
+    });
+    const t1 = e.righe.slice(e.righe.indexOf('|turn|1'), e.righe.indexOf('|turn|2'));
+    const riga = t1.find(r => /^\|cant\|/.test(r) && /Armor Tail/.test(r));
+    assert.ok(riga, 'log: ' + e.righe.slice(0, 60).join(' ; '));
+    assert.match(riga, /^\|cant\|p2a: Farigiraf\|ability: Armor Tail\|Fake Out\|\[of\] p1a: Mienfoo$/, 'il primo nome è chi ha l\'abilità, non chi ha attaccato');
+    assert.ok(!t1.some(r => /^\|-damage\|p2b: Garchomp/.test(r) && /Fake Out/.test(t1[t1.indexOf(r) - 1] || '')), 'nessun danno da Fake Out');
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: () => 0.5 });
+    ia.osserva(e.righe.slice(0, e.righe.indexOf('|turn|2') + 1));
+    assert.equal(ia.lati.p2.mons.Farigiraf.abilita, 'armortail');
+});
