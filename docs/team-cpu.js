@@ -100,6 +100,8 @@
             doppio: formatoInDoppio(regolamento),
             meccaniche: meccaniche(regolamento),
             struttura: String(regolamento.strutturaSito || 'custom').toLowerCase().trim(),
+            // "within" (e il VGC) = solo il Pokédex di quella generazione; "up to" = anche i Pokémon e le mosse delle generazioni passate (come nel Team Builder)
+            within: regolamento.genRuleType === 'within' || String(regolamento.strutturaSito || 'custom').toLowerCase().trim() === 'vgc',
             baseTier: String(regolamento.baseTier || '').toUpperCase(),
             // Anything Goose: nessuna clausola e nessun limite di tier. Si può doppiare Pokémon e strumenti (due Calyrex-Shadow vanno bene)
             goose: String(regolamento.strutturaSito || '').toLowerCase().trim() === 'anything_goes',
@@ -287,8 +289,10 @@
             if (mosseBandite(m.nome)) continue;
             if (!mossaAmmessa(dex, m, restrizioni)) continue;
             if (dex.moves.get(m.id).gen > ctx.gen) continue;
-            // 'Past' = tolta dal gioco di quella generazione (Wake-Up Slap in Gen 8 e 9): con le fonti retroattive non basta più la generazione della fonte
-            if (dex.moves.get(m.id).isNonstandard) continue;
+            // 'Past' = tolta dal gioco di quella generazione (Wake-Up Slap in Gen 8 e 9, Fishious Rend in Gen 9): con le fonti retroattive non basta più la generazione
+            // della fonte. Vale nei formati "within"; in quelli "up to" le mosse delle generazioni passate sono ammesse, come i Pokémon che le imparano (Dracovish).
+            const nonStandard = dex.moves.get(m.id).isNonstandard;
+            if (nonStandard && (ctx.within || nonStandard !== 'Past')) continue;
             // la mossa deve essere davvero legale per questa specie nella generazione
             const problema = validatore ? validatore.checkCanLearn(dex.moves.get(m.id), base, validatore.allSources(base), { species: base.name, moves: [m.nome], level: ctx.livello }) : null;
             if (problema) continue;
