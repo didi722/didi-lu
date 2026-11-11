@@ -1334,17 +1334,13 @@ function renderizzaCartelle(lista, grid, coloreFormato) {
         const teams = gruppi.get(cat);
         const visibili = teams.length > 9 ? teams.slice(0, 8) : teams;
         const tessere = visibili.map(t => {
-            const lista = (Array.isArray(t.pokemon) ? t.pokemon : Object.values(t.pokemon || {})).filter(x => x && x.nome).slice(0, 6);
-            if (!lista.length) return `<span title="${escEtichetta(t.nome || '')}">?</span>`;
-            // l'icona di un team: i suoi sei Pokémon in piccolo (tre per due righe)
-            const mini = lista.map(p => {
-                const url = String(p.nome).toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                return `<img src="${SpritePkm.gif(p.nome, p.shiny)}" alt="" onerror="gestisciErroreSprite(this, '${url}', '${SpritePkm.id(p.nome)}')">`;
-            }).join('');
-            return `<span class="mini-team" title="${escEtichetta(t.nome || '')}">${mini}</span>`;
+            const lista = Array.isArray(t.pokemon) ? t.pokemon : Object.values(t.pokemon || {});
+            const p = lista.find(x => x && x.nome);
+            if (!p) return `<span title="${escEtichetta(t.nome || '')}">?</span>`;
+            const url = String(p.nome).toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+            return `<span title="${escEtichetta(t.nome || '')}"><img src="${SpritePkm.gif(p.nome, p.shiny)}" alt="" onerror="gestisciErroreSprite(this, '${url}', '${SpritePkm.id(p.nome)}')"></span>`;
         });
         if (teams.length > 9) tessere.push(`<span>+${teams.length - 8}</span>`);
-        while (tessere.length < Math.min(9, Math.max(3, tessere.length))) tessere.push('<span class="vuota"></span>');
         const conta = `${teams.length} team${teams.length === 1 ? '' : 's'}`;
         return `
         <div class="card cartella" style="--i: ${i}; --cc: ${coloreFormato(cat)};" data-cat="${escEtichetta(cat)}" tabindex="0" role="button"
