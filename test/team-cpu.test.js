@@ -734,6 +734,47 @@ test('Zapdos con Tailwind in Gen 8: la CPU e il Team Builder lo ammettono sia in
     }
 });
 
+// Le mosse "Past" (tolte da Scarlatto e Violetto: Fishious Rend, Wake-Up Slap...) valgono solo nei formati "within" e nel VGC, dove i Pokémon sono quelli di Gen 9.
+// In "up to 9" i Pokémon delle generazioni passate sono ammessi (Dracovish) e quindi anche le loro mosse (Fishious Rend, la sua mossa firma).
+test('Dracovish con Fishious Rend: ammessa in "up to 9" dal Team Builder e dalla CPU, esclusa in "within 9" e nel VGC', async () => {
+    const { sim } = await caricaSim();
+    // Team Builder: la stessa funzione di box.html, con lo stato dei vari tipi di formato (con le mosse di Showdown: Fishious Rend è 'Past' in Gen 9)
+    const box = fs.readFileSync(path.join(DOCS, 'box.html'), 'utf8');
+    const inizio = box.indexOf('function tbMossaAmmessaDalFormato(');
+    const corpo = box.slice(inizio, box.indexOf('\n}\n', inizio) + 2);
+    const mossa = id => sim.Dex.forGen(9).moves.get(id);
+    assert.equal(mossa('fishiousrend').isNonstandard, 'Past', 'nei dati di Gen 9 è una mossa tolta dal gioco');
+    const ammessa = (tbStato, m) => {
+        const ctx = { tbStato, voceBannata: () => false, m };
+        require('node:vm').runInNewContext(`${corpo}; risultato = tbMossaAmmessaDalFormato(m);`, ctx);
+        return ctx.risultato;
+    };
+    const m = x => ({ name: x.name, isNonstandard: x.isNonstandard });
+    assert.equal(ammessa({ gen: 9, within: false, regolamento: {} }, m(mossa('fishiousrend'))), true, 'up to 9: sì');
+    assert.equal(ammessa({ gen: 9, within: true, regolamento: {} }, m(mossa('fishiousrend'))), false, 'within 9 (o VGC): no, la mossa non esiste in Scarlatto e Violetto');
+    assert.equal(ammessa({ gen: 9, within: false, regolamento: {} }, m(mossa('wakeupslap'))), true, 'up to 9: Wake-Up Slap sì');
+    assert.equal(ammessa({ gen: 9, within: true, regolamento: {} }, m(mossa('wakeupslap'))), false);
+    assert.equal(ammessa({ gen: 8, within: true, regolamento: {} }, m(mossa('fishiousrend'))), true, 'Gen 8: la mossa esiste');
+    assert.equal(ammessa({ gen: 9, within: false, regolamento: {} }, { name: 'Pound (LGPE)', isNonstandard: 'LGPE' }), false, 'le mosse di Let\'s Go non entrano mai');
+    assert.equal(ammessa({ gen: 9, within: false, regolamento: {} }, { name: 'Max Guard', isMax: true }), false);
+
+    // CPU: i candidati di un formato "up to 9" hanno Fishious Rend su Dracovish, quelli di un "within 9" e del VGC no
+    const pool = ['dracovish', 'garchomp', 'dragonite', 'salamence', 'haxorus', 'hydreigon', 'kommoo', 'goodra'].map(x => ({ id: x }));
+    const mosseDi = async regolamento => {
+        const prep = await T.preparaFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, pool, regolamento, pokedexBase: base });
+        assert.equal(prep.insufficiente, false, 'abbastanza candidati');
+        const d = prep.cand.find(c => c.id === 'dracovish');
+        assert.ok(d, 'Dracovish è tra i candidati');
+        return d.mosseDa;
+    };
+    assert.equal(T.contestoDa(reg({ genRuleType: 'up_to' })).within, false);
+    assert.equal(T.contestoDa(reg({ genRuleType: 'within' })).within, true);
+    assert.equal(T.contestoDa(reg({ genRuleType: 'up_to', strutturaSito: 'vgc' })).within, true, 'il VGC vale come "within"');
+    assert.equal((await mosseDi(reg({ genRuleType: 'up_to' }))).has('fishiousrend'), true, 'CPU, up to 9');
+    assert.equal((await mosseDi(reg({ genRuleType: 'within' }))).has('fishiousrend'), false, 'CPU, within 9');
+    assert.equal((await mosseDi(reg({ genRuleType: 'up_to', strutturaSito: 'vgc' }))).has('fishiousrend'), false, 'CPU, VGC');
+});
+
 // ---------- varietà tra i team di una sessione ----------
 test('un team alla volta: con la memoria della sessione i team cambiano davvero (poca sovrapposizione e non i soliti dieci Pokémon)', { timeout: 300000 }, async () => {
     const sessione = await sessioneDi(reg());

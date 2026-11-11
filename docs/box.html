@@ -5238,7 +5238,9 @@ function tbMossaAmmessaDalFormato(m) {
     if (!m || !m.name) return false;
     if (m.isZ || m.isMax) return false;
     if (['CAP', 'LGPE', 'Custom', 'Unobtainable', 'Future', 'Gigantamax'].includes(m.isNonstandard)) return false;
-    if (tbStato.gen === 9 && m.isNonstandard === 'Past') return false; // tolta da Scarlatto e Violetto (Wake-Up Slap...)
+    // 'Past' = tolta da Scarlatto e Violetto (Wake-Up Slap, Fishious Rend...): vale nei formati "within" (e nel VGC), dove i Pokémon sono quelli di Gen 9.
+    // In "up to 9" ci sono anche i Pokémon delle generazioni passate (Dracovish) e quindi le loro mosse: come per gli strumenti più sotto.
+    if (tbStato.within && tbStato.gen === 9 && m.isNonstandard === 'Past') return false;
         if (voceBannata(tbStato.regolamento?.restrizioni, 'mosse', m.name)) return false;
 
     const regole = tbStato.regolamento?.restrizioni?.mosse;
