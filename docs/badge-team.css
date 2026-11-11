@@ -115,6 +115,9 @@
 .bt-mini.bt-gold { --livello: var(--bt-oro); }
 .bt-mini.bt-platinum { --livello: var(--bt-platino); }
 .bt-mini-img { width: 22px; height: 22px; object-fit: contain; }
+/* un badge ancora bloccato: grigio tutto, anche l'immagine (e l'icona di riserva) */
+.bt-mini.bt-locked { --livello: color-mix(in srgb, var(--nb-carta, #fff) 55%, #8a8a99); }
+.bt-mini.bt-locked .bt-mini-img, .bt-mini.bt-locked .bt-finto { filter: grayscale(1) brightness(.55) contrast(.9); opacity: .55; }
 .bt-mini .bt-finto { width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; background: none; font-size: .9rem; }
 .bt-mini:focus-visible { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 2px; }
 .bt-mini.bt-altri { width: auto; min-width: 32px; padding: 0 7px; border-radius: 16px; background: var(--nb-carta, #fff); font: 900 .7rem/1 'Josefin Sans', sans-serif; color: var(--nb-ink, #000); }
