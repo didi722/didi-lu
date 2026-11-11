@@ -1021,7 +1021,7 @@ async function renderizza(lista) {
                         title="Make a Pokémon of this team shiny (in the Shop)" aria-label="Make a Pokémon of this team shiny, in the Shop">✨</button>`;
         const htmlCondividi = `
                 <button type="button" class="card-azione azione-condividi" onclick="event.stopPropagation(); condividiTeam('${team.id}')"
-                        title="Share this team as an image" aria-label="Share this team">📤</button>`;
+                        title="Copy this team (Showdown text) to the clipboard" aria-label="Copy this team to the clipboard">📤</button>`;
         const htmlAzioni = `
             <div class="card-actions">
                 ${htmlProvaCpu}
@@ -1236,16 +1236,30 @@ function apriShinyTeam(id) {
     window.location.href = `shop.html?tab=pokemon&team=${encodeURIComponent(id)}`;
 }
 
+// Il tasto 📤 copia negli appunti il testo di Showdown del team (anche se non è modificabile) e lo dice con un messaggio che poi sparisce
+let timerCopiato = null;
+function mostraCopiato(testo, errore = false) {
+    let el = document.getElementById('msg-copiato');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'msg-copiato';
+        el.setAttribute('role', 'status');
+        el.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:100000;padding:10px 16px;border:3px solid #000;background:#fff;color:#000;font-weight:800;box-shadow:4px 4px 0 #000;max-width:90vw;text-align:center;transition:opacity .3s';
+        document.body.appendChild(el);
+    }
+    el.textContent = testo;
+    el.style.background = errore ? '#ffd1d1' : '#c9f7c9';
+    el.style.opacity = '1';
+    clearTimeout(timerCopiato);
+    timerCopiato = setTimeout(() => { el.style.opacity = '0'; }, 2200);
+}
+
 async function condividiTeam(id) {
     const team = tuttiITeam.find(t => t.id === id);
-    if (!team || !window.SchedaCondivisione) return;
-    let colore = '', avatar = '';
-    try {
-        const info = (await db.ref(`players/${playerID}/info`).once('value')).val() || {};
-        colore = info.color || ''; avatar = info.avatar || '';
-    } catch (e) { /* senza: colori di riserva */ }
-    const v = Number(team.vittorie) || 0, p = Number(team.sconfitte) || 0;
-    SchedaCondivisione.condividi(window, SchedaCondivisione.team(team, { giocatore: playerID, colore, avatar, record: v + p ? { vinti: v, persi: p } : null }));
+    const testo = team ? String(team.testoShowdown || '').trim() : '';
+    if (!testo) return mostraCopiato("This team has no Showdown text to copy", true);
+    const ok = await tbCopiaNegliAppunti(testo);
+    mostraCopiato(ok ? 'Team copied to the clipboard' : "Couldn't copy the team", !ok);
 }
 
 async function apriDettagli(id, opzioni = {}) {

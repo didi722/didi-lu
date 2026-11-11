@@ -72,7 +72,8 @@ test('cablaggio: Box (card del team), Matches (showdown e replay) e pagina dell\
     const box = leggi('docs', 'box.html');
     assert.match(box, /<script src="scheda-condivisione\.js"><\/script>/);
     assert.match(box, /onclick="event\.stopPropagation\(\); condividiTeam\('\$\{team\.id\}'\)"/);
-    assert.match(box, /SchedaCondivisione\.team\(team, \{ giocatore: playerID/);
+    assert.match(box, /async function condividiTeam\(id\)[\s\S]*tbCopiaNegliAppunti\(testo\)[\s\S]*mostraCopiato\(/, 'il tasto copia il testo di Showdown negli appunti e lo dice');
+    assert.ok(!/SchedaCondivisione\.team\(team/.test(box));
     const m = leggi('docs', 'matches.html');
     assert.match(m, /<script src="scheda-condivisione\.js"><\/script>/);
     assert.match(m, /onclick="condividiShowdown\(\)"/);
