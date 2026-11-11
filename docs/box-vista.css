@@ -49,13 +49,14 @@
     color: var(--nb-ink, #000);
     font: 900 .9rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     rotate: calc(var(--nb-rot, 1) * var(--r));
+    overflow: hidden;      /* uno sprite alto o largo resta nel suo cerchio */
     transition: translate .14s ease, rotate .14s ease;
 }
 .cartella-mini > span:nth-child(3n + 1) { --r: -4deg; }
 .cartella-mini > span:nth-child(3n + 2) { --r: 3deg; }
 .cartella-mini > span:nth-child(3n + 3) { --r: -2deg; }
 .card.cartella:hover .cartella-mini > span { translate: 0 -3px; }
-.cartella-mini > span img { max-width: 78%; max-height: 78%; filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, .4)); }
+.cartella-mini > span img { width: 76%; height: 76%; object-fit: contain; filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, .4)); }
 .cartella-conta { margin: 10px 0 0; color: var(--nb-ink, #000); font: 800 .75rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
 
 .cartella-fondo { position: fixed; inset: 0; z-index: 9000; background: rgba(0, 0, 0, .6); overflow: auto; padding: 24px 12px; }
