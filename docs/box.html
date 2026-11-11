@@ -120,20 +120,27 @@
                         </select>
                     </label>
                     <label class="box-filtro">
-                        <span>View</span>
-                        <select id="viewFilter" onchange="applicaFiltri()">
-                            <option value="griglia">Grid</option>
-                            <option value="lista">List</option>
-                            <option value="cartelle">Folders</option>
-                        </select>
-                    </label>
-                    <label class="box-filtro">
                         <span>Sort by</span>
                         <select id="sortFilter" onchange="applicaFiltri()">
                             <option value="win">Max Wins</option>
                             <option value="alpha">A-Z</option>
                         </select>
                     </label>
+                </div>
+
+                <!-- la vista del Box: tre pulsanti (il select nascosto tiene il valore, lo leggono applicaFiltri e le preferenze) -->
+                <div class="vista-bottoni" role="group" aria-label="Box view">
+                    <select id="viewFilter" hidden>
+                        <option value="griglia">Grid</option>
+                        <option value="lista">List</option>
+                        <option value="cartelle">Folders</option>
+                    </select>
+                    <button type="button" data-vista="griglia" title="Grid" aria-label="Grid view" onclick="scegliVista('griglia')">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></button>
+                    <button type="button" data-vista="lista" title="List" aria-label="List view" onclick="scegliVista('lista')">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v4H4zM4 10h16v4H4zM4 15h16v4H4z"/></svg></button>
+                    <button type="button" data-vista="cartelle" title="Folders" aria-label="Folders view" onclick="scegliVista('cartelle')">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
                 </div>
             </div>
 
@@ -1297,6 +1304,11 @@ function salvaPreferenze() {
     } catch (e) { /* memoria del browser bloccata: pazienza */ }
 }
 
+function scegliVista(v) {
+    campoBox('viewFilter').value = v;
+    applicaFiltri();
+}
+
 function ripristinaPreferenze() {
     let p = null;
     try { p = JSON.parse(localStorage.getItem(chiavePrefs()) || 'null'); } catch (e) { p = null; }
@@ -1304,7 +1316,7 @@ function ripristinaPreferenze() {
     // nell'app le card sono già in colonna: niente lista
     const app = document.documentElement.classList.contains('app-shell') || document.documentElement.classList.contains('app');
     const vista = campoBox('viewFilter');
-    if (app) [...vista.options].forEach(o => { if (o.value === 'lista') o.remove(); });
+    if (app) { [...vista.options].forEach(o => { if (o.value === 'lista') o.remove(); }); const b = document.querySelector('.vista-bottoni [data-vista="lista"]'); if (b) b.remove(); }
     if (p && typeof p === 'object') {
         campoBox('searchInput').value = typeof p.q === 'string' ? p.q : '';
         for (const [id, v] of [['categoryFilter', p.cat], ['sortFilter', p.sort], ['viewFilter', p.vista]]) {
@@ -1836,6 +1848,7 @@ function applicaFiltri() {
     });
 
     ultimiFiltrati = filtrati;
+    document.querySelectorAll('.vista-bottoni button').forEach(b => { const on = b.dataset.vista === vistaBox; b.classList.toggle('attivo', on); b.setAttribute('aria-pressed', String(on)); });
     salvaPreferenze();
     renderizza(filtrati);
     if (cartellaAperta) disegnaCartellaAperta();
