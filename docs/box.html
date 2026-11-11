@@ -156,7 +156,7 @@
     </div>
 </main>
 
-<div id="login-modal" class="modal">
+<div id="login-modal" class="modal" onclick="if (clicSulloSfondo(event, this)) toggleLoginModal()">
     <div class="modal-content glass-card">
         <span class="close-modal" onclick="toggleLoginModal()">&times;</span>
         <h2>Login</h2>
@@ -208,14 +208,14 @@
         <div class="loading">Loading data from Pokédex...</div>
     </div>
 
-    <div id="teamModal" class="modal">
+    <div id="teamModal" class="modal" onclick="if (clicSulloSfondo(event, this)) chiudiTeamModal()">
     <div class="modal-content"> 
         <span class="close-modal" id="closeModal" onclick="chiudiTeamModal()">&times;</span>
         <div id="modalBody"></div>
     </div>
 </div>
 
-    <div id="pkmDetailModal" class="modal" onclick="if (event.target === this) chiudiPkmModal()">
+    <div id="pkmDetailModal" class="modal" onclick="if (clicSulloSfondo(event, this)) chiudiPkmModal()">
     <div class="modal-content pkm-single-card"> <span class="close" onclick="chiudiPkmModal()">&times;</span>
         <div id="pkmModalBody"></div>
     </div>
@@ -418,6 +418,15 @@ document.addEventListener('click', function(event) {
         }
     }
 });
+
+// Il clic sullo sfondo di un modale (fuori dalla finestra) lo chiude, ma solo se anche la pressione è cominciata sullo sfondo: i clic dentro la finestra non contano,
+// e selezionare un testo trascinando e rilasciando fuori (il clic nasce sul primo antenato comune, cioè lo sfondo) non deve chiuderla.
+let ultimaPressione = null;
+window.addEventListener('pointerdown', e => { ultimaPressione = e.target; }, true);
+window.addEventListener('click', () => { ultimaPressione = null; });
+function clicSulloSfondo(e, sfondo) {
+    return !!sfondo && e.target === sfondo && (ultimaPressione === null || ultimaPressione === sfondo);
+}
 
 function toggleLoginModal() {
     const modal = document.getElementById('login-modal');
@@ -1468,8 +1477,8 @@ async function disegnaCartellaAperta() {
         f = document.createElement('div');
         f.id = 'cartella-fondo';
         f.className = 'cartella-fondo';
-        f.innerHTML = '<div class="cartella-finestra"><div class="cartella-testa"><h2></h2><button type="button" class="cartella-chiudi">Close</button></div><div class="grid" id="cartellaGrid"></div></div>';
-        f.addEventListener('click', e => { if (e.target === f) chiudiCartella(); });
+        f.innerHTML = '<div class="cartella-finestra"><div class="cartella-testa"><h2></h2><button type="button" class="x-modale cartella-chiudi" aria-label="Close" title="Close">&times;</button></div><div class="grid" id="cartellaGrid"></div></div>';
+        f.addEventListener('click', e => { if (clicSulloSfondo(e, f)) chiudiCartella(); });
         f.querySelector('.cartella-chiudi').onclick = chiudiCartella;
         document.body.appendChild(f);
     }
@@ -1502,7 +1511,7 @@ function apriEtichette(teamId) {
         fondo = document.createElement('div');
         fondo.id = 'etichette-fondo';
         fondo.className = 'etichette-fondo';
-        fondo.addEventListener('click', e => { if (e.target === fondo) fondo.remove(); });
+        fondo.addEventListener('click', e => { if (clicSulloSfondo(e, fondo)) fondo.remove(); });
         document.body.appendChild(fondo);
     }
     fondo.dataset.team = teamId;
@@ -1518,7 +1527,10 @@ function apriEtichette(teamId) {
         </div>`).join('');
     fondo.innerHTML = `
         <div class="etichette-finestra" role="dialog" aria-label="Labels">
-            <h3>Labels · ${escEtichetta(team.nome || '')}</h3>
+            <div class="etichette-testa">
+                <h3>Labels · ${escEtichetta(team.nome || '')}</h3>
+                <button type="button" class="x-modale etichette-x" data-azione="chiudi" aria-label="Close" title="Close">&times;</button>
+            </div>
             <p>Choose a label for this team</p>
             ${righe || '<p>No labels yet: create the first one below.</p>'}
             <div class="etichette-nuova">
@@ -1531,7 +1543,7 @@ function apriEtichette(teamId) {
             </div>
             <button type="button" class="etichette-chiudi" data-azione="chiudi">Done</button>
         </div>`;
-    fondo.querySelector('[data-azione="chiudi"]').onclick = () => fondo.remove();
+    fondo.querySelectorAll('[data-azione="chiudi"]').forEach(b => { b.onclick = () => fondo.remove(); });      // la X in alto e "Done" in fondo
     fondo.querySelectorAll('.etichette-riga[data-id]').forEach(riga => {
         const id = riga.dataset.id;
         const [spunta, colore, nome] = riga.querySelectorAll('input');
@@ -3675,6 +3687,7 @@ document.addEventListener('DOMContentLoaded', sincronizzaCategorie);
 // Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)
 document.addEventListener('keydown', (e) => {
     if (e.key !== "Escape") return;
+    if (document.querySelector('.bt-pop:not([hidden])')) return;      // il pannello dei badge aperto si chiude da solo con Esc: il dettaglio resta
     // si chiude un livello alla volta: prima la scheda del Pokémon, poi il dettaglio del team
     const pkm = document.getElementById('pkmDetailModal');
     if (pkm && pkm.style.display !== 'none' && pkm.style.display !== '') chiudiPkmModal();
@@ -4750,7 +4763,7 @@ function inizializzaChiusuraHelper(event) {
     }
 
     // Caso B: Click fuori dalla finestra (sul velo di sfondo: la finestra è la carta, i suoi margini non chiudono)
-    if (event.target.id === 'helper-modal-overlay') {
+    if (event.target.id === 'helper-modal-overlay' && clicSulloSfondo(event, event.target)) {
         chiudiTuttoHelper();
         notificaSimulatore('chiuso');
     }
@@ -7951,7 +7964,7 @@ function tbCreaOverlay() {
     document.body.appendChild(overlay);
 
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) tbChiediChiusura();
+        if (clicSulloSfondo(e, overlay)) tbChiediChiusura();
     });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && overlay.classList.contains('open') && !tbCombo.input) tbChiediChiusura();
