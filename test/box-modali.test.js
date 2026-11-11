@@ -152,3 +152,21 @@ test('ogni modale ha la X in alto a destra: login, dettaglio, scheda, assistente
     assert.match(vista, /\.x-modale:hover \{[^}]*background: var\(--nb-rosso, #ff4444\)/, 'rossa al passaggio');
     assert.match(vista, /\.etichette-testa \{[^}]*justify-content: space-between/, 'titolo a sinistra, X a destra');
 });
+
+// ---------- il Team Builder sul telefono (browser) ----------
+test('Team Builder da telefono: caselle in fila sopra il pannello a tutta larghezza (solo browser: l\'app ha il suo layout), sprite più piccolo', () => {
+    const da = stile.indexOf('TEAM BUILDER · telefono in verticale (browser)');
+    assert.ok(da > 0);
+    // viene dopo il layout affiancato (altrimenti quello, definito più in basso, vincerebbe)
+    assert.ok(da > stile.indexOf('/* Layout affiancato per il contenuto dell\'overlay */'));
+    const s = stile.slice(da);
+    assert.match(s, /@media \(max-width: 640px\) \{/);
+    assert.match(s, /html:not\(\.app-shell\) \.tb-content-container \{ flex-direction: column;/);
+    assert.match(s, /html:not\(\.app-shell\) \.tb-slots \{[^}]*width: 100%; flex-direction: row;/);
+    assert.match(s, /html:not\(\.app-shell\) \.tb-slot \{[^}]*flex: 1 1 0; min-width: 0; width: auto;/, 'sei caselle in una fila');
+    assert.match(s, /html:not\(\.app-shell\) \.tb-body \{ width: 100%;/);
+    assert.match(s, /html:not\(\.app-shell\) \.tb-side-sprite \{ width: 84px; height: 84px; \}/);
+    assert.match(s, /html:not\(\.app-shell\) \.tb-row \{ grid-template-columns: minmax\(0, 1fr\); \}/, 'strumento e abilità in colonna');
+    // niente di tutto questo vale nell'app: lì il layout è in app-gioco-pagine.css
+    assert.ok(!/@media[^{]*\{\s*\.tb-/.test(s), 'ogni regola è sotto html:not(.app-shell)');
+});

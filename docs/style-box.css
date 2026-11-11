@@ -5505,3 +5505,32 @@ input.tb-title:focus { outline: 3px solid var(--nb-giallo, #ffbd44); outline-off
     #helper-modal-overlay .format-modal-wrapper::before { content: "TEAM BUILDER"; height: 32px; padding-left: 82px; font-size: 10px; line-height: 32px; letter-spacing: .14em; }
     #helper-modal-overlay .format-close-btn { top: 3px; }
 }
+
+/* =========================================================
+   TEAM BUILDER · telefono in verticale (browser)
+   La colonna dei sei Pokémon a sinistra tolgeva un terzo della larghezza al pannello (238 px su 390) e la tabella EV/IV/Natura usciva dal
+   pannello e veniva tagliata. Qui le caselle stanno in una fila sopra il pannello, che prende tutta la larghezza. L'app ha il suo
+   layout (app-gioco-pagine.css, solo html.app-shell): non cambia.
+   ========================================================= */
+@media (max-width: 640px) {
+    html:not(.app-shell) .tb-wrapper { max-width: 100%; }
+    html:not(.app-shell) .tb-content-container { flex-direction: column; gap: 16px; overflow: visible; }
+    html:not(.app-shell) .tb-slots {
+        width: 100%; flex-direction: row; gap: 8px; padding: 6px 4px 14px 2px; max-height: none; overflow: visible; box-sizing: border-box;
+    }
+    html:not(.app-shell) .tb-slot {
+        flex: 1 1 0; min-width: 0; width: auto; height: 58px; padding: 6px 2px; justify-content: center; border-width: 3px;
+        box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    }
+    html:not(.app-shell) .tb-slot.empty { box-shadow: none; }
+    html:not(.app-shell) .tb-slot img { width: 34px; height: 34px; }
+    html:not(.app-shell) .tb-slot-plus { font-size: 1.8rem; line-height: 1; }
+    /* il tasto "cambia Pokémon" resta dentro la casella (fuori toccherebbe la vicina) e abbastanza grande per un dito */
+    html:not(.app-shell) .tb-slot .tb-btn-change-pkmn { right: -6px; bottom: -8px; width: 24px; height: 24px; }
+    html:not(.app-shell) .tb-body { width: 100%; box-sizing: border-box; padding: 18px 12px 16px; }
+    /* lo sprite grande spingeva strumento, abilità, mosse ed EV fuori dalla prima schermata: più piccolo, con meno aria intorno */
+    html:not(.app-shell) .tb-side { gap: 6px; }
+    html:not(.app-shell) .tb-side-sprite { width: 84px; height: 84px; }
+    /* strumento e abilità una sotto l'altra: affiancati (due colonne da 170 px minimo), il nome dell'abilità veniva tagliato */
+    html:not(.app-shell) .tb-row { grid-template-columns: minmax(0, 1fr); }
+}
