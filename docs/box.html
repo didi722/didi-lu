@@ -128,6 +128,7 @@
                     </label>
                 </div>
 
+                <div class="box-riga-vista">
                 <!-- la vista del Box: tre pulsanti (il select nascosto tiene il valore, lo leggono applicaFiltri e le preferenze) -->
                 <div class="vista-bottoni" role="group" aria-label="Box view">
                     <select id="viewFilter" hidden>
@@ -141,6 +142,12 @@
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v4H4zM4 10h16v4H4zM4 15h16v4H4z"/></svg></button>
                     <button type="button" data-vista="cartelle" title="Folders" aria-label="Folders view" onclick="scegliVista('cartelle')">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+                </div>
+                <!-- nasconde i team non più modificabili (iscritti a una stagione iniziata) -->
+                <label class="box-spunta" title="Hide teams that can no longer be edited (enrolled in a season that has started)">
+                    <input type="checkbox" id="hideLockedFilter" onchange="applicaFiltri()">
+                    <span>Hide locked teams</span>
+                </label>
                 </div>
             </div>
 
@@ -1814,12 +1821,17 @@ function applicaFiltri() {
 
     console.log("Ricerca attiva per:", search); // Debug: guarda la console F12
 
+    // nascondi i team non più modificabili: l'elenco delle stagioni si legge una volta, poi si rifiltra
+    const nascondiBloccati = !!(document.getElementById('hideLockedFilter') || {}).checked;
+    if (nascondiBloccati && !window.nomiTeamBloccati) { caricaTeamBloccati().then(() => applicaFiltri()); return; }
+
     let filtrati = tuttiITeam.filter(team => {
         // Se la ricerca è vuota, passa sempre. Se non è vuota, cerca nel testo.
         const matchesSearch = search === "" || team.tuttoIlTesto.includes(search);
         const matchesCat = cat === "" || team.categoria === cat;
         const matchesLabel = EtichetteTeam.corrisponde(team, etichetteDef, etichetta);
-        return matchesSearch && matchesCat && matchesLabel;
+        const bloccato = nascondiBloccati && TeamBloccati.eBloccato(window.nomiTeamBloccati, team.nome);
+        return matchesSearch && matchesCat && matchesLabel && !bloccato;
     });
 
     // Ordinamento
