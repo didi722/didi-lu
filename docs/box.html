@@ -1012,12 +1012,16 @@ async function renderizza(lista, contenitore) {
         for (const c of String(formato || '').toLowerCase().trim()) h = (h * 31 + c.charCodeAt(0)) >>> 0;
         return palette[h % palette.length];
     };
+    const grid = contenitore || document.getElementById('teamsGrid');
+    if (!grid) return;
+    // più ridisegni possono essere in corso insieme (ogni modifica ne fa partire uno, e le letture di rete durano tempo diverso): vale solo l'ultimo,
+    // altrimenti uno più vecchio, arrivato dopo, copre quello nuovo (per esempio una etichetta appena messa)
+    const rid = grid._rid = (grid._rid || 0) + 1;
     await caricaTeamBloccati();
     // i team modificabili troppo simili a uno non modificabile: card grigia e fumetto con il perché (la mappa serve anche al dettaglio del team)
     const fuoriRegola = typeof conflittiSomiglianza === 'function' ? await conflittiSomiglianza() : new Map();
     window.fuoriRegolaSomiglianza = fuoriRegola;
-    const grid = contenitore || document.getElementById('teamsGrid');
-    if (!grid) return;
+    if (grid._rid !== rid) return;
 
     if (!Array.isArray(lista)) return;
 
