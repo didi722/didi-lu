@@ -1301,7 +1301,7 @@ function apriEtichette(teamId) {
     fondo.innerHTML = `
         <div class="etichette-finestra" role="dialog" aria-label="Labels">
             <h3>Labels · ${escEtichetta(team.nome || '')}</h3>
-            <p>Tick the labels this team has. Names and colours are yours: change them any time.</p>
+            <p>Choose a label for this team</p>
             ${righe || '<p>No labels yet: create the first one below.</p>'}
             <div class="etichette-nuova">
                 ${el.length >= EtichetteTeam.MASSIMO ? `<p>You can have up to ${EtichetteTeam.MASSIMO} labels.</p>` : `
