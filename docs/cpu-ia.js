@@ -106,6 +106,8 @@
     //   pesoSetter          quanto è più probabile che un Pokémon che probabilmente mette Stanza Magica o Tailwind (lo si presume dalla specie, vedi _setterProbabile) lo faccia
     //                       al suo primo turno: la sua probabilità di "mossa di stato" si moltiplica per 1 + pesoSetter × p. Nella previsione la mossa diventa quella vera, e
     //                       impedirla (Fake Out, KO prima che muova) vale. 0 = come prima, una mossa di stato qualunque non fa niente
+    //   priorBloccoPriorita quanto pesa, tra le abilità possibili di una specie che non ha ancora mostrato la sua, quella che blocca le mosse prioritarie (Armor Tail,
+    //                       Queenly Majesty, Dazzling) rispetto a una normale (1): chi gioca Farigiraf lo gioca per l'Armor Tail, non per Cud Chew. 1 = come le altre
     //   pesoOffesa          quanto, nel peso di un Pokémon, contano le sue statistiche offensive (attacco o attacco speciale più metà velocità) invece della forza in generale:
     //                       un attaccante veloce pesa più di un muro con le stesse statistiche totali. 0 = solo la forza generale (com'era), 1 = solo la minaccia
     //   pesoStile           quanto la CPU si avvicina al modo di giocare delle persone della lega nelle varie situazioni (STILE_LEGA_DOPPI): ogni piano vale di più o di meno
@@ -133,7 +135,7 @@
         antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.3, sogliaRecupero: 0.25,
-        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5,
+        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5, priorBloccoPriorita: 6,
         pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
         memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2
     };
@@ -146,6 +148,9 @@
     // Mosse il cui tipo cambia (con il meteo, il terreno, lo strumento, il Pokémon): il tipo "della mossa" non dice quale è stato
     const TIPO_VARIABILE = new Set(['weatherball', 'terrainpulse', 'judgment', 'multiattack', 'revelationdance', 'ivycudgel', 'terablast',
         'terastarstorm', 'technoblast', 'naturalgift', 'hiddenpower', 'aurawheel', 'ragingbull']);
+    // Abilità che annullano le mosse prioritarie dirette a chi le ha o ai suoi compagni; e abilità che ignorano quelle degli altri (il blocco è "breakable")
+    const ABILITA_BLOCCA_PRIORITA = new Set(['armortail', 'queenlymajesty', 'dazzling']);
+    const ABILITA_IGNORA_ABILITA = new Set(['moldbreaker', 'teravolt', 'turboblaze']);
     const ABILITA_CONTRO_INTIMIDATE = new Set(['clearbody', 'whitesmoke', 'hypercutter', 'innerfocus', 'oblivious', 'owntempo', 'scrappy', 'guarddog', 'fullmetalbody', 'mirrorarmor']);
     const boostVuoti = () => ({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 });
     const campoVuoto = () => ({ tailwind: 0, reflect: 0, lightscreen: 0, auroraveil: 0, rocce: 0, punte: 0, tossine: 0, ragnatela: 0 });
@@ -513,7 +518,14 @@
                 case '-status': { const m = this._mon(p[1]); if (m) { m.stato = p[2]; m.sonnoTentativi = 0; } break; }
                 case '-curestatus': { const m = this._mon(p[1]); if (m) { m.stato = ''; m.sonnoTentativi = 0; } break; }
                 // "non può muoversi": ogni turno di sonno già passato (serve a sapere quanto è probabile che si svegli, _probAgire)
-                case 'cant': { const m = this._mon(p[1]); if (m && p[2] === 'slp') m.sonnoTentativi = (m.sonnoTentativi || 0) + 1; break; }
+                case 'cant': {
+                    const m = this._mon(p[1]);
+                    if (m && p[2] === 'slp') m.sonnoTentativi = (m.sonnoTentativi || 0) + 1;
+                    // "|cant|Farigiraf|ability: Armor Tail|Fake Out": chi blocca una mossa prioritaria (o non può muoversi per Truant, Damp...) ha rivelato l'abilità
+                    const ab = m && /^ability: (.+)$/i.exec(String(p[2] || ''));
+                    if (ab) m.abilita = id(ab[1]);
+                    break;
+                }
                 case '-cureteam': {
                     const pos = posizione(p[1]);
                     if (pos) Object.values(this.lati[pos.lato].mons).forEach(m => { if (m.vivo) m.stato = ''; });
@@ -1195,6 +1207,38 @@
             return tot ? bloccanti / tot : 0;
         }
 
+        // Quanto è probabile che questo Pokémon abbia un'abilità che annulla le mosse prioritarie dirette a lui e ai suoi compagni (Armor Tail, Queenly Majesty, Dazzling):
+        // lo si sa se l'abilità è nota, altrimenti si pesano quelle della specie (la normale vale uno, la nascosta un terzo, e quella che blocca vale `priorBloccoPriorita`,
+        // perché è per quella che si gioca Farigiraf)
+        _pBloccaPriorita(v) {
+            if (!v || v.hp <= 0) return 0;
+            const blocca = a => ABILITA_BLOCCA_PRIORITA.has(a);
+            if (v.abilita) return blocca(v.abilita) ? 1 : 0;
+            const sp = this.specie(v.specie);
+            const ab = sp && sp.abilities ? sp.abilities : null;
+            if (!ab) return 0;
+            let tot = 0, bloccanti = 0;
+            for (const [k, nome] of Object.entries(ab)) {
+                if (!nome) continue;
+                const b = blocca(id(nome));
+                const w = (k === 'H' ? 0.35 : k === 'S' ? 0 : 1) * (b ? Math.max(1, this.par.priorBloccoPriorita) : 1);
+                tot += w;
+                if (b) bloccanti += w;
+            }
+            return tot ? bloccanti / tot : 0;
+        }
+
+        // Probabilità che una mossa di priorità `prio` usata da `chi` contro la squadra `difensori` (le vista in campo) venga annullata: da Armor Tail, Queenly Majesty o
+        // Dazzling di uno qualunque di loro (a meno che chi attacca ignori le abilità) oppure, per un bersaglio a terra, da Psychic Terrain. `bersaglio` = la vista colpita.
+        _pBloccoPriorita(prio, chi, difensori, bersaglio, ctx) {
+            if (!(prio > 0)) return 0;
+            if (ctx && ctx.terreno === 'psychic' && bersaglio && bersaglio.hp > 0 && C.aTerra(bersaglio)) return 1;
+            if (chi && ABILITA_IGNORA_ABILITA.has(chi.abilita)) return 0;
+            let libero = 1;
+            for (const d of difensori) libero *= 1 - this._pBloccaPriorita(d);
+            return 1 - libero;
+        }
+
         // Chi, tra gli avversari in campo, probabilmente sta per mettere Stanza Magica o Tailwind: lo sappiamo se l'ha già fatto vedere, altrimenti lo si presume dalla
         // specie (può imparare quella mossa e ha la velocità giusta: lenta per la Stanza Magica, veloce per Tailwind) e solo finché non ha ancora agito.
         // Restituisce { mossa: 'trickroom' | 'tailwind', p } o null. Se l'effetto è già attivo non c'è niente da impedire.
@@ -1460,6 +1504,8 @@
                     const dif = S.mie[b];
                     const d = C.danno(this.dex, o, dif, m, ctx, { bersagliMultipli: S.doppio && ['allAdjacent', 'allAdjacentFoes'].includes(m.target) });
                     let v = d.fraz * C.precisione(o, dif, m, ctx) * (1 + (d.frazMax >= dif.hp / dif.hpMax ? 0.4 : 0));
+                    // le mie abilità sono note e Psychic Terrain si vede: chi gioca una mossa prioritaria contro un Armor Tail o in un terreno Psychic la spreca, e non la sceglie
+                    if (m.priorita > 0) v *= 1 - this._pBloccoPriorita(m.priorita, o, S.mie, dif, ctx);
                     if (m.priorita > 0) v *= 1.1;
                     // chi si farebbe male da solo (rinculo) non usa quella mossa se rischia di cadere per questo
                     if (m.rinculoMax && o.hp <= o.hpMax * m.rinculoMax) v *= 0.1;
@@ -1694,7 +1740,21 @@
 
                 // ---- mosse di stato e di supporto ----
                 if (m.categoria === 'Status') {
+                    // una mossa di stato resa prioritaria (Prankster) contro gli avversari è annullata da Dazzling & co.
+                    let pBlocco = 0;
+                    if (['normal', 'any', 'adjacentFoe', 'allAdjacentFoes'].includes(m.target) && priorita(x) > 0) {
+                        const t = a.bersaglio;
+                        const versoNemici = lato === 'mie' ? (t == null || t > 0) : true;
+                        if (versoNemici) {
+                            const vs = nemici(lato).filter(o => o && o.hp > 0);
+                            const colpito = lato === 'mie' ? (t > 0 ? nemici(lato)[t - 1] : nemici(lato)[0]) : insiemi('mie')[a.bersaglio];
+                            pBlocco = this._pBloccoPriorita(priorita(x), me, vs, colpito || vs[0], ctx);
+                        }
+                    }
+                    if (pBlocco >= 0.98) { bonus -= lato === 'mie' ? 0.3 : -0.3; return; }
+                    const prima = bonus;
                     bonus += this._valoreStato(m, lato, x.slot, { campoMio, campoAvv, ctx, doppio, nemici, insiemi });
+                    if (pBlocco > 0) bonus = prima + (bonus - prima) * (1 - pBlocco) - (lato === 'mie' ? 0.3 : -0.3) * pBlocco;
                     if (m.potenziamento) {
                         for (const k of Object.keys(m.potenziamento)) me.boost[k] = Math.max(-6, Math.min(6, (me.boost[k] || 0) + m.potenziamento[k]));
                     }
@@ -1742,7 +1802,15 @@
                     if (!dif || dif.hp <= 0) continue;
                     if (dif.protetto) continue;   // la protezione ha parato l'attacco
                     if (dif.protettoDaDiffusi && tutti) continue;
+                    // una mossa prioritaria contro la squadra avversaria: Armor Tail, Queenly Majesty o Dazzling (di chiunque stia in campo da quella parte) o
+                    // Psychic Terrain la annullano; se l'abilità non è nota si pesa quella che la specie può avere
+                    const pBlocco = b.lato !== keyL(lato) ? this._pBloccoPriorita(priorita(x), me, insiemi(b.lato), dif, ctx) : 0;
+                    if (pBlocco >= 0.98) { bonus -= lato === 'mie' ? 0.3 : -0.3; continue; }      // il turno è sprecato
                     const colpo = this._colpo(me, dif, m, ctx, piu, lato, aiuto, x.slot, schermiDi(b.lato));
+                    if (pBlocco > 0) {
+                        colpo.atteso *= 1 - pBlocco; colpo.pKO *= 1 - pBlocco;
+                        bonus -= (lato === 'mie' ? 0.3 : -0.3) * pBlocco;
+                    }
                     if (dif.parata) { colpo.atteso *= 1 - dif.parata; colpo.pKO *= 1 - dif.parata; }      // chi sta cambiando (vedi sopra)
                     const prima = dif.hp;
                     // un KO probabile (>= 50%) si considera avvenuto; altrimenti il bersaglio scende del danno atteso
@@ -1763,7 +1831,7 @@
                     if ((m.id === 'fakeout' || m.id === 'firstimpression') && dif.hp > 0) {
                         // il tentennamento non riesce a chi ha Presenza Mentale (Inner Focus) o Polvere Scudo, o Mantello Occulto: se non si sa, quanto è probabile
                         // dalle abilità che quella specie può avere (Oranguru ne ha una su tre che lo salva, ad esempio)
-                        const riesce = 1 - this._pImmuneFlinch(dif);
+                        const riesce = (1 - this._pImmuneFlinch(dif)) * (1 - pBlocco);
                         const kb = b.lato === 'mie' ? 'mie' : 'avv';
                         if (riesce >= 0.98) flinch[kb][b.slot] = true;
                         else if (riesce > 0.02) agisce[kb][b.slot] *= 1 - riesce;

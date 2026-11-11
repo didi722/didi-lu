@@ -257,9 +257,10 @@ test('una serie di partite vere: la memoria della partita prima fa partire la CP
     assert.equal(memoria2.partite, 2);
     // senza memoria (null) due partite uguali sono identiche: l'opzione non cambia niente quando manca
     const a = await gioca(null, squadre[3], 21), b = await gioca(null, squadre[3], 21);
-    assert.deepEqual(a.e.righe, b.e.righe);
+    const senzaOra = righe => righe.filter(r => !r.startsWith('|t:|'));      // l'orario in secondi cambia tra una partita e l'altra
+    assert.deepEqual(senzaOra(a.e.righe), senzaOra(b.e.righe));
     const vuota = await gioca(Mem.vuota(), squadre[3], 21);
-    assert.deepEqual(vuota.e.righe.slice(0, 40), a.e.righe.slice(0, 40), 'una memoria vuota non cambia le prime mosse');
+    assert.deepEqual(senzaOra(vuota.e.righe).slice(0, 40), senzaOra(a.e.righe).slice(0, 40), 'una memoria vuota non cambia le prime mosse');
 });
 
 // ---------- la pagina ----------
