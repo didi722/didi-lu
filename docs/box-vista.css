@@ -43,7 +43,7 @@
 .cartella-mini > span.vuota { background: transparent; border-style: dashed; opacity: .5; }
 .cartella-conta { margin: 10px 0 0; color: var(--nb-ink, #000); font: 800 .75rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
 
-.cartella-fondo { position: fixed; inset: 0; z-index: 99980; background: rgba(0, 0, 0, .6); overflow: auto; padding: 24px 12px; }
+.cartella-fondo { position: fixed; inset: 0; z-index: 9000; background: rgba(0, 0, 0, .6); overflow: auto; padding: 24px 12px; }
 .cartella-finestra { max-width: 1250px; margin: 0 auto; background: var(--nb-tip-bg, #fffdf6); border: 4px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-l, 8px 8px 0 #000); padding: 16px 12px 40px; }
 .cartella-testa { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 8px 4px; }
 .cartella-testa h2 { margin: 0; padding: 4px 14px 2px; background: var(--nb-ink, #000); color: #fff; border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-titolo, 4px 4px 0 rgba(0, 0, 0, .3)); font: 900 1.4rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); }
