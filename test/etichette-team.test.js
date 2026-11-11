@@ -44,3 +44,19 @@ test('cablaggio nel Box: filtro, pillole, tasto e finestra, dati sotto players',
     assert.match(box, /\$\{base\}\/teams\/\$\{teamId\}\/etichette\/\$\{id\}/);
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'etichette-team.css')));
 });
+
+test('cablaggio nel Box: preferenze salvate (filtri, ordine, vista) e le tre viste', () => {
+    const box = fs.readFileSync(path.join(__dirname, '..', 'docs', 'box.html'), 'utf8');
+    assert.match(box, /<link rel="stylesheet" href="box-vista\.css">/);
+    assert.match(box, /id="viewFilter"[\s\S]*value="griglia"[\s\S]*value="lista"[\s\S]*value="cartelle"/);
+    // si salva a ogni applicaFiltri e si ripristina all'apertura, prima del primo disegno
+    assert.match(box, /ultimiFiltrati = filtrati;\s*salvaPreferenze\(\);\s*renderizza\(filtrati\);/);
+    assert.match(box, /sortFilter\.value = 'win';\s*}\s*ripristinaPreferenze\(\);/);
+    assert.match(box, /localStorage\.setItem\(chiavePrefs\(\)/);
+    assert.match(box, /const chiavePrefs = \(\) => `boxPrefs:\$\{playerID\}`/, 'per giocatore');
+    // la lista e le cartelle
+    assert.match(box, /vistaBox === 'cartelle'\) return renderizzaCartelle\(/);
+    assert.match(box, /classList\.toggle\('vista-lista'/);
+    assert.match(box, /function apriCartella\(cat\)/);
+    assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'box-vista.css')));
+});

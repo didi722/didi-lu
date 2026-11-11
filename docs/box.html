@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="box-team.css">
 <link rel="stylesheet" href="note-team.css">
 <link rel="stylesheet" href="etichette-team.css">
+<link rel="stylesheet" href="box-vista.css">
 <link rel="stylesheet" href="box-incorporato.css">
 <script src="dettagli.js" defer></script>
 <script src="team-bloccati.js"></script>
@@ -116,6 +117,14 @@
                         <span>Label</span>
                         <select id="labelFilter" onchange="applicaFiltri()">
                             <option value="">All labels</option>
+                        </select>
+                    </label>
+                    <label class="box-filtro">
+                        <span>View</span>
+                        <select id="viewFilter" onchange="applicaFiltri()">
+                            <option value="griglia">Grid</option>
+                            <option value="lista">List</option>
+                            <option value="cartelle">Folders</option>
                         </select>
                     </label>
                     <label class="box-filtro">
@@ -660,6 +669,7 @@ async function inizializzaPaginaBox() {
         if (sortFilter) {
             sortFilter.value = 'win';
         }
+        ripristinaPreferenze();     // i filtri, l'ordine e la vista di come l'ha lasciato (anche dopo un salvataggio che ricarica la pagina)
 
         // Lancia il rendering effettivo
         if (typeof applicaFiltri === "function") {
@@ -994,7 +1004,7 @@ function avviaFumettoSimile(grid) {
     window.addEventListener('scroll', nascondi, true);
 }
 
-async function renderizza(lista) {
+async function renderizza(lista, contenitore) {
     // Ogni formato ha il suo colore (lo stesso per tutti i suoi team: contorno e sfumature della card nell'app), ricavato dal nome del formato
     const coloreFormato = formato => {
         const palette = ['#ffbd44', '#6fa8ff', '#ff7b6b', '#b388eb', '#47ea6a', '#ff93c8', '#3fd6d0', '#f5e04a'];
@@ -1006,10 +1016,16 @@ async function renderizza(lista) {
     // i team modificabili troppo simili a uno non modificabile: card grigia e fumetto con il perché (la mappa serve anche al dettaglio del team)
     const fuoriRegola = typeof conflittiSomiglianza === 'function' ? await conflittiSomiglianza() : new Map();
     window.fuoriRegolaSomiglianza = fuoriRegola;
-    const grid = document.getElementById('teamsGrid');
+    const grid = contenitore || document.getElementById('teamsGrid');
     if (!grid) return;
 
     if (!Array.isArray(lista)) return;
+
+    // la vista: lista (card orizzontali) o cartelle (una card per formato); nelle finestre delle cartelle i team sono sempre card normali
+    const principale = grid.id === 'teamsGrid';
+    grid.classList.toggle('vista-lista', principale && vistaBox === 'lista');
+    grid.classList.remove('vista-cartelle');
+    if (principale && vistaBox === 'cartelle') return renderizzaCartelle(lista, grid, coloreFormato);
 
     // le card entrano una dopo l'altra solo la prima volta: cercando o filtrando non devono ripartire
     grid.classList.toggle('intro', !grid.dataset.disegnata);
@@ -1260,6 +1276,101 @@ function apriShinyTeam(id) {
     window.location.href = `shop.html?tab=pokemon&team=${encodeURIComponent(id)}`;
 }
 
+// ---------- Preferenze del Box e viste (griglia, lista, cartelle) ----------
+// Ricerca, formato, etichetta, ordine e vista restano salvati in questo browser, per giocatore: dopo un salvataggio (o ogni volta che si riapre il Box) si torna a come era.
+const VISTE = ['griglia', 'lista', 'cartelle'];
+let vistaBox = 'griglia', prefsPronte = false, etichettaPendente = '', cartellaAperta = null, ultimiFiltrati = [];
+const chiavePrefs = () => `boxPrefs:${playerID}`;
+const campoBox = id => document.getElementById(id);
+
+function salvaPreferenze() {
+    if (!prefsPronte || !playerID) return;
+    try {
+        localStorage.setItem(chiavePrefs(), JSON.stringify({
+            q: campoBox('searchInput').value, cat: campoBox('categoryFilter').value, label: campoBox('labelFilter').value || etichettaPendente,
+            sort: campoBox('sortFilter').value, vista: vistaBox
+        }));
+    } catch (e) { /* memoria del browser bloccata: pazienza */ }
+}
+
+function ripristinaPreferenze() {
+    let p = null;
+    try { p = JSON.parse(localStorage.getItem(chiavePrefs()) || 'null'); } catch (e) { p = null; }
+    const nelleOpzioni = (sel, v) => [...sel.options].some(o => o.value === v);
+    // nell'app le card sono già in colonna: niente lista
+    const app = document.documentElement.classList.contains('app-shell') || document.documentElement.classList.contains('app');
+    const vista = campoBox('viewFilter');
+    if (app) [...vista.options].forEach(o => { if (o.value === 'lista') o.remove(); });
+    if (p && typeof p === 'object') {
+        campoBox('searchInput').value = typeof p.q === 'string' ? p.q : '';
+        for (const [id, v] of [['categoryFilter', p.cat], ['sortFilter', p.sort], ['viewFilter', p.vista]]) {
+            const sel = campoBox(id);
+            if (typeof v === 'string' && nelleOpzioni(sel, v)) sel.value = v;
+        }
+        const lab = campoBox('labelFilter');
+        if (typeof p.label === 'string' && p.label) { if (nelleOpzioni(lab, p.label)) lab.value = p.label; else etichettaPendente = p.label; }
+    }
+    vistaBox = VISTE.includes(vista.value) ? vista.value : 'griglia';
+    prefsPronte = true;
+}
+
+// La card di una cartella: un formato, con dentro i suoi team come le app di una cartella dello smartphone (un Pokémon per team)
+function renderizzaCartelle(lista, grid, coloreFormato) {
+    const gruppi = new Map();
+    lista.forEach(t => { const c = t.category || t.categoria || 'VGC'; if (!gruppi.has(c)) gruppi.set(c, []); gruppi.get(c).push(t); });
+    grid.classList.remove('intro');
+    grid.classList.add('vista-cartelle');
+    grid.innerHTML = [...gruppi.keys()].sort((a, b) => a.localeCompare(b)).map((cat, i) => {
+        const teams = gruppi.get(cat);
+        const visibili = teams.length > 9 ? teams.slice(0, 8) : teams;
+        const tessere = visibili.map(t => {
+            const lista = Array.isArray(t.pokemon) ? t.pokemon : Object.values(t.pokemon || {});
+            const p = lista.find(x => x && x.nome);
+            if (!p) return `<span title="${escEtichetta(t.nome || '')}">?</span>`;
+            const url = String(p.nome).toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+            return `<span title="${escEtichetta(t.nome || '')}"><img src="${SpritePkm.gif(p.nome, p.shiny)}" alt="" onerror="gestisciErroreSprite(this, '${url}', '${SpritePkm.id(p.nome)}')"></span>`;
+        });
+        if (teams.length > 9) tessere.push(`<span>+${teams.length - 8}</span>`);
+        while (tessere.length < Math.min(9, Math.max(3, tessere.length))) tessere.push('<span class="vuota"></span>');
+        const conta = `${teams.length} team${teams.length === 1 ? '' : 's'}`;
+        return `
+        <div class="card cartella" style="--i: ${i}; --cc: ${coloreFormato(cat)};" data-cat="${escEtichetta(cat)}" tabindex="0" role="button"
+             onclick="apriCartella(this.dataset.cat)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); apriCartella(this.dataset.cat); }">
+            <div class="card-header"><span class="stats">${conta}</span></div>
+            <h3>${escEtichetta(cat)}</h3>
+            <div class="cartella-mini">${tessere.join('')}</div>
+            <p class="cartella-conta">${conta}</p>
+        </div>`;
+    }).join('') || '<div class="loading">No teams</div>';
+}
+
+function apriCartella(cat) {
+    cartellaAperta = cat;
+    disegnaCartellaAperta();
+}
+function chiudiCartella() {
+    cartellaAperta = null;
+    const f = document.getElementById('cartella-fondo');
+    if (f) f.remove();
+}
+async function disegnaCartellaAperta() {
+    const teams = ultimiFiltrati.filter(t => (t.category || t.categoria || 'VGC') === cartellaAperta);
+    if (!teams.length || vistaBox !== 'cartelle') return chiudiCartella();
+    let f = document.getElementById('cartella-fondo');
+    if (!f) {
+        f = document.createElement('div');
+        f.id = 'cartella-fondo';
+        f.className = 'cartella-fondo';
+        f.innerHTML = '<div class="cartella-finestra"><div class="cartella-testa"><h2></h2><button type="button" class="cartella-chiudi">Close</button></div><div class="grid" id="cartellaGrid"></div></div>';
+        f.addEventListener('click', e => { if (e.target === f) chiudiCartella(); });
+        f.querySelector('.cartella-chiudi').onclick = chiudiCartella;
+        document.body.appendChild(f);
+    }
+    f.querySelector('h2').textContent = cartellaAperta;
+    await renderizza(teams, document.getElementById('cartellaGrid'));
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && cartellaAperta && !document.getElementById('etichette-fondo')) chiudiCartella(); });
+
 // ---------- Etichette dei team (etichette-team.js) ----------
 let etichetteDef = {};
 const escEtichetta = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -1268,11 +1379,13 @@ const escEtichetta = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 function aggiornaFiltroEtichette() {
     const sel = document.getElementById('labelFilter');
     if (!sel) return;
-    const prima = sel.value;
+    const prima = sel.value || etichettaPendente;
     const el = EtichetteTeam.elenco(etichetteDef);
     sel.innerHTML = '<option value="">All labels</option><option value="' + EtichetteTeam.NESSUNA + '">No label</option>' +
         el.map(e => `<option value="${escEtichetta(e.id)}">${escEtichetta(e.nome)}</option>`).join('');
-    sel.value = [...sel.options].some(o => o.value === prima) ? prima : '';
+    const esiste = [...sel.options].some(o => o.value === prima);
+    sel.value = esiste ? prima : '';
+    if (esiste) etichettaPendente = '';
 }
 
 // La finestra di un team: spunta le etichette che ha, cambia nome e colore, ne crea di nuove, le cancella
@@ -1689,6 +1802,8 @@ function applicaFiltri() {
     const cat = categoryFilter.value;
     const sort = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'default';
     const etichetta = document.getElementById('labelFilter') ? document.getElementById('labelFilter').value : '';
+    const vistaScelta = document.getElementById('viewFilter');
+    if (vistaScelta && VISTE.includes(vistaScelta.value)) vistaBox = vistaScelta.value;
 
     console.log("Ricerca attiva per:", search); // Debug: guarda la console F12
 
@@ -1716,7 +1831,10 @@ function applicaFiltri() {
         }
     });
 
+    ultimiFiltrati = filtrati;
+    salvaPreferenze();
     renderizza(filtrati);
+    if (cartellaAperta) disegnaCartellaAperta();
 }
 
 async function applicaColoreBordo(pokemonNome, elemento) {
