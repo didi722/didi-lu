@@ -694,8 +694,10 @@ async function inizializzaPaginaBox() {
             sortFilter.value = 'win';
         }
         ripristinaPreferenze();     // l'ordine e la vista di come li ha lasciati
-        // si riapre dopo l'update di un team: il Box com'era prima (filtri, vista, cartella, scorrimento)
-        const comeEra = leggiBoxMessoDaParte();
+        // si riapre dopo l'update di un team o dopo una prova contro la CPU: il Box com'era prima (filtri, vista, cartella, scorrimento). Nell'editor incorporato
+        // nel simulatore (che è un altro Box, in una finestra dentro la prova) non si tocca niente: la fotografia aspetta il ritorno vero.
+        let comeEra = INCORPORATO ? null : leggiBoxMessoDaParte();
+        if (comeEra && comeEra.tipo === 'simulatore' && !tornaDalSimulatore()) comeEra = null;
         if (comeEra) {
             rimettiIlBox(comeEra);
             if (comeEra.bloccati) await caricaTeamBloccati();
@@ -704,7 +706,10 @@ async function inizializzaPaginaBox() {
         // Lancia il rendering effettivo
         if (typeof applicaFiltri === "function") {
             await applicaFiltri();
-            if (comeEra) rimettiIlPuntoDelBox(comeEra);
+            if (comeEra) {
+                rimettiIlPuntoDelBox(comeEra);
+                if (comeEra.dettaglio) apriDettagli(comeEra.dettaglio);      // la prova era partita dal dettaglio di un team: si riapre
+            }
         } else if (typeof renderizza === "function") {
             renderizza(tuttiITeam);
         }
@@ -1302,6 +1307,7 @@ function inizializzaRotazioneTooltipMosse() {
 
 // Prova del team contro la CPU: la battaglia sceglie da sola un team CPU dello stesso formato (battle-ui.js)
 function provaControCpu(id) {
+    mettiDaParteIlBox(id, 'simulatore');      // tornando dal simulatore il Box è com'era (filtri, vista, cartella, punto, dettaglio)
     window.location.href = 'battle.html?cpu=1&team=' + encodeURIComponent(id);
 }
 
@@ -1348,11 +1354,14 @@ function ripristinaPreferenze() {
     prefsPronte = true;
 }
 
-// ---------- Dopo l'update di un team la pagina si ricarica: deve tornare com'era ----------
-// Solo in quel caso (modifica di un team): come stava il Box quando si è premuto la matita (ricerca, formato, etichetta, ordine, vista, spunta dei bloccati,
-// cartella aperta, punto di scorrimento) si mette da parte in questa scheda e si rimette una volta sola alla riapertura, così il team appena
-// modificato non si perde in mezzo agli altri. In ogni altro caso il Box riparte da zero (restano solo ordine e vista, vedi sopra).
+// ---------- Dopo l'update di un team, o dopo una prova contro la CPU, il Box deve tornare com'era ----------
+// Solo in questi due casi: come stava il Box quando si è premuta la matita (la pagina si ricarica dopo il salvataggio) o il tasto della prova contro la CPU (si va nel
+// simulatore e si torna): ricerca, formato, etichetta, ordine, vista, spunta dei bloccati, cartella aperta, punto di scorrimento (e il dettaglio del team, se la prova
+// è partita da lì) si mettono da parte in questa scheda e si rimettono una volta sola alla riapertura, così il team su cui si lavorava non si perde in mezzo agli
+// altri. In ogni altro caso il Box riparte da zero (restano solo ordine e vista, vedi sopra).
 const CHIAVE_DOPO_UPDATE = () => `boxDopoUpdate:${playerID}`;
+// quanto resta valida la fotografia: un update ricarica subito la pagina; una prova contro la CPU può durare un'ora di partite
+const VALIDITA_BOX_DA_PARTE = { update: 10 * 60 * 1000, simulatore: 6 * 60 * 60 * 1000 };
 let fotoBoxPrimaDiModificare = null;
 
 function fotografiaBox(teamId) {
@@ -1368,23 +1377,49 @@ function fotografiaBox(teamId) {
     };
 }
 
-// poco prima del ricaricamento di un update: la fotografia presa all'apertura della modifica (il Box dietro non è cambiato), o una presa adesso
-function mettiDaParteIlBox(teamId) {
+// Di quale team è aperto il dettaglio adesso (null se la finestra è chiusa)
+function dettaglioAperto() {
+    const m = document.getElementById('teamModal');
+    const aperto = !!m && getComputedStyle(m).display !== 'none';
+    return aperto && window.squadraAperta && window.squadraAperta.id ? window.squadraAperta.id : null;
+}
+
+// Poco prima di andarsene dal Box. 'update' (prima del ricaricamento dopo il salvataggio): la fotografia presa all'apertura della modifica (il Box dietro non è cambiato),
+// o una presa adesso. 'simulatore' (prima della prova contro la CPU): una presa adesso, con il dettaglio del team se la prova parte da lì.
+function mettiDaParteIlBox(teamId, tipo = 'update') {
     try {
-        const foto = fotoBoxPrimaDiModificare && fotoBoxPrimaDiModificare.team === teamId ? fotoBoxPrimaDiModificare : fotografiaBox(teamId);
+        const foto = tipo === 'update' && fotoBoxPrimaDiModificare && fotoBoxPrimaDiModificare.team === teamId ? { ...fotoBoxPrimaDiModificare } : fotografiaBox(teamId);
+        foto.tipo = tipo;
+        if (tipo === 'simulatore') foto.dettaglio = dettaglioAperto();
         sessionStorage.setItem(CHIAVE_DOPO_UPDATE(), JSON.stringify(foto));
     } catch (e) { /* memoria della scheda bloccata: pazienza */ }
 }
 
-// Letta una sola volta (si cancella subito) e valida per pochi minuti: un'apertura qualunque più tardi non deve ritrovarsi filtri vecchi
+// Letta una sola volta (si cancella subito) e valida per un tempo limitato: un'apertura qualunque più tardi non deve ritrovarsi filtri vecchi
 function leggiBoxMessoDaParte() {
     try {
         const chiave = CHIAVE_DOPO_UPDATE();
         const s = JSON.parse(sessionStorage.getItem(chiave) || 'null');
         sessionStorage.removeItem(chiave);
-        return s && typeof s === 'object' && Date.now() - Number(s.t) < 10 * 60 * 1000 ? s : null;
+        if (!s || typeof s !== 'object') return null;
+        const durata = VALIDITA_BOX_DA_PARTE[s.tipo] || VALIDITA_BOX_DA_PARTE.update;
+        return Date.now() - Number(s.t) < durata ? s : null;
     } catch (e) { return null; }
 }
+
+// Si arriva dal simulatore (o dal tasto indietro del browser, o non si sa da dove): la fotografia della prova vale. Chi arriva da un'altra pagina del sito
+// (il menù, la home) apre un Box nuovo, anche se prima aveva fatto una prova.
+function tornaDalSimulatore() {
+    try {
+        const nav = (performance.getEntriesByType('navigation')[0] || {}).type;
+        if (nav === 'back_forward') return true;
+    } catch (e) { /* senza Performance API si va avanti con il resto */ }
+    const da = document.referrer || '';
+    return !da || /\/battle\.html(?:[?#]|$)/.test(da);
+}
+
+// Col tasto indietro il browser può rimettere la pagina intera, com'era e senza ricaricarla: la fotografia non serve più e non deve restare per una riapertura futura
+window.addEventListener('pageshow', e => { if (e.persisted) { try { sessionStorage.removeItem(CHIAVE_DOPO_UPDATE()); } catch (err) { /* pazienza */ } } });
 
 // I campi come erano. Formato ed etichetta possono non avere ancora le opzioni (si caricano da Firebase in parallelo): se mancano si aggiungono, e i caricamenti
 // che le riscrivono mantengono la scelta se esiste ancora. Ordine e vista si rimettono solo se la scelta c'è (nell'app, per esempio, la lista non c'è).

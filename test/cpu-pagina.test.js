@@ -351,7 +351,8 @@ test('style-battle.css: sui telefoni i pulsanti di fine partita passano nel pann
 
 test('box.html: il pulsante per provare un team contro la CPU è sulla card (anche se il team è bloccato) e nel dettaglio', () => {
     const box = leggi('box.html');
-    assert.match(box, /function provaControCpu\(id\) \{\s*window\.location\.href = 'battle\.html\?cpu=1&team=' \+ encodeURIComponent\(id\);/);
+    // prima di partire il Box si mette da parte (tornando dal simulatore è com'era: test/box-dopo-update.test.js), poi si cambia pagina
+    assert.match(box, /function provaControCpu\(id\) \{\s*mettiDaParteIlBox\(id, 'simulatore'\);[^\n]*\n\s*window\.location\.href = 'battle\.html\?cpu=1&team=' \+ encodeURIComponent\(id\);/);
     assert.match(box, /provaControCpu\('\$\{team\.id\}'\)/, 'sulla card');
     assert.match(box, /title="Practice this team against the CPU">🎮<\/button>/);
     assert.match(box, /class="tb-prova-cpu"/, 'nel dettaglio');
