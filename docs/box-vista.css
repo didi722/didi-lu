@@ -88,3 +88,23 @@
 .vista-bottoni button:hover { translate: -1px -2px; }
 .vista-bottoni button.attivo { background: var(--nb-giallo, #ffbd44); color: #000; translate: 2px 2px; box-shadow: none; }
 .vista-bottoni button:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 2px; }
+
+/* ---------- La riga della vista: i tre pulsanti e la spunta "nascondi i team bloccati" ---------- */
+.box-riga-vista { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
+.box-spunta { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.box-spunta input {
+    appearance: none; -webkit-appearance: none;
+    width: 24px; height: 24px; margin: 0; flex: none;
+    background: var(--nb-carta, #fff);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    cursor: pointer; display: grid; place-items: center;
+    transition: translate .12s ease, box-shadow .12s ease, background-color .12s ease;
+}
+.box-spunta input::after { content: ''; width: 10px; height: 6px; border: solid #000; border-width: 0 0 3px 3px; rotate: -45deg; translate: 0 -1px; opacity: 0; }
+.box-spunta input:hover { translate: -1px -1px; background: var(--nb-giallo, #ffbd44); }
+.box-spunta input:checked { background: var(--nb-giallo, #ffbd44); translate: 2px 2px; box-shadow: none; }
+.box-spunta input:checked::after { opacity: 1; }
+.box-spunta input:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 2px; }
+.box-spunta span { font: 800 .8rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; text-transform: uppercase; color: var(--nb-ink, #000); }
