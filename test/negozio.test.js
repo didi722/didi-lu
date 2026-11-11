@@ -198,7 +198,8 @@ test('cablaggio: Box con il tasto ✨ che porta allo Shop e lo shiny sulle card;
     const box = leggi('docs', 'box.html');
     assert.doesNotMatch(box, /negozio\.js|rarita-pkm\.js/, 'il Box non apre più finestre di acquisto');
     assert.match(box, /class="card-azione azione-shiny" onclick="event\.stopPropagation\(\); apriShinyTeam\('\$\{team\.id\}'\)"/);
-    assert.match(box, /function apriShinyTeam\(id\) \{\s*window\.location\.href = `shop\.html\?tab=pokemon&team=\$\{encodeURIComponent\(id\)\}`;/);
+    // prima si avvisa che si va nello Shop (Cancel: si resta nel Box), poi si parte
+    assert.match(box, /function apriShinyTeam\(id\) \{[^]*?if \(!confirm\(`Shiny Pokémon are bought in the Shop\.[^`]*Continue\?`\)\) return;\s*window\.location\.href = `shop\.html\?tab=pokemon&team=\$\{encodeURIComponent\(id\)\}`;/);
     assert.match(box, /SpritePkm\.gif\(nomePkm, p\.shiny\)/);
     assert.match(box, /SpritePkm\.gif\(p\.nome, p\.shiny\)[^\n]*clickable-pkm/);
     assert.match(box, /Cosmetici\.senzaShinyAbusivi\(testoScritto, editingId \? tuttiITeam\.find\(t => t\.id === editingId\) : null\)/);
