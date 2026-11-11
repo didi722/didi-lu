@@ -5073,6 +5073,14 @@ color:#eeeeee;
     .select-group > select { min-width: 0; }
     .grid { margin: 18px auto; padding: 0 12px 24px; grid-template-columns: minmax(0, 1fr); gap: 26px; }
 }
+/* Finestra media (901–1120px): titolo, bottoni tondi fissi in alto a destra e filtri non ci stanno più in una riga (i filtri finivano sotto i bottoni).
+   Come sul telefono, i filtri vanno sotto il titolo a tutta larghezza; il resto della pagina non cambia. */
+@media (min-width: 901px) and (max-width: 1120px) {
+    .top-bar { padding: 46px 0 22px !important; }
+    .top-bar-inner { flex-direction: column; align-items: flex-start; gap: 0; }
+    .controls { min-width: 0; width: 100%; max-width: none; margin: 56px 0 0; padding: 0; box-shadow: none; }
+    .controls input, .controls select { box-sizing: border-box; }
+}
 @media (max-width: 900px) {
     /* importatore Showdown (solo admin): con il telefono in orizzontale è più alto dello schermo, quindi scorre */
     .admin-panel { max-height: 100vh; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
