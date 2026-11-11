@@ -241,7 +241,8 @@ test('battle-ui.js: "Edit my team" solo se il team si può modificare; altriment
     const azioni = estrai(ui, 'function azioniCpu', 'function mostraFineCpu');
     assert.match(azioni, /if \(cpu\.modificabile === true\) azioni\.push\([^;]*'Edit my team'/, 'null (si sta ancora controllando) e false: nessun pulsante');
     assert.match(azioni, /'Back to Box'/);
-    assert.match(azioni, /if \(!cpu\.problemi\.length\)[\s\S]*Rematch[\s\S]*Another random CPU team/, 'dopo una modifica non giocabile niente rivincita');
+    assert.match(azioni, /if \(!cpu\.problemi\.length\)[\s\S]*Another random CPU team/, 'dopo una modifica non giocabile niente altra partita');
+    assert.ok(!/Rematch · same CPU/.test(azioni), 'niente rivincita con lo stesso team (si prova sempre contro un altro)');
     assert.match(azioni, /apriEditorTeam/);
     assert.match(ui, /cpu\.modificabile === false \? '🔒 Locked team: it can\\'t be edited'/);
     assert.match(ui, /function apriEditorTeam\(\) \{\s*if \(!cpu \|\| cpu\.modificabile !== true \|\| editor\) return;/, 'anche chiamata a mano non apre un team bloccato');

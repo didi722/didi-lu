@@ -50,7 +50,7 @@ test('cablaggio nel Box: preferenze salvate (filtri, ordine, vista) e le tre vis
     assert.match(box, /<link rel="stylesheet" href="box-vista\.css">/);
     assert.match(box, /id="viewFilter"[\s\S]*value="griglia"[\s\S]*value="lista"[\s\S]*value="cartelle"/);
     // si salva a ogni applicaFiltri e si ripristina all'apertura, prima del primo disegno
-    assert.match(box, /ultimiFiltrati = filtrati;[\s\S]*?salvaPreferenze\(\);\s*renderizza\(filtrati\);/);
+    assert.match(box, /ultimiFiltrati = filtrati;[\s\S]*?salvaPreferenze\(\);\s*await renderizza\(filtrati\);/);
     assert.match(box, /sortFilter\.value = 'win';\s*}\s*ripristinaPreferenze\(\);/);
     assert.match(box, /localStorage\.setItem\(chiavePrefs\(\)/);
     assert.match(box, /const chiavePrefs = \(\) => `boxPrefs:\$\{playerID\}`/, 'per giocatore');
