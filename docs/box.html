@@ -1166,7 +1166,7 @@ async function renderizza(lista, contenitore) {
 
     // le medagliette dei badge sulle card (arrivano appena sono pronte le statistiche reali)
     if (typeof BadgeTeam !== 'undefined' && typeof Fiocchi !== 'undefined' && playerID) {
-        BadgeTeam.riempiCard(db, grid, { giocatore: playerID, squadre: lista, valido: () => grid.isConnected, tutti: document.documentElement.classList.contains('app') });
+        BadgeTeam.riempiCard(db, grid, { giocatore: playerID, squadre: lista, valido: () => grid.isConnected, tutti: document.documentElement.classList.contains('app') || (principale && vistaBox === 'lista' && window.matchMedia && matchMedia('(min-width: 901px)').matches) });      // in lista (a PC) c'è posto per tutti i badge
     }
 }
 

@@ -10,7 +10,7 @@
         align-items: center;
         rotate: 0deg;
     }
-    html:not(.app-shell) .grid.vista-lista .card h3 { grid-column: 1; max-width: 100%; margin: 0 0 8px; }
+    html:not(.app-shell) .grid.vista-lista .card h3 { grid-column: 1; max-width: 100%; margin: 0 0 22px; }
     html:not(.app-shell) .grid.vista-lista .card .card-etichette,
     html:not(.app-shell) .grid.vista-lista .card .card-winrate { grid-column: 1; }
     html:not(.app-shell) .grid.vista-lista .card .pkm-grid { grid-column: 2; grid-row: 1 / span 3; grid-template-columns: repeat(6, minmax(0, 1fr)); align-self: center; }
