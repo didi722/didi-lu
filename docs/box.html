@@ -1079,7 +1079,7 @@ async function renderizza(lista) {
                 ${htmlAzioni}
 
                 <span class="bt-card" data-team-badge="${team.id}" onclick="event.stopPropagation()"></span>
-                <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
+                <span class="stats" title="Format">${team.category || team.categoria || 'VGC'}</span>
             </div>
             <h3>${team.nome || 'No teams yet'}</h3>
             ${htmlPillole}

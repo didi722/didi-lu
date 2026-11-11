@@ -44,7 +44,7 @@
 .card:active { translate: 3px 3px; box-shadow: none !important; }
 .card:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 4px; }
 
-/* ---------- La striscia: pallini, categoria, pulsanti, bilancio ---------- */
+/* ---------- La striscia: pallini, pulsanti, formato (nell'etichetta gialla a destra) ---------- */
 .card-header {
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -64,6 +64,7 @@
     color: #fff;
 }
 .card-header .category {
+    display: none;       /* il formato sta nell'etichetta gialla (.stats); questo resta solo per il layout dell'app */
     flex: 1 1 auto;
     min-width: 0;
     padding: 0;
@@ -79,7 +80,11 @@
     text-overflow: ellipsis;
 }
 .card-header .stats {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
     padding: 1px 9px 0;
     background: var(--nb-giallo, #ffbd44);
     color: #000;
@@ -91,7 +96,7 @@
     white-space: nowrap;
     rotate: calc(var(--nb-rot, 1) * 1.5deg);
 }
-.card-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; }
+.card-actions { flex: 0 0 auto; margin-right: auto; display: flex; align-items: center; gap: 4px; }
 .card-azione {
     display: grid;
     place-items: center;

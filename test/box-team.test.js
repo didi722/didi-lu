@@ -104,7 +104,8 @@ test('renderizza: finestrella per team con striscia, azioni, bilancio, barra del
     assert.equal((html.match(/<div class="card" style="--i: \d+; --cc: #[0-9a-f]{6};"/g) || []).length, 2);
     assert.match(html, /style="--i: 0; --cc[^"]*"[\s\S]*style="--i: 1; --cc/, 'posizione di ogni card, per l\'entrata a cascata');
     assert.match(html, /<span class="category">VGC Reg G<\/span>/);
-    assert.match(html, /<span class="stats">W: 9 \/ L: 3<\/span>/);
+    assert.match(html, /<span class="stats" title="Format">VGC Reg G<\/span>/, 'il formato è nell\'etichetta gialla, al posto di Win/Lose');
+    assert.ok(!/W: 9/.test(html));
     // barra: 9 su 12 = 75%; il team che non ha giocato non ha barra
     assert.match(html, /<div class="card-winrate" title="75% of matches won"><span style="width:75%"><\/span><b>75% wins<\/b><\/div>/);
     assert.equal((html.match(/class="card-winrate"/g) || []).length, 1);

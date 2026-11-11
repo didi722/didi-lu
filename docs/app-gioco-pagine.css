@@ -377,9 +377,9 @@
     /* la striscia nera col computer sparisce: i suoi pezzi stanno nella griglia della scheda */
     html.app-shell body.pg-box #teamsGrid .card-header { display: contents; }
     html.app-shell body.pg-box #teamsGrid .card-header .category {
-        grid-area: cat; justify-self: start; max-width: 100%; padding: calc(3 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; font: 800 calc(10.5 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .1em;
+        display: block; grid-area: cat; justify-self: start; max-width: 100%; padding: calc(3 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; font: 800 calc(10.5 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .1em;
     }
-    html.app-shell body.pg-box #teamsGrid .card-header .stats { grid-area: st; rotate: 0deg; font-size: calc(11 * var(--u)); box-shadow: none; }
+    html.app-shell body.pg-box #teamsGrid .card-header .stats { display: none; }      /* il formato sta già nella pillola nera (.category) */
     html.app-shell body.pg-box #teamsGrid .card h3 { grid-area: nm; margin: 0; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; justify-self: start; font-size: calc(19 * var(--u)); line-height: 1.2; rotate: 0deg; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
     html.app-shell body.pg-box #teamsGrid .card-winrate { display: none; }
     html.app-shell body.pg-box #teamsGrid .card .pkm-grid { grid-area: pk; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: calc(4 * var(--u)); margin: calc(2 * var(--u)) 0 0; }
