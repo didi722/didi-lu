@@ -99,10 +99,10 @@
     border: 3px solid var(--nb-ink, #000);
     border-radius: calc(var(--nb-raggio, 0px) * .5);
     box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
-    cursor: pointer; display: grid; place-items: center;
+    cursor: pointer; position: relative;
     transition: translate .12s ease, box-shadow .12s ease, background-color .12s ease;
 }
-.box-spunta input::after { content: ''; width: 10px; height: 6px; border: solid #000; border-width: 0 0 3px 3px; rotate: -45deg; translate: 0 -1px; opacity: 0; }
+.box-spunta input::after { content: ''; position: absolute; left: 50%; top: 50%; box-sizing: border-box; width: 12px; height: 7px; border: solid #000; border-width: 0 0 3px 3px; transform: translate(-50%, -70%) rotate(-45deg); opacity: 0; }
 .box-spunta input:hover { translate: -1px -1px; background: var(--nb-giallo, #ffbd44); }
 .box-spunta input:checked { background: var(--nb-giallo, #ffbd44); translate: 2px 2px; box-shadow: none; }
 .box-spunta input:checked::after { opacity: 1; }
