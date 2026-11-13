@@ -72,3 +72,64 @@ test('apertura: la finestra si mostra subito ma il resto è invisibile finché i
     assert.match(apri, /window\.aperturaReplay === aperturaDi/);
     assert.match(matches, /window\.aperturaReplay = \(window\.aperturaReplay \|\| 0\) \+ 1;[^\n]*\n\s*if \(modal\) \{\s*modal\.style\.display = "none";\s*modal\.classList\.remove\('in-preparazione'\);/);
 });
+
+test('replay da PC: i due allenatori ai lati della console, dietro a tutto e fuori dal flusso (niente si sposta), con la riga in diagonale; non sul telefono né nell\'app', () => {
+    const regola = sel => {
+        const i = finestre.indexOf(sel + ' {');
+        assert.ok(i >= 0, sel);
+        return finestre.slice(i, finestre.indexOf('}', i)).replace(/\s+/g, ' ');
+    };
+    // nascosto di default, mostrato solo da PC (né .tel né app)
+    assert.match(regola('#replayModal .replay-versus'), /display: none/);
+    const pc = regola('html:not(.app-shell) #replayModal:not(.tel) .replay-versus');
+    assert.match(pc, /display: block; position: fixed; inset: 0; z-index: -1;[^}]*pointer-events: none/, 'fuori dal flusso, sotto ogni cosa, e il clic passa (chiude la finestra)');
+    assert.match(pc, /--rv-h: clamp\(150px, calc\(var\(--rv-margine\) \* 1\.15\), 46vh\)/, 'la grandezza segue lo spazio che la console lascia ai lati');
+    assert.match(pc, /--rv-margine: calc\(\(100vw - 1150px \* var\(--gba-scala, 1\) - 106px\) \/ 2\)/);
+    // la riga in diagonale come nel simulatore (60% in alto, 40% in basso), senza colori di sfondo
+    assert.match(finestre, /\.rv-taglio-b \{[^}]*clip-path: polygon\(calc\(60% - 7px\) 0, calc\(60% \+ 7px\) 0, calc\(40% \+ 7px\) 100%, calc\(40% - 7px\) 100%\)/);
+    assert.match(finestre, /\.rv-taglio-a \{ background: var\(--c1, #555\)/);
+    assert.match(finestre, /\.rv-taglio-c \{ background: var\(--c2, #555\)/);
+    // il primo a sinistra rivolto verso la console, il secondo a destra
+    assert.match(finestre, /\.rv-sx \{ left: [^}]*scaleX\(-1\)/);
+    assert.match(finestre, /\.rv-dx \{ right: /);
+    // resta invisibile con il resto della finestra finché non è tutto pronto (.in-preparazione > :not(.close-replay))
+    assert.match(finestre, /#replayModal\.in-preparazione > :not\(\.close-replay\) \{ visibility: hidden; \}/);
+});
+
+test('replay da PC: gli avatar si leggono con i colori, si montano all\'apertura (il vecchio sfondo si toglie) e la finestra aspetta che siano caricati prima di comparire', () => {
+    assert.match(matches, /document\.querySelectorAll\('\.replay-versus'\)\.forEach\(e => e\.remove\(\)\)/);
+    assert.match(matches, /Promise\.all\(\[getPlayersColors\(sdData\.info\.player1, sdData\.info\.player2\), avatarDeiGiocatori\(\[sdData\.info\.player1, sdData\.info\.player2\]\)/);
+    assert.match(matches, /modal\.prepend\(versus\.box\);\s*immaginiVersus = versus\.caricate;/);
+    assert.match(matches, /attese\.push\(Promise\.all\(immaginiVersus\)\)/);
+    // l'attesa vale solo se lo sfondo è visibile (sul telefono e nell'app è display: none): getComputedStyle, non offsetParent (con position: fixed è sempre null)
+    assert.match(matches, /getComputedStyle\(versusBox\)\.display !== 'none'/);
+});
+
+test('creaSfondoVersus: la riga con i due colori e un avatar per lato (il primo a sinistra); senza avatar o con avatar rotto non resta niente e l\'attesa finisce lo stesso', async () => {
+    const inizio = matches.indexOf('function creaSfondoVersus(');
+    const fine = matches.indexOf('function renderGifs(', inizio);
+    assert.ok(inizio > 0 && fine > inizio);
+    const el = (tag) => {
+        const e = { tag, figli: [], stile: {}, attrs: {}, className: '', onload: null, onerror: null };
+        e.appendChild = c => { c.padre = e; e.figli.push(c); return c; };
+        e.remove = () => { if (e.padre) e.padre.figli.splice(e.padre.figli.indexOf(e), 1); };
+        e.setAttribute = (k, v) => { e.attrs[k] = v; };
+        e.style = { setProperty: (k, v) => { e.stile[k] = v; } };
+        Object.defineProperty(e, 'src', { set: v => { e._src = v; setTimeout(() => (/rotto/.test(v) ? e.onerror : e.onload)(), 0); }, get: () => e._src });
+        return e;
+    };
+    const ctx = vm.createContext({ document: { createElement: el }, setTimeout, Promise });
+    vm.runInContext(matches.slice(inizio, fine) + '\nthis.creaSfondoVersus = creaSfondoVersus;', ctx);
+    const r = ctx.creaSfondoVersus('https://x/uno.png', 'https://x/rotto.png', '#31c489', '#e0457b');
+    assert.equal(r.box.className, 'replay-versus');
+    assert.equal(r.box.attrs['aria-hidden'], 'true');
+    assert.equal(r.box.stile['--c1'], '#31c489');
+    assert.equal(r.box.stile['--c2'], '#e0457b');
+    assert.equal(r.box.figli.filter(f => f.tag === 'i').length, 3, 'la riga: filetto del primo, nero, filetto del secondo');
+    assert.equal(r.caricate.length, 2);
+    await Promise.all(r.caricate);        // anche quello rotto finisce (e si toglie)
+    const avatar = r.box.figli.filter(f => f.tag === 'img');
+    assert.equal(avatar.length, 1, 'l\'avatar rotto non resta');
+    assert.equal(avatar[0].className, 'rv-avatar rv-sx');
+    assert.equal(ctx.creaSfondoVersus('', '', '#000', '#000').caricate.length, 0, 'senza avatar niente da aspettare');
+});

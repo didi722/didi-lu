@@ -3054,6 +3054,7 @@ selector.style.height = 'auto';
     
     const vecchiaHeader = document.querySelector('.replay-mini-header');
     if (vecchiaHeader) vecchiaHeader.remove();
+    document.querySelectorAll('.replay-versus').forEach(e => e.remove());
 
     selector.innerHTML = '<span class="set-messaggio">Caricamento replay...</span>';
     // La finestra si apre subito (lo sfondo e la X), ma il resto resta invisibile finché intestazione, set, badge e scocca non sono pronti: se compaiono uno alla volta
@@ -3063,6 +3064,7 @@ selector.style.height = 'auto';
     modal.style.display = 'flex';
     adattaReplayAlloSchermo();
     const badgePromesse = [];
+    let immaginiVersus = [];
 
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -3076,7 +3078,7 @@ selector.style.height = 'auto';
         if (!sdData) throw new Error("Showdown data not found");
 
         // --- 1. RECUPERO COLORI ---
-        const colors = await getPlayersColors(sdData.info.player1, sdData.info.player2);
+        const [colors, avatar] = await Promise.all([getPlayersColors(sdData.info.player1, sdData.info.player2), avatarDeiGiocatori([sdData.info.player1, sdData.info.player2]).catch(() => ({}))]);
         const c1 = colors.c1 || "#555";
         const c2 = colors.c2 || "#555";
 
@@ -3102,6 +3104,10 @@ selector.style.height = 'auto';
             </div>
         `;
         modal.prepend(miniHeader);
+        // i due allenatori ai lati della console (solo da PC, finestre.css): grandi, fermi, dietro a tutto, con la riga in diagonale in mezzo come nel simulatore
+        const versus = creaSfondoVersus(avatar[String(sdData.info.player1 || '').toLowerCase().trim()], avatar[String(sdData.info.player2 || '').toLowerCase().trim()], c1, c2);
+        modal.prepend(versus.box);
+        immaginiVersus = versus.caricate;
         adattaReplayAlloSchermo();
 
         // i badge dei due team che si affrontano: un vanto, visibile a tutti (le medagliette più alte e quanti ne hanno)
@@ -3184,6 +3190,8 @@ selector.style.height = 'auto';
         const scocca = modal.querySelector('.gba-shell');
         const attese = [];
         if (conBadge) attese.push(Promise.all(badgePromesse));
+        const versusBox = modal.querySelector('.replay-versus');
+        if (immaginiVersus.length && versusBox && getComputedStyle(versusBox).display !== 'none') attese.push(Promise.all(immaginiVersus));      // gli avatar ai lati compaiono insieme al resto
         if (scocca && scocca.offsetParent !== null && !scocca.complete) attese.push(new Promise(ok => { scocca.addEventListener('load', ok, { once: true }); scocca.addEventListener('error', ok, { once: true }); }));
         if (attese.length) await Promise.race([Promise.all(attese), new Promise(ok => setTimeout(ok, 1000))]);
         if (window.aperturaReplay === aperturaDi) {
@@ -3199,6 +3207,28 @@ window.gestisciClickReplay = function(btnElement, url) {
     btnElement.classList.add('is-selected');
     window.caricaVideoDirect(url, btnElement);
 };
+
+/** Lo sfondo "sfida" del replay da PC: la riga in diagonale (nera, con un filetto del colore di ognuno) e i due allenatori, il primo a sinistra e il secondo a destra, rivolti verso la console */
+function creaSfondoVersus(avatar1, avatar2, c1, c2) {
+    const box = document.createElement('div');
+    box.className = 'replay-versus';
+    box.setAttribute('aria-hidden', 'true');
+    box.style.setProperty('--c1', c1);
+    box.style.setProperty('--c2', c2);
+    ['a', 'b', 'c'].forEach(k => { const t = document.createElement('i'); t.className = 'rv-taglio rv-taglio-' + k; box.appendChild(t); });
+    const caricate = [];
+    [[avatar1, 'rv-sx'], [avatar2, 'rv-dx']].forEach(([url, classe]) => {
+        if (!url) return;
+        const img = document.createElement('img');
+        img.className = 'rv-avatar ' + classe;
+        img.alt = '';
+        img.draggable = false;
+        caricate.push(new Promise(ok => { img.onload = ok; img.onerror = () => { img.remove(); ok(); }; }));
+        img.src = url;
+        box.appendChild(img);
+    });
+    return { box, caricate };
+}
 
 function renderGifs(nomeTeam, containerId, categoria) {
     const container = document.getElementById(containerId);
