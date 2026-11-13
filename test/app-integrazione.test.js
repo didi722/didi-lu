@@ -44,3 +44,21 @@ test('Riepilogo di stagione nell\'app: le righe della classifica non si distanzi
     assert.match(css, /html\.app-shell \.rs-righe \{ justify-content: flex-start; \}/);
     assert.match(css, /html\.app-shell \.rs \{[^}]*padding-top: calc\(28 \* var\(--u\)\)/);
 });
+
+test('menù dell\'app: ogni figura di una scena ha la sua regola di posto e grandezza (senza, la figura compare grande quanto l\'immagine intera)', () => {
+    const S = require('../docs/app-scena.js');
+    const css = leggi('app-scena.css');
+    for (const [id, scena] of Object.entries(S.SCENE)) {
+        for (const e of scena.eroi || []) {
+            assert.ok(css.includes(`.gx-c-${id} .${e.c} {`), `la scena ${id}: manca la regola di .gx-c-${id} .${e.c} in app-scena.css`);
+        }
+    }
+});
+
+test('Hall of Fame nell\'app: ha la sua tessera nel menù (palmares.html), non rimanda più al menù e il replay del Match of the week torna alla sua sezione', () => {
+    const voce = A.VOCI.find(v => v.id === 'hof');
+    assert.ok(voce, 'tessera hof');
+    assert.equal(voce.href, 'palmares.html');
+    assert.ok(!A.FUORI_APP.includes('palmares.html'));
+    assert.match(leggi('matches.html'), /PAGINE_DI_RITORNO = \{[^}]*'hall-of-fame': 'palmares\.html\?sezione=settimane'/, 'da un replay si torna alla sezione della Hall of Fame');
+});
