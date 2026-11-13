@@ -465,7 +465,7 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
 
 .pp-allenatore {
     position: absolute;
-    left: calc(36 * var(--d));
+    left: calc((36 + var(--sposta, 0)) * var(--d));      /* --sposta: la coppia con il Pokémon sta al centro del palco (public-card.js, centraScena) */
     bottom: calc(53 * var(--d));
     z-index: 10;
 }
@@ -531,9 +531,9 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
 .pp-pkm.pp-davanti { z-index: 15; }
 /* il Pokémon sta accanto all'allenatore, non appoggiato al bordo destro con un vuoto in mezzo: la sua larghezza è circa la sua altezza (--ht); dietro di lui (alto o in volo)
    con un piccolo contatto, davanti (basso) subito a fianco. Il limite di larghezza segue lo spazio che resta. I giganti (.pp-enorme) hanno il loro posto */
-.pp-pkm:not(.pp-enorme) { right: auto; left: calc((36 + var(--ht, 170) * 1) * var(--d)); }
-.pp-pkm.pp-dietro:not(.pp-enorme) { left: calc((36 + var(--ht, 170) * 0.85) * var(--d)); }
-.pp-pkm:not(.pp-enorme) .pp-pkm-img { max-width: calc((372 - 36 - var(--ht, 170) * 0.85) * var(--d)); }
+.pp-pkm:not(.pp-enorme) { right: auto; left: calc((36 + var(--sposta, 0) + var(--ht, 170) * 1) * var(--d)); }
+.pp-pkm.pp-dietro:not(.pp-enorme) { left: calc((36 + var(--sposta, 0) + var(--ht, 170) * 0.85) * var(--d)); }
+.pp-pkm:not(.pp-enorme) .pp-pkm-img { max-width: calc((372 - 36 - var(--sposta, 0) - var(--ht, 170) * 0.85) * var(--d)); }
 /* un Pokémon alto, con la GIF piccola ingrandita più del doppio: i pixel netti, non sfocati (come l'allenatore) */
 .pp-pkm-img.pp-ingrandita { image-rendering: pixelated; }
 

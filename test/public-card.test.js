@@ -553,8 +553,18 @@ test('compagno alto (Dhelmise): la GIF ingrandita più del doppio ha i pixel net
 
 test('palco: un Pokémon alto o che vola sta subito dietro all\'allenatore (non appoggiato al bordo destro con un vuoto in mezzo); i giganti hanno il loro posto', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-card.css'), 'utf8');
-    assert.match(css, /\.pp-pkm:not\(\.pp-enorme\) \{ right: auto; left: calc\(\(36 \+ var\(--ht, 170\) \* 1\) \* var\(--d\)\); \}/, 'davanti (basso): subito a fianco');
-    assert.match(css, /\.pp-pkm\.pp-dietro:not\(\.pp-enorme\) \{ left: calc\(\(36 \+ var\(--ht, 170\) \* 0\.85\) \* var\(--d\)\); \}/, 'dietro (alto o in volo): con un piccolo contatto');
-    assert.match(css, /\.pp-pkm:not\(\.pp-enorme\) \.pp-pkm-img \{ max-width: calc\(\(372 - 36 - var\(--ht, 170\) \* 0\.85\) \* var\(--d\)\); \}/);
+    assert.match(css, /\.pp-pkm:not\(\.pp-enorme\) \{ right: auto; left: calc\(\(36 \+ var\(--sposta, 0\) \+ var\(--ht, 170\) \* 1\) \* var\(--d\)\); \}/, 'davanti (basso): subito a fianco');
+    assert.match(css, /\.pp-pkm\.pp-dietro:not\(\.pp-enorme\) \{ left: calc\(\(36 \+ var\(--sposta, 0\) \+ var\(--ht, 170\) \* 0\.85\) \* var\(--d\)\); \}/, 'dietro (alto o in volo): con un piccolo contatto');
+    assert.match(css, /\.pp-pkm:not\(\.pp-enorme\) \.pp-pkm-img \{ max-width: calc\(\(372 - 36 - var\(--sposta, 0\) - var\(--ht, 170\) \* 0\.85\) \* var\(--d\)\); \}/);
     assert.match(css, /\.pp-pkm\.pp-enorme \{ right: calc\(-270 \* var\(--d\)\); \}/);
+});
+
+test('palco: la coppia allenatore + Pokémon sta al centro (--sposta: metà dello spazio che resta, mai negativo); i giganti non si spostano', () => {
+    const base = path.join(__dirname, '..', 'docs');
+    const js = fs.readFileSync(path.join(base, 'public-card.js'), 'utf8');
+    const css = fs.readFileSync(path.join(base, 'style-public-card.css'), 'utf8');
+    assert.match(js, /function centraScena\(set, posto, img\)/);
+    assert.match(js, /posto\.classList\.contains\('pp-enorme'\)\) \{ set\.style\.removeProperty\('--sposta'\); return; \}/);
+    assert.match(js, /Math\.max\(0, Math\.round\(\(400 - gruppo - 36\) \/ 2 \* 10\) \/ 10\)/);
+    assert.match(css, /\.pp-allenatore \{\s*position: absolute;\s*left: calc\(\(36 \+ var\(--sposta, 0\)\) \* var\(--d\)\);/);
 });
