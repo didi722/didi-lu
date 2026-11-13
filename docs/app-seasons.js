@@ -104,8 +104,10 @@
     const immaginiDi = id => ['immagini/app/seasons-' + id + '.png', 'immagini/app/seasons-' + id + '.webp'];
 
     /** PLAYING: la locandina è divisa in due da una riga spezzata (due cieli, rosso e blu) con la scritta VS al centro (un'immagine propria, immagini/app/seasons-vs.png o .webp, sta al posto della scritta); niente Pokémon */
-    const htmlVs = () => '<span class="pr-arte pr-vs"><span class="pr-vs-cielo pr-vs-dx" aria-hidden="true"></span><span class="pr-vs-cielo pr-vs-taglio" aria-hidden="true"></span><span class="pr-vs-cielo pr-vs-sx" aria-hidden="true"></span>'
-        + '<img class="pr-vs-img" data-id="vs" alt="VS" draggable="false" hidden><b class="pr-vs-scritta" aria-hidden="true">VS</b><span class="gx-vignetta" aria-hidden="true"></span></span>';
+    // i due cieli sono scene come quelle delle altre locandine (cielo, raggi, nuvole, scintille), uno rosso e uno blu, divisi dalla riga
+    const cieloVs = (cielo, indice) => S.htmlScena({ cielo, eroi: [] }, { indice, scintille: 8, escF: esc });
+    const htmlVs = () => '<span class="pr-arte pr-vs"><span class="pr-vs-lato pr-vs-dx">' + cieloVs('cielo-blu', 1) + '</span><span class="pr-vs-lato pr-vs-taglio" aria-hidden="true"></span><span class="pr-vs-lato pr-vs-sx">' + cieloVs('cielo-rosso', 4) + '</span>'
+        + '<img class="pr-vs-img" data-id="vs" alt="VS" draggable="false" hidden><b class="pr-vs-scritta" aria-hidden="true">VS</b></span>';
 
     const arte = (id, i, bolla) => id === 'playing' ? htmlVs() : `<span class="pr-arte">${S.htmlScena(S.LOCANDINE_STAGIONI[id], { indice: i, scintille: 8, escF: esc, immagine: `<img class="pr-img" data-id="${id}" alt="" hidden>` })}${bolla ? `<i class="pr-bolla" aria-label="${bolla} to join">${bolla}</i>` : ''}</span>`;
 
