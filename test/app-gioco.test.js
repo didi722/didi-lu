@@ -113,9 +113,9 @@ test('le pagine ridisegnate usano i nomi veri delle loro classi (se una pagina c
             (perPagina[pg[1]] ||= new Set()).add(c[1]);
         }
     }
-    assert.deepEqual(Object.keys(perPagina).sort(), ['box', 'hub', 'matches', 'players', 'practice', 'stats']);
+    assert.deepEqual(Object.keys(perPagina).sort(), ['box', 'hub', 'matches', 'players', 'practice', 'seasons', 'stats']);
     for (const [pagina, classi] of Object.entries(perPagina)) {
-        assert.ok(classi.size >= 5, `${pagina}: classi trovate ${classi.size}`);
+        assert.ok(classi.size >= (pagina === 'seasons' ? 3 : 5), `${pagina}: classi trovate ${classi.size}`);
         const mancano = [...classi].filter(c => !sorgenti.includes(c));
         assert.deepEqual(mancano, [], `${pagina}: classi che nessun file del sito scrive più`);
     }

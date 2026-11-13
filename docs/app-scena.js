@@ -26,17 +26,24 @@
      */
     const SCENE = {
         play: { cielo: 'cielo-blu', sotto: 'Ranked · Unranked · VS CPU', eroi: [], arte: 'immagini/app/scena-play.webp', bordo: true, alt: 'Mega Charizard Y and Mega Lucario face off' },
+        seasons: { cielo: 'cielo-oro', fx: 'sole', sotto: 'Seasons & sign-ups', eroi: [{ img: 'immagini/season-winner-color.png', c: 'e-coppa', alt: 'Season trophy' }] },
         box: { cielo: 'cielo-viola', fx: 'palla', sotto: 'Your teams & Pokémon', eroi: [{ pkm: 94, c: 'e-sx', alt: 'Gengar' }, { pkm: 149, c: 'e-dx', alt: 'Dragonite' }, { pkm: 445, c: 'e-cn', alt: 'Garchomp' }] },
         trainers: { cielo: 'cielo-tramonto', fx: 'aure', sotto: 'The League', eroi: [{ img: 'immagini/profile/15.png', c: 't-1', alt: '', prova: 'trainers-1' }, { img: 'immagini/profile/1.png', c: 't-2', alt: '', prova: 'trainers-2' }] },
-        stats: { cielo: 'cielo-notte', fx: 'radar', sotto: 'Numbers & records', eroi: [{ pkm: 150, c: 'e-mew', alt: 'Mewtwo' }] },
-        seasons: { cielo: 'cielo-oro', fx: 'sole', sotto: 'Seasons & sign-ups', eroi: [{ img: 'immagini/season-winner-color.png', c: 'e-coppa', alt: 'Season trophy' }] }
+        stats: { cielo: 'cielo-notte', fx: 'radar', sotto: 'Numbers & records', eroi: [{ pkm: 150, c: 'e-mew', alt: 'Mewtwo' }] }
     };
 
-    /** Le tre locandine di Play: stessa cosa, in verticale */
+    /** Le locandine: le tre di Play e le tre di Seasons, stessa cosa del menù ma in verticale */
     const LOCANDINE = {
         ranked: { cielo: 'cielo-oro', fx: 'sole', eroi: [{ pkm: 384, c: 'e-ray', alt: 'Rayquaza' }] },
         unranked: { cielo: 'cielo-rosa', fx: 'cuori', eroi: [{ pkm: 25, c: 'e-pika', alt: 'Pikachu' }, { pkm: 133, c: 'e-evee', alt: 'Eevee' }] },
         cpu: { cielo: 'cielo-tech', fx: 'griglia', eroi: [{ pkm: 474, c: 'e-pory', alt: 'Porygon-Z' }] }
+    };
+
+    /** Le tre locandine di Seasons (seasons.html): stesse figure di ripiego di una sola cosa al centro; le immagini proprie sono immagini/app/seasons-<past|playing|signups> */
+    const LOCANDINE_STAGIONI = {
+        past: { cielo: 'cielo-tramonto', fx: 'aure', eroi: [{ img: 'immagini/season-winner-color.png', c: 'e-uno', alt: 'Season trophy' }] },
+        playing: { cielo: 'cielo-blu', fx: 'sole', eroi: [{ pkm: 448, c: 'e-uno', alt: 'Lucario' }] },
+        signups: { cielo: 'cielo-rosa', fx: 'cuori', eroi: [{ pkm: 25, c: 'e-uno', alt: 'Pikachu' }] }
     };
 
     /** Le scintille che salgono: `n` puntini con posto, grandezza e tempi diversi ma sempre gli stessi (generati da un seme, così la pagina è uguale a ogni apertura) */
@@ -136,5 +143,5 @@
         return lista.length;
     }
 
-    return { ARTE, SCENE, LOCANDINE, EFFETTI, htmlScintille, htmlEroi, htmlScena, immaginiScene, precarica, proveDi, cercaImmagini };
+    return { ARTE, SCENE, LOCANDINE, LOCANDINE_STAGIONI, EFFETTI, htmlScintille, htmlEroi, htmlScena, immaginiScene, precarica, proveDi, cercaImmagini };
 });

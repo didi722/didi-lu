@@ -105,17 +105,6 @@
         return { nome, stato: 'closed', testo: `Season over${vincitore}`, azione: 'VIEW', href: `matches.html?id=${encodeURIComponent(s.id)}` };
     }
 
-    /**
-     * La scheda di una stagione nella finestra Seasons (si scorre di lato): lo stato in parole, il nome, cosa succede e il tasto grande (JOIN apre la conferma
-     * dell'iscrizione, TEAMS l'hub, PLAY e VIEW la stagione). `st`: una voce di stagioniDaMostrare; `giocatoreId`: chi guarda.
-     */
-    function htmlSchedaStagione(st, giocatoreId, esc) {
-        const r = riassuntoStagione(st, giaIscritto(st.iscritti, giocatoreId));
-        const stato = { open: 'Sign-ups open', playing: 'In progress', closed: 'Finished' }[r.stato] || '';
-        return '<article class="gx-sz gx-st-' + r.stato + '"><span class="gx-sz-stato">' + esc(stato) + '</span><b class="gx-sz-nome">' + esc(r.nome) + '</b><small class="gx-sz-testo">' + esc(r.testo) + '</small>' +
-            '<a class="gx-bottone gx-primario gx-sz-vai" href="' + esc(r.href) + '"' + (r.azione === 'JOIN' ? ' data-iscrivi="' + esc(String(st.id)) + '"' : '') + ' data-suono="ok">' + esc(r.azione) + '</a></article>';
-    }
-
     /** Il giocatore è tra gli iscritti della stagione? `iscritti`: i nomi (come sono scritti nel database); il confronto non guarda le maiuscole. */
     function giaIscritto(iscritti, giocatoreId) {
         const id = String(giocatoreId == null ? '' : giocatoreId).toLowerCase().trim();
@@ -298,8 +287,6 @@
             $('gx-tessere').addEventListener('click', e => {
                 const c = e.target.closest ? e.target.closest('.gx-carta') : null;
                 if (c && Number(c.dataset.i) !== stato.corrente) { e.preventDefault(); vai(Number(c.dataset.i)); return; }
-                // la tessera Seasons, quando è già al centro, apre la finestra con le stagioni invece di cambiare pagina
-                if (c && c.dataset.id === 'seasons') { e.preventDefault(); apriStagioni(); }
             });
             doc.addEventListener('keydown', e => { if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
         }
@@ -394,7 +381,7 @@
         const apriLogin = () => { const el = $('gx-login'); el.hidden = false; aggiornaClasse(); win.setTimeout(() => $('gx-email').focus(), 60); };
         const chiudiLogin = () => { $('gx-login').hidden = true; aggiornaClasse(); };
         $('gx-login').addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === $('gx-login')) chiudiLogin(); });
-        doc.addEventListener('keydown', e => { if (e.key === 'Escape') { chiudiLogin(); chiudiAnnuncio(); chiudiAch(); chiudiStagioni(); } });
+        doc.addEventListener('keydown', e => { if (e.key === 'Escape') { chiudiLogin(); chiudiAnnuncio(); chiudiAch(); } });
         const errore = $('gx-login-errore');
         const mostraErrore = t => { errore.textContent = t; errore.hidden = !t; };
         $('gx-login-form').addEventListener('submit', e => {
@@ -516,16 +503,7 @@
             provaAnnuncio();
         };
 
-        // ----- Seasons: la tessera e la finestra con le stagioni (iscrizioni aperte, in corso), a schede da scorrere di lato -----
-        const dialogoStagioni = $('gx-stagioni');
-        const chiudiStagioni = () => { if (!dialogoStagioni || dialogoStagioni.hidden) return; dialogoStagioni.hidden = true; aggiornaClasse(); };
-        const disegnaStagioni = () => {
-            const el = $('gx-st-elenco');
-            if (!el) return;
-            el.innerHTML = stagioni.length ? stagioni.map(st => htmlSchedaStagione(st, giocatore && giocatore.id, esc)).join('') : '<p class="gx-sz-vuoto">No seasons yet.</p>';
-        };
-        const apriStagioni = () => { if (!dialogoStagioni) return; disegnaStagioni(); dialogoStagioni.hidden = false; aggiornaClasse(); fai('apri'); };
-        if (dialogoStagioni) dialogoStagioni.addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === dialogoStagioni) chiudiStagioni(); });
+        // ----- Seasons: la tessera (porta alla pagina delle stagioni, seasons.html) -----
         // la tessera dice cosa succede (la stagione principale: aperta o in corso) e, se ci si può ancora iscrivere, lo segna
         function aggiornaSeasons() {
             const carta = $('gx-tessere').querySelector('.gx-c-seasons');
@@ -539,7 +517,6 @@
             } else if (sotto) sotto.remove();
             const daIscrivere = !!giocatore && stagioni.some(x => x.stato === 'open' && !giaIscritto(x.iscritti, giocatore.id));
             if (daIscrivere) carta.setAttribute('data-avviso', 'Sign-ups open'); else carta.removeAttribute('data-avviso');
-            if (dialogoStagioni && !dialogoStagioni.hidden) disegnaStagioni();
         }
 
         // ----- l'annuncio delle iscrizioni aperte: una volta per stagione, a chi non è ancora iscritto, dopo la schermata del titolo -----
@@ -628,7 +605,6 @@
             if (!a) return;
             e.preventDefault();
             chiudiAnnuncio();
-            chiudiStagioni();
             apriIscr(a.getAttribute('data-iscrivi'));
         }, true);
         function chiudiAvvisi() { if (!avvisi || avvisi.hidden) return; scrivi(CHIAVE_AVVISI, '1'); avvisi.hidden = true; aggiornaClasse(); }
@@ -682,5 +658,5 @@
         return { opzioni, disegnaGiocatore };
     }
 
-    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, htmlSchedaStagione, htmlCarta, immaginiDi, avvia };
+    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, htmlCarta, immaginiDi, avvia };
 });

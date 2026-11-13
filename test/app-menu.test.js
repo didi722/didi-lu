@@ -169,8 +169,8 @@ test('le scene del menù: una per voce, con il tag in basso al centro e la riga 
     assert.equal(A.VOCI[0].id, 'play');
     assert.deepEqual(M.immaginiDi('box'), ['immagini/app/tessera-box.png', 'immagini/app/tessera-box.webp'], 'le immagini da mettere (png o webp)');
     assert.deepEqual(Object.keys(S.SCENE), A.VOCI.map(v => v.id), 'ogni voce ha la sua scena (app-scena.js)');
-    const h = M.htmlCarta(A.VOCI[1], 1, C.esc);
-    assert.match(h, /^<a class="gx-carta gx-c-box" href="box\.html" data-i="1" data-id="box" style="--c:#6fa8ff" data-suono="scegli"><span class="gx-sf">/);
+    const h = M.htmlCarta(A.VOCI[2], 2, C.esc);
+    assert.match(h, /^<a class="gx-carta gx-c-box" href="box\.html" data-i="2" data-id="box" style="--c:#6fa8ff" data-suono="scegli"><span class="gx-sf">/);
     assert.match(h, /<img class="gx-immagine" data-id="box" alt="" hidden><span class="gx-vignetta"/);
     // Play ha la sua immagine già pronta (si cerca dopo la tua, tessera-play)
     assert.match(M.htmlCarta(A.VOCI[0], 0, C.esc), /<img class="gx-immagine" data-id="play" data-arte="immagini\/app\/scena-play\.webp" data-bordo alt="Mega Charizard Y and Mega Lucario face off" hidden>/);
@@ -178,9 +178,8 @@ test('le scene del menù: una per voce, con il tag in basso al centro e la riga 
 
     const css = docs('app-menu.css');
     assert.doesNotMatch(css, /@@/, 'nessun segnaposto rimasto nel foglio');
-    for (const c of ['gx-carta', 'gx-tessere', 'gx-pista', 'gx-ferma', 'gx-blocco', 'gx-tag', 'gx-sotto', 'gx-immagine', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-pallini', 'gx-sz', 'gx-splash', 'gx-splash-raggi', 'gx-splash-eroe', 'gx-lobby']) assert.ok(css.includes('.' + c), `app-menu.css non conosce ${c}`);
+    for (const c of ['gx-carta', 'gx-tessere', 'gx-pista', 'gx-ferma', 'gx-blocco', 'gx-tag', 'gx-sotto', 'gx-immagine', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-pallini', 'gx-splash', 'gx-splash-raggi', 'gx-splash-eroe', 'gx-lobby']) assert.ok(css.includes('.' + c), `app-menu.css non conosce ${c}`);
     assert.doesNotMatch(css, /\.gx-nav\b|\.gx-tessera\b|\.gx-riflettore|\.gx-podio/, 'né tasti in basso, né tessere a griglia, né podio');
-    for (const st of ['gx-st-open', 'gx-st-playing', 'gx-st-closed']) assert.ok(css.includes(st), st);
     // una scena alla volta: il palco ritaglia tutto e ogni scena è uno strato suo che sta in un posto dipendente da --x (0 = al centro, ±1 = fuori dallo schermo)
     assert.match(css, /html\.app \.gx-tessere \{[^}]*position: fixed; inset: 0;[^}]*overflow: hidden;/);
     assert.match(css, /html\.app \.gx-carta \{[^}]*position: absolute; inset: 0;[^}]*transform: translate3d\(calc\(var\(--x, 0\) \* 100%\), 0, 0\);[^}]*will-change: transform;/);
@@ -647,26 +646,9 @@ test('giocatore con pochi showdown: Elo "N/A"; senza titolo la riga del titolo n
     assert.match(g, /src="immagini\/magikarp\.png"/, 'avatar di riserva');
 });
 
-test('Seasons: la scheda di una stagione dice lo stato, il nome e cosa succede, col tasto verso la pagina giusta (JOIN apre la conferma dell\'iscrizione); la pillola sotto il giocatore non c\'è più', async () => {
+test('Seasons: la tessera porta alla pagina delle stagioni (seasons.html), la pillola sotto il giocatore non c\'è più e il menù non ha più una finestra delle stagioni', async () => {
     const scade = new Date(Date.now() + 2 * GIORNO + 3600000 + 60000).toISOString();
     const aperta = { id: 's2', info: { status: 'open', name: 'Spring Cup', deadline: scade }, stato: 'open', mancano: 2 * GIORNO + 3600000 + 60000, iscritti: ['Luca'] };
-    // chi non è iscritto: JOIN, che non porta all'hub ma apre la conferma (data-iscrivi)
-    const join = M.htmlSchedaStagione(aperta, 'didi', C.esc);
-    assert.match(join, /^<article class="gx-sz gx-st-open"><span class="gx-sz-stato">Sign-ups open<\/span><b class="gx-sz-nome">Spring Cup<\/b><small class="gx-sz-testo">Sign-ups close in 2d 1h<\/small>/);
-    assert.match(join, /<a class="gx-bottone gx-primario gx-sz-vai" href="hub\.html\?id=s2" data-iscrivi="s2" data-suono="ok">JOIN<\/a><\/article>$/);
-    // già iscritto (maiuscole a parte): TEAMS porta all'hub senza chiedere
-    const dentro = M.htmlSchedaStagione({ ...aperta, iscritti: ['DIDI'] }, 'didi', C.esc);
-    assert.match(dentro, /You&#39;re in · closes in 2d 1h/);
-    assert.match(dentro, /href="hub\.html\?id=s2" data-suono="ok">TEAMS<\/a>/);
-    assert.doesNotMatch(dentro, /data-iscrivi/);
-    // in corso e conclusa
-    const corso = M.htmlSchedaStagione({ id: 's1', info: { name: 'Sant\'Alvise I' }, stato: 'playing' }, 'didi', C.esc);
-    assert.match(corso, /gx-st-playing"><span class="gx-sz-stato">In progress<\/span><b class="gx-sz-nome">Sant&#39;Alvise I<\/b><small class="gx-sz-testo">Showdowns in progress<\/small>/);
-    assert.match(corso, /href="matches\.html\?id=s1" data-suono="ok">PLAY<\/a>/);
-    const chiusa = M.htmlSchedaStagione({ id: 's0', info: { name: 'Season 0', winner: 'Luca' }, stato: 'closed' }, '', C.esc);
-    assert.match(chiusa, /Finished<\/span>.*Season over · Luca won.*>VIEW<\/a>/);
-    // il nome è sempre protetto
-    assert.match(M.htmlSchedaStagione({ id: 's3', info: { name: '<b>x</b>' }, stato: 'playing' }, '', C.esc), /&lt;b&gt;x&lt;\/b&gt;/);
 
     // la pillola sotto il giocatore non c'è più: il pannello ha avatar, nome e numeri e basta
     const stagioni = { sbeta: { info: { status: 'closed', name: 'Beta' } }, s2: { info: aperta.info } };
@@ -678,14 +660,13 @@ test('Seasons: la scheda di una stagione dice lo stato, il nome e cosa succede, 
     assert.ok(p.intervalli.some(i => i.ms === 30000), 'il conto alla rovescia, ogni mezzo minuto');
     const js = docs('app-menu.js');
     assert.doesNotMatch(js, /PASSO_NASTRO|htmlNastro|indiceNastro/);
-    // la tessera Seasons al centro apre la finestra; quella di lato si porta prima al centro (un solo ascoltatore: il tocco di lato non la apre)
-    assert.match(js, /if \(c && Number\(c\.dataset\.i\) !== stato\.corrente\) \{ e\.preventDefault\(\); vai\(Number\(c\.dataset\.i\)\); return; \}\s*\/\/[^\n]*\n\s*if \(c && c\.dataset\.id === 'seasons'\) \{ e\.preventDefault\(\); apriStagioni\(\); \}/);
-    // JOIN dalla finestra chiude la finestra e apre la conferma; Esc e il fondo la chiudono
-    assert.match(js, /chiudiAnnuncio\(\);\s*chiudiStagioni\(\);\s*apriIscr\(a\.getAttribute\('data-iscrivi'\)\);/);
-    assert.match(js, /chiudiAch\(\); chiudiStagioni\(\);/);
+    // la tessera Seasons segue il link come le altre (solo quella di lato si porta prima al centro); niente finestra delle stagioni
+    assert.match(js, /if \(c && Number\(c\.dataset\.i\) !== stato\.corrente\) \{ e\.preventDefault\(\); vai\(Number\(c\.dataset\.i\)\); return; \}/);
+    assert.doesNotMatch(js, /apriStagioni|chiudiStagioni|htmlSchedaStagione|gx-stagioni/);
+    // JOIN dall'annuncio chiude l'annuncio e apre la conferma
+    assert.match(js, /chiudiAnnuncio\(\);\s*apriIscr\(a\.getAttribute\('data-iscrivi'\)\);/);
     const html = docs('menu.html');
-    assert.match(html, /<div class="gx-dialogo gx-stagioni" id="gx-stagioni" role="dialog" aria-modal="true" aria-labelledby="gx-stagioni-titolo" hidden>/);
-    assert.match(html, /<div class="gx-sz-elenco" id="gx-st-elenco"><\/div>/);
+    assert.doesNotMatch(html, /gx-stagioni|gx-sz-elenco/);
     // i pallini sotto le scene
     assert.match(html, /<nav class="gx-pallini" id="gx-pallini" aria-hidden="true"><\/nav>/);
     assert.match(js, /const segnaPallini = \(\) => \{ if \(pallini\) \[\.\.\.pallini\.children\]\.forEach\(\(p, i\) => p\.classList\.toggle\('su', i === stato\.corrente\)\); \};/);
