@@ -103,13 +103,11 @@
     /** Le immagini da provare, in ordine, per una locandina */
     const immaginiDi = id => ['immagini/app/seasons-' + id + '.png', 'immagini/app/seasons-' + id + '.webp'];
 
-    /** PLAYING: la locandina è divisa in due da una riga spezzata, un Pokémon per parte (render ufficiali; le immagini proprie sono seasons-playing-a e -b) e la scritta VS */
-    const VS = [{ id: 'playing-a', pkm: 248, alt: 'Tyranitar', c: 'pr-vs-i-a' }, { id: 'playing-b', pkm: 212, alt: 'Scizor', c: 'pr-vs-i-b' }];
-    const htmlVs = bolla => `<span class="pr-arte pr-vs"><span class="pr-vs-cielo pr-vs-dx" aria-hidden="true"></span><span class="pr-vs-cielo pr-vs-taglio" aria-hidden="true"></span><span class="pr-vs-cielo pr-vs-sx" aria-hidden="true"></span>`
-        + VS.map(v => `<img class="pr-vs-img ${v.c}" data-id="${v.id}" data-ripiego="${esc(S.ARTE(v.pkm))}" alt="${esc(v.alt)}" draggable="false" hidden>`).join('')
-        + `<b class="pr-vs-scritta" aria-hidden="true">VS</b><span class="gx-vignetta" aria-hidden="true"></span>${bolla ? `<i class="pr-bolla" aria-label="${bolla}">${bolla}</i>` : ''}</span>`;
+    /** PLAYING: la locandina è divisa in due da una riga spezzata (due cieli, rosso e blu) con la scritta VS al centro; niente Pokémon */
+    const htmlVs = () => '<span class="pr-arte pr-vs"><span class="pr-vs-cielo pr-vs-dx" aria-hidden="true"></span><span class="pr-vs-cielo pr-vs-taglio" aria-hidden="true"></span><span class="pr-vs-cielo pr-vs-sx" aria-hidden="true"></span>'
+        + '<b class="pr-vs-scritta" aria-hidden="true">VS</b><span class="gx-vignetta" aria-hidden="true"></span></span>';
 
-    const arte = (id, i, bolla) => id === 'playing' ? htmlVs(0) : `<span class="pr-arte">${S.htmlScena(S.LOCANDINE_STAGIONI[id], { indice: i, scintille: 8, escF: esc, immagine: `<img class="pr-img" data-id="${id}" alt="" hidden>` })}${bolla ? `<i class="pr-bolla" aria-label="${bolla} to join">${bolla}</i>` : ''}</span>`;
+    const arte = (id, i, bolla) => id === 'playing' ? htmlVs() : `<span class="pr-arte">${S.htmlScena(S.LOCANDINE_STAGIONI[id], { indice: i, scintille: 8, escF: esc, immagine: `<img class="pr-img" data-id="${id}" alt="" hidden>` })}${bolla ? `<i class="pr-bolla" aria-label="${bolla} to join">${bolla}</i>` : ''}</span>`;
 
     /**
      * La scelta iniziale: tre locandine affiancate. Una categoria senza stagioni è spenta; con una stagione sola il tocco porta dritto a lei;
@@ -161,14 +159,6 @@
                 const prove = immaginiDi(img.dataset.id);
                 let k = 0;
                 img.addEventListener('load', () => { img.hidden = false; img.closest('.pr-arte').classList.add('ha-immagine'); });
-                img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });
-                img.src = prove[0];
-            });
-            // Playing: ognuno dei due prova prima la sua immagine propria, poi il render ufficiale
-            pagina.querySelectorAll('.pr-vs-img').forEach(img => {
-                const prove = immaginiDi(img.dataset.id).concat(img.dataset.ripiego);
-                let k = 0;
-                img.addEventListener('load', () => { img.hidden = false; });
                 img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });
                 img.src = prove[0];
             });

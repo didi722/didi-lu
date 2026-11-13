@@ -103,16 +103,14 @@ html.app .gx-cuori i:nth-child(5) { left: 80%; animation-delay: -3.4s; } html.ap
 /* VS CPU: Porygon-Z sopra una griglia che scorre, con una riga di scansione */
 html.app .pr-p-cpu .e-pory { height: calc(190 * var(--u)); left: 50%; margin-left: calc(-95 * var(--u)); bottom: calc(62 * var(--u)); filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(70, 220, 255, .9)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(0, 10, 40, .5)); }
 /* Seasons: la figura di ripiego (finché non c'è l'immagine propria seasons-<past|playing|signups>), una sola e al centro */
-/* Seasons, PLAYING: la locandina è divisa in due da una riga spezzata (nera), un allenatore per parte e una grande scritta VS; chi guarda vede subito "sfida in corso" */
+/* Seasons, PLAYING: la locandina è divisa in due da una riga spezzata (nera), e una grande scritta VS al centro */
 html.app .pr-vs-cielo { position: absolute; inset: 0; }
 html.app .pr-vs-dx { background: radial-gradient(60% 55% at 72% 40%, rgba(255, 255, 255, .45), transparent 70%), linear-gradient(176deg, #0a4fd6 0%, #1f86ff 48%, #a8e0ff 100%); }
 html.app .pr-vs-sx { background: radial-gradient(60% 55% at 28% 40%, rgba(255, 220, 160, .5), transparent 70%), linear-gradient(176deg, #7a0b2a 0%, #e5334b 52%, #ff9a6b 100%); clip-path: polygon(0 0, 57% 0, 47% 24%, 58% 44%, 45% 66%, 55% 84%, 46% 100%, 0 100%); }
 html.app .pr-vs-taglio { background: var(--nb-ink, #000); clip-path: polygon(0 0, 61.4% 0, 51.4% 24%, 62.4% 44%, 49.4% 66%, 59.4% 84%, 50.4% 100%, 0 100%); }
-html.app .pr-vs-img { position: absolute; bottom: calc(68 * var(--u)); z-index: 2; width: auto; height: calc(142 * var(--u)); max-width: 62%; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(0, 0, 0, .4)); }
-html.app .pr-vs-img[hidden] { display: none; }
 html.app .pr-vs-i-a { left: calc(-16 * var(--u)); transform: scaleX(-1); }
 html.app .pr-vs-i-b { right: calc(-14 * var(--u)); }
-html.app .pr-vs-scritta { position: absolute; left: 50%; top: 22%; z-index: 3; translate: -50% -50%; rotate: -8deg; font: 900 calc(54 * var(--u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .02em; color: #ffde4d; -webkit-text-stroke: calc(5 * var(--u)) #000; paint-order: stroke fill; text-shadow: 0 calc(5 * var(--u)) 0 #000; pointer-events: none; }
+html.app .pr-vs-scritta { position: absolute; left: 50%; top: 42%; z-index: 3; translate: -50% -50%; rotate: -8deg; font: 900 calc(92 * var(--u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .02em; color: #ffde4d; -webkit-text-stroke: calc(5 * var(--u)) #000; paint-order: stroke fill; text-shadow: 0 calc(5 * var(--u)) 0 #000; pointer-events: none; }
 html.app .pr-p-past .e-uno, html.app .pr-p-signups .e-uno { height: calc(180 * var(--u)); left: 50%; margin-left: calc(-90 * var(--u)); bottom: calc(62 * var(--u)); filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(255, 244, 170, .85)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(0, 0, 0, .35)); }
 html.app .gx-griglia { left: 0; right: 0; top: calc(-20 * var(--u)); bottom: 0; opacity: .55; animation: gx-griglia 2.4s linear infinite;
     background: repeating-linear-gradient(0deg, rgba(90, 230, 255, .5) 0 calc(1.5 * var(--u)), transparent calc(1.5 * var(--u)) calc(20 * var(--u))), repeating-linear-gradient(90deg, rgba(90, 230, 255, .35) 0 calc(1.5 * var(--u)), transparent calc(1.5 * var(--u)) calc(20 * var(--u)));
