@@ -1073,27 +1073,30 @@ async function openTeamPicker(format, nomeUtenteClean) {
             
             const infoIcon = div.querySelector('.info-icon');
             
-            // Eventi Tooltip (Ora usa l'elemento globale)
-            infoIcon.onmouseenter = (e) => {
+            // Anteprima del team: solo col mouse (col dito il browser simula gli eventi del mouse e il fumetto si apriva insieme al dettaglio e restava a schermo, tagliato).
+            // Si usa l'elemento globale; toccando la "i" si apre il dettaglio del team e l'anteprima si chiude
+            const nascondiAnteprima = () => {
+                globalTooltip.style.display = 'none';
+                globalTooltip.style.opacity = '0';
+                globalTooltip.style.visibility = 'hidden';
+            };
+            infoIcon.onpointerenter = (e) => {
+                if (e.pointerType !== 'mouse') return;
                 globalTooltip.innerHTML = `<div class="tp-titolo">${escapeHtmlFormato(data.nome)}</div><div class="tp-sprites">${pokemonImages}</div>`;
                 globalTooltip.style.display = 'block';
                 globalTooltip.style.opacity = '1';
                 globalTooltip.style.visibility = 'visible';
             };
-            
-            infoIcon.onmousemove = (e) => {
+            infoIcon.onpointermove = (e) => {
+                if (e.pointerType !== 'mouse') return;
                 globalTooltip.style.left = (e.clientX + 15) + 'px';
                 globalTooltip.style.top = (e.clientY + 15) + 'px';
             };
-            
-            infoIcon.onmouseleave = () => {
-                globalTooltip.style.display = 'none';
-                globalTooltip.style.opacity = '0';
-                globalTooltip.style.visibility = 'hidden';
-            };
+            infoIcon.onpointerleave = nascondiAnteprima;
 
             infoIcon.onclick = (e) => {
                 e.stopPropagation();
+                nascondiAnteprima();
                 apriDettaglioTeam(nomeUtenteClean, data.nome, format);
             };
 

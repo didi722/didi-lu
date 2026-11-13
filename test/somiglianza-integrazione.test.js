@@ -145,8 +145,8 @@ test('conflittiSomiglianza: un formato senza struttura vale come "custom"; i for
 // ---------- il Box: le card ----------
 
 function eseguiRenderizza(lista, { conflitti, bloccati = [] } = {}) {
-    const sorgente = tra(box, 'async function renderizza(lista)', 'async function caricaInfoAbilita') + '\nreturn renderizza;';
-    const griglia = { innerHTML: '', dataset: {}, classList: { toggle() {} } };
+    const sorgente = tra(box, 'async function renderizza(lista, contenitore)', 'async function caricaInfoAbilita') + '\nreturn renderizza;';
+    const griglia = { innerHTML: '', dataset: {}, classList: { toggle() {}, remove() {}, add() {}, contains: () => false } };
     const finestra = { nomiTeamBloccati: new Set(bloccati) };
     const chiamate = [];
     const ambiente = {
@@ -158,6 +158,7 @@ function eseguiRenderizza(lista, { conflitti, bloccati = [] } = {}) {
         EFFETTI_NATURE: {},
         formattaEffettoNatura: () => '',
         SpritePkm: require('../docs/sprite-pkm.js'),
+        vistaBox: 'griglia', renderizzaCartelle() {}, EtichetteTeam: require('../docs/etichette-team.js'), etichetteDef: {}, escEtichetta: t => String(t),
         SomiglianzaTeam: S,
         avviaFumettoSimile: g => chiamate.push(g)
     };
@@ -233,7 +234,7 @@ function elementoFinto(nome, { classi = [], padre = null, dataset = {} } = {}) {
 }
 
 function fumetto({ hover = true } = {}) {
-    const sorgente = tra(box, 'function avviaFumettoSimile(grid) {', 'async function renderizza(lista)') + '\nreturn avviaFumettoSimile;';
+    const sorgente = tra(box, 'function avviaFumettoSimile(grid) {', 'async function renderizza(lista, contenitore)') + '\nreturn avviaFumettoSimile;';
     const ascoltatori = {};
     const grid = elementoFinto('grid');
     grid.addEventListener = (ev, f) => { ascoltatori[ev] = f; };
