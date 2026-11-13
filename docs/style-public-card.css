@@ -529,6 +529,8 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
 .pp-set .pp-pkm-badge .bt-mini { width: 22px; height: 22px; }
 .pp-set .pp-pkm-badge .bt-mini-img { width: 14px; height: 14px; }
 .pp-pkm.pp-davanti { z-index: 15; }
+/* un Pokémon alto, con la GIF piccola ingrandita più del doppio: i pixel netti, non sfocati (come l'allenatore) */
+.pp-pkm-img.pp-ingrandita { image-rendering: pixelated; }
 
 .pp-pkm-img {
     display: block;

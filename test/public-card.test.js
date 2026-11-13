@@ -542,10 +542,11 @@ test('compagno dal Box: elenco a fisarmonica (un team aperto alla volta) e fiocc
     assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-editor.css'), 'utf8'), /\.pe-acc \[hidden\] \{ display: none !important; \}/);
 });
 
-test('compagno alto (Dhelmise): se la GIF di Showdown viene ingrandita più del doppio si usa l\'immagine grande e nitida (HOME, o artwork ufficiale), ferma, al posto della GIF pixelata', () => {
-    const js = fs.readFileSync(path.join(__dirname, '..', 'docs', 'public-card.js'), 'utf8');
-    assert.match(js, /const RAPPORTO_GIF_PIXELATA = 2;/);
-    assert.match(js, /grande = brillante \? \(\(home && home\.front_shiny\) \|\| \(ufficiale && ufficiale\.front_shiny\) \|\| null\)\s*: \(\(home && home\.front_default\) \|\| \(ufficiale && ufficiale\.front_default\) \|\| null\);/, 'shiny resta shiny');
-    assert.match(js, /img\.clientHeight \/ img\.naturalHeight <= RAPPORTO_GIF_PIXELATA\) return;\s*img\.dataset\.nitida = '1';\s*img\.src = grande;/);
-    assert.match(js, /posto\.replaceChildren\(img\);/);
+test('compagno alto (Dhelmise): la GIF ingrandita più del doppio ha i pixel netti (classe pp-ingrandita, image-rendering: pixelated), senza cambiare immagine', () => {
+    const base = path.join(__dirname, '..', 'docs');
+    const js = fs.readFileSync(path.join(base, 'public-card.js'), 'utf8');
+    assert.match(js, /const RAPPORTO_GIF_INGRANDITA = 2;/);
+    assert.match(js, /img\.clientHeight \/ img\.naturalHeight > RAPPORTO_GIF_INGRANDITA\) img\.classList\.add\('pp-ingrandita'\)/);
+    assert.doesNotMatch(js, /grande = |img\.src = grande/, 'la GIF resta la GIF (animata)');
+    assert.match(fs.readFileSync(path.join(base, 'style-public-card.css'), 'utf8'), /\.pp-pkm-img\.pp-ingrandita \{ image-rendering: pixelated; \}/);
 });
