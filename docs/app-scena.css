@@ -13,6 +13,7 @@ html.app .gx-sf { position: absolute; inset: 0; overflow: hidden; }
 html.app .gx-sf > * { position: absolute; }
 html.app .gx-cielo { inset: 0; }
 html.app .cielo-blu { background: radial-gradient(54% 80% at 66% 30%, rgba(255, 255, 255, .4), transparent 62%), linear-gradient(176deg, #0a4fd6 0%, #1f86ff 42%, #4cb6ff 74%, #a8e0ff 100%); }
+html.app .cielo-rosso { background: radial-gradient(54% 80% at 34% 30%, rgba(255, 255, 255, .4), transparent 62%), linear-gradient(176deg, #8a0f2e 0%, #e5334b 46%, #ff7a5c 76%, #ffc9a8 100%); }
 html.app .cielo-viola { background: radial-gradient(55% 78% at 66% 42%, rgba(150, 172, 255, .6), transparent 64%), linear-gradient(176deg, #1f2bb0 0%, #5a3bd0 48%, #26166c 100%); }
 html.app .cielo-tramonto { background: radial-gradient(62% 82% at 66% 56%, rgba(255, 224, 140, .68), transparent 62%), linear-gradient(176deg, #ff9552 0%, #ff4682 46%, #542688 100%); }
 html.app .cielo-notte { background: radial-gradient(55% 78% at 64% 46%, rgba(170, 120, 255, .55), transparent 64%), linear-gradient(176deg, #0d0938 0%, #34208a 52%, #100a3a 100%); }
@@ -104,12 +105,9 @@ html.app .gx-cuori i:nth-child(5) { left: 80%; animation-delay: -3.4s; } html.ap
 html.app .pr-p-cpu .e-pory { height: calc(190 * var(--u)); left: 50%; margin-left: calc(-95 * var(--u)); bottom: calc(62 * var(--u)); filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(70, 220, 255, .9)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(0, 10, 40, .5)); }
 /* Seasons: la figura di ripiego (finché non c'è l'immagine propria seasons-<past|playing|signups>), una sola e al centro */
 /* Seasons, PLAYING: la locandina è divisa in due da una riga spezzata (nera), e una grande scritta VS al centro */
-html.app .pr-vs-cielo { position: absolute; inset: 0; }
-html.app .pr-vs-dx { background: radial-gradient(60% 55% at 72% 40%, rgba(255, 255, 255, .45), transparent 70%), linear-gradient(176deg, #0a4fd6 0%, #1f86ff 48%, #a8e0ff 100%); }
-html.app .pr-vs-sx { background: radial-gradient(60% 55% at 28% 40%, rgba(255, 220, 160, .5), transparent 70%), linear-gradient(176deg, #7a0b2a 0%, #e5334b 52%, #ff9a6b 100%); clip-path: polygon(0 0, 57% 0, 47% 24%, 58% 44%, 45% 66%, 55% 84%, 46% 100%, 0 100%); }
+html.app .pr-vs-lato { position: absolute; inset: 0; }
+html.app .pr-vs-sx { clip-path: polygon(0 0, 57% 0, 47% 24%, 58% 44%, 45% 66%, 55% 84%, 46% 100%, 0 100%); }
 html.app .pr-vs-taglio { background: var(--nb-ink, #000); clip-path: polygon(0 0, 61.4% 0, 51.4% 24%, 62.4% 44%, 49.4% 66%, 59.4% 84%, 50.4% 100%, 0 100%); }
-html.app .pr-vs-i-a { left: calc(-16 * var(--u)); transform: scaleX(-1); }
-html.app .pr-vs-i-b { right: calc(-14 * var(--u)); }
 html.app .pr-vs-scritta { position: absolute; left: 50%; top: 42%; z-index: 3; translate: -50% -50%; rotate: -8deg; font: 900 calc(92 * var(--u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .02em; color: #ffde4d; -webkit-text-stroke: calc(5 * var(--u)) #000; paint-order: stroke fill; text-shadow: 0 calc(5 * var(--u)) 0 #000; pointer-events: none; }
 html.app .pr-vs-img { position: absolute; left: 50%; top: 44%; z-index: 3; translate: -50% -50%; width: 84%; max-height: 62%; object-fit: contain; filter: drop-shadow(0 calc(6 * var(--u)) calc(5 * var(--u)) rgba(0, 0, 0, .45)); pointer-events: none; }
 html.app .pr-vs-img[hidden] { display: none; }
