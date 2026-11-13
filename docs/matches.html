@@ -36,6 +36,8 @@
 <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
 <script src="cosmetici.js"></script>
+<script src="pagina-pubblica.js"></script>
+<script src="palestra.js"></script>
 <script src="ordine-showdown.js"></script>
 <script src="filtro-showdown.js"></script>
 <script src="scheda-condivisione.js"></script>
@@ -3078,7 +3080,7 @@ selector.style.height = 'auto';
         if (!sdData) throw new Error("Showdown data not found");
 
         // --- 1. RECUPERO COLORI ---
-        const [colors, avatar] = await Promise.all([getPlayersColors(sdData.info.player1, sdData.info.player2), avatarDeiGiocatori([sdData.info.player1, sdData.info.player2]).catch(() => ({}))]);
+        const [colors, avatar] = await Promise.all([getPlayersColors(sdData.info.player1, sdData.info.player2), aspettoDeiGiocatori([sdData.info.player1, sdData.info.player2]).catch(() => ({}))]);
         const c1 = colors.c1 || "#555";
         const c2 = colors.c2 || "#555";
 
@@ -3105,7 +3107,8 @@ selector.style.height = 'auto';
         `;
         modal.prepend(miniHeader);
         // i due allenatori ai lati della console (solo da PC, finestre.css): grandi, fermi, dietro a tutto, con la riga in diagonale in mezzo come nel simulatore
-        const versus = creaSfondoVersus(avatar[String(sdData.info.player1 || '').toLowerCase().trim()], avatar[String(sdData.info.player2 || '').toLowerCase().trim()], c1, c2);
+        const aspetto = k => avatar[String(k || '').toLowerCase().trim()] || {};
+        const versus = creaSfondoVersus(aspetto(sdData.info.player1).avatar, aspetto(sdData.info.player2).avatar, c1, c2, [aspetto(sdData.info.player1).tema, aspetto(sdData.info.player2).tema]);
         modal.prepend(versus.box);
         immaginiVersus = versus.caricate;
         adattaReplayAlloSchermo();
@@ -3208,14 +3211,41 @@ window.gestisciClickReplay = function(btnElement, url) {
     window.caricaVideoDirect(url, btnElement);
 };
 
+/** Avatar e tema della pagina pubblica (colore e motivo dello sfondo) di ogni allenatore, per lo sfondo del replay: { nomeMinuscolo: { avatar, tema } } */
+async function aspettoDeiGiocatori(nomi) {
+    const fuori = {};
+    await Promise.all(nomi.map(async n => {
+        const k = String(n || '').toLowerCase().trim();
+        if (!k) return;
+        try {
+            const info = (await db.ref(`players/${k}/info`).once('value')).val() || {};
+            let tema = null;
+            // lo stesso sfondo del simulatore: il colore principale dell'allenatore con il motivo scelto per la sua pagina pubblica
+            if (window.Palestra && window.PaginaPubblica) {
+                const sfondo = (info.pagina && typeof info.pagina.sfondo === 'object' && info.pagina.sfondo) || {};
+                tema = window.Palestra.temaPalestra({ colore: info.color, avatar: info.avatar, pagina: { ...(info.pagina || {}), sfondo: { ...sfondo, colore: 'giocatore' } } }, window.PaginaPubblica, window.Cosmetici);
+            }
+            fuori[k] = { avatar: info.avatar || '', tema };
+        } catch (e) { fuori[k] = { avatar: '', tema: null }; }
+    }));
+    return fuori;
+}
+
 /** Lo sfondo "sfida" del replay da PC: la riga in diagonale (nera, con un filetto del colore di ognuno) e i due allenatori, il primo a sinistra e il secondo a destra, rivolti verso la console */
-function creaSfondoVersus(avatar1, avatar2, c1, c2) {
+function creaSfondoVersus(avatar1, avatar2, c1, c2, temi = []) {
     const box = document.createElement('div');
     box.className = 'replay-versus';
     box.setAttribute('aria-hidden', 'true');
     box.style.setProperty('--c1', c1);
     box.style.setProperty('--c2', c2);
-    ['a', 'b', 'c'].forEach(k => { const t = document.createElement('i'); t.className = 'rv-taglio rv-taglio-' + k; box.appendChild(t); });
+    // le due metà (il colore e il motivo della pagina pubblica di ognuno, un po' trasparenti: sotto si intravede la sfocatura) e, in mezzo, la riga in diagonale
+    ['a', 'b', 'c'].forEach((k, i) => {
+        const t = document.createElement('i');
+        t.className = (k === 'b' ? 'rv-taglio rv-taglio-b' : 'rv-lato rv-lato-' + k);
+        const tema = k === 'a' ? temi[0] : k === 'c' ? temi[1] : null;
+        if (tema && tema.variabili) for (const [nomeVar, v] of Object.entries(tema.variabili)) t.style.setProperty(nomeVar, v);
+        box.appendChild(t);
+    });
     const caricate = [];
     [[avatar1, 'rv-sx'], [avatar2, 'rv-dx']].forEach(([url, classe]) => {
         if (!url) return;

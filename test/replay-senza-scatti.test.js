@@ -87,8 +87,10 @@ test('replay da PC: i due allenatori ai lati della console, dietro a tutto e fuo
     assert.match(pc, /--rv-margine: calc\(\(100vw - 1150px \* var\(--gba-scala, 1\) - 106px\) \/ 2\)/);
     // la riga in diagonale come nel simulatore (60% in alto, 40% in basso), senza colori di sfondo
     assert.match(finestre, /\.rv-taglio-b \{[^}]*clip-path: polygon\(calc\(60% - 7px\) 0, calc\(60% \+ 7px\) 0, calc\(40% \+ 7px\) 100%, calc\(40% - 7px\) 100%\)/);
-    assert.match(finestre, /\.rv-taglio-a \{ background: var\(--c1, #555\)/);
-    assert.match(finestre, /\.rv-taglio-c \{ background: var\(--c2, #555\)/);
+    // le due metà: colore e motivo della pagina pubblica di ognuno (--pp-sfondo*), un po' trasparenti
+    assert.match(finestre, /\.rv-lato \{[^}]*opacity: \.6;[^}]*background-image: var\(--pp-sfondo-img, none\)/);
+    assert.match(finestre, /\.rv-lato-a \{ clip-path: [^}]*--pp-sfondo: var\(--c1, #555\)/);
+    assert.match(finestre, /\.rv-lato-c \{ clip-path: [^}]*--pp-sfondo: var\(--c2, #555\)/);
     // il primo a sinistra rivolto verso la console, il secondo a destra
     assert.match(finestre, /\.rv-sx \{ left: [^}]*scaleX\(-1\)/);
     assert.match(finestre, /\.rv-dx \{ right: /);
@@ -98,7 +100,7 @@ test('replay da PC: i due allenatori ai lati della console, dietro a tutto e fuo
 
 test('replay da PC: gli avatar si leggono con i colori, si montano all\'apertura (il vecchio sfondo si toglie) e la finestra aspetta che siano caricati prima di comparire', () => {
     assert.match(matches, /document\.querySelectorAll\('\.replay-versus'\)\.forEach\(e => e\.remove\(\)\)/);
-    assert.match(matches, /Promise\.all\(\[getPlayersColors\(sdData\.info\.player1, sdData\.info\.player2\), avatarDeiGiocatori\(\[sdData\.info\.player1, sdData\.info\.player2\]\)/);
+    assert.match(matches, /Promise\.all\(\[getPlayersColors\(sdData\.info\.player1, sdData\.info\.player2\), aspettoDeiGiocatori\(\[sdData\.info\.player1, sdData\.info\.player2\]\)/);
     assert.match(matches, /modal\.prepend\(versus\.box\);\s*immaginiVersus = versus\.caricate;/);
     assert.match(matches, /attese\.push\(Promise\.all\(immaginiVersus\)\)/);
     // l'attesa vale solo se lo sfondo è visibile (sul telefono e nell'app è display: none): getComputedStyle, non offsetParent (con position: fixed è sempre null)
@@ -125,7 +127,7 @@ test('creaSfondoVersus: la riga con i due colori e un avatar per lato (il primo 
     assert.equal(r.box.attrs['aria-hidden'], 'true');
     assert.equal(r.box.stile['--c1'], '#31c489');
     assert.equal(r.box.stile['--c2'], '#e0457b');
-    assert.equal(r.box.figli.filter(f => f.tag === 'i').length, 3, 'la riga: filetto del primo, nero, filetto del secondo');
+    assert.equal(r.box.figli.filter(f => f.tag === 'i').length, 3, 'metà del primo, riga nera, metà del secondo');
     assert.equal(r.caricate.length, 2);
     await Promise.all(r.caricate);        // anche quello rotto finisce (e si toglie)
     const avatar = r.box.figli.filter(f => f.tag === 'img');

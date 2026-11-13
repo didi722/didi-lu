@@ -786,9 +786,11 @@ html:not(.app-shell) #replayModal:not(.tel) .replay-versus {
     display: block; position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
 }
 .rv-taglio { position: absolute; inset: 0; display: block; }
-.rv-taglio-a { background: var(--c1, #555); clip-path: polygon(calc(60% - 13px) 0, calc(60% - 7px) 0, calc(40% - 7px) 100%, calc(40% - 13px) 100%); }
+/* le due metà: il colore dell'allenatore con il motivo della sua pagina pubblica (variabili --pp-sfondo*, scritte da matches.html), trasparenti per intravedere la sfocatura sotto */
+.rv-lato { position: absolute; inset: 0; display: block; opacity: .6; background-color: var(--pp-sfondo, var(--c1, #555)); background-image: var(--pp-sfondo-img, none); background-size: var(--pp-sfondo-dim, auto); background-position: var(--pp-sfondo-pos, 0 0); }
+.rv-lato-a { clip-path: polygon(0 0, calc(60% - 7px) 0, calc(40% - 7px) 100%, 0 100%); --pp-sfondo: var(--c1, #555); }
+.rv-lato-c { clip-path: polygon(calc(60% + 7px) 0, 100% 0, 100% 100%, calc(40% + 7px) 100%); --pp-sfondo: var(--c2, #555); }
 .rv-taglio-b { background: var(--nb-ink, #000); clip-path: polygon(calc(60% - 7px) 0, calc(60% + 7px) 0, calc(40% + 7px) 100%, calc(40% - 7px) 100%); }
-.rv-taglio-c { background: var(--c2, #555); clip-path: polygon(calc(60% + 7px) 0, calc(60% + 13px) 0, calc(40% + 13px) 100%, calc(40% + 7px) 100%); }
 .rv-avatar { position: absolute; bottom: 0; height: var(--rv-h); width: auto; image-rendering: pixelated; filter: drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); user-select: none; }
 .rv-sx { left: max(calc(var(--rv-h) / 2 + 8px), calc(var(--rv-margine) / 2)); transform: translateX(-50%) scaleX(-1); }      /* il primo guarda a destra, verso la console */
 .rv-dx { right: max(calc(var(--rv-h) / 2 + 8px), calc(var(--rv-margine) / 2)); transform: translateX(50%); }
