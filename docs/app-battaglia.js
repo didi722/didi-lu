@@ -29,6 +29,12 @@
         return precedente && precedente.chiave === chiave && precedente.passo ? precedente.passo : 'menu';
     }
 
+    /**
+     * C'è una partita da non perdere per sbaglio? `ab`: il passo del pannello che si vede (data-ab su <body>). Finita la partita ("fine", "rivincita") o senza un pannello
+     * (si sta ancora caricando, errore, spettatore) il tasto in alto a sinistra esce senza chiedere.
+     */
+    const partitaInCorso = ab => ['menu', 'mosse', 'cambi', 'anteprima', 'bersagli', 'cambio', 'anim', 'messaggio'].includes(String(ab || ''));
+
     /** Si può cambiare Pokémon? (almeno un compagno non spento) */
     function puoCambiare(corpo) {
         return corpo.querySelectorAll('.cambi .btn-pkm:not(.spento)').length > 0;
@@ -193,6 +199,12 @@
                     haAzioniCpu: !!(m && m.querySelector('.azioni-cpu'))
                 });
                 if (stato) corpo.dataset.ab = stato; else delete corpo.dataset.ab;
+                // "Choice sent. Waiting…" con "Cancel my choice": in alto a sinistra, dove sta il tasto per tornare indietro (e per uscire), c'è un "Back" che annulla la scelta.
+                // D'istinto è quello che si preme per ripensarci: prima era "← Play" e si usciva dalla partita
+                const annulla = stato === 'messaggio' && m ? m.querySelector(':scope > .annulla-scelta > button') : null;
+                const indietro = m ? m.querySelector(':scope > .ab-annulla') : null;
+                if (annulla && !indietro) m.prepend(tasto('ab-indietro ab-annulla', 'Back', () => { const x = m.querySelector(':scope > .annulla-scelta > button'); if (x && !x.disabled) x.click(); }));
+                else if (!annulla && indietro) indietro.remove();
                 return;
             }
             if (corpo.querySelector(':scope > .ab-menu')) return;      // già pronto: è il nostro stesso inserimento che ha fatto scattare l'osservatore
@@ -229,6 +241,38 @@
             aggiornaCorpo();
         }
 
+        // ----- uscire dalla partita: mai con un tocco solo -----
+        function chiediUscita(indirizzo) {
+            if (doc.getElementById('ab-conferma')) return;
+            const velo = doc.createElement('div');
+            velo.id = 'ab-conferma';
+            velo.className = 'ab-conferma';
+            velo.setAttribute('role', 'alertdialog');
+            velo.setAttribute('aria-modal', 'true');
+            velo.setAttribute('aria-label', 'Leave the match?');
+            const scheda = doc.createElement('div');
+            scheda.className = 'ab-conf-scheda';
+            const titolo = doc.createElement('b'); titolo.textContent = 'Leave the match?';
+            const nota = doc.createElement('span'); nota.textContent = 'You can\'t take it back.';
+            const tasti2 = doc.createElement('div'); tasti2.className = 'ab-conf-tasti';
+            tasti2.append(tasto('ab-conf-resta', 'Stay', () => chiudi()), tasto('ab-conf-esci', 'Leave', () => { chiudi(); win.location.href = indirizzo; }));
+            scheda.append(titolo, nota, tasti2);
+            velo.append(scheda);
+            const chiudi = () => { velo.remove(); doc.removeEventListener('keydown', tasti, true); };
+            const tasti = e => { if (e.key === 'Escape') { e.preventDefault(); chiudi(); } };
+            velo.addEventListener('click', e => { if (e.target === velo) chiudi(); });
+            doc.addEventListener('keydown', tasti, true);
+            doc.body.appendChild(velo);
+            velo.querySelector('.ab-conf-resta').focus();
+        }
+        const hub = doc.getElementById('link-hub');
+        if (hub) hub.addEventListener('click', e => {
+            if (!mq.matches || !partitaInCorso(doc.body.dataset.ab)) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            chiediUscita(hub.href);
+        }, true);
+
         const comandi = doc.getElementById('comandi');
         if (!comandi) return null;
         const osservatore = new win.MutationObserver(tutti);
@@ -238,5 +282,5 @@
         return { osservatore, tutti };
     }
 
-    return { CONDIZIONE_TELEFONO, zoomPer, TENUTA_MS, TOLLERANZA_PX, SCARTA_CLICK_MS, EVENTI_SHOWDOWN, FINESTRA_MOUSE_FINTO_MS, eEcoDelTocco, passoDa, puoCambiare, statoAltro, avvia };
+    return { CONDIZIONE_TELEFONO, partitaInCorso, zoomPer, TENUTA_MS, TOLLERANZA_PX, SCARTA_CLICK_MS, EVENTI_SHOWDOWN, FINESTRA_MOUSE_FINTO_MS, eEcoDelTocco, passoDa, puoCambiare, statoAltro, avvia };
 });
