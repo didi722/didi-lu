@@ -62,13 +62,23 @@
         return `<ul class="at-numeri"><li><b>${ok && g.posizione ? '#' + g.posizione : 'N/A'}</b><span>Ranking</span></li><li><b>${ok ? Math.round(Number(g.elo) || 0) : 'N/A'}</b><span>Elo</span></li></ul>`;
     }
 
+    /**
+     * Il tasto della palestra (palestra.html): sulla propria scheda "My gym" (per impostarla), su quella di un altro che ne ha una pronta "Challenge gym".
+     * `io`: il nome di chi è collegato (vuoto se nessuno). Niente tasto sulle schede di chi non ha una palestra.
+     */
+    function htmlPalestra(g, io) {
+        if (io && idDi(io) === idDi(g.id)) return '<a class="at-palestra at-palestra-mia" href="palestra.html?edit=1" data-suono="scegli"><span aria-hidden="true">⚙</span> My gym</a>';
+        if (g.palestra) return `<a class="at-palestra" href="palestra.html?player=${encodeURIComponent(g.id)}" data-suono="scegli"><span aria-hidden="true">⚔</span> Challenge gym</a>`;
+        return '';
+    }
+
     /** La scheda di un allenatore: niente sfondo. Al centro lui e il suo Pokémon compagno sul palco tondo; di fianco il nome, il ranking, l'Elo, i trofei e i badge. `gif(specie)` dà l'indirizzo del Pokémon animato. */
-    function htmlCarta(g, indice, { gif, centro } = {}) {
+    function htmlCarta(g, indice, { gif, centro, io } = {}) {
         const c = coloreSicuro(g.colore);
         // tutte le GIF partono insieme e si contendono la rete: il compagno che si guarda ha la precedenza, gli altri aspettano (fetchpriority)
         const prio = centro === undefined ? '' : ` fetchpriority="${indice === centro ? 'high' : 'low'}" decoding="async"`;
         const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm, g.pkmShiny))}"${prio} data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="SpritePkm.ritenta(this)">` : '';
-        const trofei = htmlTrofei(g), badge = htmlBadge(g);
+        const trofei = htmlTrofei(g), badge = htmlBadge(g), palestra = htmlPalestra(g, io);
         return `<article class="at-carta" data-i="${indice}" style="--c:${c}">
             <div class="at-palco">
                 <span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span>
@@ -80,6 +90,7 @@
                 ${htmlNumeri(g)}
                 ${trofei ? `<div class="at-trofei">${trofei}</div>` : ''}
                 ${badge ? `<div class="at-badge-riga">${badge}</div>` : ''}
+                ${palestra}
             </div>
         </article>`;
     }
@@ -154,12 +165,13 @@
             let richiesto = '';
             try { richiesto = new win.URLSearchParams(win.location.search).get('player') || ''; } catch (e) { richiesto = ''; }
             const corrente = stato ? Car.dentro(stato.corrente, lista.length) : indiceIniziale(lista, richiesto);
-            radice.innerHTML = `<div class="at-pista">${lista.map((g, i) => htmlCarta(g, i, { gif, centro: corrente })).join('')}</div>`;
+            radice.innerHTML = `<div class="at-pista">${lista.map((g, i) => htmlCarta(g, i, { gif, centro: corrente, io: win.__nomeUtente })).join('')}</div>`;
             stato = { lista, corrente, pista: radice.querySelector('.at-pista') };
             stato.pista.querySelectorAll('.at-carta').forEach(scala);
             stato.pista.addEventListener('click', e => {
                 const carta = e.target.closest ? e.target.closest('.at-carta') : null;
-                if (carta && !carta.classList.contains('at-centro')) vai(Number(carta.dataset.i));
+                // toccare una scheda di lato la porta al centro (anche se si è toccato il suo tasto della palestra: quello funziona solo sulla scheda al centro)
+                if (carta && !carta.classList.contains('at-centro')) { if (e.target.closest('a')) e.preventDefault(); vai(Number(carta.dataset.i)); }
             });
             if (!radice.dataset.gesti) {              // una volta sola, anche se i dati arrivano di nuovo
                 radice.dataset.gesti = '1';
@@ -171,10 +183,12 @@
         };
 
         doc.addEventListener('app-dati', e => { if (e && e.detail === 'trainers' && ponte) monta(ponte.datiPagina('trainers')); });
+        // il nome di chi è collegato arriva dopo i dati: i tasti della palestra si rifanno (My gym / Challenge gym)
+        doc.addEventListener('app-utente', () => { const d = ponte && ponte.datiPagina ? ponte.datiPagina('trainers') : null; if (d) monta(d); });
         const gia = ponte && ponte.datiPagina ? ponte.datiPagina('trainers') : null;
         if (gia) monta(gia);
         return { monta, vai, passo };
     }
 
-    return { indiceIniziale, htmlTrofei, testoBadge, htmlBadge, htmlNumeri, htmlCarta, avvia };
+    return { indiceIniziale, htmlTrofei, testoBadge, htmlBadge, htmlNumeri, htmlPalestra, htmlCarta, avvia };
 });
