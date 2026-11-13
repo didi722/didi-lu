@@ -54,11 +54,12 @@ test('menù dell\'app: ogni figura di una scena ha la sua regola di posto e gran
     }
 });
 
-test('Seasons nell\'app: la tessera del menù porta alle stagioni e all\'iscrizione; Shop e Hall of Fame non sono nell\'app', () => {
+test('Seasons nell\'app: la tessera del menù porta alla pagina delle stagioni (seasons.html); Shop e Hall of Fame non sono nell\'app', () => {
     const voce = A.VOCI.find(v => v.id === 'seasons');
     assert.ok(voce, 'tessera seasons');
-    assert.equal(voce.href, 'hub.html');
-    assert.deepEqual(A.VOCI.map(v => v.id), ['play', 'box', 'trainers', 'stats', 'seasons']);
+    assert.equal(voce.href, 'seasons.html');
+    assert.deepEqual(voce.pagine, ['seasons.html', 'hub.html'], 'l\'hub delle iscrizioni resta della tessera Seasons');
+    assert.deepEqual(A.VOCI.map(v => v.id), ['play', 'seasons', 'box', 'trainers', 'stats'], 'Seasons è la seconda scheda, subito dopo Play');
     assert.ok(A.FUORI_APP.includes('palmares.html') && A.FUORI_APP.includes('shop.html'));
 });
 

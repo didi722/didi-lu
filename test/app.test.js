@@ -95,7 +95,7 @@ test('dentroUnaApp: i browser incorporati (Instagram, Facebook, WebView) non pos
 });
 
 test('le tessere del menù (VOCI): cinque (Play riunisce Practice e Matches; Seasons apre le stagioni e l\'iscrizione), con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
-    assert.deepEqual(A.VOCI.map(v => v.id), ['play', 'box', 'trainers', 'stats', 'seasons']);
+    assert.deepEqual(A.VOCI.map(v => v.id), ['play', 'seasons', 'box', 'trainers', 'stats']);
     assert.equal(new Set(A.VOCI.map(v => v.et)).size, 5, 'nomi diversi');
     assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 5, 'colori diversi: ogni schermata ha il suo');
     assert.deepEqual(A.VOCI[0].pagine, ['practice.html', 'matches.html'], 'Play tiene accese le sue due pagine: l\'hub e showdown e classifica');
@@ -1122,7 +1122,7 @@ test('destinazioneFuoriApp: le pagine senza posto nell\'app portano al menù; la
 });
 
 test('SCRIPT_PAGINE: gli script che una pagina dell\'app carica oltre a quelli comuni esistono e la pagina li può usare', () => {
-    assert.deepEqual(Object.keys(A.SCRIPT_PAGINE).sort(), ['box.html', 'matches.html', 'players.html', 'practice.html', 'stats.html']);
+    assert.deepEqual(Object.keys(A.SCRIPT_PAGINE).sort(), ['box.html', 'matches.html', 'players.html', 'practice.html', 'seasons.html', 'stats.html']);
     for (const [pagina, lista] of Object.entries(A.SCRIPT_PAGINE)) {
         assert.ok(esiste(pagina), pagina);
         assert.ok(A.voceDi(pagina), `${pagina}: è una pagina dell'app`);

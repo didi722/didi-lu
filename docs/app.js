@@ -56,20 +56,21 @@
         'players.html': ['sprites/indice.js', 'sprite-pkm.js', 'app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-trainers.js'],
         'stats.html': ['app-carosello.js', 'nome-scorrevole.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-stats.js'],
         'box.html': ['app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js'],
-        'practice.html': ['app-scena.js', 'app-practice.js']
+        'practice.html': ['app-scena.js', 'app-practice.js'],
+        'seasons.html': ['app-scena.js', 'app-seasons.js']
     };
 
-    const FOGLI_SCENA = ['practice.html'];            // le pagine che, oltre al foglio comune, vogliono quello delle scene (app-scena.css)
+    const FOGLI_SCENA = ['practice.html', 'seasons.html'];            // le pagine che, oltre al foglio comune, vogliono quello delle scene (app-scena.css)
 
     // Le pagine del gioco, come le vede il menù principale: nome, colore e pagine che le tengono accese (`pagine`: una pagina del sito che non è
     // nel menù, per esempio la scheda pubblica di un allenatore, appartiene alla voce da cui ci si arriva).
     // Il colore è anche quello del titolo in alto nella pagina (app-gioco.js), così si capisce da dove si arriva.
     const VOCI = [
         { id: 'play', et: 'Play', href: 'practice.html', colore: '#ffbd44', pagine: ['practice.html', 'matches.html'] },
+        { id: 'seasons', et: 'Seasons', href: 'seasons.html', colore: '#31c489', pagine: ['seasons.html', 'hub.html'] },
         { id: 'box', et: 'Box', href: 'box.html', colore: '#6fa8ff', pagine: ['box.html'] },
         { id: 'trainers', et: 'Trainers', href: 'players.html', colore: '#ff7b6b', pagine: ['players.html'] },
-        { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] },
-        { id: 'seasons', et: 'Seasons', href: 'hub.html', colore: '#31c489', pagine: ['hub.html'] }
+        { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] }
     ];
 
     // ---------- parti pure ----------

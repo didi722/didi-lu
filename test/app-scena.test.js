@@ -89,7 +89,7 @@ test('app-scena.css: ogni regola riguarda l\'app (html.app…); le figure stanno
     assert.doesNotMatch(css, /\.gx-cielo::after/, 'niente striscia obliqua: faceva una riga diagonale tra il giocatore e la scena');
     // i fogli e gli script li carica l'app (app.js): il menù e Play
     assert.deepEqual(A.SCRIPT_PAGINE['practice.html'], ['app-scena.js', 'app-practice.js']);
-    assert.deepEqual(A.FOGLI_SCENA, ['practice.html']);
+    assert.deepEqual(A.FOGLI_SCENA, ['practice.html', 'seasons.html']);
 });
 
 test('immaginiScene / precarica: le figure di tutte le scene (senza doppioni) si scaricano; finisce quando sono arrivate tutte, anche se qualcuna non c\'è, o allo scadere', () => {
