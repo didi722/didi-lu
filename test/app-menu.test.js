@@ -238,7 +238,8 @@ function elemento(id) {
  * Il menù di menu.html con una finestra finta. Gli elementi nascono dagli id veri del markup; quelli che lo script disegna (come il tasto "Log in"
  * dentro il pannello del giocatore) nascono quando compaiono nell'innerHTML di chi li contiene.
  */
-function paginaMenu({ app = true, sessione = {}, memoria = {}, utenti = {}, giocatori = {}, stagioni = {}, firebaseAttivo = true, loginRiesce = true, precarica = null } = {}) {
+// `voci`: le tessere da mostrare (di norma tutte quelle del gioco; le prove della meccanica del giro ne usano cinque, così non cambiano a ogni tessera nuova)
+function paginaMenu({ app = true, sessione = {}, memoria = {}, utenti = {}, giocatori = {}, stagioni = {}, firebaseAttivo = true, loginRiesce = true, precarica = null, voci = null } = {}) {
     const registro = {};
     const nuovo = id => {
         const e = elemento(id);
@@ -302,7 +303,7 @@ function paginaMenu({ app = true, sessione = {}, memoria = {}, utenti = {}, gioc
     };
     const memo = m => ({ getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); } });
     const win = {
-        document: doc, firebase, AppSito: A, memoria, sessione,
+        document: doc, firebase, AppSito: voci ? Object.assign({}, A, { VOCI: voci }) : A, memoria, sessione,
         location: { replace: u => registroEventi.sostituzioni.push(u) },
         localStorage: memo(memoria), sessionStorage: memo(sessione),
         Suoni: { fai: n => registroEventi.suoni.push(n) },
@@ -349,16 +350,16 @@ test('le scene: una per voce del gioco, nell\'ordine, con link, colore, immagine
     assert.ok(el[0].classi.has('gx-centro'), 'la prima al centro');
     assert.equal(el[0].proprieta['--x'], 0);
     assert.equal(el[1].proprieta['--x'], 1, 'la seguente appena fuori, a destra');
-    assert.equal(el[4].proprieta['--x'], -1, 'l\'ultima appena fuori, a sinistra (il giro si chiude)');
-    assert.deepEqual(el.map(c => c.style.visibility), ['visible', 'visible', 'visible', 'visible', 'visible'], 'nessuna scena è nascosta: quella dall\'altra parte del giro sta fuori schermo ma già preparata (nascosta, il telefono la disegnava da capo alla prima volta che serve)');
-    assert.deepEqual(el.map(c => c.attributi['aria-hidden']), ['false', 'true', 'true', 'true', 'true'], 'per chi legge lo schermo c\'è solo la scena guardata');
+    assert.equal(el[el.length - 1].proprieta['--x'], -1, 'l\'ultima appena fuori, a sinistra (il giro si chiude)');
+    assert.deepEqual(el.map(c => c.style.visibility), el.map(() => 'visible'), 'nessuna scena è nascosta: quella dall\'altra parte del giro sta fuori schermo ma già preparata (nascosta, il telefono la disegnava da capo alla prima volta che serve)');
+    assert.deepEqual(el.map(c => c.attributi['aria-hidden']), el.map((_, i) => (i === 0 ? 'false' : 'true')), 'per chi legge lo schermo c\'è solo la scena guardata');
     // tornando dalle pagine si ritrova la scena di prima
     const q = paginaMenu({ sessione: { menuCarta: '2' } });
     assert.ok(q.id('gx-tessere').querySelectorAll('.gx-carta')[2].classi.has('gx-centro'));
 });
 
 test('le scene: toccare una scena di lato la porta al centro (quella al centro apre la pagina), le frecce da tastiera; la scena si ricorda e fa il suono', () => {
-    const p = paginaMenu();
+    const p = paginaMenu({ voci: A.VOCI.slice(0, 5) });
     const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
     let fermati = 0;
     const tocca = i => p.id('gx-tessere').scatta('click', { target: { closest: () => el[i] }, preventDefault: () => { fermati++; } });
@@ -391,7 +392,7 @@ test('le scene: toccare una scena di lato la porta al centro (quella al centro a
 });
 
 test('le scene: la scena che passa dall\'altra parte del giro salta senza attraversare lo schermo (senza animarsi per due fotogrammi), le altre scorrono', () => {
-    const p = paginaMenu();
+    const p = paginaMenu({ voci: A.VOCI.slice(0, 5) });
     const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
     p.id('gx-tessere').scatta('click', { target: { closest: () => el[2] }, preventDefault() {} });
     // dalla prima alla terza: la prima esce da un lato e la terza entra dall'altro (scorrono); le altre cambiano lato fuori dallo schermo: saltano
@@ -404,7 +405,7 @@ test('le scene: la scena che passa dall\'altra parte del giro salta senza attrav
     assert.deepEqual(el.map(c => c.classi.has('gx-salta')), [false, false, false, false, false]);
     assert.equal(el[1].style.transition, '');
     // un passo solo (anche dall'ultima alla prima) è un giro normale: scorrono tutte quelle che si vedono
-    const q = paginaMenu({ sessione: { menuCarta: '4' } });
+    const q = paginaMenu({ sessione: { menuCarta: '4' }, voci: A.VOCI.slice(0, 5) });
     const e2 = q.id('gx-tessere').querySelectorAll('.gx-carta');
     q.id('gx-tessere').scatta('click', { target: { closest: () => e2[0] }, preventDefault() {} });
     assert.ok(!e2[0].classi.has('gx-salta') && !e2[4].classi.has('gx-salta'), 'la scena che entra e quella che esce scorrono');
