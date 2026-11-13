@@ -61,6 +61,8 @@
     };
 
     const FOGLI_SCENA = ['practice.html', 'seasons.html'];            // le pagine che, oltre al foglio comune, vogliono quello delle scene (app-scena.css)
+    // i fogli di una sola pagina, oltre a quelli comuni: il riepilogo di fine stagione (Matches) ha il suo aspetto da gioco (app-riepilogo.css)
+    const FOGLI_PAGINA = { 'matches.html': ['app-riepilogo.css'] };
 
     // Le pagine del gioco, come le vede il menù principale: nome, colore e pagine che le tengono accese (`pagine`: una pagina del sito che non è
     // nel menù, per esempio la scheda pubblica di un allenatore, appartiene alla voce da cui ci si arriva).
@@ -337,6 +339,7 @@
             caricaFogliDiStile(doc, 'app-gioco.css');
             if (FOGLI_SCENA.includes(pagina)) caricaFogliDiStile(doc, 'app-scena.css');                  // le pagine con scene a tutto schermo (le locandine di Play)
             caricaFogliDiStile(doc, 'app-gioco-pagine.css');
+            for (const foglio of FOGLI_PAGINA[pagina] || []) caricaFogliDiStile(doc, foglio);
             caricaScript(doc, 'app-comune.js'); caricaScript(doc, 'app-gioco.js');          // nell'ordine: gli script aggiunti così partono uno dopo l'altro
             for (const nome of SCRIPT_PAGINE[pagina] || []) caricaScript(doc, nome);
         }
@@ -435,7 +438,7 @@
     }
 
     return {
-        TOKEN_APK, VOCI, FOGLI_SCENA, SENZA_HUD, FUORI_APP, RIMANDI, SCRIPT_PAGINE, TEMA_APP, GIORNI_INVITO, CONDIZIONE_TELEFONO, VIEWPORT_APP, CHIAVE_SPLASH,
+        TOKEN_APK, VOCI, FOGLI_SCENA, FOGLI_PAGINA, SENZA_HUD, FUORI_APP, RIMANDI, SCRIPT_PAGINE, TEMA_APP, GIORNI_INVITO, CONDIZIONE_TELEFONO, VIEWPORT_APP, CHIAVE_SPLASH,
         nomePagina, modoApp, sistema, dentroUnaApp, voceDi, haHud, fuoriApp, destinazioneFuoriApp, pubblica, datiPagina, fissaStile, bloccaZoom, proporreInstallazione,
         pluginNativo, bloccaOrizzontale, orientamentoDellaPagina, barreNascoste, creaAvvisoRuota, avvia
     };

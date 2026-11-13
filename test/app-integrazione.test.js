@@ -38,10 +38,38 @@ test('Box nell\'app: il nome del team sta nella sua colonna (box-sizing: border-
     assert.match(css, /body\.pg-box #teamsGrid \.card h3 \{ grid-area: nm; box-sizing: border-box;/);
 });
 
-test('Riepilogo di stagione nell\'app: le righe della classifica non si distanziano per riempire la colonna, e sopra la prima etichetta c\'è aria per i tag', () => {
-    const css = leggi('riepilogo-stagione.css');
-    assert.match(css, /html\.app-shell \.rs-righe \{ justify-content: flex-start; \}/);
-    assert.match(css, /html\.app-shell \.rs \{[^}]*padding-top: calc\(28 \* var\(--u\)\)/);
+test('Riepilogo di stagione nell\'app: ha il suo foglio da gioco (non le carte bianche del sito): tag gialli, tessere scure, pedane, targhette nere', () => {
+    const css = leggi('app-riepilogo.css');
+    assert.match(leggi('app.js'), /const FOGLI_PAGINA = \{ 'matches\.html': \['app-riepilogo\.css'\] \};/);
+    // i blocchi non sono carte: niente sfondo, bordo né ombra del sito
+    assert.match(css, /html\.app-shell \.rs-b \{[^}]*padding: 0; background: none;[^}]*border: 0; border-radius: 0; box-shadow: none;/);
+    // l'etichetta è un tag giallo storto, come quelli in alto
+    assert.match(css, /html\.app-shell \.rs-t \{[^}]*position: static;[^}]*background: var\(--gx-giallo[^}]*transform: skewX\(-9deg\)/);
+    // le tessere dei numeri: vetro scuro, numero grande e bianco
+    assert.match(css, /html\.app-shell \.rs-lega-voce, html\.app-shell \.rs-lega-voce:nth-child\(even\) \{[^}]*background: rgba\(0, 0, 0, \.5\)[^}]*border: calc\(2\.5 \* var\(--u\)\) solid rgba\(255, 255, 255, \.28\)/);
+    // il Pokémon e l'allenatore stanno su una pedana con un alone
+    assert.match(css, /html\.app-shell \.rs-med::before \{[^}]*radial-gradient\(circle, color-mix\(in srgb, var\(--tipo/);
+    assert.match(css, /html\.app-shell \.rs-med::after \{[^}]*border-radius: 50%;[^}]*border: calc\(3 \* var\(--u\)\) solid #000/);
+    assert.match(css, /html\.app-shell \.rs-campione-testa::after \{[^}]*border-radius: 50%/);
+    assert.match(css, /html\.app-shell \.rs-av-grande \{[^}]*image-rendering: pixelated/);
+    // il nome è una targhetta nera con il testo del colore dell'allenatore
+    assert.match(css, /html\.app-shell \.rs-campione-nome \{[^}]*background: #000; color: color-mix\(in srgb, var\(--c\) 70%, #fff\)/);
+    // la classifica: righe di vetro scuro con la striscia nel colore dell'allenatore, il primo con il tag giallo; a più di sei righe, due colonne
+    assert.match(css, /html\.app-shell \.rs-righe \{ display: flex; flex-direction: column; justify-content: flex-start;/);
+    assert.match(css, /html\.app-shell \.rs-righe:has\(> \.cl-riga:nth-child\(7\)\) \{ display: grid; grid-auto-flow: column; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); grid-template-rows: repeat\(var\(--rs-meta, 5\), auto\);/);
+    assert.match(leggi('riepilogo-stagione.js'), /righe\.style\.setProperty\('--rs-meta', String\(Math\.ceil\(righe\.children\.length \/ 2\)\)\)/);
+    assert.match(css, /border-left: calc\(5 \* var\(--u\)\) solid var\(--cl-colore\)/);
+    assert.match(css, /html\.app-shell \.rs \.cl-primo \.cl-pos \{ background: var\(--gx-giallo/);
+    // la squadra ideale: tessere con il Pokémon a sinistra e, a destra, il formato (tag nel colore dell'allenatore), il nome e chi l'ha usato
+    assert.match(css, /html\.app-shell \.rs-fcard \{\s*display: grid; grid-template-columns: auto minmax\(0, 1fr\); grid-template-areas: "med tag" "med nome" "med chi";/);
+    // i premi: due per riga, tinti del colore di chi li ha vinti; più vincitori uno sotto l'altro (la tessera non si allarga)
+    assert.match(css, /html\.app-shell \.rs-premio, html\.app-shell \.rs-premio:nth-child\(even\) \{\s*flex: 0 1 calc\(50% - 6 \* var\(--u\)\);[^}]*flex-direction: row;/);
+    assert.match(css, /html\.app-shell \.rs-vincitori \{ flex-direction: column;/);
+    // il foglio del sito non ha più i ritocchi visivi dell'app (stanno tutti qui), e sopra la prima etichetta c'è poca aria: il tag sta nel flusso
+    const sito = leggi('riepilogo-stagione.css');
+    assert.doesNotMatch(sito, /html\.app-shell \.(rs-righe|rs-fcard|rs-dato|rs-med-medio|rs-premio b)/);
+    assert.match(sito, /html\.app-shell \.rs \{[^}]*padding-top: calc\(28 \* var\(--u\)\)/);
+    assert.match(sito, /html\.app-shell \.rs-schermata \{[^}]*padding: calc\(10 \* var\(--u\)\)/);
 });
 
 test('menù dell\'app: ogni figura di una scena ha la sua regola di posto e grandezza (senza, la figura compare grande quanto l\'immagine intera)', () => {

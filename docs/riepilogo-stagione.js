@@ -564,6 +564,9 @@
         if (!schermate.length) return null;
         while (rs.firstChild) rs.removeChild(rs.firstChild);
         schermate.forEach(sc => rs.appendChild(sc));
+        // la classifica in due colonne (se le righe sono tante) si legge dall'alto in basso: la metà delle righe dà la lunghezza delle colonne (app-riepilogo.css)
+        const righe = rs.querySelector('.rs-righe');
+        if (righe && righe.style && righe.children) righe.style.setProperty('--rs-meta', String(Math.ceil(righe.children.length / 2)));
         rs.setAttribute('data-schermate', String(schermate.length));
         const pallini = doc.createElement('div');
         pallini.className = 'rs-pallini';

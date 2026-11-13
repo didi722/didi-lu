@@ -294,7 +294,7 @@ test('dall\'icona sulla Home dell\'iPhone, in una pagina del gioco: classi app e
     assert.deepEqual(s.risultato, { modo: 'installata' });
     assert.deepEqual(s.classi(), ['app', 'app-installata', 'app-shell', 'os-ios']);
     assert.deepEqual(s.reindirizzato, [], 'una pagina diversa dalla home si apre dov\'è');
-    assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-gioco-pagine.css'], 'l\'aspetto comune e quello delle pagine');
+    assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-gioco-pagine.css', 'app-riepilogo.css'], 'l\'aspetto comune, quello delle pagine e (Matches) quello del riepilogo di stagione');
     // suoni (per ogni pagina dell'app), poi le parti comuni e l'interfaccia in alto: nell'ordine in cui servono (async = false: partono uno dopo l'altro)
     assert.deepEqual(s.script(), ['app-suoni.js', 'app-musica.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'], 'poi quelli della pagina (Matches: il carosello della classifica e le locandine dei showdown)');
     for (const f of s.doc.head.figli.filter(x => x.tagName === 'SCRIPT')) assert.equal(f.async, false, `${f.src}: async = false per l'ordine`);

@@ -1,0 +1,180 @@
+/* =====================================================================
+   RIEPILOGO DI FINE STAGIONE — aspetto da app (matches.html: lo carica app.js, solo nell'app)
+   ---------------------------------------------------------------------
+   Il markup è lo stesso del sito (riepilogo-stagione.js); qui cambia solo lo stile: niente carte bianche con il bordo nero spesso, ma il linguaggio del gioco,
+   quello di Showdowns, Rankings, Trainers e Stats: sfondo scuro a puntini, i Pokémon e gli allenatori su una pedana con un alone, targhette nere con il nome,
+   tag gialli storti per le etichette, numeri grandi e bianchi su tessere scure di vetro. Ogni schermata (riepilogo-stagione.css: raggruppaInSchermate) sta ferma
+   nello schermo e si scorre di lato.
+   ===================================================================== */
+
+html.app-shell .rs { --rs-u: var(--u); color: #fff; font-family: var(--gx-font, 'Josefin Sans', sans-serif); }
+html.app-shell .rs a { color: inherit; text-decoration: none; }
+html.app-shell .rs-scelta { display: none !important; }
+
+/* ---------- i blocchi non sono più carte: la schermata è il palco, e l'etichetta il suo titolo (un tag giallo storto, come quelli in alto) ---------- */
+html.app-shell .rs-b { display: flex; flex-direction: column; gap: calc(6 * var(--u)); padding: 0; background: none; color: #fff; border: 0; border-radius: 0; box-shadow: none; }
+html.app-shell .rs-t {
+    position: static; align-self: flex-start; display: inline-flex; align-items: center; gap: calc(6 * var(--u)); margin: 0 0 calc(1 * var(--u)); padding: calc(2 * var(--u)) calc(13 * var(--u)) 0;
+    background: var(--gx-giallo, #ffbd44); color: #000; border: calc(2.5 * var(--u)) solid #000; border-radius: calc(5 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000;
+    transform: skewX(-9deg); rotate: -1.5deg; font: 900 calc(11.5 * var(--u))/1.45 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .1em;
+}
+html.app-shell .rs-t-img { width: calc(20 * var(--u)); height: calc(20 * var(--u)); margin: calc(-3 * var(--u)) 0; }
+
+/* ---------- i numeri di tutta la stagione: tessere di vetro scuro, il numero grande e bianco ---------- */
+html.app-shell .rs-stagione { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(10 * var(--u)); width: 100%; max-width: calc(620 * var(--u)); margin: 0 auto; }
+html.app-shell .rs-stagione > .rs-t { grid-column: 1 / -1; justify-self: start; }
+html.app-shell .rs-lega-voce, html.app-shell .rs-lega-voce:nth-child(even) {
+    gap: calc(5 * var(--u)); padding: calc(14 * var(--u)) calc(6 * var(--u)) calc(12 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff;
+    border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(9 * var(--u)); box-shadow: inset 0 calc(3 * var(--u)) 0 var(--c, #d9dde6); rotate: 0deg;
+}
+html.app-shell .rs-lega-voce b { font: 900 calc(34 * var(--u))/1 var(--gx-font, 'Josefin Sans', sans-serif); text-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .55); }
+html.app-shell .rs-lega-voce span { font: 700 calc(9.5 * var(--u))/1.2 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .12em; opacity: .8; }
+
+/* ---------- il campione: l'allenatore sulla sua pedana (nel suo colore), la targhetta nera col nome, il trofeo, e i numeri della sua scheda in tessere ---------- */
+html.app-shell .rs-campione { gap: calc(6 * var(--u)); }
+html.app-shell .rs-campione-testa { position: relative; gap: calc(12 * var(--u)); rotate: 0deg; min-height: calc(68 * var(--u)); }
+/* l'alone dietro l'allenatore (nel suo colore) e la pedana sotto i suoi piedi */
+html.app-shell .rs-campione-testa::before {
+    content: ''; position: absolute; left: calc(-24 * var(--u)); top: calc(-24 * var(--u)); width: calc(116 * var(--u)); height: calc(116 * var(--u)); border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, color-mix(in srgb, var(--c) 58%, transparent) 0%, color-mix(in srgb, var(--c) 26%, transparent) 42%, transparent 70%);
+}
+html.app-shell .rs-campione-testa::after {
+    content: ''; position: absolute; left: calc(-4 * var(--u)); bottom: calc(-2 * var(--u)); width: calc(76 * var(--u)); height: calc(17 * var(--u)); box-sizing: border-box; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--c) 70%, #fff) 0%, var(--c) 55%, color-mix(in srgb, var(--c) 70%, #000) 100%); border: calc(3 * var(--u)) solid #000; box-shadow: 0 calc(3 * var(--u)) 0 #000;
+}
+html.app-shell .rs-av-grande { position: relative; z-index: 1; width: calc(68 * var(--u)); height: calc(68 * var(--u)); margin-bottom: calc(5 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .4)); }
+html.app-shell .rs-campione-id { align-items: flex-start; gap: calc(6 * var(--u)); }
+html.app-shell .rs-campione-nome {
+    display: inline-block; max-width: 100%; padding: calc(3 * var(--u)) calc(14 * var(--u)) calc(1 * var(--u)); background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(8 * var(--u));
+    font: 900 calc(24 * var(--u))/1.15 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .05em; text-shadow: none; box-shadow: 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .12);
+}
+html.app-shell .rs-campione-sotto { color: #fff; opacity: .85; font: 800 calc(11 * var(--u))/1.2 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .1em; }
+html.app-shell .rs-trofeo { width: calc(64 * var(--u)); height: calc(64 * var(--u)); }
+html.app-shell .rs-trofeo img { filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .4)); }
+html.app-shell .rs-dati { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(6 * var(--u)); }
+html.app-shell .rs-dato {
+    gap: calc(2 * var(--u)); padding: calc(4 * var(--u)) calc(8 * var(--u)) calc(3 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff;
+    border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .22); border-radius: calc(8 * var(--u)); box-shadow: none;
+}
+html.app-shell .rs-dato-et { color: rgba(255, 255, 255, .7); font: 700 calc(8.5 * var(--u))/1.1 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .1em; }
+html.app-shell .rs-dato-va { font: 900 calc(18 * var(--u))/1.1 var(--gx-font, 'Josefin Sans', sans-serif); }
+html.app-shell .rs-wl b.v, html.app-shell .rs-sub.v { color: #47ea6a; }
+html.app-shell .rs-wl b.p, html.app-shell .rs-sub.p { color: #ff7b6b; }
+html.app-shell .rs-wl i { color: rgba(255, 255, 255, .5); }
+html.app-shell .rs-barra { height: calc(6 * var(--u)); margin-top: calc(3 * var(--u)); background: rgba(255, 255, 255, .16); border: 0; border-radius: calc(3 * var(--u)); overflow: hidden; }
+html.app-shell .rs-barra > span { background: linear-gradient(90deg, #47ea6a, #b5f7c3); border-radius: inherit; }
+
+/* ---------- il Pokémon: sulla pedana col suo alone (il colore del suo tipo), come nelle schermate di Showdowns e Rankings ---------- */
+html.app-shell .rs-med { background: none; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+html.app-shell .rs-med::before {
+    content: ''; position: absolute; left: 50%; bottom: 8%; width: 112%; height: 112%; translate: -50% 0; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, color-mix(in srgb, var(--tipo, #9aa0b4) 74%, #fff) 0%, color-mix(in srgb, var(--tipo, #9aa0b4) 40%, transparent) 42%, transparent 70%);
+}
+html.app-shell .rs-med::after {
+    content: ''; position: absolute; left: 50%; bottom: 3%; width: 96%; height: 20%; translate: -50% 0; box-sizing: border-box; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--tipo, #9aa0b4) 55%, #fff) 0%, var(--tipo, #9aa0b4) 55%, color-mix(in srgb, var(--tipo, #9aa0b4) 70%, #000) 100%);
+    border: calc(3 * var(--u)) solid #000; box-shadow: 0 calc(3 * var(--u)) 0 #000;
+}
+html.app-shell .rs-med img {
+    inset: auto; left: 50%; bottom: 12%; z-index: 2; width: 78%; height: 78%; translate: -50% 0; padding: 0; object-fit: contain; object-position: 50% 100%;
+    filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .35));
+}
+html.app-shell .rs-med-grande { --d: calc(100 * var(--u)); box-shadow: none; }
+html.app-shell .rs-med-medio { --d: calc(66 * var(--u)); }
+html.app-shell .rs-med-piccolo { --d: calc(50 * var(--u)); border-width: 0; }
+
+/* ---------- l'MVP ---------- */
+html.app-shell .rs-mvp { position: relative; align-items: center; gap: calc(4 * var(--u)); text-align: center; background: none; }
+html.app-shell .rs-mvp > .rs-t { align-self: flex-start; }
+html.app-shell .rs-mvp-scena { padding-top: 0; }
+html.app-shell .rs-sticker { top: calc(30 * var(--u)); right: 0; width: calc(44 * var(--u)); height: calc(44 * var(--u)); rotate: 8deg; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .5)); }
+html.app-shell .rs-sticker-grande { position: static; width: calc(92 * var(--u)); height: calc(92 * var(--u)); rotate: 0deg; }
+html.app-shell .rs-banner, html.app-shell .rs-banner-piccolo {
+    margin-top: 0; padding: calc(3 * var(--u)) calc(12 * var(--u)) calc(1 * var(--u)); background: #000; color: color-mix(in srgb, var(--c, #d9dde6) 70%, #fff); border-radius: calc(7 * var(--u));
+    font: 900 calc(15 * var(--u))/1.25 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .05em; rotate: 0deg; box-shadow: 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .12);
+}
+html.app-shell .rs-mvp-sotto { color: rgba(255, 255, 255, .8); font: 700 calc(10 * var(--u))/1.25 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; }
+html.app-shell .rs-voti { margin-top: calc(2 * var(--u)); background: var(--gx-giallo, #ffbd44); color: #000; border: calc(2 * var(--u)) solid #000; border-radius: calc(5 * var(--u)); transform: skewX(-9deg); rotate: 0deg; box-shadow: 0 calc(2 * var(--u)) 0 #000; }
+html.app-shell .rs-mvp-attesa { background: none; }
+html.app-shell .rs-nota, html.app-shell .rs-vuoto { color: rgba(255, 255, 255, .85); }
+
+/* ---------- la classifica finale: righe di vetro scuro con una striscia nel colore dell'allenatore; chi è primo ha il tag giallo ---------- */
+html.app-shell .rs-classifica { width: 100%; max-width: calc(560 * var(--u)); margin: 0 auto; }
+html.app-shell .rs-righe { display: flex; flex-direction: column; justify-content: flex-start; gap: calc(4 * var(--u)); }
+html.app-shell .rs-classifica:has(.cl-riga:nth-child(7)) { max-width: none; }
+/* più di sei righe: due colonne, la classifica si legge dall'alto in basso (la metà delle righe, --rs-meta, la scrive riepilogo-stagione.js) */
+html.app-shell .rs-righe:has(> .cl-riga:nth-child(7)) { display: grid; grid-auto-flow: column; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--rs-meta, 5), auto); gap: calc(4 * var(--u)) calc(10 * var(--u)); }
+html.app-shell .rs-righe .cl-riga, html.app-shell .rs-righe .cl-riga:nth-child(even) {
+    flex: none; position: relative; display: flex; align-items: center; gap: calc(8 * var(--u)); box-sizing: border-box; max-height: none; min-height: calc(31 * var(--u)); padding: calc(2 * var(--u)) calc(10 * var(--u)) calc(2 * var(--u)) calc(6 * var(--u));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--cl-colore) 42%, #0b0920) 0%, rgba(0, 0, 0, .5) 62%); color: #fff;
+    border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .2); border-left: calc(5 * var(--u)) solid var(--cl-colore); border-radius: calc(9 * var(--u)); box-shadow: none; rotate: 0deg; translate: none;
+}
+html.app-shell .rs-righe .cl-primo { border-color: rgba(255, 189, 68, .75); border-left-color: var(--cl-colore); }
+html.app-shell .rs-righe .cl-pos {
+    flex: none; padding: calc(2 * var(--u)) calc(7 * var(--u)) calc(1 * var(--u)); background: #000; color: #fff; border: 0; border-radius: calc(5 * var(--u)); box-shadow: none; transform: skewX(-9deg);
+    font: 900 calc(12 * var(--u))/1.3 var(--gx-font, 'Josefin Sans', sans-serif);
+}
+html.app-shell .rs .cl-primo .cl-pos { background: var(--gx-giallo, #ffbd44); color: #000; box-shadow: 0 0 0 calc(2 * var(--u)) #000; }
+html.app-shell .rs-righe .cl-avatar { flex: none; width: calc(26 * var(--u)); height: calc(26 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .5)); }
+html.app-shell .rs-righe .cl-testi { gap: calc(1 * var(--u)); min-width: 0; }
+html.app-shell .rs-righe .cl-nome {
+    align-self: flex-start; max-width: 100%; padding: calc(1 * var(--u)) calc(8 * var(--u)) 0; background: #000; color: color-mix(in srgb, var(--cl-colore) 70%, #fff); border-radius: calc(5 * var(--u));
+    font: 900 calc(13 * var(--u))/1.25 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .05em;
+}
+html.app-shell .rs-righe .cl-dati { color: rgba(255, 255, 255, .72); font: 700 calc(8.5 * var(--u))/1.2 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .06em; }
+html.app-shell .rs-righe .cl-punti {
+    margin-left: auto; min-width: 0; padding: 0; background: none; border: 0; box-shadow: none; color: #fff; text-shadow: 0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .55);
+    font: 900 calc(22 * var(--u))/1 var(--gx-font, 'Josefin Sans', sans-serif);
+}
+html.app-shell .rs-righe .cl-punti::after { content: ' PTS'; font: 700 calc(8 * var(--u)) var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .1em; opacity: .7; text-shadow: none; }
+
+/* ---------- la squadra ideale: una tessera per formato, il Pokémon sulla sua pedana, il tag del formato nel colore dell'allenatore ---------- */
+html.app-shell .rs-squadra { position: relative; }
+html.app-shell .rs-sticker-squadra { top: 0; right: 0; width: calc(40 * var(--u)); height: calc(40 * var(--u)); }
+html.app-shell .rs-squadra .rs-formati-lista { grid-template-columns: repeat(var(--rs-col, 3), minmax(0, 1fr)); gap: calc(8 * var(--u)); height: auto; }
+html.app-shell .rs-fcard {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "med tag" "med nome" "med chi"; align-content: center; justify-items: start; text-align: left;
+    column-gap: calc(8 * var(--u)); row-gap: calc(3 * var(--u)); padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(6 * var(--u)) calc(6 * var(--u));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--c) 34%, #0b0920) 0%, rgba(0, 0, 0, .55) 72%); color: #fff;
+    border: calc(2.5 * var(--u)) solid color-mix(in srgb, var(--c) 60%, #000); border-radius: calc(11 * var(--u)); box-shadow: none; rotate: 0deg;
+}
+html.app-shell .rs-fcard .rs-med { grid-area: med; --d: calc(60 * var(--u)); }
+html.app-shell .rs-fcard .rs-tag-nero {
+    grid-area: tag; padding: calc(1 * var(--u)) calc(8 * var(--u)) 0; background: var(--c); color: #000; border: calc(2 * var(--u)) solid #000; border-radius: calc(4 * var(--u)); transform: skewX(-9deg); rotate: 0deg;
+    font: 900 calc(9.5 * var(--u))/1.5 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .06em;
+}
+html.app-shell .rs-fcard .rs-banner { grid-area: nome; max-width: 100%; font-size: calc(12 * var(--u)); text-align: left; }
+html.app-shell .rs-fcard > span:last-child { grid-area: chi; color: rgba(255, 255, 255, .78); font: 700 calc(10 * var(--u))/1.25 var(--gx-font, 'Josefin Sans', sans-serif); }
+html.app-shell .rs-fcard b:not(.rs-banner) { color: #fff; }
+
+/* ---------- i Pokémon più usati: una riga per Pokémon, il posto in un tag giallo, la barra nel verde del gioco ---------- */
+html.app-shell .rs-usati { width: 100%; max-width: calc(600 * var(--u)); margin: 0 auto; }
+html.app-shell .rs-usati-lista { gap: calc(6 * var(--u)); }
+html.app-shell .rs-uso {
+    grid-template-columns: auto calc(46 * var(--u)) minmax(0, 1fr) auto; gap: calc(10 * var(--u)); padding: calc(2 * var(--u)) calc(12 * var(--u)) calc(2 * var(--u)) calc(8 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff;
+    border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .22); border-radius: calc(11 * var(--u)); box-shadow: none;
+}
+html.app-shell .rs-uso .rs-med { --d: calc(46 * var(--u)); }
+html.app-shell .rs-pos { padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(1 * var(--u)); background: var(--gx-giallo, #ffbd44); color: #000; border: calc(2 * var(--u)) solid #000; border-radius: calc(4 * var(--u)); transform: skewX(-9deg); box-shadow: 0 calc(2 * var(--u)) 0 #000; font: 900 calc(12 * var(--u))/1.3 var(--gx-font, 'Josefin Sans', sans-serif); }
+html.app-shell .rs-uso-testo b { color: #fff; font: 900 calc(14 * var(--u))/1.1 var(--gx-font, 'Josefin Sans', sans-serif); }
+html.app-shell .rs-uso i { color: rgba(255, 255, 255, .85); font: 800 calc(12 * var(--u))/1 var(--gx-font, 'Josefin Sans', sans-serif); opacity: 1; }
+
+/* ---------- i premi: una tessera per premio, scura e tinta del colore di chi lo ha vinto; il valore in un tag giallo ---------- */
+html.app-shell .rs-premi-lista { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(8 * var(--u)) calc(10 * var(--u)); }
+html.app-shell .rs-premio, html.app-shell .rs-premio:nth-child(even) {
+    flex: 0 1 calc(50% - 6 * var(--u)); min-width: 0; flex-direction: row; align-items: center; justify-content: space-between; gap: calc(8 * var(--u)); padding: calc(8 * var(--u)) calc(10 * var(--u)); color: #fff; rotate: 0deg;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--c) 36%, #0b0920) 0%, rgba(0, 0, 0, .55) 78%); border: calc(2.5 * var(--u)) solid color-mix(in srgb, var(--c) 58%, #000); border-radius: calc(12 * var(--u)); box-shadow: none;
+}
+html.app-shell .rs-premio-testa { flex: 1 1 0; min-width: 0; gap: calc(8 * var(--u)); }
+html.app-shell .rs-premio-pie { flex: 0 0 auto; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: calc(8 * var(--u)); }
+html.app-shell .rs-premio-chi { align-items: flex-end; gap: calc(5 * var(--u)); }
+html.app-shell .rs-vincitori { flex-direction: column; align-items: flex-end; gap: calc(3 * var(--u)); }      /* più vincitori: uno sotto l'altro, così la tessera non si allarga e il titolo non si spezza */
+html.app-shell .rs-avatar-premio { margin: 0; align-items: flex-end; }
+html.app-shell .rs-icona { width: calc(38 * var(--u)); height: calc(38 * var(--u)); background: rgba(0, 0, 0, .45); border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .3); box-shadow: none; }
+html.app-shell .rs-icona img { width: calc(28 * var(--u)); height: calc(28 * var(--u)); }
+html.app-shell .rs-premio b { color: #fff; font: 900 calc(12.5 * var(--u))/1.15 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .01em; overflow-wrap: break-word; }
+html.app-shell .rs-premio small { color: rgba(255, 255, 255, .78); opacity: 1; font: 700 calc(9.5 * var(--u))/1.3 var(--gx-font, 'Josefin Sans', sans-serif); }
+html.app-shell .rs a.rs-nome-tag { padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(1 * var(--u)); background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(6 * var(--u)); rotate: 0deg; box-shadow: none; font: 900 calc(11.5 * var(--u))/1.3 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .04em; }
+html.app-shell .rs-valore { background: var(--gx-giallo, #ffbd44); color: #000; border: calc(2 * var(--u)) solid #000; border-radius: calc(5 * var(--u)); box-shadow: 0 calc(2 * var(--u)) 0 #000; transform: skewX(-9deg); rotate: 0deg; font: 900 calc(10.5 * var(--u))/1.4 var(--gx-font, 'Josefin Sans', sans-serif); }
+html.app-shell .rs-av-premio { width: calc(42 * var(--u)); height: calc(42 * var(--u)); margin-left: calc(-16 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .45)); }
+html.app-shell .rs-av-vuoto { background: rgba(255, 255, 255, .15); }

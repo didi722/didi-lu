@@ -209,42 +209,13 @@ html.app-shell[data-mt="rc"] body.pg-matches .top-auth-bar > #btn-mvp#btn-mvp#bt
 .rs-dialogo-azioni button, .rs-dialogo-azioni a { padding: 9px 18px 7px; cursor: pointer; font: 900 .95rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-decoration: none; color: #000; background: #fff; border: 3px solid #000; box-shadow: 3px 3px 0 #000; }
 .rs-dialogo-azioni button[data-fai="condividi"] { background: #000; color: #fff; border-color: #fff; }
 
-/* ---------- nell'app: misure in --u, angoli arrotondati e ombre in basso come le altre schede del gioco; niente tasti RECAP | CALENDAR (ci sono i tag in alto) ---------- */
+/* ---------- nell'app: le misure seguono --u; l'aspetto da gioco (pedane, tag gialli, tessere scure) è in app-riepilogo.css; niente tasti RECAP | CALENDAR (ci sono i tag in alto) ---------- */
 html.app-shell .rs {
     --rs-u: var(--u); --rs-raggio: calc(10 * var(--u)); --rs-sh-s: 0 calc(3 * var(--u)) 0 var(--gx-ink, #000); --rs-sh-m: 0 calc(6 * var(--u)) 0 var(--gx-ink, #000);
     font-family: var(--gx-font, 'Josefin Sans', sans-serif); gap: calc(32 * var(--u)) calc(20 * var(--u)); padding-top: calc(28 * var(--u));
 }
 html.app-shell .rs-scelta { display: none !important; }
-html.app-shell .rs-t { border-radius: calc(5 * var(--u)); }
-html.app-shell .rs-tag, html.app-shell .rs-voti, html.app-shell .rs-valore, html.app-shell .rs-tag-nero, html.app-shell .rs-pos { border-radius: calc(5 * var(--u)); }
-html.app-shell .rs-valore { box-shadow: 0 calc(2 * var(--u)) 0 var(--gx-ink, #000); }
-html.app-shell .rs-righe .cl-riga { rotate: 0deg; border-width: calc(3 * var(--u)); border-radius: calc(8 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--gx-ink, #000); }
-html.app-shell .rs-stagione { gap: calc(12 * var(--u)); }
-html.app-shell .rs-trofeo { width: calc(84 * var(--u)); height: calc(84 * var(--u)); }
-html.app-shell .rs-lega-voce b { font-size: calc(30 * var(--u)); }
-html.app-shell .rs-av-premio { width: calc(52 * var(--u)); height: calc(52 * var(--u)); }
-/* nell'app lo schermo è largo 740 unità: classifica e colonna a metà, e i pezzi un po' più piccoli perché i nomi non si taglino */
 html.app-shell .rs-s5, html.app-shell .rs-s7 { grid-column: span 6; }
-html.app-shell .rs-righe { justify-content: flex-start; }      /* nell'app la classifica è accanto a un Dream Team più alto: le righe non si distanziano per riempirlo */
-html.app-shell .rs-righe .cl-riga { max-height: calc(80 * var(--u)); padding: calc(6 * var(--u)) calc(9 * var(--u)); gap: calc(8 * var(--u)); }
-html.app-shell .rs-righe .cl-avatar { width: calc(40 * var(--u)); height: calc(40 * var(--u)); }
-html.app-shell .rs-righe .cl-nome { font-size: calc(15 * var(--u)); }
-html.app-shell .rs-righe .cl-dati { font-size: calc(9 * var(--u)); }
-html.app-shell .rs-righe .cl-pos { font-size: calc(12 * var(--u)); }
-html.app-shell .rs-righe .cl-punti { min-width: calc(42 * var(--u)); padding: calc(4 * var(--u)) calc(7 * var(--u)) calc(2 * var(--u)); font-size: calc(18 * var(--u)); }
-html.app-shell .rs-formati-lista { grid-template-columns: repeat(auto-fit, minmax(calc(86 * var(--u)), 1fr)); gap: calc(10 * var(--u)); }
-html.app-shell .rs-squadra .rs-formati-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }     /* nell'app le carte sono strette: due per riga, i nomi non si spezzano a metà */
-html.app-shell .rs-fcard { padding: calc(10 * var(--u)) calc(6 * var(--u)) calc(8 * var(--u)); }
-html.app-shell .rs-med-medio { --d: calc(70 * var(--u)); }
-html.app-shell .rs-med-grande { --d: calc(130 * var(--u)); }
-html.app-shell .rs-banner { font-size: calc(17 * var(--u)); }
-html.app-shell .rs-dato { padding: calc(6 * var(--u)) calc(8 * var(--u)); }
-html.app-shell .rs-dato-et { font-size: calc(9 * var(--u)); letter-spacing: .03em; }
-html.app-shell .rs-dato-va { font-size: calc(19 * var(--u)); }
-html.app-shell .rs-icona { width: calc(50 * var(--u)); height: calc(50 * var(--u)); }
-html.app-shell .rs-icona img { width: calc(36 * var(--u)); height: calc(36 * var(--u)); }
-html.app-shell .rs-premio b { font-size: calc(13 * var(--u)); }
-html.app-shell .rs-premio, html.app-shell .rs-premio:nth-child(even), html.app-shell .rs-campione-testa { rotate: 0deg; }
 html.app-shell .rs-dialogo { max-width: 92vw; }
 html.app-shell .rs-dialogo img { max-height: calc(94vh - 70px); }
 html.app-shell[data-mt="sd"] #riepilogoStagione, html.app-shell[data-mt="rk"] #riepilogoStagione { display: none !important; }
@@ -255,7 +226,7 @@ html.app-shell[data-mt="rc"] body.pg-matches .hub-right-column { display: none !
 html.app-shell #riepilogoStagione { position: fixed; left: 0; right: 0; top: calc(var(--gx-barra) + 52 * var(--u)); bottom: 0; z-index: 1; }
 html.app-shell #riepilogoStagione .rs[data-schermate] { display: flex; flex-wrap: nowrap; gap: 0; height: 100%; padding: 0; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
 html.app-shell #riepilogoStagione .rs[data-schermate]::-webkit-scrollbar { display: none; }
-html.app-shell .rs-schermata { flex: 0 0 100%; box-sizing: border-box; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; padding: calc(30 * var(--u)) max(calc(16 * var(--u)), env(safe-area-inset-right, 0px)) calc(34 * var(--u)) max(calc(16 * var(--u)), env(safe-area-inset-left, 0px)); }
+html.app-shell .rs-schermata { flex: 0 0 100%; box-sizing: border-box; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; padding: calc(10 * var(--u)) max(calc(16 * var(--u)), env(safe-area-inset-right, 0px)) calc(28 * var(--u)) max(calc(16 * var(--u)), env(safe-area-inset-left, 0px)); }
 html.app-shell .rs-schermata-corpo { width: 100%; display: flex; align-items: stretch; gap: calc(26 * var(--u)); }
 html.app-shell .rs-schermata-corpo > * { flex: 1 1 0; min-width: 0; grid-column: auto; }
 html.app-shell .rs-schermata-corpo > .rs-s8 { flex: 8 1 0; }
