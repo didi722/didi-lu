@@ -39,10 +39,9 @@
         cpu: { cielo: 'cielo-tech', fx: 'griglia', eroi: [{ pkm: 474, c: 'e-pory', alt: 'Porygon-Z' }] }
     };
 
-    /** Le tre locandine di Seasons (seasons.html): stesse figure di ripiego di una sola cosa al centro; le immagini proprie sono immagini/app/seasons-<past|playing|signups> */
+    /** Le locandine di Seasons (seasons.html) con una scena: Past e Sign-ups (Playing è una scheda divisa in due, vedi app-seasons.js); le immagini proprie sono immagini/app/seasons-<past|playing|signups> */
     const LOCANDINE_STAGIONI = {
         past: { cielo: 'cielo-tramonto', fx: 'aure', eroi: [{ img: 'immagini/season-winner-color.png', c: 'e-uno', alt: 'Season trophy' }] },
-        playing: { cielo: 'cielo-blu', fx: 'sole', eroi: [{ pkm: 212, c: 'e-a', alt: 'Scizor' }, { pkm: 248, c: 'e-b', alt: 'Tyranitar' }] },
         signups: { cielo: 'cielo-rosa', fx: 'cuori', eroi: [{ pkm: 25, c: 'e-uno', alt: 'Pikachu' }] }
     };
 
