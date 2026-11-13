@@ -688,3 +688,76 @@
     #modalCreazione.admin-panel-modern { padding: 54px 14px 18px !important; }
     #modalCreazione.admin-panel-modern > h3 { margin-bottom: 22px; font-size: 1rem; }
 }
+
+/* ---------- Replay sul telefono (browser): senza la scocca, la partita grande ----------
+   matches.html (adattaReplayAlloSchermo) mette la classe .tel alla finestra sui telefoni (e .tel-orizz con lo schermo in orizzontale) e dà a --gba-scala
+   quanto serve perché la scena (640 × 360) stia nella larghezza. La scocca della console occupa tanto e rimpicciolisce lo schermo a un francobollo:
+   qui non c'è, e le sue parti (intestazione, comandi, condizioni del campo, set, momenti chiave) si dispongono attorno alla partita.
+   Nell'app (html.app-shell) c'è la sua versione, in app-gioco-pagine.css. */
+html:not(.app-shell) #replayModal.tel.replay-modal { justify-content: flex-start; align-items: center; gap: 8px; padding: 8px 8px 18px; }
+html:not(.app-shell) #replayModal.tel .replay-palco { display: contents; }
+html:not(.app-shell) #replayModal.tel .gba-shell { display: none; }
+html:not(.app-shell) #replayModal.tel .gba-container { order: 1; flex: 0 0 auto; width: 640px; margin: 0; }
+html:not(.app-shell) #replayModal.tel .gba-screen-area {
+    position: static; transform: none; width: 640px; height: 360px; border-radius: calc(var(--nb-raggio, 0px) * .6 + 4px);
+    outline: 3px solid var(--nb-ink, #000); box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+}
+html:not(.app-shell) #replayModal.tel .replay-content { width: 640px; height: 360px; box-shadow: none; }
+html:not(.app-shell) #replayModal.tel #replayFrame { top: -22px; left: 0; width: 640px; height: 382px; }
+/* l'ordine: intestazione, partita, comandi (sotto la partita, fermi: le condizioni del campo compaiono e spariscono e non devono spostarli), condizioni del campo, set, momenti chiave */
+html:not(.app-shell) #replayModal.tel .replay-mini-header { order: 0; }
+html:not(.app-shell) #replayModal.tel .replay-comandi { order: 2; }
+html:not(.app-shell) #replayModal.tel .replay-campo { order: 3; }
+html:not(.app-shell) #replayModal.tel .set-selector { order: 4; }
+html:not(.app-shell) #replayModal.tel .replay-momenti { order: 5; }
+/* intestazione: nomi e punteggio, le GIF in una riga sola (si stringono se serve) */
+html:not(.app-shell) #replayModal.tel .replay-mini-header { padding: 34px 8px 15px !important; gap: 6px; transform: none; }
+html:not(.app-shell) #replayModal.tel .replay-mini-header::before { height: 26px; line-height: 26px; padding-left: 74px; }
+html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-team-info { gap: 4px; }
+html:not(.app-shell) #replayModal.tel .replay-mini-header .badge-label { font-size: .66rem; padding: 3px 6px; }
+html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-score-box { font-size: .9rem; padding: 4px 9px !important; }
+html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row { flex-wrap: nowrap; gap: 1px; min-width: 0; max-width: 100%; }
+html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row img { flex: 1 1 0; min-width: 0; width: auto; max-width: 24px; height: auto; aspect-ratio: 1; }
+/* comandi: tasti che dividono la larghezza (otto in fila, a mano con il pollice) */
+html:not(.app-shell) #replayModal.tel .replay-comandi { flex-wrap: nowrap; width: min(100%, 640px); gap: 5px; padding: 6px; }
+html:not(.app-shell) #replayModal.tel .rc-tasto { flex: 1 1 0; min-width: 0; width: auto; max-width: 64px; height: 38px; }
+html:not(.app-shell) #replayModal.tel .rc-play { flex-grow: 1.5; }
+html:not(.app-shell) #replayModal.tel .rc-velocita { width: auto; }
+/* condizioni del campo: cartellini piccoli in fila sotto i comandi */
+html:not(.app-shell) #replayModal.tel .replay-campo { flex: 0 0 auto; max-width: min(100%, 640px); gap: 5px; }
+html:not(.app-shell) #replayModal.tel .rcampo-voce { padding: 3px 7px 2px; border-width: 2px; box-shadow: 2px 2px 0 var(--nb-ink, #000); font-size: .62rem; gap: 1px 5px; }
+html:not(.app-shell) #replayModal.tel .rcampo-voce small { font-size: .56rem; }
+/* set e momenti chiave: a tutta larghezza, compatti */
+html:not(.app-shell) #replayModal.tel .set-selector { width: min(100%, 640px); }
+html:not(.app-shell) #replayModal.tel .set-lista { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 8px 12px; padding: 8px 10px; }
+html:not(.app-shell) #replayModal.tel .replay-momenti { max-width: min(100%, 640px); }
+
+/* telefono in orizzontale: i set a sinistra, la partita al centro (più grande che si può), a destra i comandi e i momenti chiave */
+html:not(.app-shell) #replayModal.tel-orizz[style*="flex"] {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto auto;
+    align-content: center; justify-items: center; column-gap: 12px; row-gap: 6px;
+    padding: 6px 148px 6px max(8px, env(safe-area-inset-left, 0px));
+}
+html:not(.app-shell) #replayModal.tel-orizz .replay-mini-header { grid-column: 2; grid-row: 1; order: 0; width: 100%; padding: 4px 10px 10px !important; }
+html:not(.app-shell) #replayModal.tel-orizz .replay-mini-header::before { display: none; }
+html:not(.app-shell) #replayModal.tel-orizz .replay-mini-header::after { height: 5px; border-top-width: 2px; }
+html:not(.app-shell) #replayModal.tel-orizz .replay-mini-header .mini-gifs-row,
+html:not(.app-shell) #replayModal.tel-orizz .replay-mini-header .mini-badges { display: none; }
+html:not(.app-shell) #replayModal.tel-orizz .replay-mini-header .badge-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html:not(.app-shell) #replayModal.tel-orizz .gba-container { grid-column: 2; grid-row: 2; }
+html:not(.app-shell) #replayModal.tel-orizz .replay-campo { grid-column: 2; grid-row: 3; width: 100%; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 3px; }
+html:not(.app-shell) #replayModal.tel-orizz .rcampo-voce { flex: 0 0 auto; }
+html:not(.app-shell) #replayModal.tel-orizz .set-selector { grid-column: 1; grid-row: 1 / span 3; align-self: center; width: auto; }
+html:not(.app-shell) #replayModal.tel-orizz .set-lista { flex-direction: column; flex-wrap: nowrap; align-items: center; gap: 12px; padding: 8px 6px 10px; }
+html:not(.app-shell) #replayModal.tel-orizz .set-lista::before { padding: 3px 5px 1px; font-size: 8px; letter-spacing: .12em; }
+html:not(.app-shell) #replayModal.tel-orizz .replay-comandi {
+    position: fixed; top: 44px; right: max(8px, env(safe-area-inset-right, 0px)); width: 132px; box-sizing: border-box;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px;
+}
+html:not(.app-shell) #replayModal.tel-orizz .rc-tasto { max-width: none; width: 100%; height: 34px; }
+html:not(.app-shell) #replayModal.tel-orizz .replay-momenti {
+    position: fixed; top: 224px; right: max(8px, env(safe-area-inset-right, 0px)); bottom: 6px; width: 132px; max-width: none; margin: 0; box-sizing: border-box;
+    flex-direction: column; flex-wrap: nowrap; align-items: stretch; justify-content: flex-start; gap: 5px; overflow-y: auto; padding: 0 4px 4px 0;
+}
+html:not(.app-shell) #replayModal.tel-orizz .rm-chip { font-size: .66rem; }

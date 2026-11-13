@@ -2937,6 +2937,26 @@ function adattaReplayAlloSchermo() {
         modal.style.setProperty('--gba-scala', Math.max(0.4, k).toFixed(3));
         return;
     }
+    // telefono nel browser: niente scocca (a un francobollo, mangiava lo schermo). La scena (640 × 360) si scala alla larghezza (in verticale, con intestazione,
+    // comandi, condizioni del campo e set sotto e sopra) o, in orizzontale, all'altezza e alla larghezza che restano ai lati (set a sinistra, comandi e momenti
+    // chiave a destra); le classi .tel e .tel-orizz le usa finestre.css. Gli stessi criteri del CSS: stretto, oppure basso con il tocco
+    const telefono = window.matchMedia('(max-width: 900px), (max-height: 520px) and (pointer: coarse)').matches;
+    const orizzontale = telefono && larghezza > altezza;
+    modal.classList.toggle('tel', telefono);
+    modal.classList.toggle('tel-orizz', orizzontale);
+    if (telefono) {
+        modal.classList.remove('campo-laterale');
+        let k;
+        if (orizzontale) {
+            const ai_lati = 64 + 148 + 12;                                   // i set a sinistra, la colonna dei comandi a destra, lo spazio in mezzo
+            const sopraESotto = alto('.replay-mini-header') + alto('.replay-campo') + 12 + 12 + 8;
+            k = Math.min((larghezza - ai_lati) / 640, (altezza - sopraESotto) / 360);
+        } else {
+            k = (larghezza - 16) / 640;
+        }
+        modal.style.setProperty('--gba-scala', Math.min(1.6, Math.max(0.3, k)).toFixed(3));
+        return;
+    }
     const perLarghezza = (larghezza - 24 - tastiSet) / 1150;
     const scalaCon = riservato => Math.min(1, perLarghezza, Math.max(0.5, (altezza - riservato) / 647));
     // meteo, terreni e condizioni dei lati: in colonna a sinistra della console se lì c'è posto (la colonna è larga 170px), altrimenti in una riga sopra,
