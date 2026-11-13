@@ -529,9 +529,11 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
 .pp-set .pp-pkm-badge .bt-mini { width: 22px; height: 22px; }
 .pp-set .pp-pkm-badge .bt-mini-img { width: 14px; height: 14px; }
 .pp-pkm.pp-davanti { z-index: 15; }
-/* un Pokémon alto (o che vola) sta dietro all'allenatore: non appoggiato al bordo destro, con un vuoto in mezzo, ma subito dietro di lui (la sua larghezza è circa la sua altezza, --ht).
-   I giganti (.pp-enorme) hanno il loro posto */
-.pp-pkm.pp-dietro:not(.pp-enorme) { right: auto; left: calc((36 + var(--ht, 170) * 0.85) * var(--d)); }
+/* il Pokémon sta accanto all'allenatore, non appoggiato al bordo destro con un vuoto in mezzo: la sua larghezza è circa la sua altezza (--ht); dietro di lui (alto o in volo)
+   con un piccolo contatto, davanti (basso) subito a fianco. Il limite di larghezza segue lo spazio che resta. I giganti (.pp-enorme) hanno il loro posto */
+.pp-pkm:not(.pp-enorme) { right: auto; left: calc((36 + var(--ht, 170) * 1) * var(--d)); }
+.pp-pkm.pp-dietro:not(.pp-enorme) { left: calc((36 + var(--ht, 170) * 0.85) * var(--d)); }
+.pp-pkm:not(.pp-enorme) .pp-pkm-img { max-width: calc((372 - 36 - var(--ht, 170) * 0.85) * var(--d)); }
 /* un Pokémon alto, con la GIF piccola ingrandita più del doppio: i pixel netti, non sfocati (come l'allenatore) */
 .pp-pkm-img.pp-ingrandita { image-rendering: pixelated; }
 
