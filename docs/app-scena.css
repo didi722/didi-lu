@@ -111,6 +111,9 @@ html.app .pr-vs-taglio { background: var(--nb-ink, #000); clip-path: polygon(0 0
 html.app .pr-vs-i-a { left: calc(-16 * var(--u)); transform: scaleX(-1); }
 html.app .pr-vs-i-b { right: calc(-14 * var(--u)); }
 html.app .pr-vs-scritta { position: absolute; left: 50%; top: 42%; z-index: 3; translate: -50% -50%; rotate: -8deg; font: 900 calc(92 * var(--u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .02em; color: #ffde4d; -webkit-text-stroke: calc(5 * var(--u)) #000; paint-order: stroke fill; text-shadow: 0 calc(5 * var(--u)) 0 #000; pointer-events: none; }
+html.app .pr-vs-img { position: absolute; left: 50%; top: 44%; z-index: 3; translate: -50% -50%; width: 84%; max-height: 62%; object-fit: contain; filter: drop-shadow(0 calc(6 * var(--u)) calc(5 * var(--u)) rgba(0, 0, 0, .45)); pointer-events: none; }
+html.app .pr-vs-img[hidden] { display: none; }
+html.app .pr-vs.ha-vs .pr-vs-scritta { display: none; }
 html.app .pr-p-past .e-uno, html.app .pr-p-signups .e-uno { height: calc(180 * var(--u)); left: 50%; margin-left: calc(-90 * var(--u)); bottom: calc(62 * var(--u)); filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(255, 244, 170, .85)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(0, 0, 0, .35)); }
 html.app .gx-griglia { left: 0; right: 0; top: calc(-20 * var(--u)); bottom: 0; opacity: .55; animation: gx-griglia 2.4s linear infinite;
     background: repeating-linear-gradient(0deg, rgba(90, 230, 255, .5) 0 calc(1.5 * var(--u)), transparent calc(1.5 * var(--u)) calc(20 * var(--u))), repeating-linear-gradient(90deg, rgba(90, 230, 255, .35) 0 calc(1.5 * var(--u)), transparent calc(1.5 * var(--u)) calc(20 * var(--u)));
