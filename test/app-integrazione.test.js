@@ -151,3 +151,12 @@ test('riepilogo: raggruppaInSchermate mette ogni parte nella sua schermata (i pr
 test('Box nell\'app: le card dei team sono tutte alte uguale (la riga dei tag c\'è sempre, anche vuota)', () => {
     assert.match(leggi('app-gioco-pagine.css'), /grid-template-areas: "cat st" "nm ac" "pk pk" "bd bd"; grid-template-rows: auto auto auto calc\(22 \* var\(--u\)\);/);
 });
+
+test('Hub nell\'app: la "i" di un team apre solo il dettaglio (l\'anteprima da mouse non c\'è col dito e si chiude toccando)', () => {
+    const hub = leggi('hub.html');
+    assert.match(hub, /infoIcon\.onpointerenter = \(e\) => \{\s*if \(e\.pointerType !== 'mouse'\) return;/);
+    assert.match(hub, /infoIcon\.onpointermove = \(e\) => \{\s*if \(e\.pointerType !== 'mouse'\) return;/);
+    assert.doesNotMatch(hub, /infoIcon\.onmouseenter|infoIcon\.onmousemove|infoIcon\.onmouseleave/, 'gli eventi del mouse simulati dal tocco aprivano il fumetto');
+    assert.match(hub, /infoIcon\.onclick = \(e\) => \{\s*e\.stopPropagation\(\);\s*nascondiAnteprima\(\);\s*apriDettaglioTeam\(/);
+    assert.match(leggi('app-gioco-pagine.css'), /html\.app-shell body\.pg-hub #global-team-tooltip \{ display: none !important; \}/);
+});
