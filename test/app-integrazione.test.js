@@ -147,3 +147,7 @@ test('riepilogo: raggruppaInSchermate mette ogni parte nella sua schermata (i pr
     // una seconda chiamata non rifà nulla
     assert.equal(R.raggruppaInSchermate(doc, corpo), null);
 });
+
+test('Box nell\'app: le card dei team sono tutte alte uguale (la riga dei tag c\'è sempre, anche vuota)', () => {
+    assert.match(leggi('app-gioco-pagine.css'), /grid-template-areas: "cat st" "nm ac" "pk pk" "bd bd"; grid-template-rows: auto auto auto calc\(22 \* var\(--u\)\);/);
+});
