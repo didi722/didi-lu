@@ -107,7 +107,9 @@ test('app-battaglia.js: nel sito (non-app) non fa niente; i tasti sono quelli de
     const radice = { classList: { contains: () => false } };
     assert.equal(B.avvia({ document: { documentElement: radice } }), null);
     const js = docs('app-battaglia.js');
-    assert.doesNotMatch(js, /\.click\(\)|dispatchEvent|innerHTML/);
+    assert.doesNotMatch(js, /dispatchEvent|innerHTML/);
+    // l'unico .click() è quello del "Back" che annulla la scelta già inviata: lo preme chi gioca, e fa la stessa cosa del tasto "Cancel my choice" del simulatore
+    assert.equal((js.match(/\.click\(\)/g) || []).length, 1);
     // Back e i due tasti grandi: solo cambiano il passo (data-ab), non mandano scelte
     assert.match(js, /tasto\('ab-btn ab-lotta', 'Fight', \(\) => vai\(corpo, 'mosse'\)\)/);
     assert.match(js, /tasto\('ab-indietro', 'Back', \(\) => vai\(corpo, 'menu'\)\)/);
@@ -130,4 +132,28 @@ test('le schede si aprono solo tenendo premuto: a Showdown non arrivano i suoi e
     assert.ok(B2.SCARTA_CLICK_MS > 0 && B2.TOLLERANZA_PX > 0);
     assert.equal(B2.zoomPer(200, 300, 340, 740), 1);
     assert.ok(B2.zoomPer(600, 300, 340, 740) < .6 + 1e-9 && B2.zoomPer(600, 300, 340, 740) >= .5);
+});
+
+// ---------- uscire dalla partita senza volerlo ----------
+
+test('partitaInCorso: in partita (scelta, attesa, animazione) il tasto in alto a sinistra chiede conferma; a partita finita o senza pannello esce subito', () => {
+    const B = require(path.join(DOCS, 'app-battaglia.js'));
+    for (const ab of ['menu', 'mosse', 'cambi', 'anteprima', 'bersagli', 'cambio', 'anim', 'messaggio']) assert.equal(B.partitaInCorso(ab), true, ab);
+    for (const ab of ['fine', 'rivincita', '', undefined, null]) assert.equal(B.partitaInCorso(ab), false, String(ab));
+});
+
+test('app-battaglia.js: "← Play" in alto a sinistra non esce con un tocco (conferma Stay / Leave, Esc e il fondo restano), e dopo aver scelto lì c\'è un "Back" che annulla la scelta', () => {
+    const js = docs('app-battaglia.js');
+    // il tasto è intercettato prima di tutto (fase di cattura) e solo nel layout da telefono e in partita
+    assert.match(js, /hub\.addEventListener\('click', e => \{\s*if \(!mq\.matches \|\| !partitaInCorso\(doc\.body\.dataset\.ab\)\) return;\s*e\.preventDefault\(\);\s*e\.stopImmediatePropagation\(\);\s*chiediUscita\(hub\.href\);\s*\}, true\);/);
+    assert.match(js, /tasto\('ab-conf-resta', 'Stay', \(\) => chiudi\(\)\), tasto\('ab-conf-esci', 'Leave', \(\) => \{ chiudi\(\); win\.location\.href = indirizzo; \}\)/);
+    assert.match(js, /e\.key === 'Escape'/, 'Esc = Stay');
+    assert.match(js, /if \(e\.target === velo\) chiudi\(\)/, 'il fondo = Stay');
+    // "Choice sent. Waiting…" con "Cancel my choice": un Back nello stesso posto fa la stessa cosa
+    assert.match(js, /stato === 'messaggio' && m \? m\.querySelector\(':scope > \.annulla-scelta > button'\) : null/);
+    assert.match(js, /tasto\('ab-indietro ab-annulla', 'Back', \(\) => \{ const x = m\.querySelector\(':scope > \.annulla-scelta > button'\); if \(x && !x\.disabled\) x\.click\(\); \}\)/);
+    const css = docs('app-battaglia.css');
+    assert.match(css, /\.messaggio > \.ab-annulla \{ grid-column: 1; grid-row: 1;/);
+    assert.match(css, /body:has\(\.messaggio > \.ab-annulla\) \.btn-hub \{ display: none; \}/, 'col Back lì, "← Play" non c\'è');
+    assert.match(css, /html\.app \.ab-conferma \{ position: fixed; inset: 0;/);
 });

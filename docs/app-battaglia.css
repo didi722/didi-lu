@@ -433,6 +433,22 @@
     html.app .comandi:not(.doppio) .testa-scelta > .ab-indietro { grid-column: 1; grid-row: 1; justify-self: start; align-self: start; z-index: 60; }
     html.app .comandi:not(.doppio) .testa-scelta > .btn:not(.ab-indietro) { grid-column: 1; grid-row: 4; justify-self: start; align-self: end; }
 
+    /* dopo aver scelto ("Choice sent. Waiting…") il "Back" che annulla la scelta prende il posto di "← Play" */
+    html.app .comandi:not(.doppio) .messaggio > .ab-annulla { grid-column: 1; grid-row: 1; justify-self: start; align-self: start; z-index: 60; }
+    html.app body:has(.messaggio > .ab-annulla) .btn-hub { display: none; }
+
+    /* la conferma prima di uscire dalla partita */
+    html.app .ab-conferma { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 12px; background: rgba(6, 4, 20, .72); }
+    html.app .ab-conf-scheda { display: grid; gap: 6px; justify-items: center; box-sizing: border-box; min-width: min(300px, 86vw); padding: 14px 20px 14px; text-align: center;
+        background: linear-gradient(180deg, #221d4f, #120f2e); color: #fff; border: 4px solid #000; border-radius: 14px; box-shadow: 0 6px 0 rgba(0, 0, 0, .6), inset 0 0 0 2px var(--bt-luce, rgba(255, 255, 255, .25)); }
+    html.app .ab-conf-scheda b { font: 900 1.05rem/1.1 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    html.app .ab-conf-scheda span { font: 700 .72rem/1.2 'Josefin Sans', sans-serif; letter-spacing: .04em; opacity: .75; }
+    html.app .ab-conf-tasti { display: flex; gap: 12px; margin-top: 8px; }
+    html.app .ab-conf-tasti button { min-width: 100px; padding: 8px 14px 6px; cursor: pointer; border: 3px solid #000; border-radius: 10px; box-shadow: 0 4px 0 #000; font: 900 .85rem/1 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+    html.app .ab-conf-tasti button:active { translate: 0 3px; box-shadow: 0 1px 0 #000; }
+    html.app .ab-conf-resta { background: var(--bt-giallo, #ffbd44); color: #000; }
+    html.app .ab-conf-esci { background: #2a2468; color: #fff; }
+
     /* passo 2, FIGHT: le quattro mosse come nei giochi (1 2 / 3 4), le prime due a sinistra e le altre a destra; Mega / Tera / Dynamax sul fondo dello schermo */
     html.app .corpo[data-ab="mosse"] :is(.mosse, .piede-mosse) { display: contents; }
     html.app .corpo[data-ab="mosse"] .mossa { align-self: stretch; min-height: 0; padding: 6px 8px 5px; }
