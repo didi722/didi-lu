@@ -541,3 +541,11 @@ test('compagno dal Box: elenco a fisarmonica (un team aperto alla volta) e fiocc
     assert.doesNotMatch(regola, /pointer-events:\s*none/, 'senza eventi del mouse il title delle medagliette non compare');
     assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-editor.css'), 'utf8'), /\.pe-acc \[hidden\] \{ display: none !important; \}/);
 });
+
+test('compagno alto (Dhelmise): se la GIF di Showdown viene ingrandita più del doppio si usa l\'immagine grande e nitida (HOME, o artwork ufficiale), ferma, al posto della GIF pixelata', () => {
+    const js = fs.readFileSync(path.join(__dirname, '..', 'docs', 'public-card.js'), 'utf8');
+    assert.match(js, /const RAPPORTO_GIF_PIXELATA = 2;/);
+    assert.match(js, /grande = brillante \? \(\(home && home\.front_shiny\) \|\| \(ufficiale && ufficiale\.front_shiny\) \|\| null\)\s*: \(\(home && home\.front_default\) \|\| \(ufficiale && ufficiale\.front_default\) \|\| null\);/, 'shiny resta shiny');
+    assert.match(js, /img\.clientHeight \/ img\.naturalHeight <= RAPPORTO_GIF_PIXELATA\) return;\s*img\.dataset\.nitida = '1';\s*img\.src = grande;/);
+    assert.match(js, /posto\.replaceChildren\(img\);/);
+});

@@ -145,6 +145,7 @@
 
     // Il Pokémon preferito in scala con l'allenatore, davanti o dietro a lui, a terra o in volo.
     // Le misure (e cosa succede se è troppo grande) sono in scalaScena, pagina-pubblica.js.
+    const RAPPORTO_GIF_PIXELATA = 2;       // oltre questo ingrandimento (altezza sul palco / altezza della GIF) la GIF si pixela
     let giri = 0;
     async function montaPokemonPreferito(set, posto, nomeGrezzo) {
         const mio = ++giri;
@@ -154,7 +155,7 @@
 
         // il compagno scelto dal Box è shiny se lo è quel Pokémon del team (cosmetici.js, compagnoShiny): lo stesso Pokémon con i colori alternativi
         const brillante = !!(stato.dati && stato.dati.info && (window.Cosmetici ? window.Cosmetici.compagnoShiny(stato.dati.info, stato.dati.teams) : false));
-        let gif = null, altezzaM = 1.2, vola = false;
+        let gif = null, grande = null, altezzaM = 1.2, vola = false;
         try {
             const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(nome)}`);
             if (!r.ok) throw new Error('Pokémon not found');
@@ -165,6 +166,11 @@
                 : ((show && show.front_default)
                     || (j.sprites && j.sprites.other && j.sprites.other['official-artwork'] && j.sprites.other['official-artwork'].front_default)
                     || null);
+            // l'immagine grande e nitida (render di Pokémon HOME o artwork ufficiale), ferma: serve ai Pokémon alti, la cui GIF di Showdown è piccola e, ingrandita, si pixela
+            const home = j.sprites && j.sprites.other && j.sprites.other.home;
+            const ufficiale = j.sprites && j.sprites.other && j.sprites.other['official-artwork'];
+            grande = brillante ? ((home && home.front_shiny) || (ufficiale && ufficiale.front_shiny) || null)
+                : ((home && home.front_default) || (ufficiale && ufficiale.front_default) || null);
             altezzaM = j.height / 10;
             vola = (j.types.some(t => t.type.name === 'flying')
                 || j.abilities.some(a => a.ability.name === 'levitate')
@@ -189,7 +195,16 @@
         posto.className = `pp-pkm ${dietro ? 'pp-dietro' : 'pp-davanti'}${vola ? ' pp-vola' : ''}${regola === 'rimpicciolisci' ? ' pp-enorme' : ''}`;      // i giganti (Kyogre, Wailord) escono dal bordo destro del palco
         posto.style.setProperty('--h', String(misure.pokemon));
         // Il nome non è scritto sul palco (lo si riconosce a vista): resta solo nell'alt per chi legge lo schermo
-        posto.replaceChildren(h('img', { src: gif, alt: nomeGrezzo, class: 'pp-pkm-img' }));
+        const img = h('img', { src: gif, alt: nomeGrezzo, class: 'pp-pkm-img' });
+        // se la GIF viene ingrandita più del doppio (un Pokémon alto, come Dhelmise: 65 px di GIF per ~300 di palco) si pixela: al suo posto l'immagine grande e nitida, ferma
+        if (grande && grande !== gif) {
+            img.addEventListener('load', () => {
+                if (img.dataset.nitida || !img.naturalHeight || img.clientHeight / img.naturalHeight <= RAPPORTO_GIF_PIXELATA) return;
+                img.dataset.nitida = '1';
+                img.src = grande;
+            });
+        }
+        posto.replaceChildren(img);
     }
 
     // ---- Nome, titolo, motto ------------------------------------------------------------------
