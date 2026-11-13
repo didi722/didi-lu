@@ -146,6 +146,20 @@
     // Il Pokémon preferito in scala con l'allenatore, davanti o dietro a lui, a terra o in volo.
     // Le misure (e cosa succede se è troppo grande) sono in scalaScena, pagina-pubblica.js.
     const RAPPORTO_GIF_INGRANDITA = 2;       // oltre questo ingrandimento (altezza sul palco / altezza della GIF) la GIF si sfoca
+    /**
+     * La coppia allenatore + Pokémon sta al centro del palco (che è largo 400 unità, --d): lo spazio che resta ai lati (36 a sinistra, 28 a destra, più l'eventuale vuoto) si divide
+     * in due e di tanto (--sposta) si spostano entrambi. I giganti (.pp-enorme) hanno il loro posto e non si spostano.
+     */
+    function centraScena(set, posto, img) {
+        const larghezzaPalco = set.getBoundingClientRect().width;
+        if (!larghezzaPalco || !img.clientWidth || posto.classList.contains('pp-enorme')) { set.style.removeProperty('--sposta'); return; }
+        const d = larghezzaPalco / 400;
+        const ht = Number(set.style.getPropertyValue('--ht')) || 170;
+        const vicino = posto.classList.contains('pp-dietro') ? 0.85 : 1;
+        const gruppo = 36 + ht * vicino + img.clientWidth / d;           // dal bordo sinistro fino al bordo destro del Pokémon, in unità
+        set.style.setProperty('--sposta', String(Math.max(0, Math.round((400 - gruppo - 36) / 2 * 10) / 10)));
+    }
+
     let giri = 0;
     async function montaPokemonPreferito(set, posto, nomeGrezzo) {
         const mio = ++giri;
@@ -195,6 +209,7 @@
         // pp-ingrandita i pixel restano netti (style-public-card.css)
         img.addEventListener('load', () => {
             if (img.naturalHeight && img.clientHeight / img.naturalHeight > RAPPORTO_GIF_INGRANDITA) img.classList.add('pp-ingrandita');
+            centraScena(set, posto, img);
         });
         posto.replaceChildren(img);
     }
