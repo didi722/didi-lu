@@ -418,7 +418,7 @@
     html.app-shell body.pg-box #teamsGrid::-webkit-scrollbar { display: none; }
     html.app-shell body.pg-box #teamsGrid > .card { scroll-snap-align: start; max-height: 100%; }
     html.app-shell body.pg-box #teamsGrid .card {
-        display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cat st" "nm ac" "pk pk" "bd bd";
+        display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cat st" "nm ac" "pk pk" "bd bd"; grid-template-rows: auto auto auto calc(22 * var(--u));      /* la riga dei tag c'è sempre, anche vuota: le card sono tutte alte uguali */
         align-items: center; gap: calc(8 * var(--u)) calc(10 * var(--u)); padding: calc(12 * var(--u)) calc(12 * var(--u)) calc(10 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; box-shadow: 0 calc(6 * var(--u)) 0 var(--nb-ink, #000) !important;
         rotate: 0deg; translate: 0 0; min-width: 0;
     }
