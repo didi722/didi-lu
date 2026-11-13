@@ -86,3 +86,41 @@ body.pg-palestra .pal-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); 
    Le carte (bianche, con il loro colore: .pal-passo-corpo, .pal-tappa, .pal-vuoto...) restano com'erano */
 html.app-shell .pal-pagina :is(.pal-titolo, .pal-aiuto, .pal-accedi) { color: #fff; }
 html.app-shell .pal-pagina .pal-passo-corpo .pal-aiuto { color: #000; }
+
+/* ---------- Nell'app: niente scorrimento in giù e niente carte bianche del sito ----------
+   La pagina sta tutta nello schermo: titolo e passi in alto, le carte (scure) al centro, i tasti sotto. I team da scegliere stanno in fila (si scorre di lato) e le
+   spiegazioni lunghe non ci sono (le dice già il gioco). */
+html.app-shell body.pg-palestra { overflow: hidden !important; }
+html.app-shell .pal-pagina { width: 100%; max-width: none; margin: 0; padding: calc(8 * var(--u)) max(calc(14 * var(--u)), env(safe-area-inset-right, 0px)) calc(10 * var(--u)) max(calc(14 * var(--u)), env(safe-area-inset-left, 0px)); box-sizing: border-box; }
+html.app-shell .pal-titolo { margin: 0 0 calc(6 * var(--u)); font-size: calc(19 * var(--u)); }
+html.app-shell .pal-pagina .pal-aiuto, html.app-shell .pal-pagina .pal-passo-corpo .pal-aiuto { display: none; }
+/* costruire la palestra: tre carte scure una accanto all'altra */
+html.app-shell .pal-tappe { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(12 * var(--u)); }
+html.app-shell .pal-tappa { gap: calc(5 * var(--u)); padding: calc(9 * var(--u)) calc(10 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 #000; }
+html.app-shell .pal-tappa h3 { font-size: calc(13 * var(--u)); }
+html.app-shell .pal-tappa label { font-size: calc(9.5 * var(--u)); gap: calc(2 * var(--u)); }
+html.app-shell .pal-tappa select { padding: calc(5 * var(--u)) calc(7 * var(--u)); color-scheme: dark; background: rgba(255, 255, 255, .1); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .4); border-radius: calc(7 * var(--u)); font-size: calc(12 * var(--u)); }
+html.app-shell .pal-tappa select option { background: #1b1740; color: #fff; }
+html.app-shell .pal-descr { font-size: calc(9.5 * var(--u)); line-height: 1.25; opacity: .85; }
+html.app-shell .pal-ordine .ng-bottone, html.app-shell .pal-ordine button { padding: calc(2 * var(--u)) calc(8 * var(--u)); }
+/* i tasti: da gioco, in fila */
+html.app-shell .pal-azioni { margin-top: calc(10 * var(--u)); gap: calc(10 * var(--u)); }
+html.app-shell .pal-pagina :is(.ng-bottone, .pal-link) { padding: calc(7 * var(--u)) calc(14 * var(--u)) calc(5 * var(--u)); font-size: calc(12 * var(--u)); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); }
+/* sfidare una palestra: passi, la carta del passo (scura) e i team in fila */
+html.app-shell .pal-passi { gap: calc(8 * var(--u)); margin: 0 0 calc(8 * var(--u)); }
+html.app-shell .pal-passo { padding: calc(4 * var(--u)) calc(11 * var(--u)) calc(2 * var(--u)) calc(4 * var(--u)); font-size: calc(11 * var(--u)); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; }
+html.app-shell .pal-passo-corpo { margin: 0 0 calc(6 * var(--u)); padding: calc(10 * var(--u)) calc(12 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 #000; }
+html.app-shell .pal-passo-corpo :is(.pal-passo-su, .pal-passo-titolo) { color: #fff; }
+html.app-shell .pal-passo-titolo { margin: 0 0 calc(6 * var(--u)); font-size: calc(18 * var(--u)); }
+html.app-shell .pal-squadre { display: flex; gap: calc(10 * var(--u)); overflow-x: auto; overflow-y: hidden; padding: calc(4 * var(--u)) calc(4 * var(--u)) calc(8 * var(--u)); scroll-snap-type: x proximity; scrollbar-width: none; overscroll-behavior-x: contain; }
+html.app-shell .pal-squadre::-webkit-scrollbar { display: none; }
+html.app-shell .pal-squadra { flex: 0 0 calc(190 * var(--u)); scroll-snap-align: start; padding: calc(9 * var(--u)); gap: calc(6 * var(--u)); background: rgba(255, 255, 255, .08); color: #fff; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .3); border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; }
+html.app-shell .pal-squadra:hover { background: rgba(255, 255, 255, .14); }
+html.app-shell .pal-squadra-nome { font-size: calc(12 * var(--u)); }
+html.app-shell .pal-sprites { background: rgba(0, 0, 0, .25); border-color: rgba(255, 255, 255, .15); }
+html.app-shell .pal-squadra .pal-sprites { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; padding: calc(2 * var(--u)); }
+html.app-shell .pal-squadra .pal-sprites img { height: calc(30 * var(--u)); }
+html.app-shell .pal-scelta { background: var(--nb-giallo, #ffbd44); color: #000; border-color: #000; }
+html.app-shell .pal-vuoto { background: rgba(255, 246, 214, .95); color: #000; }
+/* il riepilogo: i tre passi uno accanto all'altro */
+html.app-shell .pal-righe { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(10 * var(--u)); }
