@@ -212,7 +212,7 @@ html.app-shell[data-mt="rc"] body.pg-matches .top-auth-bar > #btn-mvp#btn-mvp#bt
 /* ---------- nell'app: misure in --u, angoli arrotondati e ombre in basso come le altre schede del gioco; niente tasti RECAP | CALENDAR (ci sono i tag in alto) ---------- */
 html.app-shell .rs {
     --rs-u: var(--u); --rs-raggio: calc(10 * var(--u)); --rs-sh-s: 0 calc(3 * var(--u)) 0 var(--gx-ink, #000); --rs-sh-m: 0 calc(6 * var(--u)) 0 var(--gx-ink, #000);
-    font-family: var(--gx-font, 'Josefin Sans', sans-serif); gap: calc(32 * var(--u)) calc(20 * var(--u)); padding-top: calc(16 * var(--u));
+    font-family: var(--gx-font, 'Josefin Sans', sans-serif); gap: calc(32 * var(--u)) calc(20 * var(--u)); padding-top: calc(28 * var(--u));
 }
 html.app-shell .rs-scelta { display: none !important; }
 html.app-shell .rs-t { border-radius: calc(5 * var(--u)); }
@@ -225,6 +225,7 @@ html.app-shell .rs-lega-voce b { font-size: calc(30 * var(--u)); }
 html.app-shell .rs-av-premio { width: calc(52 * var(--u)); height: calc(52 * var(--u)); }
 /* nell'app lo schermo è largo 740 unità: classifica e colonna a metà, e i pezzi un po' più piccoli perché i nomi non si taglino */
 html.app-shell .rs-s5, html.app-shell .rs-s7 { grid-column: span 6; }
+html.app-shell .rs-righe { justify-content: flex-start; }      /* nell'app la classifica è accanto a un Dream Team più alto: le righe non si distanziano per riempirlo */
 html.app-shell .rs-righe .cl-riga { max-height: calc(80 * var(--u)); padding: calc(6 * var(--u)) calc(9 * var(--u)); gap: calc(8 * var(--u)); }
 html.app-shell .rs-righe .cl-avatar { width: calc(40 * var(--u)); height: calc(40 * var(--u)); }
 html.app-shell .rs-righe .cl-nome { font-size: calc(15 * var(--u)); }

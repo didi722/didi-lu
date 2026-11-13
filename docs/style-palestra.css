@@ -81,3 +81,8 @@ body.pg-palestra .pal-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); 
     .pal-passo-ora span { display: inline; }
 }
 @media (prefers-reduced-motion: reduce) { .pal-squadra, .pal-passo-ora { transition: none; transform: none; } }
+
+/* nell'app lo sfondo è scuro e il testo appoggiato direttamente sulla pagina (titolo, spiegazioni, avviso di accesso) non ha un colore suo: ereditava il nero.
+   Le carte (bianche, con il loro colore: .pal-passo-corpo, .pal-tappa, .pal-vuoto...) restano com'erano */
+html.app-shell .pal-pagina :is(.pal-titolo, .pal-aiuto, .pal-accedi) { color: #fff; }
+html.app-shell .pal-pagina .pal-passo-corpo .pal-aiuto { color: #000; }
