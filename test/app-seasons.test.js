@@ -80,7 +80,8 @@ test('htmlHome: tre locandine nell\'ordine past, playing, sign-ups; una stagione
     // Playing: solo la riga spezzata e la scritta VS, nessun Pokémon
     assert.match(h, /pr-p-playing[\s\S]*?<span class="pr-arte pr-vs">[\s\S]*?<b class="pr-vs-scritta" aria-hidden="true">VS<\/b>/);
     const playing = h.slice(h.indexOf('pr-p-playing'), h.indexOf('pr-p-signups'));
-    assert.doesNotMatch(playing, /<img|\/home\/\d+\.png/, 'nessun Pokémon');
+    assert.doesNotMatch(playing, /\/home\/\d+\.png/, 'nessun Pokémon');
+    assert.match(playing, /<img class="pr-vs-img" data-id="vs" alt="VS" draggable="false" hidden>/, 'il VS in 3D, se c\'è, prende il posto della scritta');
     assert.deepEqual(Sz.immaginiDi('signups'), ['immagini/app/seasons-signups.png', 'immagini/app/seasons-signups.webp']);
 });
 

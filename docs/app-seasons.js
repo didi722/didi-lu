@@ -103,9 +103,9 @@
     /** Le immagini da provare, in ordine, per una locandina */
     const immaginiDi = id => ['immagini/app/seasons-' + id + '.png', 'immagini/app/seasons-' + id + '.webp'];
 
-    /** PLAYING: la locandina è divisa in due da una riga spezzata (due cieli, rosso e blu) con la scritta VS al centro; niente Pokémon */
+    /** PLAYING: la locandina è divisa in due da una riga spezzata (due cieli, rosso e blu) con la scritta VS al centro (un'immagine propria, immagini/app/seasons-vs.png o .webp, sta al posto della scritta); niente Pokémon */
     const htmlVs = () => '<span class="pr-arte pr-vs"><span class="pr-vs-cielo pr-vs-dx" aria-hidden="true"></span><span class="pr-vs-cielo pr-vs-taglio" aria-hidden="true"></span><span class="pr-vs-cielo pr-vs-sx" aria-hidden="true"></span>'
-        + '<b class="pr-vs-scritta" aria-hidden="true">VS</b><span class="gx-vignetta" aria-hidden="true"></span></span>';
+        + '<img class="pr-vs-img" data-id="vs" alt="VS" draggable="false" hidden><b class="pr-vs-scritta" aria-hidden="true">VS</b><span class="gx-vignetta" aria-hidden="true"></span></span>';
 
     const arte = (id, i, bolla) => id === 'playing' ? htmlVs() : `<span class="pr-arte">${S.htmlScena(S.LOCANDINE_STAGIONI[id], { indice: i, scintille: 8, escF: esc, immagine: `<img class="pr-img" data-id="${id}" alt="" hidden>` })}${bolla ? `<i class="pr-bolla" aria-label="${bolla} to join">${bolla}</i>` : ''}</span>`;
 
@@ -159,6 +159,14 @@
                 const prove = immaginiDi(img.dataset.id);
                 let k = 0;
                 img.addEventListener('load', () => { img.hidden = false; img.closest('.pr-arte').classList.add('ha-immagine'); });
+                img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });
+                img.src = prove[0];
+            });
+            // Playing: il VS in 3D (immagini/app/seasons-vs) prende il posto della scritta di ripiego
+            pagina.querySelectorAll('.pr-vs-img').forEach(img => {
+                const prove = immaginiDi('vs');
+                let k = 0;
+                img.addEventListener('load', () => { img.hidden = false; img.closest('.pr-vs').classList.add('ha-vs'); });
                 img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });
                 img.src = prove[0];
             });
