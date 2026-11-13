@@ -76,7 +76,12 @@ test('htmlHome: tre locandine nell\'ordine past, playing, sign-ups; una stagione
     assert.equal((vuota.match(/pr-vuota/g) || []).length, 3);
     assert.doesNotMatch(vuota, /data-vai|data-vista|pr-bolla/);
     // ogni locandina cerca la sua immagine propria
-    for (const id of ['past', 'playing', 'signups']) assert.match(h, new RegExp(`<img class="pr-img" data-id="${id}" alt="" hidden>`));
+    for (const id of ['past', 'signups']) assert.match(h, new RegExp(`<img class="pr-img" data-id="${id}" alt="" hidden>`));
+    // Playing: la scheda è divisa in due da una riga spezzata, un Pokémon per parte (render ufficiali di ripiego, immagini proprie seasons-playing-a/-b) e la scritta VS
+    assert.match(h, /pr-p-playing[\s\S]*?<span class="pr-arte pr-vs">[\s\S]*?<b class="pr-vs-scritta" aria-hidden="true">VS<\/b>/);
+    assert.match(h, /<img class="pr-vs-img pr-vs-i-a" data-id="playing-a" data-ripiego="[^"]*\/home\/248\.png"/);
+    assert.match(h, /<img class="pr-vs-img pr-vs-i-b" data-id="playing-b" data-ripiego="[^"]*\/home\/212\.png"/);
+    assert.deepEqual(Sz.immaginiDi('playing-a'), ['immagini/app/seasons-playing-a.png', 'immagini/app/seasons-playing-a.webp']);
     assert.deepEqual(Sz.immaginiDi('signups'), ['immagini/app/seasons-signups.png', 'immagini/app/seasons-signups.webp']);
 });
 
