@@ -42,7 +42,7 @@
     /** Le tre locandine di Seasons (seasons.html): stesse figure di ripiego di una sola cosa al centro; le immagini proprie sono immagini/app/seasons-<past|playing|signups> */
     const LOCANDINE_STAGIONI = {
         past: { cielo: 'cielo-tramonto', fx: 'aure', eroi: [{ img: 'immagini/season-winner-color.png', c: 'e-uno', alt: 'Season trophy' }] },
-        playing: { cielo: 'cielo-blu', fx: 'sole', eroi: [{ pkm: 448, c: 'e-uno', alt: 'Lucario' }] },
+        playing: { cielo: 'cielo-blu', fx: 'sole', eroi: [{ pkm: 212, c: 'e-a', alt: 'Scizor' }, { pkm: 248, c: 'e-b', alt: 'Tyranitar' }] },
         signups: { cielo: 'cielo-rosa', fx: 'cuori', eroi: [{ pkm: 25, c: 'e-uno', alt: 'Pikachu' }] }
     };
 
