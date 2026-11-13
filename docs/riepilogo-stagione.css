@@ -250,3 +250,17 @@ html.app-shell .rs-dialogo img { max-height: calc(94vh - 70px); }
 html.app-shell[data-mt="sd"] #riepilogoStagione, html.app-shell[data-mt="rk"] #riepilogoStagione { display: none !important; }
 html.app-shell[data-mt="rc"] #app-showdown { display: none !important; }
 html.app-shell[data-mt="rc"] body.pg-matches .hub-right-column { display: none !important; }
+
+/* ---------- nell'app il riepilogo non scorre in giù: schermate da scorrere di lato (riepilogo-stagione.js: raggruppaInSchermate), ognuna rimpicciolita per starci ---------- */
+html.app-shell #riepilogoStagione { position: fixed; left: 0; right: 0; top: calc(var(--gx-barra) + 52 * var(--u)); bottom: 0; z-index: 1; }
+html.app-shell #riepilogoStagione .rs[data-schermate] { display: flex; flex-wrap: nowrap; gap: 0; height: 100%; padding: 0; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+html.app-shell #riepilogoStagione .rs[data-schermate]::-webkit-scrollbar { display: none; }
+html.app-shell .rs-schermata { flex: 0 0 100%; box-sizing: border-box; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; padding: calc(30 * var(--u)) max(calc(16 * var(--u)), env(safe-area-inset-right, 0px)) calc(34 * var(--u)) max(calc(16 * var(--u)), env(safe-area-inset-left, 0px)); }
+html.app-shell .rs-schermata-corpo { width: 100%; display: flex; align-items: stretch; gap: calc(26 * var(--u)); }
+html.app-shell .rs-schermata-corpo > * { flex: 1 1 0; min-width: 0; grid-column: auto; }
+html.app-shell .rs-schermata-corpo > .rs-s8 { flex: 8 1 0; }
+html.app-shell .rs-schermata-corpo > .rs-s4 { flex: 4 1 0; }
+html.app-shell .rs-pallini { position: absolute; left: 50%; bottom: calc(6 * var(--u)); translate: -50% 0; display: flex; gap: calc(7 * var(--u)); padding: calc(4 * var(--u)) calc(9 * var(--u)); background: rgba(8, 6, 26, .55); border-radius: calc(10 * var(--u)); pointer-events: none; }
+html.app-shell .rs-pallini i { width: calc(7 * var(--u)); height: calc(7 * var(--u)); border-radius: 50%; background: rgba(255, 255, 255, .38); transition: width .2s ease, background-color .2s ease; }
+html.app-shell .rs-pallini i.su { width: calc(20 * var(--u)); border-radius: calc(4 * var(--u)); background: #fff; }
+html.app-shell[data-mt="sd"] body.pg-matches, html.app-shell[data-mt="rk"] body.pg-matches, html.app-shell[data-mt="rc"] body.pg-matches { overflow: hidden !important; }

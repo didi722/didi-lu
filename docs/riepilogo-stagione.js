@@ -527,6 +527,76 @@
      * Disegna il riepilogo nella colonna dei match (sopra l'elenco). Si può richiamare: aggiorna senza cambiare la vista scelta.
      * @returns {HTMLElement|null}
      */
+    /**
+     * Nell'app il riepilogo non scorre in giù: le sue parti diventano schermate da scorrere di lato (i numeri, il campione con l'MVP, la classifica, la squadra ideale,
+     * i Pokémon più usati, i premi a quattro per volta). Ognuna si rimpicciolisce (adattaSchermate) per stare tutta nello schermo, con i pallini sotto.
+     */
+    function raggruppaInSchermate(doc, corpo) {
+        const rs = corpo.querySelector('.rs');
+        if (!rs || rs.hasAttribute('data-schermate')) return null;
+        const dentro = sel => Array.from(rs.querySelectorAll(sel));
+        const gruppi = [dentro(':scope > .rs-stagione'), dentro(':scope > .rs-campione, :scope > .rs-mvp'), dentro(':scope > .rs-classifica'), dentro('.rs-formati'), dentro('.rs-usati')];
+        const schermata = elementi => {
+            const sc = doc.createElement('div');
+            sc.className = 'rs-schermata';
+            const c = doc.createElement('div');
+            c.className = 'rs-schermata-corpo';
+            elementi.forEach(x => c.appendChild(x));
+            sc.appendChild(c);
+            return sc;
+        };
+        const schermate = gruppi.filter(g => g.length).map(schermata);
+        // i premi: quattro per schermata, ognuna con la sua etichetta
+        const premi = rs.querySelector(':scope > .rs-premi');
+        const lista = premi && premi.querySelector('.rs-premi-lista');
+        if (premi && lista) {
+            const tutti = Array.from(lista.children);
+            const etichetta = premi.querySelector('.rs-t');
+            for (let i = 0; i < tutti.length; i += 4) {
+                const sezione = premi.cloneNode(false);
+                if (etichetta) sezione.appendChild(etichetta.cloneNode(true));
+                const l = lista.cloneNode(false);
+                tutti.slice(i, i + 4).forEach(x => l.appendChild(x));
+                sezione.appendChild(l);
+                schermate.push(schermata([sezione]));
+            }
+        }
+        if (!schermate.length) return null;
+        while (rs.firstChild) rs.removeChild(rs.firstChild);
+        schermate.forEach(sc => rs.appendChild(sc));
+        rs.setAttribute('data-schermate', String(schermate.length));
+        const pallini = doc.createElement('div');
+        pallini.className = 'rs-pallini';
+        pallini.setAttribute('aria-hidden', 'true');
+        pallini.innerHTML = schermate.map(() => '<i></i>').join('');
+        corpo.appendChild(pallini);
+        const segna = () => {
+            const i = rs.clientWidth ? Math.round(rs.scrollLeft / rs.clientWidth) : 0;
+            Array.from(pallini.children).forEach((p, k) => p.classList.toggle('su', k === i));
+        };
+        rs.addEventListener('scroll', segna);
+        segna();
+        return rs;
+    }
+
+    /** Ogni schermata del riepilogo (nell'app) si rimpicciolisce quanto serve per stare nell'altezza che c'è (zoom: il contenuto si riadatta alla larghezza) */
+    function adattaSchermate(rs) {
+        if (!rs || !rs.clientHeight) return;
+        rs.querySelectorAll('.rs-schermata-corpo').forEach(c => {
+            // lo spazio vero è l'altezza della schermata meno il suo margine (in alto le etichette che sporgono, in basso i pallini)
+            const stile = c.parentElement ? (rs.ownerDocument.defaultView || window).getComputedStyle(c.parentElement) : null;
+            const alto = rs.clientHeight - (stile ? (parseFloat(stile.paddingTop) || 0) + (parseFloat(stile.paddingBottom) || 0) : 0);
+            c.style.zoom = '';
+            let z = 1;
+            for (let giro = 0; giro < 4; giro++) {
+                const h = c.getBoundingClientRect().height / z;           // l'altezza a zoom 1 (con lo zoom, getBoundingClientRect è già ridotto)
+                if (h * z <= alto + 1) break;
+                z = Math.max(0.35, alto / h);
+                c.style.zoom = z.toFixed(3);
+            }
+        });
+    }
+
     function monta(win, riep, { gif, vistaIniziale = 'riepilogo' } = {}) {
         const doc = win.document;
         const colonna = doc && doc.querySelector('.hub-left-column');
@@ -576,8 +646,17 @@
         corpo._gif = gif;
         corpo.innerHTML = html(riep, { gif });
         if (Medaglione) Medaglione.coloraMedaglioni(win, corpo);       // il colore del tipo arriva appena PokeAPI risponde
+        if (doc.documentElement.classList.contains('app-shell')) {
+            const rs = raggruppaInSchermate(doc, corpo);
+            if (rs) {
+                const adatta = () => adattaSchermate(rs);
+                adatta();
+                // la scheda del riepilogo può essere nascosta (altezza 0) finché non si apre, e le immagini cambiano le misure: si adatta a ogni cambio di misura
+                if (win.ResizeObserver) { if (corpo._osservaMisure) corpo._osservaMisure.disconnect(); corpo._osservaMisure = new win.ResizeObserver(adatta); corpo._osservaMisure.observe(rs); }
+            }
+        }
         return corpo;
     }
 
-    return { calcola, html, testo, monta, disegnaCard, mostraAnteprima, confrontaClassifica, CARD };
+    return { calcola, html, testo, monta, raggruppaInSchermate, adattaSchermate, disegnaCard, mostraAnteprima, confrontaClassifica, CARD };
 });
