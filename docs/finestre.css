@@ -774,3 +774,21 @@ html:not(.app-shell) #replayModal:not(.tel) .replay-momenti { min-height: 26px; 
    contain: la loro larghezza non allarga il palco */
 html:not(.app-shell) #replayModal:not(.tel):not(.campo-laterale) .replay-campo { min-height: calc(27px * var(--righe-campo, 2) + 8px * (var(--righe-campo, 2) - 1)); align-content: flex-start; contain: inline-size; }
 html:not(.app-shell) #replayModal:not(.tel):not(.campo-laterale) .replay-campo[hidden] { display: flex; visibility: hidden; }
+
+/* ---------- Replay da PC: i due allenatori ai lati della console ----------
+   Grandi e fermi, dietro a tutto (z-index -1), fuori dal flusso (position: fixed: non occupano posto, niente si sposta) e invisibili finché non compare il resto
+   (.in-preparazione). Il primo a sinistra, il secondo a destra, rivolti verso la console; in mezzo la riga in diagonale del simulatore (nera, con un filetto del colore
+   di ognuno), senza colori di sfondo. La grandezza segue lo spazio che la console lascia ai lati (--gba-scala). Sul telefono e nell'app non ci sono. */
+#replayModal .replay-versus { display: none; }
+html:not(.app-shell) #replayModal:not(.tel) .replay-versus {
+    --rv-margine: calc((100vw - 1150px * var(--gba-scala, 1) - 106px) / 2);
+    --rv-h: clamp(150px, calc(var(--rv-margine) * 1.15), 46vh);
+    display: block; position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+}
+.rv-taglio { position: absolute; inset: 0; display: block; }
+.rv-taglio-a { background: var(--c1, #555); clip-path: polygon(calc(60% - 13px) 0, calc(60% - 7px) 0, calc(40% - 7px) 100%, calc(40% - 13px) 100%); }
+.rv-taglio-b { background: var(--nb-ink, #000); clip-path: polygon(calc(60% - 7px) 0, calc(60% + 7px) 0, calc(40% + 7px) 100%, calc(40% - 7px) 100%); }
+.rv-taglio-c { background: var(--c2, #555); clip-path: polygon(calc(60% + 7px) 0, calc(60% + 13px) 0, calc(40% + 13px) 100%, calc(40% + 7px) 100%); }
+.rv-avatar { position: absolute; bottom: 0; height: var(--rv-h); width: auto; image-rendering: pixelated; filter: drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); user-select: none; }
+.rv-sx { left: max(calc(var(--rv-h) / 2 + 8px), calc(var(--rv-margine) / 2)); transform: translateX(-50%) scaleX(-1); }      /* il primo guarda a destra, verso la console */
+.rv-dx { right: max(calc(var(--rv-h) / 2 + 8px), calc(var(--rv-margine) / 2)); transform: translateX(50%); }
