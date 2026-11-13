@@ -44,9 +44,9 @@
     // le pagine che non hanno l'interfaccia da gioco in alto: il menù principale, la battaglia (ha la sua), accesso, modello vuoto, amministrazione
     const SENZA_HUD = ['menu.html', 'battle.html', 'login.html', 'schermata-base-vuota.html', 'admin.html'];
 
-    // le pagine del sito che nell'app non servono (la Hall of Fame sì: ha la sua tessera): dal telefono rimandano al menù (le stagioni aperte si annunciano lì, l'iscrizione è hub.html)
+    // le pagine del sito che nell'app non servono (stagioni, profilo, Hall of Fame, Shop, formati, regolamento): dal telefono rimandano al menù (le stagioni aperte si annunciano lì, l'iscrizione è hub.html)
     // e, per la pagina pubblica di un allenatore, alla sua scheda nella pagina Trainers (che ha già tutto: Pokémon, badge, trofei, Elo)
-    const FUORI_APP = ['index.html', 'profile.html', 'formats.html', 'rules.html', 'public.html'];
+    const FUORI_APP = ['index.html', 'profile.html', 'palmares.html', 'shop.html', 'formats.html', 'rules.html', 'public.html'];
     const RIMANDI = { 'public.html': 'players.html' };
 
     // gli script che una pagina dell'app carica oltre a quelli comuni (app-comune.js, app-gioco.js): ognuno disegna a modo suo i dati che la pagina del sito ha
@@ -69,8 +69,7 @@
         { id: 'box', et: 'Box', href: 'box.html', colore: '#6fa8ff', pagine: ['box.html'] },
         { id: 'trainers', et: 'Trainers', href: 'players.html', colore: '#ff7b6b', pagine: ['players.html'] },
         { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] },
-        { id: 'hof', et: 'Hall of Fame', href: 'palmares.html', colore: '#ff93c8', pagine: ['palmares.html'] },
-        { id: 'shop', et: 'Shop', href: 'shop.html', colore: '#47ea6a', pagine: ['shop.html'] }
+        { id: 'seasons', et: 'Seasons', href: 'hub.html', colore: '#31c489', pagine: ['hub.html'] }
     ];
 
     // ---------- parti pure ----------

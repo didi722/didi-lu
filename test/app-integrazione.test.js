@@ -15,7 +15,6 @@ const leggi = f => fs.readFileSync(path.join(DOCS, f), 'utf8');
 // Le pagine che non sono né nel menù (VOCI), né senza intestazione da gioco (SENZA_HUD), né fuori dall'app (FUORI_APP): hanno l'interfaccia da gioco in alto ma
 // si raggiungono da un'altra pagina. Ogni pagina nuova deve stare in uno di questi quattro posti: chi ne aggiunge una decide come si vede nell'app.
 const RAGGIUNTE_DA_ALTROVE = {
-    'hub.html': 'iscrizione alle stagioni aperte: si arriva dall\'annuncio nel menù',
     'palestra.html': 'costruire e sfidare una palestra: dalla scheda del Trainer nell\'app (My gym sulla propria, Challenge gym su quella di chi ne ha una)',
     'offline.html': 'la pagina che il service worker mostra senza rete'
 };
@@ -55,10 +54,14 @@ test('menù dell\'app: ogni figura di una scena ha la sua regola di posto e gran
     }
 });
 
-test('Hall of Fame nell\'app: ha la sua tessera nel menù (palmares.html), non rimanda più al menù e il replay del Match of the week torna alla sua sezione', () => {
-    const voce = A.VOCI.find(v => v.id === 'hof');
-    assert.ok(voce, 'tessera hof');
-    assert.equal(voce.href, 'palmares.html');
-    assert.ok(!A.FUORI_APP.includes('palmares.html'));
-    assert.match(leggi('matches.html'), /PAGINE_DI_RITORNO = \{[^}]*'hall-of-fame': 'palmares\.html\?sezione=settimane'/, 'da un replay si torna alla sezione della Hall of Fame');
+test('Seasons nell\'app: la tessera del menù porta alle stagioni e all\'iscrizione; Shop e Hall of Fame non sono nell\'app', () => {
+    const voce = A.VOCI.find(v => v.id === 'seasons');
+    assert.ok(voce, 'tessera seasons');
+    assert.equal(voce.href, 'hub.html');
+    assert.deepEqual(A.VOCI.map(v => v.id), ['play', 'box', 'trainers', 'stats', 'seasons']);
+    assert.ok(A.FUORI_APP.includes('palmares.html') && A.FUORI_APP.includes('shop.html'));
+});
+
+test('Box nell\'app: il tasto shiny (che porta allo Shop) non c\'è, perché lo Shop nell\'app non c\'è', () => {
+    assert.match(leggi('app-gioco-pagine.css'), /body\.pg-box #teamsGrid \.card-azione\.azione-shiny \{ display: none; \}/);
 });

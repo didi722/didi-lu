@@ -23,9 +23,9 @@
     'use strict';
 
     // il titolo delle pagine che non sono una tessera del menù (le altre prendono il nome della loro tessera)
-    const TITOLI = { 'hub.html': 'Sign up', 'public.html': 'Trainer', 'matches.html': 'Ranked' };
+    const TITOLI = { 'public.html': 'Trainer', 'matches.html': 'Ranked' };
     // il colore del nastro delle pagine che non sono una tessera del menù e non seguono quella da cui si arriva
-    const COLORI = { 'hub.html': '#31c489' };
+    const COLORI = {};
     // le pagine il cui titolo cambia con quello che si guarda (la stagione): il nastro porta il nome della tessera, accanto va quello della stagione
     const CON_SOTTOTITOLO = ['matches.html'];
     const CON_NOME_STAGIONE = ['hub.html'];

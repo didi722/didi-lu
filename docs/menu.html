@@ -76,6 +76,7 @@
         <section class="gx-giocatore" id="gx-giocatore" aria-label="Player"></section>
 
         <nav class="gx-tessere" id="gx-tessere" aria-label="Game menu"></nav>
+        <nav class="gx-pallini" id="gx-pallini" aria-hidden="true"></nav>
     </main>
 
     <!-- Accesso -->
@@ -121,6 +122,15 @@
                 <button type="button" class="gx-bottone gx-secondario" data-chiudi data-suono="chiudi">Not now</button>
                 <button type="button" class="gx-bottone gx-primario" id="gx-iscr-si" data-suono="ok">Confirm &amp; join</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Le stagioni (tessera Seasons): iscrizioni aperte e stagione in corso, a schede da scorrere di lato -->
+    <div class="gx-dialogo gx-stagioni" id="gx-stagioni" role="dialog" aria-modal="true" aria-labelledby="gx-stagioni-titolo" hidden>
+        <div class="gx-pannello gx-sz-pannello">
+            <button type="button" class="gx-chiudi" data-chiudi aria-label="Close" data-suono="chiudi"></button>
+            <h2 id="gx-stagioni-titolo">Seasons</h2>
+            <div class="gx-sz-elenco" id="gx-st-elenco"></div>
         </div>
     </div>
 
