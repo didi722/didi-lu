@@ -33,6 +33,7 @@
 <script src="badge-team.js"></script>
 <script src="badge-allenatore.js"></script>
 <script src="cosmetici.js"></script>
+<script src="palestra.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -322,6 +323,7 @@ async function initTrainersPage() {
                 pkmPreferito: info.pkmPreferito || '',
                 pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(info, player.teams) : false,      // un compagno del Box è shiny come quel Pokémon
                 titolo: info.title && info.title !== 'No Title' ? info.title : '',
+                palestra: !!window.Palestra && Palestra.tappeDi(info.palestra).length === Palestra.TAPPE,      // ha una palestra pronta da sfidare (per l'app)
                 badgeApp: Titoli.badgeSbloccati(serieBadges, key).map(b => ({ img: b.img, nome: b.label, livello: b.livello, icona: b.livello === 'founder' ? '👑' : '🏅', descrizione: b.descrizione }))
                     .concat(guadagnatiApp.map(b => ({ img: b.immagine, nome: b.nome, livello: b.classeLivello, icona: b.icona, descrizione: b.descrizione })))
             });
@@ -332,7 +334,7 @@ async function initTrainersPage() {
         // l'app disegna gli allenatori a modo suo (app-trainers.js): in ordine di classifica, con la posizione di chi è classificato
         if (window.AppSito) AppSito.pubblica('trainers', playersList.map((p, i) => ({
             id: p.id, nome: p.name, avatar: p.avatar, colore: p.color, elo: p.ranking, classificato: p.classificato, posizione: p.classificato ? i + 1 : null,
-            titolo: p.titolo, pkm: p.pkmPreferito, pkmShiny: p.pkmShiny, trofei: p.trofei, stagioniVinte: p.trophiesWon, badge: p.badgeApp
+            titolo: p.titolo, pkm: p.pkmPreferito, pkmShiny: p.pkmShiny, trofei: p.trofei, stagioniVinte: p.trophiesWon, badge: p.badgeApp, palestra: p.palestra
         })));
 
         gridContainer.innerHTML = playersList.map((player, index) => {
@@ -541,6 +543,9 @@ auth.onAuthStateChanged(async (user) => {
             const nameSnap = await db.ref(`users/${user.uid}/name`).once('value');
             const userName = nameSnap.val();
             console.log("Nome recuperato da users/uid/name:", userName);
+            // chi è collegato: l'app mostra "My gym" sulla sua scheda e "Challenge gym" su quelle degli altri (app-trainers.js)
+            window.__nomeUtente = userName || '';
+            document.dispatchEvent(new Event('app-utente'));
 
             if (userName) {
                 if (authText) authText.innerText = userName;

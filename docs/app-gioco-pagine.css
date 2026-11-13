@@ -743,6 +743,10 @@
     html.app-shell .at-numeri b { display: block; font: 900 calc(24 * var(--u))/1.1 var(--nb-font-titoli); }
     html.app-shell .at-numeri span { font: 700 calc(9 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
     html.app-shell .at-trofei, html.app-shell .at-badge-riga { display: flex; flex-wrap: wrap; align-items: center; gap: calc(6 * var(--u)); }
+    /* il tasto della palestra: "Challenge gym" (giallo) sulle schede di chi ne ha una, "My gym" (scuro, per impostarla) sulla propria */
+    html.app-shell .at-palestra { align-self: flex-start; display: inline-flex; align-items: center; gap: calc(6 * var(--u)); margin-top: calc(2 * var(--u)); padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); text-decoration: none; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; -webkit-tap-highlight-color: transparent; }
+    html.app-shell .at-palestra:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .at-palestra-mia { background: rgba(0, 0, 0, .55); color: #fff; border-color: rgba(255, 255, 255, .5); box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .6); }
     html.app-shell .at-coppa { display: inline-flex; align-items: center; gap: calc(3 * var(--u)); padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(2 * var(--u)) calc(4 * var(--u)); background: rgba(0, 0, 0, .5); border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(12 * var(--u)); }
     html.app-shell .at-coppa img { width: calc(24 * var(--u)); height: calc(24 * var(--u)); object-fit: contain; }
     html.app-shell .at-coppa b { font: 900 calc(14 * var(--u))/1 var(--nb-font-titoli); }

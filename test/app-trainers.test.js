@@ -119,3 +119,38 @@ test('il compagno è in scala con l\'allenatore (scala-pkm.js) e a terra o flutt
     assert.match(h, /<img class="at-pkm"[^>]*data-pkm="Gengar"/);
     assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'app.js'), 'utf8'), /'players\.html': \[[^\]]*'scala-pkm\.js'/);
 });
+
+// ---------- la palestra ----------
+
+test('htmlPalestra: sulla propria scheda "My gym" (per impostarla), su quella di chi ha una palestra pronta "Challenge gym"; sulle altre niente', () => {
+    const mia = T.htmlPalestra({ id: 'didi', nome: 'Didi' }, 'Didi');
+    assert.match(mia, /href="palestra\.html\?edit=1"/);
+    assert.match(mia, /at-palestra-mia/);
+    assert.match(mia, /My gym/);
+    // anche se Didi ha la sua palestra pronta, sulla sua scheda c'è "My gym", non la sfida a se stesso
+    assert.match(T.htmlPalestra({ id: 'didi', nome: 'Didi', palestra: true }, 'didi'), /My gym/, 'le maiuscole non contano');
+    const sfida = T.htmlPalestra({ id: 'Lukiani', nome: 'Lukiani', palestra: true }, 'Didi');
+    assert.match(sfida, /href="palestra\.html\?player=Lukiani"/);
+    assert.match(sfida, /Challenge gym/);
+    assert.doesNotMatch(sfida, /at-palestra-mia/);
+    assert.match(T.htmlPalestra({ id: 'a b', palestra: true }, ''), /player=a%20b/, 'il nome nell\'indirizzo è codificato');
+    assert.equal(T.htmlPalestra({ id: 'anna', nome: 'Anna' }, 'Didi'), '', 'senza palestra pronta nessun tasto');
+    assert.equal(T.htmlPalestra({ id: 'anna', nome: 'Anna' }, ''), '', 'nessuno collegato e nessuna palestra: niente');
+    // dentro la scheda, dopo i badge
+    const carta = T.htmlCarta({ id: 'lukiani', nome: 'Lukiani', palestra: true, badge: [{ livello: 'gold', nome: 'x', img: 'b.png' }] }, 0, { io: 'Didi' });
+    assert.ok(carta.indexOf('at-badge-riga') < carta.indexOf('at-palestra'), 'il tasto sta sotto i badge');
+    assert.ok(!T.htmlCarta({ id: 'anna', nome: 'Anna' }, 0, {}).includes('at-palestra'));
+});
+
+test('players.html dà all\'app chi ha una palestra pronta e chi è collegato (My gym / Challenge gym); il tasto tocca solo la scheda al centro', () => {
+    const pagina = docs('players.html');
+    assert.match(pagina, /<script src="palestra\.js"><\/script>/);
+    assert.match(pagina, /palestra: !!window\.Palestra && Palestra\.tappeDi\(info\.palestra\)\.length === Palestra\.TAPPE/);
+    assert.match(pagina, /badge: p\.badgeApp, palestra: p\.palestra/, 'il dato arriva all\'app');
+    assert.match(pagina, /window\.__nomeUtente = userName \|\| '';\s*document\.dispatchEvent\(new Event\('app-utente'\)\)/);
+    const app = docs('app-trainers.js');
+    assert.match(app, /io: win\.__nomeUtente/);
+    assert.match(app, /addEventListener\('app-utente'/, 'quando arriva il nome i tasti si rifanno');
+    assert.match(app, /if \(e\.target\.closest\('a'\)\) e\.preventDefault\(\); vai\(/, 'toccare di lato porta al centro senza aprire la palestra di quella scheda');
+    assert.match(docs('app-gioco-pagine.css'), /html\.app-shell \.at-palestra \{/);
+});

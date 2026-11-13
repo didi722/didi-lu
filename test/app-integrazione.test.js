@@ -16,7 +16,7 @@ const leggi = f => fs.readFileSync(path.join(DOCS, f), 'utf8');
 // si raggiungono da un'altra pagina. Ogni pagina nuova deve stare in uno di questi quattro posti: chi ne aggiunge una decide come si vede nell'app.
 const RAGGIUNTE_DA_ALTROVE = {
     'hub.html': 'iscrizione alle stagioni aperte: si arriva dall\'annuncio nel menù',
-    'palestra.html': 'costruire e sfidare una palestra: oggi la si apre solo con un link (non c\'è un tasto nel menù né nella scheda dei Trainers)',
+    'palestra.html': 'costruire e sfidare una palestra: dalla scheda del Trainer nell\'app (My gym sulla propria, Challenge gym su quella di chi ne ha una)',
     'offline.html': 'la pagina che il service worker mostra senza rete'
 };
 
