@@ -382,7 +382,7 @@
          Dove a sinistra c'è posto (adattaReplayAlloSchermo: .campo-laterale) stanno in colonna a sinistra della console, altrimenti in una riga sopra -->
     <div class="replay-campo" id="replayCampo" aria-label="Field conditions" onclick="event.stopPropagation()" hidden></div>
     <div class="gba-container">
-        <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
+        <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell" width="1920" height="1080">
         <div class="gba-screen-area" onclick="event.stopPropagation()">
              <div class="replay-content">
                 <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
@@ -2929,7 +2929,7 @@ function adattaReplayAlloSchermo() {
     const insieme = larghezza > 900;
     const tastiSet = insieme ? (modal.querySelector('.set-selector')?.offsetWidth || 90) + 16 : 0;
     const sotto = insieme ? 0 : alto('.set-selector') + 10;
-    const riservatoBase = alto('.replay-mini-header') + alto('.replay-comandi') + alto('#replayMomenti') + sotto + 54;      // i momenti chiave (una striscia, anche su più righe) stanno sotto i comandi
+    const riservatoBase = alto('.replay-mini-header') + alto('.replay-comandi') + alto('#replayMomenti') + sotto + 64;      // i momenti chiave (una striscia, anche su più righe) stanno sotto i comandi
     // nell'app da telefono non c'è la console né l'intestazione: la scena del replay (640 × 360) sta da sola al centro, ingrandita quanto ci sta;
     // ai lati restano due colonne strette, i tasti dei set a sinistra e i comandi a destra
     if (document.documentElement.classList.contains('app-shell') && (larghezza <= 900 || altezza <= 500)) {
@@ -2961,15 +2961,15 @@ function adattaReplayAlloSchermo() {
     const scalaCon = riservato => Math.min(1, perLarghezza, Math.max(0.5, (altezza - riservato) / 647));
     // meteo, terreni e condizioni dei lati: in colonna a sinistra della console se lì c'è posto (la colonna è larga 170px), altrimenti in una riga sopra,
     // che toglie un po' d'altezza alla console
-    const campo = modal.querySelector('.replay-campo');
-    const conCampo = !!(campo && !campo.hidden);
+    // La modalità (colonna a sinistra o riga sopra) si decide dalla finestra, non da cosa c'è in quel momento: se dipendesse dai cartellini, a ognuno che compare o
+    // sparisce la console cambierebbe misura e posto (lo scatto a ogni field effect). In colonna i cartellini non occupano spazio; in riga il loro posto è riservato
+    // da subito (finestre.css), e qui si conta sempre.
+    modal.style.setProperty('--righe-campo', larghezza >= 1250 ? 1 : 2);          // quante righe di cartellini si riservano (in riga): su una finestra larga ci stanno su una, su una stretta vanno a capo
     modal.classList.remove('campo-laterale');
     let scala = scalaCon(riservatoBase);
-    if (conCampo) {
-        const liberoSinistra = (larghezza - (1150 * scala + tastiSet)) / 2;
-        if (insieme && liberoSinistra >= 190) modal.classList.add('campo-laterale');
-        else scala = scalaCon(riservatoBase + alto('.replay-campo'));
-    }
+    const liberoSinistra = (larghezza - (1150 * scala + tastiSet)) / 2;
+    if (insieme && liberoSinistra >= 190) modal.classList.add('campo-laterale');
+    else scala = scalaCon(riservatoBase + alto('.replay-campo') + 16);          // 16: lo spazio tra la riga e la console
     modal.style.setProperty('--gba-scala', scala.toFixed(3));
 }
 window.addEventListener('resize', () => { if (document.getElementById('replayModal')?.style.display === 'flex') adattaReplayAlloSchermo(); });
@@ -2982,8 +2982,10 @@ window.chiudiReplay = function() {
     const musicBtn = document.getElementById('music-control');
 
     // 1. Chiudiamo il modal visivamente
+    window.aperturaReplay = (window.aperturaReplay || 0) + 1;      // un'apertura ancora in preparazione non deve più far comparire niente
     if (modal) {
         modal.style.display = "none";
+        modal.classList.remove('in-preparazione');
     }
 
     // 2. Resettiamo l'iframe per fermare l'audio del video
@@ -3054,9 +3056,14 @@ selector.style.height = 'auto';
     if (vecchiaHeader) vecchiaHeader.remove();
 
     selector.innerHTML = '<span class="set-messaggio">Caricamento replay...</span>';
+    // La finestra si apre subito (lo sfondo e la X), ma il resto resta invisibile finché intestazione, set, badge e scocca non sono pronti: se compaiono uno alla volta
+    // ognuno sposta gli altri (la console, centrata, scattava a ogni arrivo). Poi compare tutto insieme (finally, più sotto).
+    modal.classList.add('in-preparazione');
+    const aperturaDi = window.aperturaReplay = (window.aperturaReplay || 0) + 1;       // un'apertura più recente (o la chiusura) toglie la mano a questa
     modal.style.display = 'flex';
     adattaReplayAlloSchermo();
-    
+    const badgePromesse = [];
+
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const stagioneUrl = urlParams.get('id')?.split(':')[0]; 
@@ -3102,8 +3109,8 @@ selector.style.height = 'auto';
             const apertura = window.replayAperto = {};
             [[sdData.info.player1, teamDidi, '1'], [sdData.info.player2, teamLu, '2']].forEach(([giocatore, nomeTeam, lato]) => {
                 if (!nomeTeam) return;      // nei Random non c'è un team a cui appartengono i badge
-                BadgeTeam.montaMini(db, miniHeader.querySelector(`[data-replay-badge="${lato}"]`),
-                    { giocatore, team: { nome: nomeTeam }, valido: () => window.replayAperto === apertura }).catch(() => {});
+                badgePromesse.push(BadgeTeam.montaMini(db, miniHeader.querySelector(`[data-replay-badge="${lato}"]`),
+                    { giocatore, team: { nome: nomeTeam }, valido: () => window.replayAperto === apertura }).catch(() => {}));
             });
         }
 
@@ -3169,6 +3176,20 @@ selector.style.height = 'auto';
     } catch (error) {
         console.error("Error opening match:", error);
         selector.innerHTML = `<span class="set-messaggio set-errore">Error: ${error.message}</span>`;
+    } finally {
+        // I badge (che arrivano da Firebase) danno la loro altezza all'intestazione e la scocca è un'immagine grande: si aspetta un attimo (al più un secondo) che ci siano,
+        // poi tutto compare insieme e senza spostamenti. Nell'app l'intestazione non c'è: non serve aspettare i badge.
+        const intestazione = document.querySelector('.replay-mini-header');
+        const conBadge = badgePromesse.length && intestazione && intestazione.offsetParent !== null;
+        const scocca = modal.querySelector('.gba-shell');
+        const attese = [];
+        if (conBadge) attese.push(Promise.all(badgePromesse));
+        if (scocca && scocca.offsetParent !== null && !scocca.complete) attese.push(new Promise(ok => { scocca.addEventListener('load', ok, { once: true }); scocca.addEventListener('error', ok, { once: true }); }));
+        if (attese.length) await Promise.race([Promise.all(attese), new Promise(ok => setTimeout(ok, 1000))]);
+        if (window.aperturaReplay === aperturaDi) {
+            adattaReplayAlloSchermo();
+            modal.classList.remove('in-preparazione');
+        }
     }
 }
 

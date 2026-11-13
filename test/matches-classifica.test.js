@@ -151,8 +151,8 @@ test('replay: intestazione, palco (console con i set a destra) e comandi nel flu
     assert.match(adatta, /const riservatoBase = alto\('\.replay-mini-header'\) \+ alto\('\.replay-comandi'\)/, 'lo spazio per l\'intestazione e i comandi si misura');
     assert.match(adatta, /\(altezza - riservato\) \/ 647/);
     assert.match(adatta, /Math\.min\(1, perLarghezza, Math\.max\(0\.5, \(altezza - riservato\) \/ 647\)\)/);
-    // meteo, terreni e condizioni: in colonna a sinistra se lì c'è posto (190px liberi), altrimenti una riga sopra che toglie altezza alla console
-    assert.match(adatta, /if \(insieme && liberoSinistra >= 190\) modal\.classList\.add\('campo-laterale'\);\s*else scala = scalaCon\(riservatoBase \+ alto\('\.replay-campo'\)\);/);
+    // meteo, terreni e condizioni: in colonna a sinistra se lì c'è posto (190px liberi), altrimenti una riga sopra (il suo posto è sempre riservato, con o senza cartellini)
+    assert.match(adatta, /if \(insieme && liberoSinistra >= 190\) modal\.classList\.add\('campo-laterale'\);\s*else scala = scalaCon\(riservatoBase \+ alto\('\.replay-campo'\) \+ 16\);/);
     // l'immagine della console è 1920 × 1080: a 1150 px di larghezza è alta 647 px
     assert.equal(Math.round(1150 * 1080 / 1920), 647);
 });
