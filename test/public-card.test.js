@@ -550,3 +550,9 @@ test('compagno alto (Dhelmise): la GIF ingrandita più del doppio ha i pixel net
     assert.doesNotMatch(js, /grande = |img\.src = grande/, 'la GIF resta la GIF (animata)');
     assert.match(fs.readFileSync(path.join(base, 'style-public-card.css'), 'utf8'), /\.pp-pkm-img\.pp-ingrandita \{ image-rendering: pixelated; \}/);
 });
+
+test('palco: un Pokémon alto o che vola sta subito dietro all\'allenatore (non appoggiato al bordo destro con un vuoto in mezzo); i giganti hanno il loro posto', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-card.css'), 'utf8');
+    assert.match(css, /\.pp-pkm\.pp-dietro:not\(\.pp-enorme\) \{ right: auto; left: calc\(\(36 \+ var\(--ht, 170\) \* 0\.85\) \* var\(--d\)\); \}/);
+    assert.match(css, /\.pp-pkm\.pp-enorme \{ right: calc\(-270 \* var\(--d\)\); \}/);
+});
