@@ -553,6 +553,8 @@ test('compagno alto (Dhelmise): la GIF ingrandita più del doppio ha i pixel net
 
 test('palco: un Pokémon alto o che vola sta subito dietro all\'allenatore (non appoggiato al bordo destro con un vuoto in mezzo); i giganti hanno il loro posto', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-card.css'), 'utf8');
-    assert.match(css, /\.pp-pkm\.pp-dietro:not\(\.pp-enorme\) \{ right: auto; left: calc\(\(36 \+ var\(--ht, 170\) \* 0\.85\) \* var\(--d\)\); \}/);
+    assert.match(css, /\.pp-pkm:not\(\.pp-enorme\) \{ right: auto; left: calc\(\(36 \+ var\(--ht, 170\) \* 1\) \* var\(--d\)\); \}/, 'davanti (basso): subito a fianco');
+    assert.match(css, /\.pp-pkm\.pp-dietro:not\(\.pp-enorme\) \{ left: calc\(\(36 \+ var\(--ht, 170\) \* 0\.85\) \* var\(--d\)\); \}/, 'dietro (alto o in volo): con un piccolo contatto');
+    assert.match(css, /\.pp-pkm:not\(\.pp-enorme\) \.pp-pkm-img \{ max-width: calc\(\(372 - 36 - var\(--ht, 170\) \* 0\.85\) \* var\(--d\)\); \}/);
     assert.match(css, /\.pp-pkm\.pp-enorme \{ right: calc\(-270 \* var\(--d\)\); \}/);
 });
