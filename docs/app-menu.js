@@ -26,7 +26,6 @@
     const CHIAVE_SPLASH = 'menuSplashVisto';          // sessionStorage: la schermata del titolo si vede una volta a visita
     const CHIAVE_AVVISI = 'appAvvisiChiesti';         // localStorage: la richiesta delle notifiche è già stata fatta (una volta sola)
     const CHIAVE_ANNUNCIO = 'appStagioneVista';       // localStorage: l'ultima stagione annunciata (il messaggio compare una volta per stagione)
-    const PASSO_NASTRO = 4000;                        // ms: ogni quanto il nastro passa alla stagione dopo
     const LINK_MP3 = 'https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3';
 
     // ---------- parti pure ----------
@@ -61,7 +60,7 @@
 
     /**
      * Le stagioni da mostrare nel menù, tutte quelle che contano ora: prima le aperte (la più vicina alla scadenza), poi quelle in corso (la più recente prima);
-     * se non c'è né l'una né l'altra, l'ultima conclusa. Con più di una il nastro del menù scorre da solo tra loro.
+     * se non c'è né l'una né l'altra, l'ultima conclusa. Sono quelle che la tessera e la finestra Seasons del menù mostrano.
      */
     function stagioniDaMostrare(elenco, adesso) {
         const ora = adesso || Date.now();
@@ -104,6 +103,17 @@
         if (s.stato === 'playing') return { nome, stato: 'playing', testo: 'Showdowns in progress', azione: 'PLAY', href: `matches.html?id=${encodeURIComponent(s.id)}` };
         const vincitore = s.info && s.info.winner ? ` · ${s.info.winner} won` : '';
         return { nome, stato: 'closed', testo: `Season over${vincitore}`, azione: 'VIEW', href: `matches.html?id=${encodeURIComponent(s.id)}` };
+    }
+
+    /**
+     * La scheda di una stagione nella finestra Seasons (si scorre di lato): lo stato in parole, il nome, cosa succede e il tasto grande (JOIN apre la conferma
+     * dell'iscrizione, TEAMS l'hub, PLAY e VIEW la stagione). `st`: una voce di stagioniDaMostrare; `giocatoreId`: chi guarda.
+     */
+    function htmlSchedaStagione(st, giocatoreId, esc) {
+        const r = riassuntoStagione(st, giaIscritto(st.iscritti, giocatoreId));
+        const stato = { open: 'Sign-ups open', playing: 'In progress', closed: 'Finished' }[r.stato] || '';
+        return '<article class="gx-sz gx-st-' + r.stato + '"><span class="gx-sz-stato">' + esc(stato) + '</span><b class="gx-sz-nome">' + esc(r.nome) + '</b><small class="gx-sz-testo">' + esc(r.testo) + '</small>' +
+            '<a class="gx-bottone gx-primario gx-sz-vai" href="' + esc(r.href) + '"' + (r.azione === 'JOIN' ? ' data-iscrivi="' + esc(String(st.id)) + '"' : '') + ' data-suono="ok">' + esc(r.azione) + '</a></article>';
     }
 
     /** Il giocatore è tra gli iscritti della stagione? `iscritti`: i nomi (come sono scritti nel database); il confronto non guarda le maiuscole. */
@@ -186,6 +196,9 @@
 
         // ----- il carosello: una scena alla volta (le altre stanno fuori dallo schermo); si scorre di lato seguendo il dito e le vicine entrano mentre si trascina -----
         const stato = { corrente: 0 };
+        // i pallini sotto le scene: quante sono e a quale si è (si aggiornano appena si cambia scena, non a scorrimento finito)
+        const pallini = $('gx-pallini');
+        const segnaPallini = () => { if (pallini) [...pallini.children].forEach((p, i) => p.classList.toggle('su', i === stato.corrente)); };
         let timerCentro = null, timerFerma = null;
         const DURATA_SCORRIMENTO_MS = 360;   // quanto dura lo scorrimento di una scena verso il centro
         const DOPO_SCORRIMENTO_MS = 400;     // un po' più della transizione delle scene (.38s)
@@ -243,6 +256,7 @@
             if (n === stato.corrente) return;
             const prima = stato.corrente;
             stato.corrente = n;
+            segnaPallini();
             // anche con uno swipe veloce (o un tocco sulla scena di lato), dove il dito non ha "accompagnato" niente: le animazioni stanno ferme finché la scena non è arrivata
             fermaAnimazioni(); riprendiDopo();
             if (sa) {
@@ -262,9 +276,11 @@
             }, DOPO_SCORRIMENTO_MS);
         };
         const passo = verso => vai(Car.passo(stato.corrente, carte.length, verso, true));
+        if (pallini) pallini.innerHTML = carte.map(() => '<i></i>').join('');
         if (carte.length) {
             segnaCentro();
             posiziona();
+            segnaPallini();
             // mentre il dito si muove si aggiorna una volta per fotogramma (non a ogni evento: ce ne sono di più) e si tocca solo --x
             let ultima = null, inAttesa = false;
             const segui = (f, fine) => {
@@ -281,7 +297,9 @@
             });
             $('gx-tessere').addEventListener('click', e => {
                 const c = e.target.closest ? e.target.closest('.gx-carta') : null;
-                if (c && Number(c.dataset.i) !== stato.corrente) { e.preventDefault(); vai(Number(c.dataset.i)); }
+                if (c && Number(c.dataset.i) !== stato.corrente) { e.preventDefault(); vai(Number(c.dataset.i)); return; }
+                // la tessera Seasons, quando è già al centro, apre la finestra con le stagioni invece di cambiare pagina
+                if (c && c.dataset.id === 'seasons') { e.preventDefault(); apriStagioni(); }
             });
             doc.addEventListener('keydown', e => { if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
         }
@@ -376,7 +394,7 @@
         const apriLogin = () => { const el = $('gx-login'); el.hidden = false; aggiornaClasse(); win.setTimeout(() => $('gx-email').focus(), 60); };
         const chiudiLogin = () => { $('gx-login').hidden = true; aggiornaClasse(); };
         $('gx-login').addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === $('gx-login')) chiudiLogin(); });
-        doc.addEventListener('keydown', e => { if (e.key === 'Escape') { chiudiLogin(); chiudiAnnuncio(); chiudiAch(); } });
+        doc.addEventListener('keydown', e => { if (e.key === 'Escape') { chiudiLogin(); chiudiAnnuncio(); chiudiAch(); chiudiStagioni(); } });
         const errore = $('gx-login-errore');
         const mostraErrore = t => { errore.textContent = t; errore.hidden = !t; };
         $('gx-login-form').addEventListener('submit', e => {
@@ -398,23 +416,14 @@
         let utente = null;
         let admin = false;
         let stagione = null;            // la stagione principale (la prima della lista: serve all'annuncio)
-        let stagioni = [];              // tutte quelle da mostrare nel nastro
-        let indiceNastro = 0;
+        let stagioni = [];              // tutte quelle da mostrare (tessera Seasons)
         let posizione = null;           // il posto nella classifica della lega (null: non classificato o non ancora letto)
         let posizioneLetta = false;
-        const htmlNastro = () => {
-            const st = stagioni[indiceNastro % (stagioni.length || 1)];
-            if (!st) return '';
-            const s = riassuntoStagione(st, !!giocatore && giaIscritto(st.iscritti, giocatore.id));
-            const punti = stagioni.length > 1 ? '<span class="gx-st-punti" aria-hidden="true">' + stagioni.map((x, k) => '<i' + (k === indiceNastro % stagioni.length ? ' class="su"' : '') + '></i>').join('') + '</span>' : '';
-            return '<a class="gx-stagione gx-st-' + s.stato + '" href="' + esc(s.href) + '"' + (s.azione === 'JOIN' ? ' data-iscrivi="' + esc(String(st.id)) + '"' : '') + ' data-suono="scegli"><i class="gx-pallino"></i><span class="gx-st-testi"><b>' + esc(s.nome) + '</b></span>' + punti + '<em>' + esc(s.azione) + '</em></a>';
-        };
         const pannelloGiocatore = () => {
-            const nastro = '<div class="gx-nastro" id="gx-nastro">' + htmlNastro() + '</div>';
             if (!giocatore) {
                 return '<div class="gx-palco gx-ospite"><span class="gx-aura"></span><span class="gx-avatar gx-sagoma" aria-hidden="true">?</span><span class="gx-piattaforma"></span></div>' +
                     '<div class="gx-targa"><b class="gx-nome">Welcome!</b><small class="gx-titolo-g">Log in to play and vote</small></div>' +
-                    '<button type="button" class="gx-bottone gx-primario gx-largo-b" id="gx-accedi" data-suono="apri">' + svg('entra', 'gx-icona-pic') + 'Log in</button>' + nastro;
+                    '<button type="button" class="gx-bottone gx-primario gx-largo-b" id="gx-accedi" data-suono="apri">' + svg('entra', 'gx-icona-pic') + 'Log in</button>';
             }
             const numeri = [
                 '<li><b>' + (giocatore.elo == null ? 'N/A' : (posizioneLetta ? (posizione ? '#' + posizione : 'N/A') : '…')) + '</b><span>Ranking</span></li>',
@@ -423,7 +432,7 @@
             const medaglia = '<button type="button" class="gx-ach-apri" data-ach="1" aria-label="Achievements" data-suono="apri">' + svg('medaglia') + '<span>Achievements</span>' + (ach ? '<b>' + ach.sbloccati + '</b>' : '') + '</button>';
             return '<div class="gx-palco"><span class="gx-aura"></span><img class="gx-avatar" src="' + esc(giocatore.avatar) + '" alt="" onerror="this.onerror=null;this.src=\'immagini/magikarp.png\'"><span class="gx-piattaforma"></span>' + medaglia + '</div>' +
                 '<div class="gx-targa"><b class="gx-nome">' + esc(giocatore.nome) + '</b>' + (giocatore.titolo ? '<small class="gx-titolo-g">' + esc(giocatore.titolo) + '</small>' : '') + '</div>' +
-                '<ul class="gx-numeri">' + numeri + '</ul>' + nastro;
+                '<ul class="gx-numeri">' + numeri + '</ul>';
         };
         const disegnaGiocatore = () => {
             $('gx-giocatore').innerHTML = pannelloGiocatore();
@@ -471,6 +480,7 @@
             if (r) { giocatore = r.giocatore; admin = r.admin; }
             posizione = null; posizioneLetta = false;
             disegnaGiocatore();
+            aggiornaSeasons();
             if (giocatore) {
                 const per = giocatore;
                 C.leggiPosizione(win, per.id).then(n => { if (giocatore !== per) return; posizione = n; posizioneLetta = true; disegnaGiocatore(); });
@@ -493,7 +503,7 @@
                 risolviIds(trovate.filter(t => t.info && String(t.info.tipo || '').toLowerCase().trim() !== 'cup').map(t => t.id));      // per le GIF dei team di Stats
                 stagioni = stagioniDaMostrare(trovate, Date.now());
                 stagione = stagioni[0] || null;
-                // con le iscrizioni aperte serve sapere chi è già dentro (per il tasto del nastro e per l'annuncio)
+                // con le iscrizioni aperte serve sapere chi è già dentro (per la tessera Seasons e per l'annuncio)
                 for (const st of stagioni.filter(x => x.stato === 'open')) {
                     try {
                         const v = (await db().ref('seasons/' + st.id + '/iscritti').once('value')).val();
@@ -501,10 +511,36 @@
                     } catch (e) { st.iscritti = undefined; }
                 }
             } catch (e) { stagione = null; stagioni = []; risolviIds([]); }
-            indiceNastro = 0;
             disegnaGiocatore();
+            aggiornaSeasons();
             provaAnnuncio();
         };
+
+        // ----- Seasons: la tessera e la finestra con le stagioni (iscrizioni aperte, in corso), a schede da scorrere di lato -----
+        const dialogoStagioni = $('gx-stagioni');
+        const chiudiStagioni = () => { if (!dialogoStagioni || dialogoStagioni.hidden) return; dialogoStagioni.hidden = true; aggiornaClasse(); };
+        const disegnaStagioni = () => {
+            const el = $('gx-st-elenco');
+            if (!el) return;
+            el.innerHTML = stagioni.length ? stagioni.map(st => htmlSchedaStagione(st, giocatore && giocatore.id, esc)).join('') : '<p class="gx-sz-vuoto">No seasons yet.</p>';
+        };
+        const apriStagioni = () => { if (!dialogoStagioni) return; disegnaStagioni(); dialogoStagioni.hidden = false; aggiornaClasse(); fai('apri'); };
+        if (dialogoStagioni) dialogoStagioni.addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === dialogoStagioni) chiudiStagioni(); });
+        // la tessera dice cosa succede (la stagione principale: aperta o in corso) e, se ci si può ancora iscrivere, lo segna
+        function aggiornaSeasons() {
+            const carta = $('gx-tessere').querySelector('.gx-c-seasons');
+            if (!carta) return;
+            const blocco = carta.querySelector('.gx-blocco');
+            let sotto = carta.querySelector('.gx-sotto');
+            if (stagione && blocco) {
+                const r = riassuntoStagione(stagione, !!giocatore && giaIscritto(stagione.iscritti, giocatore.id));
+                if (!sotto) { sotto = doc.createElement('span'); sotto.className = 'gx-sotto'; blocco.appendChild(sotto); }
+                sotto.textContent = r.nome + ' · ' + r.testo;
+            } else if (sotto) sotto.remove();
+            const daIscrivere = !!giocatore && stagioni.some(x => x.stato === 'open' && !giaIscritto(x.iscritti, giocatore.id));
+            if (daIscrivere) carta.setAttribute('data-avviso', 'Sign-ups open'); else carta.removeAttribute('data-avviso');
+            if (dialogoStagioni && !dialogoStagioni.hidden) disegnaStagioni();
+        }
 
         // ----- l'annuncio delle iscrizioni aperte: una volta per stagione, a chi non è ancora iscritto, dopo la schermata del titolo -----
         const annuncio = $('gx-annuncio');
@@ -586,12 +622,13 @@
                 } catch (err) { errore.textContent = 'Could not register. Try again.'; errore.hidden = false; si.disabled = false; }
             });
         }
-        // JOIN (il nastro, l'annuncio) non porta all'hub: prima si conferma l'iscrizione
+        // JOIN (la finestra Seasons, l'annuncio) non porta all'hub: prima si conferma l'iscrizione
         doc.addEventListener('click', e => {
             const a = e.target.closest ? e.target.closest('[data-iscrivi]') : null;
             if (!a) return;
             e.preventDefault();
             chiudiAnnuncio();
+            chiudiStagioni();
             apriIscr(a.getAttribute('data-iscrivi'));
         }, true);
         function chiudiAvvisi() { if (!avvisi || avvisi.hidden) return; scrivi(CHIAVE_AVVISI, '1'); avvisi.hidden = true; aggiornaClasse(); }
@@ -608,25 +645,15 @@
         if (annuncio) {
             annuncio.addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === annuncio) chiudiAnnuncio(); });
         }
-        // il conto alla rovescia sta al minuto
+        // il conto alla rovescia sta al minuto (sulla tessera e nella finestra Seasons)
         win.setInterval(() => {
             for (const st of stagioni) {
                 if (st.stato !== 'open') continue;
                 const scad = Date.parse(st.info.deadline);
                 if (Number.isFinite(scad)) st.mancano = Math.max(0, scad - Date.now());
             }
-            const nastro = $('gx-nastro');
-            if (nastro && stagioni.length) nastro.innerHTML = htmlNastro();
+            aggiornaSeasons();
         }, 30000);
-        // con più stagioni da mostrare il nastro passa da una all'altra da solo (ogni quattro secondi, con una piccola animazione)
-        win.setInterval(() => {
-            if (stagioni.length < 2 || doc.hidden) return;
-            indiceNastro = (indiceNastro + 1) % stagioni.length;
-            const nastro = $('gx-nastro');
-            if (!nastro) return;
-            nastro.innerHTML = htmlNastro();
-            nastro.classList.remove('cambia'); void nastro.offsetWidth; nastro.classList.add('cambia');
-        }, PASSO_NASTRO);
 
         // ----- impostazioni -----
         const opzioni = C.creaOpzioni(win, {
@@ -655,5 +682,5 @@
         return { opzioni, disegnaGiocatore };
     }
 
-    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, htmlCarta, immaginiDi, avvia };
+    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, htmlSchedaStagione, htmlCarta, immaginiDi, avvia };
 });

@@ -23,7 +23,7 @@ test('titolo: il nastro porta il nome della tessera del menù; hub e pagina dell
     // ogni pagina del menù mostra il nome della sua tessera, qualunque cosa scriva la pagina
     for (const v of A.VOCI) assert.equal(G.titolo('/didi-lu/' + v.href, 'Qualcosa di lungo e diverso'), v.et, v.href);
     assert.equal(G.titolo('/didi-lu/matches.html', 'Season 3'), 'Ranked', 'showdown e classifica stanno sotto Play, ma hanno il loro titolo');
-    assert.equal(G.titolo('/didi-lu/hub.html', 'Season hub'), 'Sign up');
+    assert.equal(G.titolo('/didi-lu/hub.html', 'Season hub'), 'Seasons', 'l\'iscrizione è la scheda Seasons');
     assert.equal(G.titolo('/didi-lu/public.html?player=didi', 'DIDI'), 'Trainer');
     // una pagina senza tessera né titolo suo: il testo scritto dalla pagina (spazi ripuliti), se è ragionevole
     assert.equal(G.titolo('/didi-lu/altra.html', '  Didi\'s \n  Box '), 'Didi\'s Box');
@@ -52,13 +52,13 @@ test('sottotitolo: Matches (e l\'iscrizione) mostrano accanto al nastro il nome 
 
 test('coloreDi: il nastro ha il colore della tessera nel menù (la pagina dell\'allenatore con Trainers); l\'iscrizione il verde della lega; le altre pagine il giallo del sito', () => {
     for (const v of A.VOCI) assert.equal(G.coloreDi(v.href), v.colore, v.href);
-    assert.equal(G.coloreDi('hub.html'), '#31c489');
+    assert.equal(G.coloreDi('hub.html'), '#31c489', 'l\'iscrizione ha il verde di Seasons');
     assert.equal(G.coloreDi('practice.html'), A.VOCI.find(v => v.id === 'play').colore);
     assert.equal(G.coloreDi('matches.html'), A.VOCI.find(v => v.id === 'play').colore, 'Matches sta sotto Play');
     assert.equal(G.coloreDi('public.html'), '#ffbd44', 'la pagina pubblica nell\'app non c\'è più (porta a Trainers): niente tessera');
     assert.equal(G.coloreDi('battle.html'), '#ffbd44');
     assert.equal(G.coloreDi('/didi-lu/'), '#ffbd44', 'la radice (le stagioni) nell\'app non ha una tessera');
-    assert.deepEqual(Object.keys(G.COLORI), ['hub.html']);
+    assert.deepEqual(Object.keys(G.COLORI), [], 'nessun colore a parte: le pagine hanno quello della loro tessera');
 });
 
 test('iniziale: la prima lettera o cifra in maiuscolo, "?" senza nome', () => {

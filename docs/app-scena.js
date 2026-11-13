@@ -29,8 +29,7 @@
         box: { cielo: 'cielo-viola', fx: 'palla', sotto: 'Your teams & Pokémon', eroi: [{ pkm: 94, c: 'e-sx', alt: 'Gengar' }, { pkm: 149, c: 'e-dx', alt: 'Dragonite' }, { pkm: 445, c: 'e-cn', alt: 'Garchomp' }] },
         trainers: { cielo: 'cielo-tramonto', fx: 'aure', sotto: 'The League', eroi: [{ img: 'immagini/profile/15.png', c: 't-1', alt: '', prova: 'trainers-1' }, { img: 'immagini/profile/1.png', c: 't-2', alt: '', prova: 'trainers-2' }] },
         stats: { cielo: 'cielo-notte', fx: 'radar', sotto: 'Numbers & records', eroi: [{ pkm: 150, c: 'e-mew', alt: 'Mewtwo' }] },
-        hof: { cielo: 'cielo-rosa', fx: 'sole', sotto: 'Records & champions', eroi: [{ pkm: 493, c: 'e-arc', alt: 'Arceus' }] },
-        shop: { cielo: 'cielo-oro', fx: 'sole', sotto: 'Coins & cosmetics', eroi: [{ pkm: 52, c: 'e-cn', alt: 'Meowth' }] }
+        seasons: { cielo: 'cielo-oro', fx: 'sole', sotto: 'Seasons & sign-ups', eroi: [{ img: 'immagini/season-winner-color.png', c: 'e-coppa', alt: 'Season trophy' }] }
     };
 
     /** Le tre locandine di Play: stessa cosa, in verticale */

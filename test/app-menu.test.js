@@ -128,7 +128,7 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     const html = docs('menu.html');
     const js = docs('app-menu.js');
     const cercati = new Set([...js.matchAll(/\$\('([\w-]+)'\)/g)].map(m => m[1]));
-    const dinamici = new Set(['gx-accedi', 'gx-nastro']);                // il tasto "Log in" lo disegna lo script dentro il pannello del giocatore
+    const dinamici = new Set(['gx-accedi']);                // il tasto "Log in" lo disegna lo script dentro il pannello del giocatore
     assert.ok(cercati.size >= 12, 'id cercati: ' + [...cercati].join(', '));
     for (const id of cercati) {
         if (dinamici.has(id)) assert.ok(!html.includes(`id="${id}"`), `${id} lo crea lo script`);
@@ -178,7 +178,7 @@ test('le scene del menù: una per voce, con il tag in basso al centro e la riga 
 
     const css = docs('app-menu.css');
     assert.doesNotMatch(css, /@@/, 'nessun segnaposto rimasto nel foglio');
-    for (const c of ['gx-carta', 'gx-tessere', 'gx-pista', 'gx-ferma', 'gx-blocco', 'gx-tag', 'gx-sotto', 'gx-immagine', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-nastro', 'gx-splash', 'gx-splash-raggi', 'gx-splash-eroe', 'gx-lobby']) assert.ok(css.includes('.' + c), `app-menu.css non conosce ${c}`);
+    for (const c of ['gx-carta', 'gx-tessere', 'gx-pista', 'gx-ferma', 'gx-blocco', 'gx-tag', 'gx-sotto', 'gx-immagine', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-pallini', 'gx-sz', 'gx-splash', 'gx-splash-raggi', 'gx-splash-eroe', 'gx-lobby']) assert.ok(css.includes('.' + c), `app-menu.css non conosce ${c}`);
     assert.doesNotMatch(css, /\.gx-nav\b|\.gx-tessera\b|\.gx-riflettore|\.gx-podio/, 'né tasti in basso, né tessere a griglia, né podio');
     for (const st of ['gx-st-open', 'gx-st-playing', 'gx-st-closed']) assert.ok(css.includes(st), st);
     // una scena alla volta: il palco ritaglia tutto e ogni scena è uno strato suo che sta in un posto dipendente da --x (0 = al centro, ±1 = fuori dallo schermo)
@@ -187,7 +187,7 @@ test('le scene del menù: una per voce, con il tag in basso al centro e la riga 
     // scorrere è fluido: mentre si scorre (e per un attimo dopo) le animazioni stanno ferme, restano solo strati che si spostano
     assert.match(css, /\.gx-pista\.gx-ferma :is\(\*, \*::before, \*::after\) \{ animation-play-state: paused !important; \}/);
     // il tag sta in basso, al centro della scena
-    assert.match(css, /html\.app \.gx-blocco \{[^}]*bottom: calc\(14 \* var\(--u\)\);[^}]*align-items: center;/);
+    assert.match(css, /html\.app \.gx-blocco \{[^}]*bottom: calc\(26 \* var\(--u\)\);[^}]*align-items: center;/);
     // niente zoom né scorrimento: la pagina è un riquadro fisso e nessun livello enorme che gira (appesantisce il telefono)
     assert.match(css, /html\.app body\.gx-menu \{[^}]*position: fixed; inset: 0;[^}]*overflow: hidden;/);
     assert.match(css, /html\.app \.gx-lobby \{ overflow: hidden; touch-action: pan-y; \}/);
@@ -219,6 +219,7 @@ function elemento(id) {
         contains: c => e.classi.has(c),
         toggle: (c, on) => { if (on === undefined ? !e.classi.has(c) : on) e.classi.add(c); else e.classi.delete(c); }
     };
+    e.children = [];
     e.setAttribute = (k, v) => { e.attributi[k] = String(v); };
     e.getAttribute = k => (k in e.attributi ? e.attributi[k] : null);
     e.addEventListener = (ev, f) => { (e.ascoltatori[ev] = e.ascoltatori[ev] || []).push(f); };
@@ -646,28 +647,48 @@ test('giocatore con pochi showdown: Elo "N/A"; senza titolo la riga del titolo n
     assert.match(g, /src="immagini\/magikarp\.png"/, 'avatar di riserva');
 });
 
-test('la stagione del momento: il nastro sotto il giocatore, col tempo che manca e il tasto verso la pagina giusta', async () => {
+test('Seasons: la scheda di una stagione dice lo stato, il nome e cosa succede, col tasto verso la pagina giusta (JOIN apre la conferma dell\'iscrizione); la pillola sotto il giocatore non c\'è più', async () => {
     const scade = new Date(Date.now() + 2 * GIORNO + 3600000 + 60000).toISOString();
-    const stagioni = {
-        sbeta: { info: { status: 'closed', name: 'Beta' } },
-        s0: { info: { status: 'closed', name: 'Season 0', winner: 'Luca' } },
-        s1: { info: { status: 'closed', name: 'Season 1', winner: 'Luca' } },
-        s2: { info: { status: 'open', name: 'Spring Cup', deadline: scade } }
-    };
+    const aperta = { id: 's2', info: { status: 'open', name: 'Spring Cup', deadline: scade }, stato: 'open', mancano: 2 * GIORNO + 3600000 + 60000, iscritti: ['Luca'] };
+    // chi non è iscritto: JOIN, che non porta all'hub ma apre la conferma (data-iscrivi)
+    const join = M.htmlSchedaStagione(aperta, 'didi', C.esc);
+    assert.match(join, /^<article class="gx-sz gx-st-open"><span class="gx-sz-stato">Sign-ups open<\/span><b class="gx-sz-nome">Spring Cup<\/b><small class="gx-sz-testo">Sign-ups close in 2d 1h<\/small>/);
+    assert.match(join, /<a class="gx-bottone gx-primario gx-sz-vai" href="hub\.html\?id=s2" data-iscrivi="s2" data-suono="ok">JOIN<\/a><\/article>$/);
+    // già iscritto (maiuscole a parte): TEAMS porta all'hub senza chiedere
+    const dentro = M.htmlSchedaStagione({ ...aperta, iscritti: ['DIDI'] }, 'didi', C.esc);
+    assert.match(dentro, /You&#39;re in · closes in 2d 1h/);
+    assert.match(dentro, /href="hub\.html\?id=s2" data-suono="ok">TEAMS<\/a>/);
+    assert.doesNotMatch(dentro, /data-iscrivi/);
+    // in corso e conclusa
+    const corso = M.htmlSchedaStagione({ id: 's1', info: { name: 'Sant\'Alvise I' }, stato: 'playing' }, 'didi', C.esc);
+    assert.match(corso, /gx-st-playing"><span class="gx-sz-stato">In progress<\/span><b class="gx-sz-nome">Sant&#39;Alvise I<\/b><small class="gx-sz-testo">Showdowns in progress<\/small>/);
+    assert.match(corso, /href="matches\.html\?id=s1" data-suono="ok">PLAY<\/a>/);
+    const chiusa = M.htmlSchedaStagione({ id: 's0', info: { name: 'Season 0', winner: 'Luca' }, stato: 'closed' }, '', C.esc);
+    assert.match(chiusa, /Finished<\/span>.*Season over · Luca won.*>VIEW<\/a>/);
+    // il nome è sempre protetto
+    assert.match(M.htmlSchedaStagione({ id: 's3', info: { name: '<b>x</b>' }, stato: 'playing' }, '', C.esc), /&lt;b&gt;x&lt;\/b&gt;/);
+
+    // la pillola sotto il giocatore non c'è più: il pannello ha avatar, nome e numeri e basta
+    const stagioni = { sbeta: { info: { status: 'closed', name: 'Beta' } }, s2: { info: aperta.info } };
     const p = paginaMenu({ sessione: { menuSplashVisto: '1' }, stagioni });
     await passaUnGiro(); await passaUnGiro(); await passaUnGiro();
-    const g = p.id('gx-giocatore').innerHTML;
-    assert.match(g, /<a class="gx-stagione gx-st-open" href="hub\.html\?id=s2" data-iscrivi="s2" data-suono="scegli">/);
-    assert.match(g, /<b>Spring Cup<\/b><\/span>/);
-    assert.match(g, /<em>JOIN<\/em>/);
-    // il conto alla rovescia si aggiorna da solo, ogni mezzo minuto
-    assert.equal(p.intervalli.length, 2);
+    assert.doesNotMatch(p.id('gx-giocatore').innerHTML, /gx-stagione|gx-nastro|<em>JOIN<\/em>/);
+    // il conto alla rovescia (tessera e finestra Seasons) si aggiorna da solo, ogni mezzo minuto; non c'è più il nastro che cambia stagione
+    assert.equal(p.intervalli.length, 1);
     assert.ok(p.intervalli.some(i => i.ms === 30000), 'il conto alla rovescia, ogni mezzo minuto');
-    assert.ok(p.intervalli.some(i => i.ms === M.PASSO_NASTRO || i.ms === 4000), 'il nastro che passa da una stagione all\'altra');
-    // senza nessuna stagione: niente nastro
-    const vuoto = paginaMenu({ sessione: { menuSplashVisto: '1' } });
-    await passaUnGiro(); await passaUnGiro();
-    assert.doesNotMatch(vuoto.id('gx-giocatore').innerHTML, /gx-stagione/);
+    const js = docs('app-menu.js');
+    assert.doesNotMatch(js, /PASSO_NASTRO|htmlNastro|indiceNastro/);
+    // la tessera Seasons al centro apre la finestra; quella di lato si porta prima al centro (un solo ascoltatore: il tocco di lato non la apre)
+    assert.match(js, /if \(c && Number\(c\.dataset\.i\) !== stato\.corrente\) \{ e\.preventDefault\(\); vai\(Number\(c\.dataset\.i\)\); return; \}\s*\/\/[^\n]*\n\s*if \(c && c\.dataset\.id === 'seasons'\) \{ e\.preventDefault\(\); apriStagioni\(\); \}/);
+    // JOIN dalla finestra chiude la finestra e apre la conferma; Esc e il fondo la chiudono
+    assert.match(js, /chiudiAnnuncio\(\);\s*chiudiStagioni\(\);\s*apriIscr\(a\.getAttribute\('data-iscrivi'\)\);/);
+    assert.match(js, /chiudiAch\(\); chiudiStagioni\(\);/);
+    const html = docs('menu.html');
+    assert.match(html, /<div class="gx-dialogo gx-stagioni" id="gx-stagioni" role="dialog" aria-modal="true" aria-labelledby="gx-stagioni-titolo" hidden>/);
+    assert.match(html, /<div class="gx-sz-elenco" id="gx-st-elenco"><\/div>/);
+    // i pallini sotto le scene
+    assert.match(html, /<nav class="gx-pallini" id="gx-pallini" aria-hidden="true"><\/nav>/);
+    assert.match(js, /const segnaPallini = \(\) => \{ if \(pallini\) \[\.\.\.pallini\.children\]\.forEach\(\(p, i\) => p\.classList\.toggle\('su', i === stato\.corrente\)\); \};/);
 });
 
 test('l\'annuncio delle iscrizioni aperte: dopo la schermata del titolo, a chi non è iscritto, con il nome della stagione e il tasto che porta a iscriversi; una volta sola per stagione', async () => {
@@ -704,8 +725,6 @@ test('l\'annuncio delle iscrizioni aperte: dopo la schermata del titolo, a chi n
     // una stagione nuova si annuncia di nuovo
     const nuova = await carica({ sessione: { menuSplashVisto: '1' }, memoria: { appStagioneVista: 's0' } });
     assert.equal(nuova.id('gx-annuncio').hidden, false);
-    // c'è anche il nastro con "JOIN" sotto il giocatore, anche dopo aver chiuso il messaggio
-    assert.match(p.id('gx-giocatore').innerHTML, /<em>JOIN<\/em>/);
     // sfondo e Esc
     const q = await carica({ sessione: { menuSplashVisto: '1' } });
     q.id('gx-annuncio').scatta('click', { target: q.id('gx-annuncio') });
@@ -736,7 +755,6 @@ test('l\'annuncio delle iscrizioni aperte: aspetta la schermata del titolo; non 
     await giro();
     assert.equal(dentro.id('gx-annuncio').hidden, true);
     assert.equal(dentro.memoria.appStagioneVista, undefined, 'e niente da ricordare');
-    assert.match(dentro.id('gx-giocatore').innerHTML, /<em>TEAMS<\/em>/, 'il nastro porta ai suoi team');
     // senza account
     const ospite = paginaMenu({ sessione: { menuSplashVisto: '1' }, utenti, giocatori, stagioni: aperta });
     await giro();
@@ -752,7 +770,7 @@ test('l\'annuncio delle iscrizioni aperte: aspetta la schermata del titolo; non 
 
 test('Firebase che parte dopo la pagina: il menù aspetta (senza mai bloccarsi) e poi legge giocatore e stagione', async () => {
     const p = paginaMenu({ sessione: { menuSplashVisto: '1' }, firebaseAttivo: false });
-    assert.equal(p.intervalli.length, 3, 'il conto alla rovescia, il nastro delle stagioni e l\'attesa di Firebase');
+    assert.equal(p.intervalli.length, 2, 'il conto alla rovescia e l\'attesa di Firebase');
     const attesa = p.intervalli.find(i => i.ms === 150);
     assert.ok(attesa);
     // le carte e il pannello "Welcome!" ci sono comunque

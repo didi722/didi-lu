@@ -94,10 +94,10 @@ test('dentroUnaApp: i browser incorporati (Instagram, Facebook, WebView) non pos
     assert.equal(A.dentroUnaApp(undefined), false);
 });
 
-test('le tessere del menù (VOCI): sei (Play riunisce Practice e Matches; Hall of Fame è la pagina dei record e dei campioni; Shop è lo shop delle monete), con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
-    assert.deepEqual(A.VOCI.map(v => v.id), ['play', 'box', 'trainers', 'stats', 'hof', 'shop']);
-    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 6, 'nomi diversi');
-    assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 6, 'colori diversi: ogni schermata ha il suo');
+test('le tessere del menù (VOCI): cinque (Play riunisce Practice e Matches; Seasons apre le stagioni e l\'iscrizione), con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
+    assert.deepEqual(A.VOCI.map(v => v.id), ['play', 'box', 'trainers', 'stats', 'seasons']);
+    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 5, 'nomi diversi');
+    assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 5, 'colori diversi: ogni schermata ha il suo');
     assert.deepEqual(A.VOCI[0].pagine, ['practice.html', 'matches.html'], 'Play tiene accese le sue due pagine: l\'hub e showdown e classifica');
     const viste = [];
     for (const v of A.VOCI) {
@@ -113,14 +113,14 @@ test('le tessere del menù (VOCI): sei (Play riunisce Practice e Matches; Hall o
     for (const p of A.FUORI_APP) { assert.ok(esiste(p), `manca ${p}`); assert.ok(!viste.includes(p), `${p} è fuori dall'app ma ha una tessera`); }
 });
 
-test('voceDi: a quale tessera appartiene la pagina (Practice e Matches stanno sotto Play); iscrizione, battaglia, accesso, menù e pagine fuori dall\'app (anche la pagina pubblica) a nessuna', () => {
+test('voceDi: a quale tessera appartiene la pagina (Practice e Matches stanno sotto Play, l\'iscrizione sotto Seasons); battaglia, accesso, menù e pagine fuori dall\'app (anche Hall of Fame, Shop e la pagina pubblica) a nessuna', () => {
     assert.equal(A.voceDi('/didi-lu/matches.html').id, 'play');
     assert.equal(A.voceDi('/didi-lu/box.html').id, 'box');
     assert.equal(A.voceDi('/didi-lu/players.html').id, 'trainers');
     assert.equal(A.voceDi('/didi-lu/practice.html').id, 'play');
     assert.equal(A.voceDi('/didi-lu/stats.html').id, 'stats');
-    assert.equal(A.voceDi('/didi-lu/palmares.html?sezione=records').id, 'hof', 'la Hall of Fame ha la sua tessera');
-    for (const p of ['hub.html', 'index.html', 'public.html', 'battle.html', 'login.html', 'menu.html', 'admin.html', 'schermata-base-vuota.html']) assert.equal(A.voceDi(p), null, p);
+    assert.equal(A.voceDi('/didi-lu/hub.html?id=s2').id, 'seasons', 'l\'iscrizione è la scheda Seasons');
+    for (const p of ['palmares.html', 'shop.html', 'index.html', 'public.html', 'battle.html', 'login.html', 'menu.html', 'admin.html', 'schermata-base-vuota.html']) assert.equal(A.voceDi(p), null, p);
 });
 
 test('haHud: tutte le pagine del gioco hanno l\'interfaccia in alto; menù, battaglia, accesso, amministrazione e modello vuoto no', () => {
@@ -128,9 +128,9 @@ test('haHud: tutte le pagine del gioco hanno l\'interfaccia in alto; menù, batt
     for (const p of ['index.html', 'matches.html', 'box.html', 'players.html', 'stats.html', 'profile.html', 'public.html', 'hub.html', 'palmares.html', 'rules.html', 'formats.html']) assert.equal(A.haHud(p), true, p);
 });
 
-test('fuoriApp: stagioni (home), profilo, archivio, formati, regolamento e pagina pubblica non hanno posto nell\'app; il resto si apre dov\'è', () => {
-    for (const p of ['/didi-lu/index.html', '/didi-lu/', '/didi-lu/profile.html', '/didi-lu/formats.html', '/didi-lu/rules.html#a', '/didi-lu/public.html?player=didi']) assert.equal(A.fuoriApp(p), true, p);
-    for (const p of ['matches.html', 'hub.html', 'box.html', 'players.html', 'practice.html', 'stats.html', 'menu.html', 'battle.html', 'palmares.html', 'shop.html']) assert.equal(A.fuoriApp('/didi-lu/' + p), false, p);
+test('fuoriApp: stagioni (home), profilo, Hall of Fame, Shop, formati, regolamento e pagina pubblica non hanno posto nell\'app; il resto si apre dov\'è', () => {
+    for (const p of ['/didi-lu/index.html', '/didi-lu/', '/didi-lu/profile.html', '/didi-lu/palmares.html?x=1', '/didi-lu/shop.html', '/didi-lu/formats.html', '/didi-lu/rules.html#a', '/didi-lu/public.html?player=didi']) assert.equal(A.fuoriApp(p), true, p);
+    for (const p of ['matches.html', 'hub.html', 'box.html', 'players.html', 'practice.html', 'stats.html', 'menu.html', 'battle.html']) assert.equal(A.fuoriApp('/didi-lu/' + p), false, p);
 });
 
 test('fissaStile: lo stile è quello dell\'app: tema predefinito sul sito, via il colore del giocatore e i caratteri del tema scelto', () => {
@@ -333,9 +333,7 @@ test('dall\'app (telefono) le pagine che nell\'app non servono portano al menù,
     assert.deepEqual(s.fogli(), []);
     // sempre, non solo la prima volta (non c\'è più una pagina "Seasons")
     assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5 }).reindirizzato, ['menu.html']);
-    for (const p of ['profile.html', 'formats.html', 'rules.html']) assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/' + p, punti: 5 }).reindirizzato, ['menu.html'], p);
-    // la Hall of Fame (record, MVP, Match of the week) ha la sua tessera: si apre, e da un replay si torna lì
-    assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/palmares.html', search: '?sezione=settimane', punti: 5 }).reindirizzato, [], 'palmares.html non rimanda al menù');
+    for (const p of ['profile.html', 'palmares.html', 'shop.html', 'formats.html', 'rules.html']) assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/' + p, punti: 5 }).reindirizzato, ['menu.html'], p);
     // la pagina pubblica è stata fusa in Trainers: porta alla scheda dello stesso allenatore (o alla pagina, senza nome)
     assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/public.html', search: '?player=Didi', punti: 5 }).reindirizzato, ['players.html?player=Didi']);
     assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/public.html', punti: 5 }).reindirizzato, ['players.html']);
