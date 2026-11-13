@@ -761,3 +761,16 @@ html:not(.app-shell) #replayModal.tel-orizz .replay-momenti {
     flex-direction: column; flex-wrap: nowrap; align-items: stretch; justify-content: flex-start; gap: 5px; overflow-y: auto; padding: 0 4px 4px 0;
 }
 html:not(.app-shell) #replayModal.tel-orizz .rm-chip { font-size: .66rem; }
+
+/* ---------- Replay: niente si sposta ----------
+   Il contenuto della finestra è centrato: ogni elemento che compare dopo gli altri (intestazione, set, badge, comandi, momenti chiave, condizioni del campo)
+   cambia l'altezza del tutto, e con lei il posto e la misura della console (matches.html: adattaReplayAlloSchermo). Due rimedi: finché non è pronto tutto il resto
+   resta invisibile (.in-preparazione: compare insieme), e i posti di ciò che arriva dal replay sono riservati da subito. */
+#replayModal.in-preparazione > :not(.close-replay) { visibility: hidden; }
+html:not(.app-shell) #replayModal:not(.tel) .replay-comandi[hidden],
+html:not(.app-shell) #replayModal:not(.tel) .replay-momenti[hidden] { display: flex; visibility: hidden; }
+html:not(.app-shell) #replayModal:not(.tel) .replay-momenti { min-height: 26px; }
+/* in riga i cartellini vanno su una o due righe (--righe-campo, la sceglie adattaReplayAlloSchermo dalla larghezza della finestra): lo spazio è sempre quello, così non cresce se vanno a capo;
+   contain: la loro larghezza non allarga il palco */
+html:not(.app-shell) #replayModal:not(.tel):not(.campo-laterale) .replay-campo { min-height: calc(27px * var(--righe-campo, 2) + 8px * (var(--righe-campo, 2) - 1)); align-content: flex-start; contain: inline-size; }
+html:not(.app-shell) #replayModal:not(.tel):not(.campo-laterale) .replay-campo[hidden] { display: flex; visibility: hidden; }
