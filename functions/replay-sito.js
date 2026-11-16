@@ -787,7 +787,27 @@ ${barreSalute('.palco')}
                     else { voce.s = baseSpecie(parti[3]) || voce.s; voce.st = Math.max(voce.st, 1); }
                 }
             }
-            return { p1: lati.p1.rosa, p2: lati.p2.rosa };
+            return Object.assign({ p1: lati.p1.rosa, p2: lati.p2.rosa }, portatiDelSet());
+        }
+        // Chi è sceso in campo in un momento qualsiasi del set (anche dopo il punto in cui è il replay) e quanti ne portava ognuno (|teamsize|): servono alla pagina per tenere
+        // nell'intestazione solo i Pokémon portati. Si ricalcola solo se la coda è cambiata.
+        let cachePortati = null;
+        function portatiDelSet() {
+            const coda = battle.stepQueue || [];
+            if (cachePortati && cachePortati.n === coda.length) return cachePortati.v;
+            const scesi = { p1: [], p2: [] }, dim = { p1: 0, p2: 0 };
+            for (const riga of coda) {
+                if (typeof riga !== 'string' || riga[0] !== '|') continue;
+                const parti = riga.split('|');
+                const cmd = parti[1];
+                if (cmd === 'switch' || cmd === 'drag' || cmd === 'replace') {
+                    const m = /^(p[12])[a-d]?: /.exec(parti[2] || '');
+                    const k = m && chiaveSpecie(parti[3]);
+                    if (k && scesi[m[1]].indexOf(k) < 0) scesi[m[1]].push(k);
+                } else if (cmd === 'teamsize' && dim[parti[2]] !== undefined) dim[parti[2]] = parseInt(parti[3], 10) || 0;
+            }
+            cachePortati = { n: coda.length, v: { scesi, dim } };
+            return cachePortati.v;
         }
         function inviaSquadre() {
             if (window.parent === window) return;
@@ -795,7 +815,7 @@ ${barreSalute('.palco')}
             const firma = JSON.stringify(squadre);
             if (firma === ultimeSquadre) return;
             ultimeSquadre = firma;
-            try { window.parent.postMessage({ tipo: 'replay-squadre', p1: squadre.p1, p2: squadre.p2 }, '*'); } catch (e) { /* la pagina non ascolta */ }
+            try { window.parent.postMessage({ tipo: 'replay-squadre', p1: squadre.p1, p2: squadre.p2, scesi: squadre.scesi, dim: squadre.dim }, '*'); } catch (e) { /* la pagina non ascolta */ }
         }
 
         // --- Comandi ---
