@@ -246,7 +246,7 @@ test('html: una riga con etichetta e settimana sul bordo, i due allenatori sui l
     const h = M.html(s, { giocatori, gif: x => `g/${x}.gif`, settimana, indice: 0, totale: 1 });
     assert.match(h, /^<span class="ms-t">MATCH OF THE WEEK<\/span><div class="ms-pager ms-solo" role="group" aria-label="Week">/);
     assert.match(h, /<span class="ms-sett"><b>This week<\/b><span>26 Oct – 1 Nov<\/span><\/span>/);
-    assert.match(h, /class="ms-lato ms-l1 ms-vince" style="--c:#aa00cc" title="Ada · won"><span class="ms-esito" aria-label="Winner">&#9733; Winner<\/span><a class="ms-av-link" href="public\.html\?player=Ada" title="Ada"><img class="ms-av" src="a\.png"/, 'chi ha vinto: colore pieno; dell\'allenatore l\'avatar');
+    assert.match(h, /class="ms-lato ms-l1 ms-vince" style="--c:#aa00cc" title="Ada · won"><span class="ms-esito" aria-label="Winner">Winner<\/span><a class="ms-av-link" href="public\.html\?player=Ada" title="Ada"><img class="ms-av" src="a\.png"/, 'chi ha vinto: colore pieno; dell\'allenatore l\'avatar');
     assert.match(h, /class="ms-lato ms-l2 ms-perde" style="--c:#d9dde6" title="Bea · lost"/, 'chi ha perso: sbiadito; un colore non valido torna al neutro');
     assert.equal((h.match(/class="ms-esito"/g) || []).length, 1, 'il tag "Winner" è uno solo, su chi ha vinto');
     assert.doesNotMatch(h, /class="ms-vs"|>VS</, 'niente scritta VS tra i due');
