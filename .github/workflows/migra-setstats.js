@@ -67,4 +67,5 @@ async function main() {
 }
 
 module.exports = { piano };
-if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
+// Chiude esplicitamente: la connessione di firebase-admin terrebbe vivo il processo (e il job di Actions) all'infinito.
+if (require.main === module) main().then(() => process.exit(0), e => { console.error(e); process.exit(1); });
