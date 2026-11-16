@@ -2873,8 +2873,14 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
             const fila = document.getElementById(idFila);
             const rosa = Array.isArray(e.data[lato]) ? e.data[lato].slice(0, 6) : [];
             if (!fila || !rosa.length) continue;
-            if (!fila.querySelector('img') && window.SpritePkm) {
+            // Senza team nell'intestazione (Random) la fila la costruisce il replay, e cresce man mano che i Pokémon scendono in campo (nelle Random non c'è il team preview):
+            // a ogni messaggio si aggiungono quelli che ancora non ci sono. Una fila con il team vero dell'intestazione non si tocca.
+            if ((!fila.querySelector('img') || fila.dataset.daReplay === '1') && window.SpritePkm) {
+                fila.dataset.daReplay = '1';
+                const presenti = [...fila.querySelectorAll('img')].map(img => chiaveSquadra(img.dataset.pkm));
                 rosa.forEach(r => {
+                    const gia = presenti.indexOf(chiaveSquadra(r.s));
+                    if (gia >= 0) { presenti.splice(gia, 1); return; }
                     const img = document.createElement('img');
                     img.src = SpritePkm.gif(String(r.s));
                     img.className = 'header-gif';
@@ -3298,6 +3304,7 @@ function renderGifs(nomeTeam, containerId, categoria) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = "";
+    delete container.dataset.daReplay;      // la fila torna a quella del team (o vuota): quella costruita dal replay delle Random ricomincia da capo
 
     const dataIscritti = window.teamsIscrittiStagione; // seasons/ID/teams_iscritti
     if (!dataIscritti || !categoria) return;

@@ -69,3 +69,50 @@ test('squadre: il replay le manda alla pagina a ogni cambio (non uguali a prima)
     assert.match(finestre, /\.mini-gifs-row\.rg-attiva img\.rg-ko \{ opacity: \.28; filter: grayscale\(1\); \}/);
     assert.match(finestre, /\.mini-gifs-row\.rg-attiva img \{ opacity: \.5;/);
 });
+
+// Il gestore della pagina, eseguito con un DOM finto: nelle Random la fila dell'intestazione parte vuota e cresce man mano che i Pokémon scendono in campo
+function paginaConFile() {
+    const inizio = matches.indexOf("    const chiaveSquadra = t => ");
+    const fine = matches.indexOf("    window.addEventListener('message', e => {", matches.indexOf("e.data.tipo !== 'replay-squadre'"));
+    assert.ok(inizio > 0 && fine > inizio);
+    const creaFila = () => {
+        const fila = { figli: [], dataset: {}, classi: new Set(), classList: { add: c => fila.classi.add(c) }, appendChild: img => fila.figli.push(img), querySelector: s => (s === 'img' ? fila.figli[0] || null : null), querySelectorAll: () => fila.figli };
+        return fila;
+    };
+    const file = { 'header-gifs-didi': creaFila(), 'header-gifs-lu': creaFila() };
+    let gestore;
+    const ctx = vm.createContext({
+        Array, Number, String, Set, SpritePkm: { gif: s => 'gif/' + s },
+        window: { SpritePkm: { gif: s => 'gif/' + s }, addEventListener: (t, f) => { gestore = f; } },
+        frame: () => ({ contentWindow: 'f' }),
+        document: {
+            getElementById: id => file[id],
+            createElement: () => ({ dataset: {}, className: '', classList: { toggle() {} }, set title(v) {} })
+        }
+    });
+    vm.runInContext(matches.slice(inizio, fine), ctx);
+    return { file, manda: dati => gestore({ source: 'f', data: { tipo: 'replay-squadre', ...dati } }), pkm: lato => file[lato].figli.map(i => i.dataset.pkm) };
+}
+
+test('squadre, Random: la fila costruita dal replay si allunga con i Pokémon che scendono in campo (prima restava ai primi), senza doppioni', () => {
+    const p = paginaConFile();
+    p.manda({ p1: [{ s: 'Dhelmise', st: 1 }], p2: [{ s: 'Arceus', st: 1 }] });
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Dhelmise']);
+    p.manda({ p1: [{ s: 'Dhelmise', st: 2 }, { s: 'Kingambit', st: 1 }], p2: [{ s: 'Arceus', st: 1 }, { s: 'Toxapex', st: 1 }] });
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Dhelmise', 'Kingambit']);
+    assert.deepEqual(p.pkm('header-gifs-lu'), ['Arceus', 'Toxapex']);
+    p.manda({ p1: [{ s: 'Dhelmise', st: 2 }, { s: 'Kingambit', st: 1 }], p2: [{ s: 'Arceus', st: 1 }, { s: 'Toxapex', st: 1 }] });
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Dhelmise', 'Kingambit'], 'lo stesso messaggio non aggiunge niente');
+    // tornando indietro i Pokémon già visti restano (tenui), non sparisce niente
+    p.manda({ p1: [{ s: 'Dhelmise', st: 1 }], p2: [{ s: 'Arceus', st: 1 }] });
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Dhelmise', 'Kingambit']);
+});
+
+test('squadre: una fila con il team vero dell\'intestazione non si tocca (nessun Pokémon aggiunto); renderGifs azzera il segno "costruita dal replay"', () => {
+    const p = paginaConFile();
+    const fila = p.file['header-gifs-didi'];
+    fila.figli.push({ dataset: { pkm: 'Garchomp' }, classList: { toggle() {} } });
+    p.manda({ p1: [{ s: 'Garchomp', st: 1 }, { s: 'Rotom', st: 1 }], p2: [] });
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Garchomp'], 'il team dell\'intestazione resta quello');
+    assert.match(matches, /delete container\.dataset\.daReplay;/);
+});
