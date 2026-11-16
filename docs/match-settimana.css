@@ -85,8 +85,15 @@ body.pg-index.con-match .home-seasons-container { min-height: 0; margin-top: aut
 }
 .ms-l2 { flex-direction: row-reverse; text-align: right; rotate: calc(var(--nb-rot, 1) * .4deg); }
 .ms-vince { box-shadow: var(--nb-sh-4, 4px 4px 0 #000); }
-/* chi ha perso: lo stesso colore, ma sbiadito verso la carta (senza color-mix resta il colore pieno) */
-.ms-perde { background: color-mix(in srgb, var(--c, #d9dde6) 38%, var(--nb-carta, #fff)); }
+/* chi ha perso: il colore sbiadito verso la carta (senza color-mix resta il colore pieno) e spento, quasi grigio; chi ha vinto ha il colore pieno e il tag giallo "Winner" sul bordo */
+.ms-perde { background: color-mix(in srgb, var(--c, #d9dde6) 30%, var(--nb-carta, #fff)); filter: grayscale(.8); }
+.ms-esito {
+    position: absolute; top: -15px; right: 12px; z-index: 3; padding: 4px 10px 2px; white-space: nowrap;      /* sul lato libero della scheda: non copre l'avatar */
+    background: #ffd84a; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 12px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase;
+    rotate: calc(var(--nb-rot, 1) * 3deg);
+}
+.ms-l2 .ms-esito { right: auto; left: 12px; rotate: calc(var(--nb-rot, 1) * -3deg); }
 .ms-av-link { flex: none; display: block; }
 .ms-av { display: block; width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000); animation: ms-saltello .8s steps(1) infinite; }
 .ms-av-vuoto { background: rgba(0, 0, 0, .15); border-radius: 50%; filter: none; animation: none; }

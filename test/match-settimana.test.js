@@ -246,8 +246,9 @@ test('html: una riga con etichetta e settimana sul bordo, i due allenatori sui l
     const h = M.html(s, { giocatori, gif: x => `g/${x}.gif`, settimana, indice: 0, totale: 1 });
     assert.match(h, /^<span class="ms-t">MATCH OF THE WEEK<\/span><div class="ms-pager ms-solo" role="group" aria-label="Week">/);
     assert.match(h, /<span class="ms-sett"><b>This week<\/b><span>26 Oct – 1 Nov<\/span><\/span>/);
-    assert.match(h, /class="ms-lato ms-l1 ms-vince" style="--c:#aa00cc" title="Ada · won"><a class="ms-av-link" href="public\.html\?player=Ada" title="Ada"><img class="ms-av" src="a\.png"/, 'chi ha vinto: colore pieno; dell\'allenatore l\'avatar');
+    assert.match(h, /class="ms-lato ms-l1 ms-vince" style="--c:#aa00cc" title="Ada · won"><span class="ms-esito" aria-label="Winner">&#9733; Winner<\/span><a class="ms-av-link" href="public\.html\?player=Ada" title="Ada"><img class="ms-av" src="a\.png"/, 'chi ha vinto: colore pieno; dell\'allenatore l\'avatar');
     assert.match(h, /class="ms-lato ms-l2 ms-perde" style="--c:#d9dde6" title="Bea · lost"/, 'chi ha perso: sbiadito; un colore non valido torna al neutro');
+    assert.equal((h.match(/class="ms-esito"/g) || []).length, 1, 'il tag "Winner" è uno solo, su chi ha vinto');
     assert.doesNotMatch(h, /WINNER|ms-win|class="ms-vs"|>VS</, 'né il tag WINNER né la scritta VS');
     assert.doesNotMatch(h, /<b>Uno<\/b>/, 'il nome del team è protetto');
     // il tag nero porta il nome del team (protetto), non quello dell'allenatore; senza team, il nome dell'allenatore
@@ -524,7 +525,8 @@ test('stile: bordi, ombre, angoli, rotazioni e caratteri del tema; niente giallo
     assert.ok(/background: var\(--nb-ink/.test(nero) && /color: #fff/.test(nero) && /--nb-sh-s-scuro/.test(nero), 'il tag del team è nero, con testo bianco e l\'ombra grigia trasparente dei titoli');
     const tag = /\.ms-banner, \.ms-chip \{[^}]*\}/.exec(css);
     assert.ok(tag && /background: var\(--nb-carta/.test(tag[0]) && /border: 3px solid var\(--nb-ink/.test(tag[0]) && /box-shadow: var\(--nb-sh-s/.test(tag[0]));
-    assert.match(css, /\.ms-perde \{ background: color-mix\(in srgb, var\(--c, #d9dde6\) 38%, var\(--nb-carta/);
+    assert.match(css, /\.ms-perde \{ background: color-mix\(in srgb, var\(--c, #d9dde6\) 30%, var\(--nb-carta[^}]*filter: grayscale\(\.8\); \}/, 'chi ha perso è spento');
+    assert.match(css, /\.ms-esito \{[^}]*background: #ffd84a;/, 'chi ha vinto ha il tag giallo');
     assert.doesNotMatch(css, /\.ms-win|\.ms-vs|\.ms-centro/);
     // i badge: del team accanto al nome, del Pokémon sul bordo del medaglione (le immagini del medaglione non si prendono le loro regole)
     assert.match(css, /\.ms-med > img \{ position: absolute;/);
@@ -618,4 +620,23 @@ test('il tag della settimana ha una larghezza fissa (uguale per tutte le settima
     const css = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'docs', 'match-settimana.css'), 'utf8');
     assert.match(css, /\.ms-sett \{[^}]*justify-content: center; box-sizing: border-box; width: 250px;/);
     assert.match(css, /\.ms-sett \{ flex: 1 1 auto; width: auto; justify-content: center; \}/);
+});
+
+test('medaglione: se PokeAPI non conosce il nome come scritto (forme, specie con la forma predefinita col nome diverso) si accorcia il nome e poi si prende la forma predefinita, così il disco si colora', async () => {
+    const Medaglione = require('../docs/medaglione-pkm.js');
+    const risposte = {
+        'pokemon/arceus-ghost': null, 'pokemon/arceus': { types: [{ type: { name: 'normal' } }] },
+        'pokemon/lycanroc': null, 'pokemon-species/lycanroc': { varieties: [{ is_default: false, pokemon: { url: 'x' } }, { is_default: true, pokemon: { url: 'https://pokeapi.co/api/v2/pokemon/745/' } }] },
+        'pokemon/745/': { types: [{ type: { name: 'rock' } }] },
+        'pokemon/garchomp': { types: [{ type: { name: 'dragon' } }] }
+    };
+    const chiamate = [];
+    const win = { fetch: async u => { const k = u.replace('https://pokeapi.co/api/v2/', ''); chiamate.push(k); const r = risposte[k]; return { ok: !!r, json: async () => r }; } };
+    assert.equal(await Medaglione.colorePerSpecie(win, 'Arceus-Ghost'), Medaglione.COLORI_TIPO.normal, 'accorciato: arceus-ghost → arceus');
+    assert.equal(await Medaglione.colorePerSpecie(win, 'Lycanroc'), Medaglione.COLORI_TIPO.rock, 'la forma predefinita della specie');
+    assert.equal(await Medaglione.colorePerSpecie(win, 'Garchomp'), Medaglione.COLORI_TIPO.dragon);
+    assert.equal(await Medaglione.colorePerSpecie(win, 'Inesistente'), null, 'un nome sconosciuto resta senza colore');
+    const prima = chiamate.length;
+    await Medaglione.colorePerSpecie(win, 'Garchomp');
+    assert.equal(chiamate.length, prima, 'una richiesta sola per specie, poi si ricorda');
 });

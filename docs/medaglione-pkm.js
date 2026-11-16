@@ -26,15 +26,37 @@
 
     const cacheTipo = new Map();      // nome PokeAPI -> promessa del colore del primo tipo (o null)
 
+    const tipoDa = j => (j && j.types && j.types[0] ? COLORI_TIPO[j.types[0].type.name] || null : null);
+    const jsonDi = (win, url) => win.fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+    /**
+     * Il colore del primo tipo di un nome PokeAPI. Se PokeAPI non conosce il nome come scritto (forme che per lei hanno un altro nome: "arceus-ghost",
+     * "lycanroc", "basculegion-f"...) si accorcia a poco a poco ("mr-mime-galar" → "mr-mime") e, se nemmeno così, si prende la forma predefinita della specie.
+     */
+    async function cercaColore(win, k) {
+        const API = 'https://pokeapi.co/api/v2/';
+        const pezzi = k.split('-');
+        const nomi = [];
+        for (let n = pezzi.length; n >= 1; n--) nomi.push(pezzi.slice(0, n).join('-'));
+        for (const nome of nomi) {
+            const c = tipoDa(await jsonDi(win, `${API}pokemon/${encodeURIComponent(nome)}`));
+            if (c) return c;
+        }
+        for (const nome of nomi) {
+            const specie = await jsonDi(win, `${API}pokemon-species/${encodeURIComponent(nome)}`);
+            const predefinita = specie && (specie.varieties || []).find(v => v && v.is_default);
+            if (predefinita && predefinita.pokemon && predefinita.pokemon.url) {
+                const c = tipoDa(await jsonDi(win, predefinita.pokemon.url));
+                if (c) return c;
+            }
+            if (specie) break;
+        }
+        return null;
+    }
+
     function colorePerSpecie(win, specie) {
         const k = nomePokeApi(specie);
         if (!k || typeof win.fetch !== 'function') return Promise.resolve(null);
-        if (!cacheTipo.has(k)) {
-            cacheTipo.set(k, win.fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(k)}`)
-                .then(r => (r.ok ? r.json() : null))
-                .then(j => (j && j.types && j.types[0] ? COLORI_TIPO[j.types[0].type.name] || null : null))
-                .catch(() => null));
-        }
+        if (!cacheTipo.has(k)) cacheTipo.set(k, cercaColore(win, k).catch(() => null));
         return cacheTipo.get(k);
     }
 
