@@ -754,6 +754,50 @@ ${barreSalute('.palco')}
                 esc(v.nome) + (v.turni ? '<small>' + esc(v.turni) + '</small>' : '') + '</span>').join('');
         }
 
+        // --- Le squadre: chi è sceso in campo e chi è andato KO, fino al punto in cui è il replay (si ricava dalle righe del log già eseguite) ---
+        // Alla pagina che contiene il replay (matches.html) si manda, per ogni lato, l'elenco dei Pokémon: { s: specie, st: 0 non ancora sceso | 1 sceso in campo | 2 KO }.
+        const baseSpecie = t => String(t || '').split(',')[0].trim();
+        const chiaveSpecie = t => baseSpecie(t).split('-')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        let ultimeSquadre = '';
+        function calcolaSquadre() {
+            const coda = battle.stepQueue || [];
+            const fine = Math.min(Math.max(0, battle.currentStep || 0), coda.length);
+            const lati = { p1: { rosa: [], per: {} }, p2: { rosa: [], per: {} } };
+            for (let i = 0; i < fine; i++) {
+                const riga = coda[i];
+                if (typeof riga !== 'string' || riga[0] !== '|') continue;
+                const parti = riga.split('|');
+                const cmd = parti[1];
+                if (cmd === 'poke') {
+                    const l = lati[parti[2]];
+                    if (l) l.rosa.push({ s: baseSpecie(parti[3]).replace(/-\*$/, ''), st: 0 });
+                } else if (cmd === 'switch' || cmd === 'drag' || cmd === 'replace' || cmd === 'faint') {
+                    const m = /^(p[12])[a-d]?: (.*)$/.exec(parti[2] || '');
+                    const l = m && lati[m[1]];
+                    if (!l) continue;
+                    let voce = l.per[m[2]];
+                    if (!voce && cmd !== 'faint') {
+                        const specie = baseSpecie(parti[3]);
+                        voce = l.rosa.find(r => r.st === 0 && chiaveSpecie(r.s) === chiaveSpecie(specie));
+                        if (!voce) { voce = { s: specie, st: 0 }; l.rosa.push(voce); }
+                        l.per[m[2]] = voce;
+                    }
+                    if (!voce) continue;
+                    if (cmd === 'faint') voce.st = 2;
+                    else { voce.s = baseSpecie(parti[3]) || voce.s; voce.st = Math.max(voce.st, 1); }
+                }
+            }
+            return { p1: lati.p1.rosa, p2: lati.p2.rosa };
+        }
+        function inviaSquadre() {
+            if (window.parent === window) return;
+            const squadre = calcolaSquadre();
+            const firma = JSON.stringify(squadre);
+            if (firma === ultimeSquadre) return;
+            ultimeSquadre = firma;
+            try { window.parent.postMessage({ tipo: 'replay-squadre', p1: squadre.p1, p2: squadre.p2 }, '*'); } catch (e) { /* la pagina non ascolta */ }
+        }
+
         // --- Comandi ---
         const totaleTurni = dati.turni;
         const inPausa = () => battle.paused || !!(battle.ended && battle.atQueueEnd);
@@ -818,6 +862,7 @@ ${barreSalute('.palco')}
         function aggiorna() {
             impostaAvatar();
             aggiornaCampo();
+            inviaSquadre();
             aggiornaComandi();
             aggiornaEsito();
         }
@@ -912,7 +957,7 @@ ${barreSalute('.palco')}
         $('comandi-replay').addEventListener('focusin', mostraComandi);
 
         battle.subscribe(aggiorna);
-        setInterval(() => { impostaAvatar(); aggiornaCampo(); }, 400);
+        setInterval(() => { impostaAvatar(); aggiornaCampo(); inviaSquadre(); }, 400);
         aggiorna();
     }
 

@@ -2862,6 +2862,39 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         if (typeof adattaReplayAlloSchermo === 'function') adattaReplayAlloSchermo();
     });
 
+    // Le squadre: il replay manda per ogni lato i Pokémon con il loro stato (0 non ancora sceso, 1 sceso in campo, 2 KO). Si mostrano nelle file di Pokémon dell'intestazione:
+    // chi è andato KO è semitrasparente e in grigio, chi non è ancora sceso è più tenue. Senza team nell'intestazione (Random) la fila si riempie con quelli del replay.
+    const chiaveSquadra = t => String(t || '').split('-')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    window.addEventListener('message', e => {
+        const f = frame();
+        if (!f || e.source !== f.contentWindow || !e.data || e.data.tipo !== 'replay-squadre') return;
+        for (const [lato, idFila] of [['p1', 'header-gifs-didi'], ['p2', 'header-gifs-lu']]) {
+            const fila = document.getElementById(idFila);
+            const rosa = Array.isArray(e.data[lato]) ? e.data[lato].slice(0, 6) : [];
+            if (!fila || !rosa.length) continue;
+            if (!fila.querySelector('img') && window.SpritePkm) {
+                rosa.forEach(r => {
+                    const img = document.createElement('img');
+                    img.src = SpritePkm.gif(String(r.s));
+                    img.className = 'header-gif';
+                    img.dataset.pkm = String(r.s).slice(0, 40);
+                    fila.appendChild(img);
+                });
+            }
+            const usati = new Set();
+            fila.classList.add('rg-attiva');
+            fila.querySelectorAll('img').forEach(img => {
+                const k = chiaveSquadra(img.dataset.pkm);
+                const i = rosa.findIndex((r, j) => !usati.has(j) && chiaveSquadra(r.s) === k);
+                if (i >= 0) usati.add(i);
+                const st = i >= 0 ? Number(rosa[i].st) || 0 : 0;
+                img.classList.toggle('rg-ko', st === 2);
+                img.classList.toggle('rg-in', st === 1);
+                img.title = (img.dataset.pkm || '') + (st === 2 ? ' · KO' : st === 1 ? ' · in play' : '');
+            });
+        }
+    });
+
     window.addEventListener('message', e => {
         const f = frame();
         if (!f || e.source !== f.contentWindow || !e.data || e.data.tipo !== 'replay-stato') return;
@@ -3294,6 +3327,7 @@ function renderGifs(nomeTeam, containerId, categoria) {
                 const img = document.createElement('img');
                 img.src = typeof getGifUrl === "function" ? getGifUrl(p.nome, p.shiny) : `immagini/pokemon/${p.nome.toLowerCase()}.gif`;
                 img.className = 'header-gif';
+                img.dataset.pkm = p.nome;
                 container.appendChild(img);
             }
         });
