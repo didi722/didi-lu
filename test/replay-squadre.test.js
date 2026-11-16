@@ -117,7 +117,7 @@ test('squadre: una fila con il team vero dell\'intestazione non si tocca (nessun
     assert.match(matches, /delete container\.dataset\.daReplay;/);
 });
 
-test('squadre: ogni sprite sta in un contenitore con la sua barretta rossa se è KO (non sull\'immagine, che diventa grigia e trasparente), e il CSS la disegna', () => {
+test('squadre: ogni sprite sta in un contenitore con la sua barra rossa in diagonale (lo "barra") se è KO (non sull\'immagine, che diventa grigia e trasparente), e il CSS la disegna', () => {
     const p = paginaConFile();
     p.manda({ p1: [{ s: 'Dhelmise', st: 2 }, { s: 'Kingambit', st: 1 }], p2: [{ s: 'Arceus', st: 0 }] });
     const fila = p.file['header-gifs-didi'];
@@ -127,7 +127,7 @@ test('squadre: ogni sprite sta in un contenitore con la sua barretta rossa se è
     p.manda({ p1: [{ s: 'Dhelmise', st: 2 }, { s: 'Kingambit', st: 1 }, { s: 'Corviknight', st: 1 }], p2: [{ s: 'Arceus', st: 0 }] });
     assert.equal(fila.contenitori.length, 3, 'i contenitori non si raddoppiano e il nuovo sprite ha il suo');
     const css = fs.readFileSync(path.join(DOCS, 'finestre.css'), 'utf8');
-    assert.match(css, /\.mini-gifs-row \.rg-voce\.rg-voce-ko::before \{ opacity: 1;/);
+    assert.match(css, /\.mini-gifs-row \.rg-voce\.rg-voce-ko::before \{ opacity: 1; transform: rotate\(-45deg\); \}/, 'in diagonale');
     assert.match(css, /\.mini-gifs-row \.rg-voce::before \{[^}]*background: #e53935;/);
     assert.match(css, /#replayModal\.tel \.replay-mini-header \.mini-gifs-row \.rg-voce \{ flex: 1 1 0;/, 'anche da telefono gli sprite si dividono la fila');
 });
