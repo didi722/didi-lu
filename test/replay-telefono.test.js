@@ -34,9 +34,9 @@ function prova({ larghezza, altezza, app = false, tel = true, altezze = {} }) {
         getElementById: id => (id === 'replayModal' ? modal : null),
         documentElement: { clientWidth: larghezza, clientHeight: altezza, classList: { contains: c => c === 'app-shell' && app } }
     };
-    const ctx = vm.createContext({ document: documento, window: finestra, Math });
+    const ctx = vm.createContext({ document: documento, window: finestra, Math, posizionaConsoleReplay: () => {} });
     vm.runInContext(matches.slice(inizio, fine) + '\nadattaReplayAlloSchermo();', ctx);
-    return { classi: [...classiModal].sort(), scala: Number(proprieta['--gba-scala']) };
+    return { classi: [...classiModal].sort(), scala: Number(proprieta['--gba-scala']), larg: Number.parseFloat(proprieta['--schermo-larg']) };
 }
 
 test('telefono in verticale: classe tel, la scena (640 px) sta nella larghezza, niente console rimpicciolita a un francobollo', () => {
@@ -60,10 +60,11 @@ test('telefono in orizzontale: classe tel-orizz, la scena sta in altezza (con in
     assert.ok(Math.abs(prova({ larghezza: 667, altezza: 375, altezze: { '.replay-mini-header': 49, '.replay-campo': 25 } }).scala - (667 - 224) / 640) < 0.002);
 });
 
-test('sul desktop la console resta com\'è (niente classi del telefono), nell\'app c\'è il suo aspetto', () => {
+test('sul desktop lo schermo è grande (niente classi del telefono), nell\'app c\'è il suo aspetto', () => {
     const desktop = prova({ larghezza: 1300, altezza: 900, tel: false, altezze: { '.replay-mini-header': 150, '.replay-comandi': 60 } });
-    assert.deepEqual(desktop.classi, []);
-    assert.ok(desktop.scala <= 1);
+    assert.ok(!desktop.classi.includes('tel') && !desktop.classi.includes('tel-orizz'), 'niente classi del telefono');
+    assert.ok(desktop.larg >= 420, 'da PC lo schermo è una finestra grande (--schermo-larg), non la vecchia console in scala');
+    assert.ok(Number.isNaN(desktop.scala), 'la scala della vecchia console (--gba-scala) non si tocca più');
     const app = prova({ larghezza: 844, altezza: 390, app: true });
     assert.deepEqual(app.classi, [], 'nell\'app non si toccano le classi: ha il suo CSS (html.app-shell)');
 });
