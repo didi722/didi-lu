@@ -16,6 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="db-leggero.js"></script>
 <link rel="stylesheet" href="temi.css">
 <link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="finestre.css">
@@ -440,21 +441,8 @@ function logout() {
 
 async function caricaColoriPlayers() {
     try {
-        const snapshot = await db.ref('players').once('value');
-        const playersData = snapshot.val();
-        
-        if (!playersData) return;
-
-        for (let nomeKey in playersData) {
-            const nomeMinuscolo = nomeKey.toLowerCase();
-            
-            const coloreRecuperato = playersData[nomeKey].info?.color;
-            
-            if (coloreRecuperato) {
-                playerColors[nomeMinuscolo] = coloreRecuperato;
-            }
-        }
-        console.log("Colori mappati:", playerColors);
+        // solo il colore di ognuno (db-leggero.js): non tutto il nodo players (team, badge, statistiche: 30 volte più pesante)
+        Object.assign(playerColors, await DbLeggero.coloriGiocatori(db));
     } catch (error) {
         console.error("Error loading colors:", error);
     }
@@ -911,9 +899,10 @@ async function caricaTeamBloccati() {
     try {
         // La regola (stagione "playing" o "closed" con il team tra gli iscritti, "sbeta" esclusa) sta in team-bloccati.js,
         // la stessa che usa il simulatore per decidere se a fine partita si può modificare il team
-        const snap = await db.ref('seasons').once('value');
-        window.nomiTeamBloccati = TeamBloccati.nomiBloccati(snap.val());
-        window.stagioniLette = snap.val();       // le stesse stagioni dicono anche chi è iscritto a stagioni con le iscrizioni aperte (salvataggio di un team iscritto)
+        // solo stato e team iscritti di ogni stagione (db-leggero.js): senza i showdown e le statistiche dei set, che pesano il 90%
+        const stagioni = await DbLeggero.stagioniLeggere(db);
+        window.nomiTeamBloccati = TeamBloccati.nomiBloccati(stagioni);
+        window.stagioniLette = stagioni;       // le stesse stagioni dicono anche chi è iscritto a stagioni con le iscrizioni aperte (salvataggio di un team iscritto)
     } catch (e) {
         console.error("Error retrieving blocked teams:", e);
     }
