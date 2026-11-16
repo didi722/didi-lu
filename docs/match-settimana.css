@@ -120,8 +120,7 @@ body.pg-index.con-match .home-seasons-container { min-height: 0; margin-top: aut
 .ms-sprites { display: flex; flex-wrap: nowrap; gap: 1px; max-width: 100%; }
 .ms-l2 .ms-sprites { justify-content: flex-end; }
 .ms-spr { flex: 0 1 30px; width: 30px; min-width: 10px; height: 30px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, .35)); }
-.ms-spr.ms-ko { filter: grayscale(1); opacity: .5; }
-/* l'MVP del vincitore resta acceso anche se è andato KO: basta che non abbia .ms-ko (nessuna regola in più) */
+.ms-spr.ms-ko { filter: grayscale(1); opacity: .5; }     /* i Pokémon andati KO: spenti, restano accesi quelli che sono rimasti in piedi (e l'MVP del vincitore, anche se è andato KO: non ha .ms-ko) */
 
 /* le medagliette dei badge (le stesse del Box, badge-team.css): quelle del team accanto al nome, quelle del Pokémon sul bordo del medaglione */
 .ms-bdg { display: flex; flex: none; gap: 3px; }
