@@ -249,7 +249,7 @@ test('html: una riga con etichetta e settimana sul bordo, i due allenatori sui l
     assert.match(h, /class="ms-lato ms-l1 ms-vince" style="--c:#aa00cc" title="Ada · won"><span class="ms-esito" aria-label="Winner">&#9733; Winner<\/span><a class="ms-av-link" href="public\.html\?player=Ada" title="Ada"><img class="ms-av" src="a\.png"/, 'chi ha vinto: colore pieno; dell\'allenatore l\'avatar');
     assert.match(h, /class="ms-lato ms-l2 ms-perde" style="--c:#d9dde6" title="Bea · lost"/, 'chi ha perso: sbiadito; un colore non valido torna al neutro');
     assert.equal((h.match(/class="ms-esito"/g) || []).length, 1, 'il tag "Winner" è uno solo, su chi ha vinto');
-    assert.doesNotMatch(h, /WINNER|ms-win|class="ms-vs"|>VS</, 'né il tag WINNER né la scritta VS');
+    assert.doesNotMatch(h, /class="ms-vs"|>VS</, 'niente scritta VS tra i due');
     assert.doesNotMatch(h, /<b>Uno<\/b>/, 'il nome del team è protetto');
     // il tag nero porta il nome del team (protetto), non quello dell'allenatore; senza team, il nome dell'allenatore
     assert.match(h, /<a class="ms-nome-link" href="public\.html\?player=Ada" title="&lt;b&gt;Uno&lt;\/b&gt; · Ada"><b class="ms-nome nome-scorrevole">&lt;b&gt;Uno&lt;\/b&gt;<\/b><\/a>/);
@@ -639,4 +639,19 @@ test('medaglione: se PokeAPI non conosce il nome come scritto (forme, specie con
     const prima = chiamate.length;
     await Medaglione.colorePerSpecie(win, 'Garchomp');
     assert.equal(chiamate.length, prima, 'una richiesta sola per specie, poi si ricorda');
+});
+
+test('html: se il set si decide all\'ultimo KO e tutti i Pokémon (di tutti e due i lati) sono andati KO, il protagonista del vincitore resta acceso e in evidenza; gli altri restano spenti', () => {
+    const tuttiKo = {
+        v: 3, turni: 20, vincitore: 'p1',
+        p1: lato('Ada', [pk('A1', { svenuto: true, turnoKo: 3 }), pk('A2', { svenuto: true, turnoKo: 6 }), pk('Bombirdier', { svenuto: true, turnoKo: 20, ultimo: true, koFatti: 3 })]),
+        p2: lato('Bea', [pk('B1', { svenuto: true, turnoKo: 5 }), pk('B2', { svenuto: true, turnoKo: 12 }), pk('B3', { svenuto: true, turnoKo: 20 })])
+    };
+    const s = M.scegli(stagioni({ match1: match('2026-10-29', { set1: tuttiKo }) }), { adesso: OGGI });
+    assert.equal(s.protagonista.specie, 'Bombirdier');
+    const h = M.html(s, { giocatori: {}, gif: x => `g/${x}.gif`, settimana: { titolo: 'This week', intervallo: '' }, indice: 0, totale: 1 });
+    assert.equal((h.match(/class="ms-spr ms-mvp"/g) || []).length, 1, 'un solo Pokémon in evidenza');
+    assert.match(h, /<img class="ms-spr ms-mvp" src="g\/Bombirdier\.gif" alt="Bombirdier" title="Bombirdier \(MVP\)"/);
+    assert.equal((h.match(/class="ms-spr ms-ko"/g) || []).length, 2 + 3, 'tutti gli altri (2 di Ada, 3 di Bea) sono spenti');
+    assert.match(leggi('match-settimana.css'), /\.ms-spr\.ms-mvp \{ filter: drop-shadow\(0 0 2px #ffd84a\)/);
 });

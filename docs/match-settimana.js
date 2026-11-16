@@ -284,8 +284,16 @@
      */
     function html(s, { giocatori = {}, gif, settimana, indice = 0, totale = 1, animazione = '', da = 'home' } = {}) {
         if (!s) return '';
-        const sprite = (p, classe) => (gif && p.specie
-            ? `<img class="${classe}${p.svenuto ? ' ms-ko' : ''}" src="${esc(gif(p.specie))}" alt="${esc(p.specie)}" title="${esc(p.specie)}${p.svenuto ? ' (fainted)' : ''}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)">` : '');
+        // il Pokémon protagonista (l'MVP) del lato del vincitore è sempre acceso e in evidenza, anche se è andato KO: nei set decisi dall'ultimo KO cadono tutti i Pokémon di
+        // tutti e due i lati e, senza questo, nel banner sarebbero tutti spenti
+        const prot0 = s.protagonista;
+        let protTrovato = false;
+        const eMvp = (p, k) => {
+            if (protTrovato || !prot0 || prot0.lato !== k || p.specie !== prot0.specie) return false;
+            return (protTrovato = true);
+        };
+        const sprite = (p, classe, mvp) => (gif && p.specie
+            ? `<img class="${classe}${mvp ? ' ms-mvp' : (p.svenuto ? ' ms-ko' : '')}" src="${esc(gif(p.specie))}" alt="${esc(p.specie)}" title="${esc(p.specie)}${mvp ? ' (MVP)' : (p.svenuto ? ' (fainted)' : '')}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)">` : '');
         const lato = (k, n) => {
             const g = s.giocatori[k], extra = giocatori[g.id] || {};
             const vince = s.vincitore === k;
@@ -297,7 +305,7 @@
                 + `<a class="ms-av-link" href="${esc(pagina)}" title="${esc(g.nome)}">${avatar}</a>`
                 + `<div class="ms-testi"><div class="ms-riga"><a class="ms-nome-link" href="${esc(pagina)}" title="${esc(g.team ? `${g.team} · ${g.nome}` : g.nome)}"><b class="ms-nome nome-scorrevole">${esc(g.team || g.nome)}</b></a>`
                 + `<span class="ms-bdg" data-ms-badge="${k}"></span></div>`
-                + `<div class="ms-sprites">${s.lati[k].pokemon.map(p => sprite(p, 'ms-spr')).join('')}</div></div></div>`;
+                + `<div class="ms-sprites">${s.lati[k].pokemon.map(p => sprite(p, 'ms-spr', eMvp(p, k))).join('')}</div></div></div>`;
         };
         // il protagonista: medaglione (come nel Box), nome e il motivo più importante; gli altri motivi stanno nel suggerimento al passaggio del mouse
         const prot = s.protagonista;
