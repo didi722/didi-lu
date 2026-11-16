@@ -805,6 +805,18 @@ async function inizializzaPaginaArchivio() {
     
     window.teamsIscrittiStagione = dataIscritti;
 
+    // Le statistiche dei set stanno in un nodo a parte (setStats/…: db-leggero.js) e si caricano solo quando servono (riepilogo di fine stagione, voto dell'MVP):
+    // le card degli showdown non le usano, e sono l'84% del peso di una stagione.
+    let showdownsConStatsPromessa = null;
+    const showdownsConStats = () => {
+        if (!showdownsConStatsPromessa) {
+            showdownsConStatsPromessa = DbLeggero.setStatsStagione(db, stagioneAttiva)
+                .then(nodo => DbLeggero.unisciSetStatsShowdowns(dataShowdowns, nodo))
+                .catch(() => dataShowdowns);
+        }
+        return showdownsConStatsPromessa;
+    };
+
     // --- 4. CONTROLLO VISIBILITÀ BOTTONE (+) ---
     const stringStatus = dataSeasonInfo.status ? String(dataSeasonInfo.status).toUpperCase().trim() : "";
     const stagioneChiusa = (stringStatus === 'CLOSED');
@@ -820,7 +832,7 @@ async function inizializzaPaginaArchivio() {
         if ((!stagioneChiusa && !anteprima) || !window.RiepilogoStagione || !window.Statistiche) return null;
         try {
             const mvpNodo = (await db.ref(`seasons/${stagioneAttiva}/mvp`).once('value')).val() || {};
-            const risultato = Statistiche.calcola({ seasons: { [stagioneAttiva]: { info: dataSeasonInfo, showdowns: dataShowdowns, teams_iscritti: dataIscritti, mvp: mvpNodo } }, players: dataPlayers }, { stagione: stagioneAttiva });
+            const risultato = Statistiche.calcola({ seasons: { [stagioneAttiva]: { info: dataSeasonInfo, showdowns: await showdownsConStats(), teams_iscritti: dataIscritti, mvp: mvpNodo } }, players: dataPlayers }, { stagione: stagioneAttiva });
             return RiepilogoStagione.calcola({ risultato, info: dataSeasonInfo, leaderboard: dataLeaderboard, showdowns: dataShowdowns, mvp: mvpNodo });
         } catch (e) { console.error('Riepilogo non disponibile:', e); return null; }
     };
@@ -914,7 +926,7 @@ async function inizializzaPaginaArchivio() {
     // --- 7. MVP DELLA STAGIONE: il tasto per votare (quando mancano pochi showdown) e il risultato a stagione chiusa ---
     if (window.MvpVoto) {
         try {
-            await MvpVoto.avvia({ stagione: stagioneAttiva, info: dataSeasonInfo, showdowns: dataShowdowns, teamsIscritti: dataIscritti, players: dataPlayers, votante: idVotanteMvp });
+            await MvpVoto.avvia({ stagione: stagioneAttiva, info: dataSeasonInfo, showdowns: dataShowdowns, teamsIscritti: dataIscritti, players: dataPlayers, votante: idVotanteMvp, caricaShowdownsConStats: showdownsConStats });
         } catch (e) { console.error('MVP non disponibile:', e); }
     }
 
@@ -1824,6 +1836,7 @@ async function eliminaShowdown(sdId) {
 
         // 2. Eliminazione fisica dello Showdown
         await db.ref(`seasons/${stagione}/showdowns/${sdId}`).remove();
+        await db.ref(`setStats/${stagione}/${sdId}`).remove().catch(() => { /* il nodo delle statistiche dei set non c'è o non è ancora nelle regole: niente da togliere */ });
         console.log(`Showdown ${sdId} rimosso. Avvio ricalcolo statistiche...`);
 
 
@@ -3928,6 +3941,7 @@ async function eliminaMatch(showdownId, matchNum) {
 
             // 2. Eliminazione fisica del match
             await db.ref(pathMatch).remove();
+            await db.ref(`setStats/${stagione}/${showdownId}/match${matchNum}`).remove().catch(() => { /* niente statistiche dei set da togliere */ });
 
             // --- 3. NUOVA LOGICA: RICALCOLO VINCITORE SHOWDOWN ---
             const matchesSnap = await db.ref(`seasons/${stagione}/showdowns/${showdownId}/matches`).once('value');

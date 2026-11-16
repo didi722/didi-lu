@@ -65,6 +65,10 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
     },
     "seasons": { ".read": true, ".write": "auth != null" },
 
+    // Statistiche dei set (setStats/<stagione>/<showdown>/match<N> = { set1: {…}, set2: {…} }): prima stavano dentro ogni match e pesavano l'84% di una stagione. Le scrive il
+    // server a fine match (e il browser, finché i risultati si calcolano dal sito): stessa regola di seasons.
+    "setStats": { ".read": true, ".write": "auth != null" },
+
     // Formati e impostazioni: li cambia solo l'admin.
     "regolamenti": { ".read": true, ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'" },
     "settings":    { ".read": true, ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'" },
@@ -149,3 +153,24 @@ Se qualcosa smette di funzionare, rimetti le regole vecchie (tienine una copia) 
 Shiny dei team: le monete non si falsificano (le scrive solo il server) e avatar, colore e canzoni li cambia solo il server, ma il segno shiny dentro i team (`players/…/teams`) si scrive dal sito. Il Box toglie lo shiny non comprato quando salva un team, ma chi scrive a mano nel database può aggirarlo: è solo estetico.
 
 Due rischi noti: chi guarda le partite in diretta **senza account** non le vedrà più (nelle regole era già "auth != null", ma non valeva); e non ho potuto provare le regole su Firebase da qui.
+
+## Statistiche dei set (`setStats`): fuori da `seasons`
+
+Le statistiche di ogni set (KO, Pokémon portati, ultimo rimasto, scelte turno per turno) stavano dentro ogni match, `seasons/<stagione>/showdowns/<sd>/matches/<match>/setStats`, e
+pesavano l'84% di una stagione (529 KB su 680): ogni pagina che leggeva una stagione le scaricava, anche quando non le usava (Hub, Matches...). Ora stanno in un nodo a parte,
+`setStats/<stagione>/<sd>/<match>` (stessa forma di prima: `{ set1: {…}, set2: {…} }`).
+
+- **Chi le scrive:** il server a fine match (`registraRisultatoMatch`, in `functions/risultati-match.js` e `docs/risultati-match.js`). Se il nodo non si può scrivere (regole non ancora
+  aggiornate) ripiega sul posto di prima, dentro al match: niente si rompe.
+- **Chi le legge:** le pagine che le usano (Stats, badge, Match of the week, riepilogo di stagione, voto MVP, Hall of Fame, Formats, Box) le rimettono nei match con
+  `DbLeggero.unisciSetStats` / `stagioniConStats` (`docs/db-leggero.js`): se un match le ha ancora dentro (dati non spostati) valgono quelle, se c'è il nodo nuovo vale il nodo.
+- **Cancellazioni:** cancellare un match, uno showdown o una stagione toglie anche il suo pezzo in `setStats/` (se no, rifacendo un match con lo stesso numero ricomparirebbero le vecchie statistiche).
+
+**Come passare (in quest'ordine; tra un passo e l'altro il sito funziona sempre):**
+1. Mettere nelle regole del database il nodo `setStats` (blocco qui sopra, accanto a `seasons`) e pubblicarle.
+2. Pubblicare le Functions (`firebase deploy --only functions`): da qui i match nuovi scrivono nel nodo nuovo.
+3. GitHub → Actions → *Sposta le statistiche dei set* → Run workflow:
+   - `prova`: stampa quanti match hanno le statistiche dentro e quanto pesano; non scrive niente;
+   - `copia`: scrive `setStats/…` per i match che le hanno dentro (non toglie niente da `seasons`); si può ripetere;
+   - controllare qualche pagina (Stats, un badge, il Match of the week): devono dare gli stessi numeri di prima;
+   - `pulisci`: toglie le statistiche da dentro ai match, solo dove la copia è identica. Da qui le pagine leggono una stagione senza il 84% del peso.

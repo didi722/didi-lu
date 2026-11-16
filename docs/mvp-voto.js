@@ -201,6 +201,13 @@
         disegnaModale();
     }
 
+    // Le statistiche dei set stanno in un nodo a parte: la pagina può dare, al posto dei showdown semplici, il modo di averli con le statistiche (si caricano solo quando servono)
+    async function showdownsPerStatistiche(c) {
+        if (!c.caricaShowdownsConStats) return c.showdowns;
+        if (!c.conStatistiche) c.conStatistiche = Promise.resolve().then(c.caricaShowdownsConStats).catch(() => c.showdowns);
+        return c.conStatistiche;
+    }
+
     async function apriModale() {
         if (!ctx) return;
         const v = velo();
@@ -210,7 +217,7 @@
         m.innerHTML = '<p class="mvp-nota">Loading the ranking…</p>';
         try {
             // la classifica dell'MVP è quella delle statistiche della sola stagione, congelata all'apertura del voto: uguale per tutti
-            const tutti = classificaCongelata({ ...ctx, iscritti: ctx.iscrittiGrezzi });
+            const tutti = classificaCongelata({ ...ctx, showdowns: await showdownsPerStatistiche(ctx), iscritti: ctx.iscrittiGrezzi });
             const candidati = tutti.slice(0, window.Mvp.TOP);
             // un Pokémon già votato che nel frattempo è uscito dai primi 5 resta nell'elenco, così il voto si vede e si può togliere
             for (const k of ctx.mioVoto || []) { const x = tutti.find(t => t.chiave === k); if (x && !candidati.includes(x)) candidati.push(x); }
@@ -242,7 +249,8 @@
 
     /**
      * Si chiama a ogni disegno di matches.html.
-     * @param {{ stagione: string, info: object, showdowns: object, teamsIscritti: object, players: object, votante?: string }} dati
+     * @param {{ stagione: string, info: object, showdowns: object, teamsIscritti: object, players: object, votante?: string, caricaShowdownsConStats?: () => Promise<object> }} dati
+     *        caricaShowdownsConStats: (facoltativo) i showdown con le statistiche dei set rimesse nei match; si chiama solo quando servono (aprire il voto, contarlo)
      */
     async function avvia(dati) {
         const stagione = dati.stagione, info = dati.info || {};
@@ -261,7 +269,7 @@
         const votante = idDi(dati.votante);
         const mio = votante && mvp.voti && mvp.voti[votante] ? valori(mvp.voti[votante].scelte).map(c => c && c.chiave).filter(Boolean) : [];
         ctx = {
-            stagione, info, showdowns: dati.showdowns || {}, players: dati.players || {}, votante, teamsIscritti: dati.teamsIscritti || {},
+            stagione, info, showdowns: dati.showdowns || {}, players: dati.players || {}, votante, teamsIscritti: dati.teamsIscritti || {}, caricaShowdownsConStats: dati.caricaShowdownsConStats || null,
             iscritti: new Set(Object.keys(iscritti).map(idDi)), mioVoto: mio, iscrittiGrezzi: iscritti,
             finestra: window.Mvp.finestraVoto(info, avanzamento, stagione)
         };
@@ -269,7 +277,7 @@
         if (!autoAperto && new URLSearchParams(location.search).get('mvp') && ctx.finestra.aperta) { autoAperto = true; apriModale(); }
         // scaduto il tempo del voto: si contano i voti (se non l'ha già fatto qualcun altro) e l'MVP compare sotto la classifica
         if (window.Mvp.daContare(ctx.finestra, mvp) && dati.votante) {
-            try { mvp.risultato = await concludi({ stagione, info, showdowns: ctx.showdowns, teamsIscritti: ctx.teamsIscritti, players: ctx.players, iscritti, mvp }); }
+            try { mvp.risultato = await concludi({ stagione, info, showdowns: await showdownsPerStatistiche(ctx), teamsIscritti: ctx.teamsIscritti, players: ctx.players, iscritti, mvp }); }
             catch (e) { console.warn('MVP: conteggio non salvato', e); }
         }
         const vincitori = ctx.finestra.scaduta && mvp.risultato ? window.Mvp.vincitoriDi({ mvp }) : null;

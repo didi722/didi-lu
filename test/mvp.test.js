@@ -408,7 +408,7 @@ test("index.html conta i voti scaduti all'apertura: carica gli script e li avvia
     assert.ok(sc.indexOf('statistiche.js') < sc.indexOf('mvp.js') && sc.indexOf('mvp.js') < sc.indexOf('mvp-voto.js'));
     assert.match(html, /MvpVoto\.concludiScadute\(datiStagioniMvp,/);
     assert.match(html, /if \(user\) contaMvpScaduti\(\);/, 'dopo il login');
-    assert.match(html, /datiStagioniMvp = data;\s+contaMvpScaduti\(\);/, 'appena arrivano le stagioni');
+    assert.match(html, /datiStagioniMvp = unite;\s+contaMvpScaduti\(\);/, 'appena arrivano le stagioni');
 });
 
 test('concludiScadute con i giocatori come funzione: li legge solo se c\'è davvero qualcosa da contare', async () => {

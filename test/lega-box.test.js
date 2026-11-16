@@ -146,8 +146,8 @@ test('il collegamento del Box (tbCaricaLega e gli aiuti), eseguito con i moduli 
     const ctx = {
         console: { warn() {} }, window: {}, tbEsc: t => String(t),
         tbStato: { regolamento: { categoria: 'VGC' } },
-        db: { ref: percorso => ({ once: async () => { letture++; if (errore) throw new Error('rete'); assert.equal(percorso, 'seasons'); return { val: () => stagioni }; } }) },
-        Statistiche: require('../docs/statistiche.js'), UsoGlobale: U, LegaBox: L
+        db: { ref: percorso => ({ once: async () => { if (errore) throw new Error('rete'); if (percorso === 'setStats') return { val: () => null }; letture++; assert.equal(percorso, 'seasons'); return { val: () => stagioni }; } }) },
+        Statistiche: require('../docs/statistiche.js'), UsoGlobale: U, LegaBox: L, DbLeggero: require('../docs/db-leggero.js')
     };
     vm.createContext(ctx);
     vm.runInContext(`const tbLega = { formato: '', dati: null, caricando: false };\n${codice}\nthis.api = { tbLega, tbCaricaLega, tbLegaCorrente, tbEsempiLega, tbEtichettaLega };`, ctx);

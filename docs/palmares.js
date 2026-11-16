@@ -91,8 +91,8 @@
         let dati = null;
         const carica = async () => {
             if (!dati) {
-                const [seasons, players] = await Promise.all([db.ref('seasons').once('value'), db.ref('players').once('value')]);
-                dati = { seasons: seasons.val() || {}, players: players.val() || {} };
+                const [seasons, players] = await Promise.all([window.DbLeggero.stagioniConStats(db), db.ref('players').once('value')]);      // con le statistiche dei set (db-leggero.js)
+                dati = { seasons: seasons || {}, players: players.val() || {} };
             }
             return dati;
         };

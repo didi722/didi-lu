@@ -535,6 +535,18 @@ async function mostraMatchSettimana(data) {
 function caricaStagioniHome() {
     console.log("⏳ Avvio caricamento stagioni...");
     const seasonsRef = db.ref('seasons');
+
+    // Le statistiche dei set stanno in un nodo a parte (setStats/…: db-leggero.js). Servono al Match of the week e all'MVP: si seguono con un secondo ascolto e le due cose
+    // si rimettono insieme (le stagioni nella forma di sempre) a ogni cambiamento dell'una o dell'altra.
+    let stagioniGrezze = null, statisticheSet = null;
+    const rimettiInsieme = () => {
+        if (!stagioniGrezze) return;
+        const unite = window.DbLeggero ? DbLeggero.unisciSetStats(stagioniGrezze, statisticheSet) : stagioniGrezze;
+        datiStagioniMvp = unite;
+        contaMvpScaduti();
+        mostraMatchSettimana(unite);
+    };
+    db.ref('setStats').on('value', (snap) => { statisticheSet = snap.val() || {}; rimettiInsieme(); }, () => { /* senza, restano le statistiche dentro ai match (dati non ancora spostati) */ });
     
     seasonsRef.on('value', (snapshot) => {
         const data = snapshot.val();
@@ -544,9 +556,8 @@ function caricaStagioniHome() {
             return;
         }
 
-        datiStagioniMvp = data;
-        contaMvpScaduti();
-        mostraMatchSettimana(data);
+        stagioniGrezze = data;
+        rimettiInsieme();
 
         const allKeys = Object.keys(data).filter(key => key === 'sbeta' || /^s\d+$/.test(key));
         allKeys.sort((a, b) => {

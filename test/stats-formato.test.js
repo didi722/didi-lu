@@ -157,7 +157,7 @@ test('cablaggio: la pagina Formats ha il doppio tasto Ranking | Stats, carica gl
     assert.match(f, /data-vista="stats"/);
     assert.match(f, /caricaScriptStatsFormato/);
     for (const s of ['statistiche.js', 'uso-globale.js', 'sprite-pkm.js', 'stats-formato.js']) assert.ok(f.includes(`'${s}'`), s);
-    assert.match(f, /db\.ref\('seasons'\)\.once\('value'\)/);
+    assert.match(f, /DbLeggero\.stagioniConStats\(db\)/);
     assert.doesNotMatch(f, /data-fs-stagione|statsFormato\.stagione/, 'niente selettore di stagione');
     assert.doesNotMatch(f, /<script src="stats-formato\.js"/, 'non si carica con la pagina');
     const css = leggi('docs', 'style-formats.css');

@@ -455,7 +455,7 @@ test('home: il banner sta sotto le stagioni, nascosto finché non c\'è un set; 
     for (const f of ['sprites/indice.js', 'sprite-pkm.js', 'medaglione-pkm.js', 'match-settimana.js']) assert.ok(idx.includes(`<script src="${f}"></script>`), f);
     assert.match(idx, /<section id="match-settimana" class="ms-sezione" aria-label="Match of the week" hidden>/);
     assert.ok(idx.indexOf('id="match-settimana"') > idx.indexOf('id="link-next"'), 'dopo le tre stagioni');
-    assert.match(idx, /mostraMatchSettimana\(data\);/);
+    assert.match(idx, /mostraMatchSettimana\(unite\);/);
     assert.match(idx, /MatchSettimana\.monta\(window, blocco, \{/);
     assert.match(idx, /caricaBadge: \(\) => Fiocchi\.carica\(db\)/);
     for (const f of ['fiocchi.js', 'badge-team.js']) assert.ok(idx.includes(`<script src="${f}"></script>`), f);

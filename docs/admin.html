@@ -957,6 +957,7 @@ async function eliminaStagioneCorrente(idDaEliminare) {
 
         mostraProgressoEliminazione("Deleting season...");
         await db.ref().update(updates);
+        await db.ref(`setStats/${idDaEliminare}`).remove().catch(() => { /* niente statistiche dei set da togliere (o nodo non ancora nelle regole) */ });
 
         // --- 3. SFIDE E NOTIFICHE DELLA STAGIONE ---
         mostraProgressoEliminazione("Cleaning challenges and notifications...");

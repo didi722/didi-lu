@@ -10,6 +10,14 @@
 //   - coloriGiocatori(db)          { idInMinuscolo: colore }: legge solo players/{id}/info/color di ognuno; il risultato si ricorda per 5 minuti nella scheda del browser
 //                                  (cambiando pagina non si rilegge); un colore appena cambiato compare nelle altre pagine entro 5 minuti
 //   - stagioniLeggere(db)          { idStagione: { info, teams_iscritti } }: quanto basta a team-bloccati.js (chi è bloccato, chi è iscritto a stagioni aperte)
+//
+// LE STATISTICHE DEI SET (setStats) stanno in un nodo a parte: setStats/{stagione}/{showdown}/{match} = { set1: {...}, set2: {...} } (prima erano dentro ogni match di
+// seasons/…/matches/{match}/setStats e pesavano l'84% di una stagione). Le pagine che le usano (Stats, badge, Match of the week, riepilogo...) le rimettono al loro posto:
+//   - unisciSetStats(seasons, nodo)       pura: le stagioni nella forma di sempre (ogni match con il suo setStats); il nodo nuovo vale più di quello dentro al match
+//   - unisciSetStatsShowdowns(showdowns, perStagione)   lo stesso per i soli showdown di una stagione
+//   - stagioniConStats(db)                seasons + setStats uniti: la lettura di prima, per chi ha bisogno di tutto
+//   - setStatsStagione(db, id)            solo le statistiche dei set di una stagione
+// Chi non ha bisogno delle statistiche (Hub, Matches, Box...) legge seasons senza e scarica un quinto.
 // Se qualcosa non va (rete, regole) si ripiega sulla lettura intera di una volta: il risultato è lo stesso, solo più pesante.
 //
 // Funziona nel browser (window.DbLeggero) e in Node (require).
@@ -89,5 +97,40 @@
         return fuori;
     }
 
-    return { chiaviDi, coloriGiocatori, stagioniLeggere, CHIAVE_COLORI, DURATA_COLORI };
+    // ---------- le statistiche dei set ----------
+    const eOggetto = x => !!x && typeof x === 'object';
+
+    /** Gli showdown di una stagione con le statistiche dei set rimesse nei loro match (senza toccare l'originale). `perStagione`: setStats/{stagione} */
+    function unisciSetStatsShowdowns(showdowns, perStagione) {
+        if (!eOggetto(showdowns) || !eOggetto(perStagione)) return showdowns;
+        const fuori = {};
+        for (const [sd, dati] of Object.entries(showdowns)) {
+            const perSd = perStagione[sd];
+            if (!eOggetto(dati) || !eOggetto(perSd) || !eOggetto(dati.matches)) { fuori[sd] = dati; continue; }
+            const matches = {};
+            for (const [chiave, m] of Object.entries(dati.matches)) matches[chiave] = eOggetto(m) && eOggetto(perSd[chiave]) ? { ...m, setStats: perSd[chiave] } : m;
+            fuori[sd] = { ...dati, matches };
+        }
+        return fuori;
+    }
+
+    /** Le stagioni nella forma di sempre: ogni match col suo setStats. Chi non ha il nodo nuovo (dati non ancora spostati) tiene quello che ha dentro */
+    function unisciSetStats(seasons, nodo) {
+        if (!eOggetto(seasons) || !eOggetto(nodo)) return seasons;
+        const fuori = {};
+        for (const [id, stagione] of Object.entries(seasons)) {
+            fuori[id] = eOggetto(stagione) && eOggetto(nodo[id]) ? { ...stagione, showdowns: unisciSetStatsShowdowns(stagione.showdowns, nodo[id]) } : stagione;
+        }
+        return fuori;
+    }
+
+    async function setStatsStagione(db, id) { return (await leggi(db, `setStats/${id}`)) || {}; }
+
+    /** seasons + setStats uniti: la stessa cosa che si leggeva prima da `seasons` */
+    async function stagioniConStats(db) {
+        const [stagioni, nodo] = await Promise.all([leggi(db, 'seasons'), leggi(db, 'setStats').catch(() => null)]);
+        return unisciSetStats(stagioni || {}, nodo || {});
+    }
+
+    return { chiaviDi, coloriGiocatori, stagioniLeggere, unisciSetStats, unisciSetStatsShowdowns, setStatsStagione, stagioniConStats, CHIAVE_COLORI, DURATA_COLORI };
 });

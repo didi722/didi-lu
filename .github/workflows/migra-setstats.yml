@@ -1,0 +1,27 @@
+name: Sposta le statistiche dei set
+
+# Si lancia a mano (Actions → Sposta le statistiche dei set → Run workflow) e va fatto in tre passi, in ordine: prova → copia → pulisci.
+# Spiegazione e ordine completo: REGOLE-DATABASE.md ("setStats"). Prima della copia le regole del database devono avere il nodo setStats.
+on:
+  workflow_dispatch:
+    inputs:
+      fase:
+        description: 'prova = solo dice cosa farebbe · copia = scrive setStats/… (non toglie niente) · pulisci = toglie le statistiche da dentro ai match (solo dove la copia è identica)'
+        type: choice
+        options: [prova, copia, pulisci]
+        default: prova
+
+jobs:
+  migra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Installa firebase-admin
+        run: npm install firebase-admin
+      - name: Sposta le statistiche dei set
+        run: node .github/workflows/migra-setstats.js ${{ inputs.fase == 'copia' && '--copia' || '' }} ${{ inputs.fase == 'pulisci' && '--pulisci' || '' }}
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

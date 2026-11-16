@@ -4947,7 +4947,7 @@ async function tbCaricaLega() {
     if (!formato || tbLega.formato === formato || tbLega.caricando || typeof LegaBox === 'undefined') return;
     tbLega.caricando = true;
     try {
-        if (!window.stagioniPerLega) window.stagioniPerLega = (await db.ref('seasons').once('value')).val() || {};
+        if (!window.stagioniPerLega) window.stagioniPerLega = (await DbLeggero.stagioniConStats(db)) || {};      // con le statistiche dei set (db-leggero.js)
         const dati = { seasons: window.stagioniPerLega, players: {} };
         const battaglia = Statistiche.calcola(dati, { formato, senzaSquadre: true }).pokemon;
         tbLega.dati = LegaBox.prepara(UsoGlobale.calcola(dati, { formato }, battaglia));
