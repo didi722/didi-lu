@@ -798,9 +798,10 @@ html:not(.app-shell) #replayModal:not(.tel) .replay-versus {
 /* ---------- Replay: le squadre nell'intestazione (chi è sceso in campo, chi è andato KO) ---------- */
 #replayModal .mini-gifs-row.rg-attiva img { opacity: .5; transition: opacity .25s ease, filter .25s ease; }
 #replayModal .mini-gifs-row.rg-attiva img.rg-in { opacity: 1; }
-#replayModal .mini-gifs-row.rg-attiva img.rg-ko { opacity: .28; filter: grayscale(1); }
+#replayModal .mini-gifs-row.rg-attiva img.rg-ko { opacity: .5; filter: grayscale(1); }      /* tenue quanto chi è ancora in panchina; il KO si riconosce dal grigio e dalla barra rossa */
 /* chi è andato KO è "barrato": una striscia rossa in diagonale da un angolo all'altro dello sprite (sta nel contenitore, non sull'immagine: il grigio e la trasparenza non la toccano) */
 #replayModal .mini-gifs-row .rg-voce { position: relative; display: flex; flex: none; }
+#replayModal .mini-gifs-row .rg-voce.rg-voce-fuori { display: none; }      /* rimasto a casa (non portato): non si mostra */
 #replayModal .mini-gifs-row .rg-voce::before { content: ''; position: absolute; top: calc(50% - 2px); left: -20%; width: 140%; height: 4px; background: #e53935; border-radius: 2px; box-shadow: 0 0 0 1px var(--nb-ink, #000); opacity: 0; transform: rotate(-45deg) scaleX(.2); transition: opacity .25s ease, transform .3s ease; pointer-events: none; z-index: 1; }
 #replayModal .mini-gifs-row .rg-voce.rg-voce-ko::before { opacity: 1; transform: rotate(-45deg); }
 html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row .rg-voce { flex: 1 1 0; min-width: 0; max-width: 24px; }

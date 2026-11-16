@@ -2864,17 +2864,35 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
     });
 
     // Le squadre: il replay manda per ogni lato i Pokémon con il loro stato (0 non ancora sceso, 1 sceso in campo, 2 KO). Si mostrano nelle file di Pokémon dell'intestazione:
-    // chi è andato KO è semitrasparente e in grigio, chi non è ancora sceso è più tenue. Senza team nell'intestazione (Random) la fila si riempie con quelli del replay.
+    // chi è andato KO e chi non è ancora sceso sono tenui (il KO ha anche la barra rossa). Senza team nell'intestazione (Random) la fila si riempie con quelli del replay.
+    // Con il team vero (formati con team preview) restano solo i Pokémon portati: quelli scesi in campo in un momento qualsiasi del set (li manda il replay, "scesi") e quelli che
+    // le statistiche del set segnano come portati anche se non sono mai scesi (le scrive il server: si leggono solo per il set aperto).
     const chiaveSquadra = t => String(t || '').split('-')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-    window.addEventListener('message', e => {
-        const f = frame();
-        if (!f || e.source !== f.contentWindow || !e.data || e.data.tipo !== 'replay-squadre') return;
+    const portatiSet = {};          // { 'stagione/showdown/matchN/setK': { p1: [chiavi], p2: [chiavi] } } (vuoto se non si sa)
+    let ultimeSquadre = null;
+    const setAperto = () => { const b = document.querySelector('.btn-set.is-selected'); return b ? String(b.dataset.set || '').replace(/\D/g, '') : ''; };
+    function chiavePortati() {
+        const r = window.replayAttuale, n = setAperto();
+        return r && r.stagione && r.sd && r.match && n ? `${r.stagione}/${r.sd}/${r.match}/set${n}` : '';
+    }
+    function leggiPortati(chiave) {
+        if (!chiave || chiave in portatiSet) return;
+        portatiSet[chiave] = { p1: [], p2: [] };
+        const lato = (st, l) => ((st[l] && st[l].pokemon) || []).filter(x => x && x.portato).map(x => chiaveSquadra(x.specie));
+        db.ref('setStats/' + chiave).once('value').then(snap => {
+            const st = snap.val() || {};
+            portatiSet[chiave] = { p1: lato(st, 'p1'), p2: lato(st, 'p2') };
+            if (ultimeSquadre) applicaSquadre(ultimeSquadre);
+        }).catch(() => { /* senza queste statistiche restano i Pokémon scesi in campo */ });
+    }
+    function applicaSquadre(dati) {
+        const dichiarati = portatiSet[chiavePortati()] || {};
         for (const [lato, idFila] of [['p1', 'header-gifs-didi'], ['p2', 'header-gifs-lu']]) {
             const fila = document.getElementById(idFila);
-            const rosa = Array.isArray(e.data[lato]) ? e.data[lato].slice(0, 6) : [];
+            const rosa = Array.isArray(dati[lato]) ? dati[lato].slice(0, 6) : [];
             if (!fila || !rosa.length) continue;
             // Senza team nell'intestazione (Random) la fila la costruisce il replay, e cresce man mano che i Pokémon scendono in campo (nelle Random non c'è il team preview):
-            // a ogni messaggio si aggiungono quelli che ancora non ci sono. Una fila con il team vero dell'intestazione non si tocca.
+            // a ogni messaggio si aggiungono quelli che ancora non ci sono. Una fila con il team vero dell'intestazione non si tocca (se non per togliere chi è rimasto a casa).
             if ((!fila.querySelector('img') || fila.dataset.daReplay === '1') && window.SpritePkm) {
                 fila.dataset.daReplay = '1';
                 const presenti = [...fila.querySelectorAll('img')].map(img => chiaveSquadra(img.dataset.pkm));
@@ -2888,10 +2906,13 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
                     fila.appendChild(img);
                 });
             }
+            // i portati: chi è sceso in campo in un momento qualsiasi del set + chi le statistiche dicono portato
+            const portati = new Set([...((dati.scesi && dati.scesi[lato]) || []), ...(dichiarati[lato] || [])].map(chiaveSquadra));
+            const teamVero = fila.dataset.daReplay !== '1';
             const usati = new Set();
             fila.classList.add('rg-attiva');
             fila.querySelectorAll('img').forEach(img => {
-                // ogni sprite sta in un contenitore: la barretta rossa dei KO è sua, così non diventa grigia e trasparente insieme allo sprite
+                // ogni sprite sta in un contenitore: la barra rossa dei KO è sua, così non diventa grigia e trasparente insieme allo sprite
                 let voce = img.parentNode;
                 if (!voce || voce === fila || !voce.classList || !voce.classList.contains('rg-voce')) {
                     voce = document.createElement('span');
@@ -2903,12 +2924,21 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
                 const i = rosa.findIndex((r, j) => !usati.has(j) && chiaveSquadra(r.s) === k);
                 if (i >= 0) usati.add(i);
                 const st = i >= 0 ? Number(rosa[i].st) || 0 : 0;
+                // chi è rimasto a casa non si mostra (solo se si sa chi è stato portato: prima che il replay lo dica resta tutta la squadra)
+                voce.classList.toggle('rg-voce-fuori', teamVero && portati.size > 0 && !portati.has(k) && st === 0);
                 img.classList.toggle('rg-ko', st === 2);
                 voce.classList.toggle('rg-voce-ko', st === 2);
                 img.classList.toggle('rg-in', st === 1);
                 img.title = (img.dataset.pkm || '') + (st === 2 ? ' · KO' : st === 1 ? ' · in play' : '');
             });
         }
+    }
+    window.addEventListener('message', e => {
+        const f = frame();
+        if (!f || e.source !== f.contentWindow || !e.data || e.data.tipo !== 'replay-squadre') return;
+        ultimeSquadre = e.data;
+        leggiPortati(chiavePortati());
+        applicaSquadre(e.data);
     });
 
     window.addEventListener('message', e => {
@@ -3086,7 +3116,7 @@ window.chiudiReplay = function() {
 // --- FUNZIONE APRI MATCH ---
 
 async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scoreLu, setIniziale) {
-    window.replayAttuale = { sd: showdownID, match: matchKey };   // serve al link "guarda questo turno" (indirizzoTurnoReplay)
+    window.replayAttuale = { sd: showdownID, match: matchKey };   // (la stagione si aggiunge più sotto) serve al link "guarda questo turno" (indirizzoTurnoReplay)
     const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
     window.AppMusicaPausa = true;   // fermata apposta (suona il replay): la musica dell'app non deve ripartire da sola (app-musica.js)
     if (player) player.pause();
@@ -3121,6 +3151,7 @@ selector.style.height = 'auto';
         const urlParams = new URLSearchParams(window.location.search);
         const stagioneUrl = urlParams.get('id')?.split(':')[0]; 
         const stagione = stagioneUrl || (typeof stagioneAttiva !== 'undefined' ? stagioneAttiva : 'sbeta');
+        window.replayAttuale.stagione = stagione;
 
         const path = `seasons/${stagione}/showdowns/${showdownID}`;
         const sdSnap = await db.ref(path).once('value');

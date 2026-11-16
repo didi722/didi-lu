@@ -66,12 +66,13 @@ test('squadre: il replay le manda alla pagina a ogni cambio (non uguali a prima)
     assert.match(matches, /e\.data\.tipo !== 'replay-squadre'/);
     assert.match(matches, /img\.dataset\.pkm = p\.nome;/);
     assert.match(matches, /img\.classList\.toggle\('rg-ko', st === 2\)/);
-    assert.match(finestre, /\.mini-gifs-row\.rg-attiva img\.rg-ko \{ opacity: \.28; filter: grayscale\(1\); \}/);
+    assert.match(finestre, /\.mini-gifs-row\.rg-attiva img\.rg-ko \{ opacity: \.5; filter: grayscale\(1\); \}/, 'tenue quanto chi è in panchina');
     assert.match(finestre, /\.mini-gifs-row\.rg-attiva img \{ opacity: \.5;/);
 });
 
 // Il gestore della pagina, eseguito con un DOM finto: nelle Random la fila dell'intestazione parte vuota e cresce man mano che i Pokémon scendono in campo
-function paginaConFile() {
+function paginaConFile(opzioni = {}) {
+    const letti = [];
     const inizio = matches.indexOf("    const chiaveSquadra = t => ");
     const fine = matches.indexOf("    window.addEventListener('message', e => {", matches.indexOf("e.data.tipo !== 'replay-squadre'"));
     assert.ok(inizio > 0 && fine > inizio);
@@ -83,15 +84,17 @@ function paginaConFile() {
     let gestore;
     const ctx = vm.createContext({
         Array, Number, String, Set, SpritePkm: { gif: s => 'gif/' + s },
-        window: { SpritePkm: { gif: s => 'gif/' + s }, addEventListener: (t, f) => { gestore = f; } },
+        window: { SpritePkm: { gif: s => 'gif/' + s }, addEventListener: (t, f) => { gestore = f; }, replayAttuale: opzioni.replayAttuale || null },
+        db: { ref: percorso => ({ once: async () => { letti.push(percorso); return { val: () => (opzioni.statistiche ? opzioni.statistiche[percorso] : null) || null }; } }) },
         frame: () => ({ contentWindow: 'f' }),
         document: {
+            querySelector: sel => (sel === '.btn-set.is-selected' && opzioni.setAperto ? { dataset: { set: opzioni.setAperto } } : null),
             getElementById: id => file[id],
             createElement: () => { const el = { dataset: {}, className: '', classi: new Set(), figli: [], parentNode: null, appendChild: f => { f.parentNode = el; el.figli.push(f); }, set title(v) {} }; el.classList = { toggle: (c, on) => (on ? el.classi.add(c) : el.classi.delete(c)), contains: c => el.className.split(' ').includes(c), add: c => el.classi.add(c) }; return el; }
         }
     });
     vm.runInContext(matches.slice(inizio, fine), ctx);
-    return { file, manda: dati => gestore({ source: 'f', data: { tipo: 'replay-squadre', ...dati } }), pkm: lato => file[lato].figli.map(i => i.dataset.pkm) };
+    return { file, letti, manda: dati => gestore({ source: 'f', data: { tipo: 'replay-squadre', ...dati } }), pkm: lato => file[lato].figli.map(i => i.dataset.pkm) };
 }
 
 test('squadre, Random: la fila costruita dal replay si allunga con i Pokémon che scendono in campo (prima restava ai primi), senza doppioni', () => {
@@ -130,4 +133,65 @@ test('squadre: ogni sprite sta in un contenitore con la sua barra rossa in diago
     assert.match(css, /\.mini-gifs-row \.rg-voce\.rg-voce-ko::before \{ opacity: 1; transform: rotate\(-45deg\); \}/, 'in diagonale');
     assert.match(css, /\.mini-gifs-row \.rg-voce::before \{[^}]*background: #e53935;/);
     assert.match(css, /#replayModal\.tel \.replay-mini-header \.mini-gifs-row \.rg-voce \{ flex: 1 1 0;/, 'anche da telefono gli sprite si dividono la fila');
+});
+
+test('squadre: il replay manda anche chi è sceso in campo in un momento qualsiasi del set (non solo fino al punto in cui è) e quanti Pokémon portava ognuno', () => {
+    const log = ['|poke|p1|Incineroar, L50, M|', '|poke|p1|Rillaboom, L50, M|', '|poke|p1|Urshifu-*, L50, M|', '|poke|p1|Amoonguss, L50, F|', '|poke|p1|Garchomp, L50, M|', '|poke|p1|Kyogre, L50|',
+        '|poke|p2|Torkoal, L50, M|', '|poke|p2|Pelipper, L50, F|', '|teamsize|p1|4', '|teamsize|p2|4', '|start',
+        '|switch|p1a: Incineroar|Incineroar, L50, M|100/100', '|switch|p2a: Torkoal|Torkoal, L50, M|100/100', '|turn|1',
+        '|faint|p2a: Torkoal', '|switch|p2a: Pelipper|Pelipper, L50, F|100/100', '|switch|p1b: Uru|Urshifu-Rapid-Strike, L50, M|100/100'];
+    const presto = squadre(log, 12);
+    assert.deepEqual(presto.scesi, { p1: ['incineroar', 'urshifu'], p2: ['torkoal', 'pelipper'] }, 'anche chi scende dopo');
+    assert.deepEqual(presto.dim, { p1: 4, p2: 4 });
+    assert.equal(stato(presto, 'p1', 'Urshifu'), 0, 'ma lo stato è ancora "non sceso"');
+    assert.deepEqual(squadre(['|switch|p1a: A|Pikachu, L82|100/100'], 1).dim, { p1: 0, p2: 0 }, 'senza |teamsize| nessun numero');
+});
+
+test('squadre, formati con team preview: nell\'intestazione restano solo i Pokémon portati (scesi in campo in un momento del set), quelli rimasti a casa spariscono; i KO e chi non è ancora sceso restano tenui', () => {
+    const p = paginaConFile();
+    for (const lato of ['header-gifs-didi', 'header-gifs-lu']) {
+        for (const s of lato === 'header-gifs-didi' ? ['Incineroar', 'Rillaboom', 'Urshifu', 'Amoonguss', 'Garchomp', 'Kyogre'] : ['Torkoal', 'Pelipper', 'Dragapult', 'Tyranitar', 'Gengar', 'Mew']) {
+            const img = { dataset: { pkm: s }, classList: { toggle() {} } };
+            p.file[lato].figli.push(img);
+        }
+    }
+    const rosa1 = [{ s: 'Incineroar', st: 1 }, { s: 'Rillaboom', st: 1 }, { s: 'Urshifu-*', st: 0 }, { s: 'Amoonguss', st: 0 }, { s: 'Garchomp', st: 0 }, { s: 'Kyogre', st: 0 }];
+    // prima che il replay dica chi è sceso, nessuno si toglie
+    p.manda({ p1: rosa1, p2: [{ s: 'Torkoal', st: 1 }], scesi: { p1: [], p2: [] }, dim: { p1: 4, p2: 4 } });
+    const fuori = lato => p.file[lato].contenitori.filter(c => c.classi.has('rg-voce-fuori')).length;
+    assert.equal(fuori('header-gifs-didi'), 0);
+    // chi è sceso in un momento del set (anche più avanti: Urshifu) resta; chi non è mai sceso e non è dichiarato sparisce
+    p.manda({ p1: rosa1, p2: [{ s: 'Torkoal', st: 1 }, { s: 'Pelipper', st: 2 }], scesi: { p1: ['incineroar', 'rillaboom', 'urshifu'], p2: ['torkoal', 'pelipper'] }, dim: { p1: 4, p2: 4 } });
+    const nomiFuori = lato => p.file[lato].contenitori.filter(c => c.classi.has('rg-voce-fuori')).map(c => c.figli[0].dataset.pkm);
+    assert.deepEqual(nomiFuori('header-gifs-didi'), ['Amoonguss', 'Garchomp', 'Kyogre']);
+    assert.deepEqual(nomiFuori('header-gifs-lu'), ['Dragapult', 'Tyranitar', 'Gengar', 'Mew']);
+    // chi è sceso non sparisce mai, nemmeno se KO
+    assert.ok(!nomiFuori('header-gifs-lu').includes('Pelipper'));
+});
+
+test('squadre: i Pokémon che le statistiche del set segnano come portati restano anche se non sono mai scesi in campo (letti solo per il set aperto); senza statistiche restano quelli scesi', async () => {
+    const chiave = 's0/sd1/match1/set2';
+    const p = paginaConFile({ replayAttuale: { stagione: 's0', sd: 'sd1', match: 'match1' }, setAperto: '2',
+        statistiche: { ['setStats/' + chiave]: { p1: { pokemon: [{ specie: 'Incineroar', portato: true }, { specie: 'Amoonguss', portato: true }, { specie: 'Garchomp', portato: false }] }, p2: { pokemon: [] } } } });
+    for (const s of ['Incineroar', 'Amoonguss', 'Garchomp']) p.file['header-gifs-didi'].figli.push({ dataset: { pkm: s }, classList: { toggle() {} } });
+    p.manda({ p1: [{ s: 'Incineroar', st: 1 }, { s: 'Amoonguss', st: 0 }, { s: 'Garchomp', st: 0 }], p2: [], scesi: { p1: ['incineroar'], p2: [] }, dim: { p1: 2, p2: 0 } });
+    await new Promise(r => setTimeout(r, 5));
+    assert.deepEqual(p.letti, ['setStats/' + chiave], 'una sola lettura, solo di questo set');
+    const fuori = p.file['header-gifs-didi'].contenitori.filter(c => c.classi.has('rg-voce-fuori')).map(c => c.figli[0].dataset.pkm);
+    assert.deepEqual(fuori, ['Garchomp'], 'Amoonguss è portato (dalle statistiche) anche se non è sceso; Garchomp è rimasto a casa');
+    p.manda({ p1: [{ s: 'Incineroar', st: 1 }, { s: 'Amoonguss', st: 0 }, { s: 'Garchomp', st: 0 }], p2: [], scesi: { p1: ['incineroar'], p2: [] }, dim: { p1: 2, p2: 0 } });
+    assert.equal(p.letti.length, 1, 'non si rilegge a ogni messaggio');
+});
+
+test('squadre, Random: la fila costruita dal replay mostra tutti quelli visti, niente viene tolto', () => {
+    const p = paginaConFile();
+    p.manda({ p1: [{ s: 'Dhelmise', st: 1 }, { s: 'Kingambit', st: 0 }], p2: [{ s: 'Arceus', st: 1 }], scesi: { p1: ['dhelmise'], p2: ['arceus'] }, dim: { p1: 0, p2: 0 } });
+    assert.equal(p.file['header-gifs-didi'].contenitori.filter(c => c.classi.has('rg-voce-fuori')).length, 0);
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Dhelmise', 'Kingambit']);
+});
+
+test('squadre: matches.html dice al gestore quale stagione e quale set sono aperti, e il CSS nasconde chi è rimasto a casa', () => {
+    assert.match(matches, /window\.replayAttuale\.stagione = stagione;/);
+    assert.match(matches, /db\.ref\('setStats\/' \+ chiave\)\.once\('value'\)/);
+    assert.match(finestre, /\.mini-gifs-row \.rg-voce\.rg-voce-fuori \{ display: none; \}/);
 });
