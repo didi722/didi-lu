@@ -91,7 +91,7 @@
         let dati = null;
         const carica = async () => {
             if (!dati) {
-                const [seasons, players] = await Promise.all([window.DbLeggero.stagioniConStats(db), db.ref('players').once('value')]);      // con le statistiche dei set (db-leggero.js)
+                const [seasons, players] = await Promise.all([window.DbLeggero.stagioniConStats(db), window.DbLeggero.lettura(db, 'players')]);      // con le statistiche dei set (db-leggero.js)
                 dati = { seasons: seasons || {}, players: players.val() || {} };
             }
             return dati;
@@ -171,7 +171,7 @@
             disegna();
         });
         try {
-            const [info, snap] = await Promise.all([TipoStagione.leggiInfo(db), db.ref('players').once('value')]);
+            const [info, snap] = await Promise.all([TipoStagione.leggiInfo(db), window.DbLeggero ? window.DbLeggero.lettura(db, 'players') : db.ref('players').once('value')]);
             lista = voci(info);
             await Promise.all(lista.filter(v => v.stato === 'playing').map(async v => {
                 const lb = await db.ref(`seasons/${v.stagione}/leaderboard`).once('value').then(x => x.val()).catch(() => null);

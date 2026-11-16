@@ -108,3 +108,109 @@ test('le pagine usano le letture leggere: i colori (9 pagine), le stagioni di Bo
     assert.match(leggiFile('battle-ui.js'), /await self\.DbLeggero\.stagioniLeggere\(firebase\.database\(\)\);/);
     assert.match(leggiFile('battle.html'), /<script src="db-leggero\.js"><\/script>/);
 });
+
+// ---------- la cache tra le pagine ----------
+const schedaFinta = () => {
+    const m = new Map();
+    return { get length() { return m.size; }, key: i => [...m.keys()][i] ?? null, getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: k => { m.delete(k); }, _m: m };
+};
+
+test('cache: una lettura sola anche con più richieste insieme; ognuno riceve una copia sua; dopo 3 minuti si rilegge', async () => {
+    D.svuotaCache();
+    const radice = { sessionStorage: schedaFinta() };
+    let t = 1000, letture = 0;
+    const adesso = () => t;
+    const leggi = async () => { letture++; return { a: [1, 2], b: { c: 3 } }; };
+    const [x, y] = await Promise.all([D.conCache('k1', leggi, { radice, adesso }), D.conCache('k1', leggi, { radice, adesso })]);
+    assert.equal(letture, 1, 'due richieste insieme: una lettura');
+    assert.deepEqual(x, y);
+    assert.notEqual(x, y, 'copie diverse');
+    x.a.push(99);
+    assert.deepEqual((await D.conCache('k1', leggi, { radice, adesso })).a, [1, 2], 'chi modifica i dati non rovina quelli degli altri');
+    assert.equal(letture, 1);
+    t += D.DURATA_CACHE - 1;
+    await D.conCache('k1', leggi, { radice, adesso });
+    assert.equal(letture, 1, 'ancora valida');
+    t += 2;
+    await D.conCache('k1', leggi, { radice, adesso });
+    assert.equal(letture, 2, 'scaduta: si rilegge');
+    assert.equal(D.DURATA_CACHE, 3 * 60 * 1000);
+});
+
+test('cache: cambiando pagina (memoria della pagina vuota, scheda del browser piena) non si rilegge; ttl 0 = sempre fresca; un errore non si ricorda', async () => {
+    D.svuotaCache();
+    const scheda = schedaFinta();
+    const radice = { sessionStorage: scheda };
+    let letture = 0;
+    const leggi = async () => { letture++; return { v: letture }; };
+    await D.conCache('pagina', leggi, { radice });
+    assert.ok([...scheda._m.keys()].some(k => k.startsWith(D.PREFISSO_CACHE + 'pagina')), 'si scrive anche nella scheda del browser');
+    // "un'altra pagina": la memoria del modulo riparte da zero, la scheda resta
+    const D2 = (() => { delete require.cache[require.resolve('../docs/db-leggero.js')]; return require('../docs/db-leggero.js'); })();
+    assert.deepEqual(await D2.conCache('pagina', leggi, { radice }), { v: 1 });
+    assert.equal(letture, 1, 'riletta dalla scheda, non dal database');
+    await D2.conCache('pagina', leggi, { radice, ttl: 0 });
+    assert.equal(letture, 2, 'ttl 0: sempre fresca');
+    // un errore non resta in cache
+    let prova = 0;
+    const incerta = async () => { if (++prova === 1) throw new Error('rete'); return 'ok'; };
+    await assert.rejects(D2.conCache('errore', incerta, { radice }), /rete/);
+    assert.equal(await D2.conCache('errore', incerta, { radice }), 'ok', 'la volta dopo si riprova');
+});
+
+test('cache: scheda piena o bloccata, dati troppo grandi o scheda assente: la lettura funziona lo stesso (resta in memoria)', async () => {
+    D.svuotaCache();
+    let letture = 0;
+    const leggi = async () => { letture++; return { x: 1 }; };
+    const piena = { sessionStorage: { length: 0, key: () => null, getItem: () => null, setItem: () => { throw new Error('QuotaExceededError'); }, removeItem() {} } };
+    assert.deepEqual(await D.conCache('piena', leggi, { radice: piena }), { x: 1 });
+    await D.conCache('piena', leggi, { radice: piena });
+    assert.equal(letture, 1, 'resta in memoria');
+    assert.deepEqual(await D.conCache('senza', leggi, { radice: {} }), { x: 1 }, 'senza scheda');
+    const scheda = schedaFinta();
+    await D.conCache('grande', async () => ({ testo: 'x'.repeat(2600000) }), { radice: { sessionStorage: scheda } });
+    assert.ok(![...scheda._m.keys()].some(k => k.includes('grande')), 'oltre 2,5 milioni di caratteri non si scrive nella scheda');
+});
+
+test('cache: lettura() è come once(\'value\') con la cache; svuotaCache() toglie tutto (memoria e scheda) e le letture dopo vanno al database', async () => {
+    D.svuotaCache();
+    const scheda = schedaFinta();
+    const radice = { sessionStorage: scheda };
+    const db = dbFinto({ players: { didi: { info: { name: 'Didi' } } } });
+    const a = await D.lettura(db, 'players', { radice });
+    const b = await D.lettura(db, 'players', { radice });
+    assert.deepEqual(a.val(), { didi: { info: { name: 'Didi' } } });
+    assert.equal(a.exists(), true);
+    assert.deepEqual(db.letti, ['players'], 'una lettura sola');
+    assert.notEqual(a.val(), b.val(), 'copie diverse');
+    scheda.setItem('altro', 'resta');
+    D.svuotaCache({ radice });
+    assert.deepEqual([...scheda._m.keys()], ['altro'], 'si tolgono solo le voci della cache');
+    await D.lettura(db, 'players', { radice });
+    assert.deepEqual(db.letti, ['players', 'players'], 'dopo lo svuotamento si rilegge');
+    assert.equal((await D.lettura(dbFinto({}), 'vuoto', { radice })).exists(), false, 'un nodo che non c\'è: val() null');
+});
+
+test('cache: stagioniConStats si ricorda (seasons e setStats si leggono una volta per tutte le pagine)', async () => {
+    D.svuotaCache();
+    const radice = { sessionStorage: schedaFinta() };
+    const db = dbFinto({ seasons: { s0: { showdowns: { sd1: { matches: { match1: { p1score: 2 } } } } } }, setStats: { s0: { sd1: { match1: { set1: { turni: 5 } } } } } });
+    const a = await D.stagioniConStats(db, { radice });
+    const b = await D.stagioniConStats(db, { radice });
+    assert.deepEqual(db.letti.sort(), ['seasons', 'setStats'], 'una lettura di ognuno');
+    assert.deepEqual(a.s0.showdowns.sd1.matches.match1.setStats, { set1: { turni: 5 } });
+    assert.notEqual(a, b);
+});
+
+test('cache: le pagine di statistica leggono players e le stagioni dalla cache; chi scrive la svuota; Hub e Matches non la usano', () => {
+    for (const f of ['stats.js', 'palmares.js', 'scheda-battaglia.js', 'players.html', 'formats.html', 'app-precarica.js', 'fiocchi.js']) assert.match(leggiFile(f), /DbLeggero\.lettura\(db, 'players'\)|DbLeggero\.lettura\(db, 'players'\)/, f);
+    for (const f of ['stats.js', 'palmares.js', 'fiocchi.js', 'box.html', 'formats.html']) assert.match(leggiFile(f), /DbLeggero\.stagioniConStats\(db\)/, f);
+    const r = leggiFile('risultati-match.js');
+    assert.match(r, /function svuotaCachePagine\(\) \{\s*try \{ if \(typeof DbLeggero !== 'undefined'/);
+    assert.match(r, /svuotaCachePagine\(\);      \/\/ Stats, Hall of Fame, badge/, 'dopo aver registrato un match');
+    assert.match(r, /Recalculation completed for \$\{pId\}[^\n]*\n\s*svuotaCachePagine\(\);/, 'dopo il ricalcolo dei giocatori');
+    assert.equal(fs.readFileSync(path.join(DOCS, '..', 'functions', 'risultati-match.js'), 'utf8'), r, 'identico nel server');
+    assert.match(leggiFile('matches.html'), /remove\(\)\.catch[^\n]*\n\s*if \(window\.DbLeggero\) DbLeggero\.svuotaCache\(\);/, 'cancellando un match o uno showdown');
+    assert.match(leggiFile('admin.html'), /if \(window\.DbLeggero\) DbLeggero\.svuotaCache\(\);/, 'eliminando una stagione');
+    for (const f of ['hub.html']) assert.doesNotMatch(leggiFile(f), /DbLeggero\.(lettura|conCache|stagioniConStats)/, `${f}: dati sempre aggiornati`);
+});

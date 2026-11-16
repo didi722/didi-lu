@@ -1860,7 +1860,7 @@ async function caricaEVisualizzaFormati() {
         const formatsSnap = await db.ref('regolamenti').once('value');
         const formatsData = formatsSnap.val() || {};
 
-        const playersSnap = await db.ref('players').once('value');
+        const playersSnap = window.DbLeggero ? await DbLeggero.lettura(db, 'players') : await db.ref('players').once('value');      // con la cache tra le pagine
         const players = playersSnap.val() || {};
 
         const allFormats = {};

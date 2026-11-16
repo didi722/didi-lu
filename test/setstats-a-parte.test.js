@@ -40,6 +40,7 @@ test('unisciSetStatsShowdowns: lo stesso per i soli showdown di una stagione; st
     const db = creaDb({ seasons: stagioni(), setStats: { s0: { sd1: { match2: { set1: { turni: 5 } } } } } });
     const letti = [];
     const spia = { ref: p => { letti.push(p); return db.ref(p); } };
+    D.svuotaCache();
     const unite = await D.stagioniConStats(spia);
     assert.deepEqual(letti.sort(), ['seasons', 'setStats']);
     assert.deepEqual(unite.s0.showdowns.sd1.matches.match2.setStats, { set1: { turni: 5 } });
@@ -49,6 +50,7 @@ test('unisciSetStatsShowdowns: lo stesso per i soli showdown di una stagione; st
     const sd = D.unisciSetStatsShowdowns(db.leggi('seasons/s0/showdowns'), await D.setStatsStagione(db, 's0'));
     assert.deepEqual(sd.sd1.matches.match2.setStats, { set1: { turni: 5 } });
     // un nodo che non si legge (regole) non rompe la lettura delle stagioni
+    D.svuotaCache();
     const rotto = { ref: p => (p === 'setStats' ? { once: async () => { throw new Error('permission_denied'); } } : db.ref(p)) };
     assert.deepEqual((await D.stagioniConStats(rotto)).s0.showdowns.sd1.matches.match1.setStats, STATS1);
 });

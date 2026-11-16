@@ -20,6 +20,15 @@
 // Chi non ha bisogno delle statistiche (Hub, Matches, Box...) legge seasons senza e scarica un quinto.
 // Se qualcosa non va (rete, regole) si ripiega sulla lettura intera di una volta: il risultato è lo stesso, solo più pesante.
 //
+// LA CACHE TRA LE PAGINE: chi gira tra home, Stats, Hall of Fame, Box e Formats leggeva ogni volta gli stessi nodi (players, seasons con le statistiche: ~1 MB). Le letture
+// delle pagine di statistica passano da qui e si ricordano 3 minuti, in memoria (due richieste insieme ne fanno una sola) e nella scheda del browser (sessionStorage: cambiando
+// pagina non si riscarica). Ogni chiamata riceve una copia sua (chi modifica i dati non rovina quelli degli altri). Chi scrive (registra o cancella un match, ricalcola) svuota la
+// cache con svuotaCache(). Le pagine che devono essere sempre aggiornate (Hub, Matches, partite) non la usano.
+//   - lettura(db, percorso, opzioni)   come db.ref(percorso).once('value') ma con la cache: dà { val(), exists() }
+//   - conCache(chiave, leggi, opzioni) la cache per qualunque lettura (opzioni: ttl in ms, 0 = sempre fresca)
+//   - svuotaCache()                    dopo una scrittura che cambia ciò che le pagine di statistica mostrano
+// stagioniConStats() è già con la cache.
+//
 // Funziona nel browser (window.DbLeggero) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
@@ -97,6 +106,67 @@
         return fuori;
     }
 
+    // ---------- la cache tra le pagine ----------
+    const PREFISSO_CACHE = 'dbl-cache-v1:';
+    const DURATA_CACHE = 3 * 60 * 1000;
+    const MASSIMO_CARATTERI = 2500000;       // oltre non si mette nella scheda del browser (ha circa 5 MB per tutto): resta solo in memoria
+    const inMemoria = new Map();             // chiave -> { t, testo } (già letta) oppure { promessa } (in lettura)
+
+    function leggiScheda(mem, chiave) {
+        try {
+            const grezzo = mem && mem.getItem(PREFISSO_CACHE + chiave);
+            const i = grezzo ? grezzo.indexOf('|') : -1;
+            return i > 0 ? { t: Number(grezzo.slice(0, i)), testo: grezzo.slice(i + 1) } : null;
+        } catch (e) { return null; }
+    }
+
+    /**
+     * Il risultato di `leggi()` ricordato per `ttl` ms (3 minuti), in memoria e nella scheda del browser. Ogni chiamata riceve una copia nuova.
+     * Un errore non si ricorda: la prossima volta si riprova.
+     */
+    async function conCache(chiave, leggiFn, { ttl = DURATA_CACHE, radice = (typeof self !== 'undefined' ? self : undefined), adesso = () => Date.now() } = {}) {
+        const mem = memoria(radice);
+        const fresca = v => v && v.testo != null && adesso() - v.t < ttl;
+        let voce = inMemoria.get(chiave);
+        if (voce && voce.promessa) return JSON.parse(await voce.promessa);
+        if (!fresca(voce)) {
+            const dallaScheda = leggiScheda(mem, chiave);
+            voce = fresca(dallaScheda) ? dallaScheda : null;
+            if (voce) inMemoria.set(chiave, voce);
+        }
+        if (voce) return JSON.parse(voce.testo);
+
+        const promessa = (async () => {
+            const valore = await leggiFn();
+            const testo = JSON.stringify(valore === undefined ? null : valore);
+            const t = adesso();
+            inMemoria.set(chiave, { t, testo });
+            try { if (mem && testo.length <= MASSIMO_CARATTERI) mem.setItem(PREFISSO_CACHE + chiave, `${t}|${testo}`); } catch (e) { /* scheda piena o bloccata: resta in memoria */ }
+            return testo;
+        })();
+        inMemoria.set(chiave, { promessa });
+        try { return JSON.parse(await promessa); }
+        catch (e) { if (inMemoria.get(chiave) && inMemoria.get(chiave).promessa === promessa) inMemoria.delete(chiave); throw e; }
+    }
+
+    /** Come db.ref(percorso).once('value'), ma con la cache: dà { val(), exists() } */
+    async function lettura(db, percorso, opzioni) {
+        const v = await conCache(`nodo:${percorso}`, () => leggi(db, percorso), opzioni);
+        return { val: () => v, exists: () => v != null };
+    }
+
+    /** Toglie tutto dalla cache (memoria e scheda): dopo una scrittura che cambia ciò che le pagine di statistica mostrano */
+    function svuotaCache({ radice = (typeof self !== 'undefined' ? self : undefined) } = {}) {
+        inMemoria.clear();
+        const mem = memoria(radice);
+        try {
+            if (!mem) return;
+            const nomi = [];
+            for (let i = 0; i < mem.length; i++) { const n = mem.key(i); if (n && n.startsWith(PREFISSO_CACHE)) nomi.push(n); }
+            nomi.forEach(n => mem.removeItem(n));
+        } catch (e) { /* senza scheda resta quella in memoria, già svuotata */ }
+    }
+
     // ---------- le statistiche dei set ----------
     const eOggetto = x => !!x && typeof x === 'object';
 
@@ -126,11 +196,13 @@
 
     async function setStatsStagione(db, id) { return (await leggi(db, `setStats/${id}`)) || {}; }
 
-    /** seasons + setStats uniti: la stessa cosa che si leggeva prima da `seasons` */
-    async function stagioniConStats(db) {
-        const [stagioni, nodo] = await Promise.all([leggi(db, 'seasons'), leggi(db, 'setStats').catch(() => null)]);
-        return unisciSetStats(stagioni || {}, nodo || {});
+    /** seasons + setStats uniti: la stessa cosa che si leggeva prima da `seasons` (con la cache tra le pagine) */
+    function stagioniConStats(db, opzioni) {
+        return conCache('stagioniConStats', async () => {
+            const [stagioni, nodo] = await Promise.all([leggi(db, 'seasons'), leggi(db, 'setStats').catch(() => null)]);
+            return unisciSetStats(stagioni || {}, nodo || {});
+        }, opzioni);
     }
 
-    return { chiaviDi, coloriGiocatori, stagioniLeggere, unisciSetStats, unisciSetStatsShowdowns, setStatsStagione, stagioniConStats, CHIAVE_COLORI, DURATA_COLORI };
+    return { chiaviDi, coloriGiocatori, stagioniLeggere, unisciSetStats, unisciSetStatsShowdowns, setStatsStagione, stagioniConStats, conCache, lettura, svuotaCache, CHIAVE_COLORI, DURATA_COLORI, DURATA_CACHE, PREFISSO_CACHE };
 });

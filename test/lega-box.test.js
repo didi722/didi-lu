@@ -171,6 +171,7 @@ test('il collegamento del Box (tbCaricaLega e gli aiuti), eseguito con i moduli 
     assert.equal(api.tbLegaCorrente(), null, 'nessun team ha giocato OU');
     // un errore di rete lascia i tooltip come sono
     const ctx2 = { ...ctx, window: {}, tbStato: { regolamento: { categoria: 'VGC' } } };
+    ctx.DbLeggero.svuotaCache();      // le stagioni si ricordano qualche minuto (db-leggero.js): qui si vuole proprio la lettura che va male
     errore = true;
     vm.createContext(ctx2);
     vm.runInContext(`const tbLega = { formato: '', dati: null, caricando: false };\n${codice}\nthis.api = { tbLega, tbCaricaLega, tbLegaCorrente };`, ctx2);

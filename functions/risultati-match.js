@@ -50,6 +50,11 @@ function calcolaPuntiMatch(setVinti, isBO3) {
  * Restituisce { stagioneChiusa, vincitoreStagione, totalDays }
  * così la pagina che chiama decide come mostrarlo.
  */
+/** Dopo una scrittura che cambia ciò che mostrano le pagine di statistica: svuota la cache condivisa tra le pagine (db-leggero.js). Sul server non c'è e non fa niente. */
+function svuotaCachePagine() {
+    try { if (typeof DbLeggero !== 'undefined' && DbLeggero && DbLeggero.svuotaCache) DbLeggero.svuotaCache(); } catch (e) { /* senza cache non c'è niente da svuotare */ }
+}
+
 async function registraRisultatoMatch(r) {
     const { stagione, showdownId, matchNum } = r;
     const pathShowdown = `seasons/${stagione}/showdowns/${showdownId}`;
@@ -164,6 +169,8 @@ async function registraRisultatoMatch(r) {
         await ricalcolaStatisticheGlobali(p1Id);
         await ricalcolaStatisticheGlobali(p2Id);
     }
+
+    svuotaCachePagine();      // Stats, Hall of Fame, badge... rileggono i dati nuovi
 
     // --- 6. CHIUSURA AUTOMATICA STAGIONE ---
     // Quando ogni giocatore ha giocato tutti gli showdown contro tutti gli altri (vedi avanzamentoStagione) la stagione passa a
@@ -1045,6 +1052,7 @@ async function ricalcolaStatisticheGlobali(pId) {
         });
 
         console.log(`✅ Recalculation completed for ${pId} with Showdown data per format (excluding beta).`);
+        svuotaCachePagine();
 
     } catch (err) {
         console.error("❌ Critical error in recalculation:", err);
