@@ -49,17 +49,18 @@ test('lo schermo non cambia misura né modalità quando compaiono o spariscono i
 
 test('in riga lo spazio della riga dei cartellini si toglie sempre allo schermo (con o senza cartellini): lo schermo sta tutto nella finestra', () => {
     const r = adatta({ larghezza: 1440, altezza: 900, campo: false });
-    // intestazione 157 + comandi 60 + momenti 26 + riga 27 + spazi: tutto dentro i 900 px (lo schermo è il campo, 438 × 360 ingranditi)
-    const alto = parseFloat(r.larg) * 360 / 438;
+    // intestazione 157 + comandi 60 + momenti 26 + riga 27 + spazi: tutto dentro i 900 px (lo schermo è l'apertura della scocca: alta 0,6618 della sua larghezza)
+    const alto = parseFloat(r.larg) * 0.6618;
     assert.ok(alto + 157 + 60 + 26 + 27 <= 900, `schermo ${r.larg}`);
-    // la scala dei 438 px della scena dà proprio la larghezza dello schermo
-    assert.ok(Math.abs(parseFloat(r.sch) * 438 - parseFloat(r.larg)) < 0.5);
+    // la partita (360 di altezza) riempie l'altezza dell'apertura: ai lati restano le barre scure, come nella scocca di prima
+    assert.ok(Math.abs(parseFloat(r.sch) * 360 - alto) < 0.5, `scala ${r.sch}`);
+    assert.ok(438 * parseFloat(r.sch) <= parseFloat(r.larg), 'il campo (438 di larghezza) sta nell\'apertura');
 });
 
-test('lo schermo del replay da PC è grande: occupa quanto ci sta (in altezza) fino a metà finestra circa, e mai meno di 420 px', () => {
+test('lo schermo del replay da PC, l\'apertura della scocca, è grande: occupa quanto ci sta in altezza, fino al 40% della larghezza della finestra, e mai meno di 420 px', () => {
     const grande = adatta({ larghezza: 1920, altezza: 950, campo: true });
     assert.ok(parseFloat(grande.larg) > 700, `a 1920 × 950 lo schermo è largo ${grande.larg}`);
-    assert.ok(parseFloat(grande.larg) <= 1920 * 0.48 + 0.5);
+    assert.ok(parseFloat(grande.larg) <= 1920 * 0.40 + 0.5, 'la scocca resta poco più larga della finestra');
     const piccola = adatta({ larghezza: 900, altezza: 500, campo: false });
     assert.ok(parseFloat(piccola.larg) >= 420);
     // intero: niente mezzi pixel che farebbero un pixel di scorrimento
@@ -154,7 +155,7 @@ test('creaSfondoVersus: la riga con i due colori e un avatar per lato (il primo 
     assert.equal(ctx.creaSfondoVersus('', '', '#000', '#000').caricate.length, 1, 'senza avatar resta da aspettare solo la scocca');
 });
 
-test('replay da PC: la scocca grande e semitrasparente è indipendente dallo schermo (nello strato dietro), che mostra solo il campo senza le bande di Showdown; non sul telefono né nell\'app', () => {
+test('replay da PC: la scocca grande e semitrasparente dietro a tutto, il replay dentro l\'apertura del suo schermo (come prima), la riga nera in diagonale sotto la scocca; non sul telefono né nell\'app', () => {
     const regola = sel => {
         const i = finestre.indexOf(sel + ' {');
         assert.ok(i >= 0, sel);
@@ -163,16 +164,31 @@ test('replay da PC: la scocca grande e semitrasparente è indipendente dallo sch
     assert.match(regola('#replayModal .rv-console'), /display: none/, 'nascosta di default (telefono e app)');
     const grande = regola('html:not(.app-shell) #replayModal:not(.tel) .rv-console');
     assert.match(grande, /position: absolute;[^}]*opacity: \.5;[^}]*pointer-events: none/, 'semitrasparente e il clic passa');
-    assert.match(grande, /width: calc\(var\(--schermo-larg, 640px\) \/ \.34\)/, 'lo schermo bianco dell\'immagine (34%) largo quanto lo schermo');
+    assert.match(grande, /width: calc\(var\(--schermo-larg, 640px\) \/ \.34\)/, 'l\'apertura dello schermo dell\'immagine (34% della larghezza) è larga quanto lo schermo');
     assert.match(grande, /left: calc\(var\(--sx, 50vw\)[^;]*\.498\)/);
     assert.match(grande, /top: calc\(var\(--sy, 50vh\)[^;]*\.505\)/);
-    // la vecchia scocca nel flusso non c'è più e lo schermo è la finestra (campo 438 × 360, senza le bande)
+    // la vecchia scocca nel flusso non c'è più; lo schermo è l'apertura (34% × 40% dell'immagine = 0,6618 di altezza su larghezza), sfondo scuro come prima
     assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) .gba-shell'), /display: none/);
-    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) .gba-container'), /width: var\(--schermo-larg, 438px\); height: calc\(var\(--schermo-larg, 438px\) \* 360 \/ 438\)/);
-    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) .gba-screen-area .replay-content'), /width: 438px; height: 360px;[^}]*zoom: var\(--sch, 1\)/);
-    // le bande laterali (circa il 16% a destra e a sinistra della scena 640 × 360) restano fuori dalla finestra
-    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) #replayFrame'), /left: -101px; width: 640px/);
-    assert.equal(640 - 2 * 101, 438, 'il campo che resta è largo 438 px');
+    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) .gba-container'), /width: var\(--schermo-larg, 438px\); height: calc\(var\(--schermo-larg, 438px\) \* \.6618\)/);
+    assert.equal(Math.round(0.4 * 0.5625 / 0.34 * 10000) / 10000, 0.6618, '40% dell\'altezza di un\'immagine 16:9 su 34% della larghezza');
+    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) .gba-screen-area'), /top: 0; left: 0; transform: none; width: 100%; height: 100%;/);
+    // la partita è il campo (438 × 360 senza le bande laterali di Showdown), a tutta altezza e al centro (barre scure ai lati); l'ombra scura di sempre resta
+    const partita = regola('html:not(.app-shell) #replayModal:not(.tel) .gba-screen-area .replay-content');
+    assert.match(partita, /width: 438px; height: 360px;[^}]*zoom: var\(--sch, 1\)/);
+    assert.doesNotMatch(partita, /box-shadow/, 'l\'ombra di .replay-content (sfuma il campo nelle barre) non si toglie');
+    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) #replayFrame'), /left: -101px; width: 640px/, 'le bande laterali restano fuori');
+    assert.equal(640 - 2 * 101, 438 - 0, 'il campo che resta è largo 438 px');
+    // la riga nera sta sotto la scocca anche se questa è semitrasparente: non si vede dove c'è la scocca (maschera con la sagoma dell'immagine)
+    const riga = regola('html:not(.app-shell) #replayModal:not(.tel) .rv-taglio-b');
+    assert.match(riga, /mask-image: linear-gradient\(#000, #000\), url\(immagini\/advance\.png\)/);
+    assert.match(riga, /mask-composite: exclude/);
+    assert.match(riga, /-webkit-mask-composite: xor/, 'anche per i browser che hanno solo la sintassi vecchia');
+    assert.match(riga, /mask-size: 100% 100%, calc\(var\(--schermo-larg, 640px\) \/ \.34\) auto/, 'la maschera ha la misura della scocca');
+    assert.match(riga, /mask-position: 0 0, calc\(var\(--sx, 50vw\)[^;]*\.498\) calc\(var\(--sy, 50vh\)[^;]*\.505\)/, 'e la sua posizione');
+    // senza la riga le due metà arrivano fino alla linea centrale: sotto la scocca non resta uno spiraglio
+    assert.match(finestre, /\.rv-lato-a \{ clip-path: polygon\(0 0, calc\(60% \+ 1px\) 0, calc\(40% \+ 1px\) 100%, 0 100%\)/);
+    assert.match(finestre, /\.rv-lato-c \{ clip-path: polygon\(60% 0, 100% 0, 100% 100%, 40% 100%\)/);
+    assert.match(matches, /\['a', 'c', 'b'\]\.forEach\(\(k, i\) => \{/, 'la riga è l\'ultima: sta sopra le due metà');
     // lo schermo si centra sulla scocca: --sx e --sy li scrive posizionaConsoleReplay e si rifanno quando cambia qualcosa
     assert.match(matches, /modal\.style\.setProperty\('--sx', /);
     assert.match(matches, /modal\.style\.setProperty\('--sy', /);
