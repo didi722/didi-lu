@@ -28,7 +28,8 @@ import './formato-random.js';   // self.FormatoRandom: i formati Random Battle d
 import './nomi-unici.js';       // self.NomiUnici
 import './nomi-log.js';         // self.NomiLog
 import './illusione-client.js'; // self.IllusioneClient: l'Illusione svelata non azzera i potenziamenti
-import './team-bloccati.js';    // self.TeamBloccati: quali team non si modificano più
+import './team-bloccati.js';
+import './db-leggero.js';    // self.TeamBloccati: quali team non si modificano più
 import './editor-team.js';      // self.EditorTeam: il Box aperto in una finestra per modificare il team
 import './note-team.js';        // self.NoteTeam: il bloc notes del team che si sta provando
    import { installa as installaSchede, impostaPartita, seguiBattaglia, efficaciaBersaglio } from './battle-extra.js';
@@ -538,8 +539,9 @@ function aggiornaFineCpu() {
 // Nel dubbio (errore di rete, permessi) no: è la regola che protegge i team già iscritti.
 async function verificaModificabile(nomeTeam) {
     try {
-        const snap = await firebase.database().ref('seasons').once('value');
-        cpu.modificabile = !self.TeamBloccati.eBloccato(snap.val(), nomeTeam);
+        // solo stato e team iscritti di ogni stagione (db-leggero.js), non i showdown e le statistiche dei set (~760 KB)
+        const stagioni = await self.DbLeggero.stagioniLeggere(firebase.database());
+        cpu.modificabile = !self.TeamBloccati.eBloccato(stagioni, nomeTeam);
     } catch (errore) {
         console.warn("Couldn't check whether the team is locked", errore);
         cpu.modificabile = false;

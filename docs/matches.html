@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="db-leggero.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
        <script src="risultati-match.js"></script>
@@ -548,21 +549,8 @@ let playerColors = {};
 
 async function caricaColoriPlayers() {
     try {
-        const snapshot = await db.ref('players').once('value');
-        const playersData = snapshot.val();
-        
-        if (!playersData) return;
-
-        for (let nomeKey in playersData) {
-            const nomeMinuscolo = nomeKey.toLowerCase();
-            
-            const coloreRecuperato = playersData[nomeKey].info?.color;
-            
-            if (coloreRecuperato) {
-                playerColors[nomeMinuscolo] = coloreRecuperato;
-            }
-        }
-        console.log("Colors mapped:", playerColors);
+        // solo il colore di ognuno (db-leggero.js): non tutto il nodo players (team, badge, statistiche: 30 volte più pesante)
+        Object.assign(playerColors, await DbLeggero.coloriGiocatori(db));
     } catch (error) {
         console.error("Error loading colors:", error);
     }

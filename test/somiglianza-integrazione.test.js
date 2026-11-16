@@ -370,6 +370,7 @@ function apriSelezione({ format, teams, stagioni, regolamenti, giaSelezionati = 
     const avvisi = [];
     const ambiente = {
         document: documento, db, seasonId: 's1', alert: t => avvisi.push(t),
+        DbLeggero: { stagioniLeggere: async () => { if (dbRotto) throw new Error('rete'); return stagioni; } },
         TeamBloccati: TB, SomiglianzaTeam: S,
         SpritePkm: { gif: () => 'x.gif', id: () => 'x' }, escapeHtmlFormato: t => t,
         closeTeamModal() {}, apriDettaglioTeam() {}, inviaSelezioneTeam() {}
@@ -589,6 +590,7 @@ function salvaSelezione({ format = 'Little Cup', teams, stagioni, regolamenti = 
     const chiusure = [];
     const ambiente = {
         db, seasonId: 's1', TeamBloccati: TB, SomiglianzaTeam: S,
+        DbLeggero: { stagioniLeggere: async () => { letture.push('seasons'); if (dbRotto) throw new Error('rete'); return stagioni; } },
         alert: t => avvisi.push(t), confirm: () => nessunTeamConferma, closeTeamModal: () => chiusure.push(1),
         firebase: { database: { ServerValue: { TIMESTAMP: 'ORA' } } }
     };
@@ -705,7 +707,7 @@ test('Box, salvataggio: chi è già tra i team non modificabili non si aggiunge 
 });
 
 test('box.html: il salvataggio legge le stagioni (le stesse dei team bloccati) e passa il nome della stagione ai team iscritti', () => {
-    assert.match(box, /window\.stagioniLette = snap\.val\(\);/);
+    assert.match(box, /window\.stagioniLette = stagioni;/);
     assert.match(box, /TeamBloccati\.iscrittiInStagioniAperte\(window\.stagioniLette, \{ giocatore: playerID, formato: regolamento\.categoria \}\)/);
     assert.match(box, /if \(editingId && iscrittiAperti\.some\(i => i\.id === editingId\)\)/, 'solo se il team che si salva è iscritto: gli altri si provano come vogliono');
     assert.match(box, /iscrittoA: i\.nomeStagione/);

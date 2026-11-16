@@ -73,7 +73,7 @@ test('il Box usa questa regola (non più una copia sua) e carica lo script prima
     const box = fs.readFileSync(path.join(__dirname, '..', 'docs', 'box.html'), 'utf8');
     assert.match(box, /<script src="team-bloccati\.js"><\/script>/);
     assert.ok(box.indexOf('team-bloccati.js') < box.indexOf('async function caricaTeamBloccati'));
-    assert.match(box, /window\.nomiTeamBloccati = TeamBloccati\.nomiBloccati\(snap\.val\(\)\);/);
+    assert.match(box, /window\.nomiTeamBloccati = TeamBloccati\.nomiBloccati\(stagioni\);/);
     assert.ok(!/status === 'playing' \|\| status === 'closed'/.test(box), 'la regola non è più scritta dentro box.html');
 });
 

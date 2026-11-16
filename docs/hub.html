@@ -33,6 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="db-leggero.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -240,23 +241,10 @@ let playerColors = {};
 
 async function caricaColoriPlayers() {
     try {
-        const snapshot = await db.ref('players').once('value');
-        const playersData = snapshot.val();
-        
-        if (!playersData) return;
-
-        for (let nomeKey in playersData) {
-            const nomeMinuscolo = nomeKey.toLowerCase();
-            
-            const coloreRecuperato = playersData[nomeKey].info?.color;
-            
-            if (coloreRecuperato) {
-                playerColors[nomeMinuscolo] = coloreRecuperato;
-            }
-        }
-        console.log("Colori mappati:", playerColors);
+        // solo il colore di ognuno (db-leggero.js): non tutto il nodo players (team, badge, statistiche: 30 volte più pesante)
+        Object.assign(playerColors, await DbLeggero.coloriGiocatori(db));
     } catch (error) {
-        console.error("Load Error:", error);
+        console.error("Error loading colors:", error);
     }
 }
 
@@ -923,14 +911,13 @@ function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
 // già iscritti ad altre stagioni con le iscrizioni aperte (come quelli che si iscrivono ora, alla chiusura diventerebbero non modificabili).
 async function leggiControlloSomiglianza(format, nomeUtenteClean, allTeams) {
     try {
-        const [stagioniSnap, formatiSnap] = await Promise.all([db.ref('seasons').once('value'), db.ref('regolamenti').once('value')]);
+        const [stagioni, formatiSnap] = await Promise.all([DbLeggero.stagioniLeggere(db), db.ref('regolamenti').once('value')]);      // stagioni: solo stato e team iscritti (db-leggero.js)
         let strutturaFormato;
         formatiSnap.forEach(c => {
             const r = c.val();
             if (r && String(r.categoria || '').trim().toLowerCase() === String(format).trim().toLowerCase()) strutturaFormato = String(r.strutturaSito || '');
         });
         if (strutturaFormato === undefined || !SomiglianzaTeam.valeNelFormato(strutturaFormato)) return null;
-        const stagioni = stagioniSnap.val();
         const bloccati = TeamBloccati.nomiBloccati(stagioni);
         const delFormato = Object.entries(allTeams).filter(([, t]) => t && t.categoria === format).map(([id, t]) => ({ ...t, id }));
         const altrove = TeamBloccati.iscrittiInStagioniAperte(stagioni, { giocatore: nomeUtenteClean, formato: format, escludi: seasonId })

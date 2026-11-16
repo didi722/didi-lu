@@ -250,10 +250,12 @@ test('battle-ui.js: "Edit my team" solo se il team si può modificare; altriment
 
 test('battle-ui.js: la regola del blocco è quella condivisa del Box, e nel dubbio il team non si tocca', () => {
     const v = estrai(ui, 'async function verificaModificabile', '// -----');
-    assert.match(v, /ref\('seasons'\)\.once\('value'\)/);
-    assert.match(v, /cpu\.modificabile = !self\.TeamBloccati\.eBloccato\(snap\.val\(\), nomeTeam\)/);
+    assert.match(v, /self\.DbLeggero\.stagioniLeggere\(firebase\.database\(\)\)/, 'solo stato e team iscritti, non tutta la stagione');
+    assert.doesNotMatch(v, /ref\('seasons'\)\.once/);
+    assert.match(v, /cpu\.modificabile = !self\.TeamBloccati\.eBloccato\(stagioni, nomeTeam\)/);
     assert.match(v, /catch[\s\S]*cpu\.modificabile = false/);
     assert.match(ui, /import '\.\/team-bloccati\.js'/);
+    assert.match(ui, /import '\.\/db-leggero\.js'/);
     assert.match(ui, /import '\.\/editor-team\.js'/);
 });
 
