@@ -267,7 +267,7 @@ async function initTrainersPage() {
     }
 
     try {
-        const snapshot = await db.ref('players').once('value');
+        const snapshot = window.DbLeggero ? await DbLeggero.lettura(db, 'players') : await db.ref('players').once('value');      // con la cache tra le pagine
         const playersData = snapshot.val();
 
         if (!playersData) {

@@ -887,7 +887,7 @@
     async function carica() {
         try {
             // le stagioni con le statistiche dei set rimesse nei loro match (db-leggero.js: stanno in un nodo a parte)
-            const [seasons, players] = await Promise.all([window.DbLeggero.stagioniConStats(db), db.ref('players').once('value')]);
+            const [seasons, players] = await Promise.all([window.DbLeggero.stagioniConStats(db), window.DbLeggero.lettura(db, 'players')]);
             STATO.dati = { seasons: seasons || {}, players: players.val() || {} };
             // le stagioni chiuse da più di 24 ore con i voti dell'MVP non ancora contati: si contano ora (mvp-voto.js) e il titolo compare subito
             if (window.MvpVoto && auth.currentUser) {

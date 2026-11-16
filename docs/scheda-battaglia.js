@@ -73,7 +73,7 @@
         const voluti = ['p1', 'p2'].filter(l => ids && ids[l]);
         if (!voluti.length) return vuoto;
         try {
-            const [risultato, snap] = await Promise.all([Fiocchi.carica(db, d.Statistiche), db.ref('players').once('value')]);
+            const [risultato, snap] = await Promise.all([Fiocchi.carica(db, d.Statistiche), window.DbLeggero ? window.DbLeggero.lettura(db, 'players') : db.ref('players').once('value')]);
             const giocatori = snap.val() || {};
             const out = { p1: null, p2: null, risultato };
             for (const lato of voluti) {

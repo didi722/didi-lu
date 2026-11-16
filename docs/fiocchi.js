@@ -197,7 +197,8 @@
         if (!cache) {
             // le stagioni con le statistiche dei set rimesse nei loro match (db-leggero.js: stanno in un nodo a parte)
             const stagioni = finestra && finestra.DbLeggero ? finestra.DbLeggero.stagioniConStats(db) : db.ref('seasons').once('value').then(s => s.val() || {});
-            cache = Promise.all([stagioni, db.ref('players').once('value')])
+            const giocatori = finestra && finestra.DbLeggero ? finestra.DbLeggero.lettura(db, 'players') : db.ref('players').once('value');      // con la cache tra le pagine
+            cache = Promise.all([stagioni, giocatori])
                 .then(([s, p]) => S.calcola({ seasons: s || {}, players: p.val() || {} }, { stagione: 'all' }))
                 .catch(e => { cache = null; throw e; });
         }

@@ -214,7 +214,9 @@
     function players(win) {
         if (!win.firebase) return Promise.reject(new Error('Firebase non c\'è'));
         if (!win.__appPlayers) {
-            win.__appPlayers = win.firebase.database().ref('players').once('value').then(s => s.val() || {});
+            // con la cache tra le pagine (db-leggero.js), se la pagina la carica: nell'app ogni cambio di pagina ricarica tutto e rileggeva i 210 KB
+            const db = win.firebase.database();
+            win.__appPlayers = (win.DbLeggero && win.DbLeggero.lettura ? win.DbLeggero.lettura(db, 'players') : db.ref('players').once('value')).then(s => s.val() || {});
             win.__appPlayers.catch(() => { win.__appPlayers = null; });          // un errore non resta in memoria: la prossima volta si riprova
         }
         return win.__appPlayers;
