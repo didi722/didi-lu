@@ -250,3 +250,16 @@ test('squadre, forme diverse della stessa specie (quattro Rotom): ognuno si rico
     const ko = p.file['header-gifs-didi'].contenitori.filter(c => c.classi.has('rg-voce-ko')).map(c => c.figli[0].dataset.pkm);
     assert.deepEqual(ko, ['Rotom-Heat'], 'il KO è di Rotom-Heat, non del primo Rotom');
 });
+
+test('squadre, Random: la fila dei Pokémon ha da subito l\'altezza di uno sprite, così l\'intestazione non si allunga quando scende in campo il primo', () => {
+    const regola = sel => {
+        const i = finestre.indexOf(sel + ' {');
+        assert.ok(i >= 0, sel);
+        return finestre.slice(i, finestre.indexOf('}', i)).replace(/\s+/g, ' ');
+    };
+    // PC: sprite da 36 px; schermi stretti: 24 px; telefono: gli sprite si restringono fino a 24 px al massimo
+    assert.match(regola('#replayModal .replay-mini-header .mini-gifs-row'), /min-height: 36px/);
+    assert.match(regola('#replayModal .replay-mini-header .mini-gifs-row img'), /width: 36px; height: 36px/);
+    assert.match(finestre, /#replayModal \.replay-mini-header \.mini-gifs-row \{ flex-wrap: wrap; min-height: 24px; \}/);
+    assert.match(regola('html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row'), /min-height: 24px/);
+});

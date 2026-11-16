@@ -537,7 +537,8 @@
 }
 #replayModal .replay-mini-header .badge-label { margin: 0; }
 #replayModal .replay-mini-header .mini-score-box { flex-shrink: 0; margin: 0; padding: 5px 12px !important; font-weight: 900; box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
-#replayModal .replay-mini-header .mini-gifs-row { flex: 0 0 auto; flex-wrap: nowrap; gap: 2px; padding: 0; justify-content: center; }
+/* la fila dei Pokémon ha da subito l'altezza di uno sprite (nelle Random parte vuota e si riempie man mano che scendono in campo: senza, l'intestazione si allungava al primo) */
+#replayModal .replay-mini-header .mini-gifs-row { flex: 0 0 auto; flex-wrap: nowrap; gap: 2px; padding: 0; justify-content: center; min-height: 36px; }
 #replayModal .replay-mini-header .mini-gifs-row img { width: 36px; height: 36px; }
 /* il team accanto alle sue GIF: il nome e, di fianco o sotto se non c'è posto, i suoi badge */
 #replayModal .replay-mini-header .mini-team-col { display: flex; flex-flow: row wrap; align-items: center; gap: 6px 8px; min-width: 0; }
@@ -677,7 +678,7 @@
     #replayModal .replay-mini-header .mini-badges .bt-barra-mini { flex-wrap: wrap; justify-content: center; }
     #replayModal .replay-mini-header .mini-badges .bt-mini { width: 22px; height: 22px; }
     #replayModal .replay-mini-header .mini-badges .bt-mini-img { width: 14px; height: 14px; }
-    #replayModal .replay-mini-header .mini-gifs-row { flex-wrap: wrap; }
+    #replayModal .replay-mini-header .mini-gifs-row { flex-wrap: wrap; min-height: 24px; }
     #replayModal .replay-mini-header .mini-gifs-row img { width: 24px; height: 24px; }
     #replayModal .replay-mini-header .mini-score-box { align-self: center; }
     #replayModal .replay-mini-header .badge-label { font-size: .68rem; padding: 3px 6px; }
@@ -716,7 +717,7 @@ html:not(.app-shell) #replayModal.tel .replay-mini-header::before { height: 26px
 html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-team-info { gap: 4px; }
 html:not(.app-shell) #replayModal.tel .replay-mini-header .badge-label { font-size: .66rem; padding: 3px 6px; }
 html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-score-box { font-size: .9rem; padding: 4px 9px !important; }
-html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row { flex-wrap: nowrap; gap: 1px; min-width: 0; max-width: 100%; }
+html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row { flex-wrap: nowrap; gap: 1px; min-width: 0; max-width: 100%; min-height: 24px; }
 html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row img { flex: 1 1 0; min-width: 0; width: auto; max-width: 24px; height: auto; aspect-ratio: 1; }
 /* comandi: tasti che dividono la larghezza (otto in fila, a mano con il pollice) */
 html:not(.app-shell) #replayModal.tel .replay-comandi { flex-wrap: nowrap; width: min(100%, 640px); gap: 5px; padding: 6px; }
