@@ -69,6 +69,10 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
     // server a fine match (e il browser, finché i risultati si calcolano dal sito): stessa regola di seasons.
     "setStats": { ".read": true, ".write": "auth != null" },
 
+    // Riassunto del Match of the week (settimane, set scelto e badge già calcolati): lo scrive solo il workflow "Riassunto del Match of the week" (con l'admin SDK, che le regole non
+    // fermano); tutti lo leggono, nessuno lo scrive dal sito. La home lo usa al posto delle statistiche di tutto il sito.
+    "matchSettimana": { ".read": true, ".write": false },
+
     // Formati e impostazioni: li cambia solo l'admin.
     "regolamenti": { ".read": true, ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'" },
     "settings":    { ".read": true, ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'" },
@@ -174,3 +178,21 @@ pesavano l'84% di una stagione (529 KB su 680): ogni pagina che leggeva una stag
    - `copia`: scrive `setStats/…` per i match che le hanno dentro (non toglie niente da `seasons`); si può ripetere;
    - controllare qualche pagina (Stats, un badge, il Match of the week): devono dare gli stessi numeri di prima;
    - `pulisci`: toglie le statistiche da dentro ai match, solo dove la copia è identica. Da qui le pagine leggono una stagione senza il 84% del peso.
+
+## Riassunto del Match of the week (`matchSettimana`): la home non scarica più le statistiche
+
+La home è la pagina più visitata e, per disegnare il banner del Match of the week, scaricava le statistiche di tutti i set (`setStats`, ~700 KB) e `players` (~210 KB) per
+calcolare il set più bello di ogni settimana e i badge dei team. Ora un workflow lo calcola e lo salva in `matchSettimana` (pochi KB: per ogni settimana il set scelto e i
+badge già pronti); la home legge quello.
+
+- **Chi lo scrive:** solo il workflow *Riassunto del Match of the week* (`.github/workflows/riassunto-home.yml`, ogni 3 ore e a mano). Le regole non lo fanno scrivere a nessuno dal sito
+  (`".write": false`; l'admin SDK le salta).
+- **Chi lo legge:** la home (`docs/index.html`). Se il riassunto manca, ha un'altra versione o ha più di 12 ore, la home fa come prima (scarica le statistiche e calcola il banner da sé):
+  se il workflow smette di funzionare il sito non si rompe, costa solo di più.
+- **Quanto è fresco:** un set appena giocato compare nel banner alla prossima esecuzione (fino a 3 ore).
+- **L'MVP:** il conteggio dei voti scaduti, che in home si fa raramente, legge le statistiche solo della stagione da contare (`setStats/<stagione>`).
+
+**Come attivarlo (in quest'ordine):**
+1. Aggiungere alle regole del database il nodo `matchSettimana` (blocco qui sopra) e pubblicarle.
+2. GitHub → Actions → *Riassunto del Match of the week* → Run workflow. Con `prova` stampa le ultime settimane e quanto pesa il riassunto senza scrivere; poi lanciarlo senza `prova`.
+3. Aprire la home (cache pulita): il banner si vede come prima. In Console → Realtime Database deve esserci `matchSettimana` con `aggiornato` e `settimane`.

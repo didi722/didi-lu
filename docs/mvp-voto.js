@@ -300,10 +300,10 @@
     }
 
     /**
-     * Per index.html e stats.html: conta i voti di tutte le stagioni scadute che non hanno ancora il risultato (`seasons` è il nodo seasons). Restituisce { stagione: risultato } di quelle
+     * Per index.html e stats.html: conta i voti di tutte le stagioni scadute che non hanno ancora il risultato (`seasons` è il nodo seasons). `caricaStatistiche(id)` (facoltativa): le statistiche dei set di quella stagione (setStats/{id}), per chi ha `seasons` senza. Restituisce { stagione: risultato } di quelle
      * contate, da aggiungere ai dati in memoria prima di calcolare le statistiche.
      */
-    async function concludiScadute(seasons, players) {
+    async function concludiScadute(seasons, players, { caricaStatistiche } = {}) {
         const fatti = {};
         // `players` può essere l'oggetto dei giocatori o una funzione che lo legge: così chi non ha niente da contare (quasi sempre) non lo legge affatto
         let giocatori = typeof players === 'function' ? null : players;
@@ -313,7 +313,9 @@
             if (!window.Mvp.daContare(f, s.mvp)) continue;
             try {
                 if (!giocatori) giocatori = await players();
-                fatti[id] = await concludi({ stagione: id, info: s.info, showdowns: s.showdowns || {}, teamsIscritti: s.teams_iscritti || {}, players: giocatori, iscritti: s.iscritti || {}, mvp: s.mvp });
+                // chi non ha le statistiche dei set nei match (la home) le legge solo per questa stagione (setStats/{stagione})
+                const showdowns = caricaStatistiche && window.DbLeggero ? window.DbLeggero.unisciSetStatsShowdowns(s.showdowns || {}, await caricaStatistiche(id)) : (s.showdowns || {});
+                fatti[id] = await concludi({ stagione: id, info: s.info, showdowns, teamsIscritti: s.teams_iscritti || {}, players: giocatori, iscritti: s.iscritti || {}, mvp: s.mvp });
             } catch (e) { console.warn(`MVP: conteggio della stagione ${id} non salvato`, e); }
         }
         return fatti;
