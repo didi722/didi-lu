@@ -293,6 +293,7 @@
             const avatar = extra.avatar ? `<img class="ms-av" src="${esc(extra.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>';
             // dell'allenatore resta l'avatar (il nome è nel suggerimento); il tag nero porta il nome del team (senza team, quello dell'allenatore)
             return `<div class="ms-lato ms-l${n} ${vince ? 'ms-vince' : 'ms-perde'}" style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}" title="${esc(g.nome)} · ${vince ? 'won' : 'lost'}">`
+                + (vince ? '<span class="ms-esito" aria-label="Winner">&#9733; Winner</span>' : '')
                 + `<a class="ms-av-link" href="${esc(pagina)}" title="${esc(g.nome)}">${avatar}</a>`
                 + `<div class="ms-testi"><div class="ms-riga"><a class="ms-nome-link" href="${esc(pagina)}" title="${esc(g.team ? `${g.team} · ${g.nome}` : g.nome)}"><b class="ms-nome nome-scorrevole">${esc(g.team || g.nome)}</b></a>`
                 + `<span class="ms-bdg" data-ms-badge="${k}"></span></div>`
