@@ -833,6 +833,14 @@ html:not(.app-shell) #replayModal:not(.tel) .rv-taglio-b {
     -webkit-mask-position: 0 0, calc(var(--sx, 50vw) - var(--schermo-larg, 640px) / .34 * .498) calc(var(--sy, 50vh) - var(--schermo-larg, 640px) / .34 * .5625 * .505);
     mask-position: 0 0, calc(var(--sx, 50vw) - var(--schermo-larg, 640px) / .34 * .498) calc(var(--sy, 50vh) - var(--schermo-larg, 640px) / .34 * .5625 * .505);
 }
+/* i tasti dei set stanno fuori dal flusso, a destra dello schermo: così lo schermo, e la scocca centrata su di lui, restano al centro della finestra (con i tasti nel flusso il gruppo
+   era centrato e lo schermo finiva a sinistra di mezzo tasto). Alla stessa altezza del centro dello schermo (metà della sua altezza, 0,6618 della larghezza, dal basso del palco). */
+html:not(.app-shell) #replayModal:not(.tel) .replay-palco { position: relative; }
+html:not(.app-shell) #replayModal:not(.tel) .set-selector {
+    position: absolute !important; top: auto !important; right: auto !important;
+    left: calc(50% + var(--schermo-larg, 438px) / 2 + 16px);
+    bottom: calc(var(--schermo-larg, 438px) * .3309); transform: translateY(50%);
+}
 html:not(.app-shell) #replayModal:not(.tel) .gba-shell { display: none; }
 html:not(.app-shell) #replayModal:not(.tel) .gba-container {
     zoom: 1; z-index: auto; margin: 0;

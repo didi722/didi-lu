@@ -202,3 +202,24 @@ test('replay da PC: i cartellini del campo in colonna partono dall\'alto della c
     assert.match(regola, /flex-direction: column;[^}]*justify-content: flex-start/);
     assert.doesNotMatch(regola, /justify-content: center/);
 });
+
+test('replay da PC: lo schermo (e la scocca centrata su di lui) sta al centro della finestra: i tasti dei set sono fuori dal flusso, a destra dello schermo, e a sinistra si lascia lo stesso spazio', () => {
+    const regola = sel => {
+        const i = finestre.indexOf(sel + ' {');
+        assert.ok(i >= 0, sel);
+        return finestre.slice(i, finestre.indexOf('}', i)).replace(/\s+/g, ' ');
+    };
+    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) .replay-palco'), /position: relative/);
+    const tasti = regola('html:not(.app-shell) #replayModal:not(.tel) .set-selector');
+    assert.match(tasti, /position: absolute !important/, 'fuori dal flusso: non spostano lo schermo');
+    assert.match(tasti, /left: calc\(50% \+ var\(--schermo-larg, 438px\) \/ 2 \+ 16px\)/, 'a destra dello schermo');
+    assert.match(tasti, /bottom: calc\(var\(--schermo-larg, 438px\) \* \.3309\); transform: translateY\(50%\)/, 'alla metà dell\'altezza dello schermo (0,6618 / 2 della larghezza)');
+    assert.equal(Math.round(0.6618 / 2 * 10000) / 10000, 0.3309);
+    // lo spazio che i tasti e la colonna dei cartellini chiedono sta da entrambi i lati: lo schermo non può essere tanto largo da non lasciarglielo
+    for (const [larghezza, altezza] of [[1920, 1080], [1536, 864], [1366, 768], [1280, 720], [1100, 800], [1000, 700], [2560, 1440]]) {
+        const r = adatta({ larghezza, altezza, campo: true });
+        const W = parseFloat(r.larg);
+        assert.ok((larghezza - W) / 2 >= 106 + 8 || W === 420, `${larghezza}x${altezza}: a destra restano ${(larghezza - W) / 2}px per i tasti dei set`);
+        assert.ok(r.classi.includes('campo-laterale') === ((larghezza - W) / 2 >= 190), `${larghezza}x${altezza}: la colonna dei cartellini sta a sinistra se c'è posto dalla parte dello schermo`);
+    }
+});

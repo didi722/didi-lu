@@ -3093,11 +3093,12 @@ function adattaReplayAlloSchermo() {
     // e, in altezza, prende lo spazio che restano intestazione, comandi e momenti; la larghezza che lasciano i tasti dei set e le colonne dei lati ne è il limite.
     if (!document.documentElement.classList.contains('app-shell')) {
         const FINESTRA = 0.6618;           // altezza / larghezza dell'apertura dello schermo nella scocca (40% dell'altezza e 34% della larghezza di un'immagine 16:9)
-        const schermoPer = riservato => Math.max(420, Math.min(larghezza - 24 - tastiSet, (altezza - riservato) / FINESTRA, larghezza * 0.40, 1500));
+        const lati = tastiSet + 8;         // i tasti dei set stanno a destra dello schermo, fuori dal flusso: lo schermo resta al centro e a sinistra si lascia lo stesso spazio
+        const schermoPer = riservato => Math.max(420, Math.min(larghezza - 2 * lati, (altezza - riservato) / FINESTRA, larghezza * 0.40, 1500));
         modal.style.setProperty('--righe-campo', larghezza >= 1250 ? 1 : 2);
         modal.classList.remove('campo-laterale');
         let W = schermoPer(riservatoBase);
-        if (insieme && (larghezza - (W + tastiSet)) / 2 >= 190) modal.classList.add('campo-laterale');
+        if (insieme && (larghezza - W) / 2 >= 190) modal.classList.add('campo-laterale');
         else W = schermoPer(riservatoBase + alto('.replay-campo') + 16);
         W = Math.floor(W);
         modal.style.setProperty('--schermo-larg', W + 'px');

@@ -158,3 +158,10 @@ test('barra dei messaggi ("Go! Togekiss!"): fascia piatta e scura, senza bordi n
         assert.match(testo, /\.palco \.messagebar small \{[^}]*Josefin Sans/, f);
     }
 });
+
+test('il replay del sito non mostra il "Play" e il "Play (sound off)" del motore di Showdown (restano il nostro velo e i nostri comandi)', () => {
+    for (const file of ['docs/replay-sito.js', 'functions/replay-sito.js']) {
+        const testo = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+        assert.match(testo, /\.playbutton \{ display: none !important; \}/, file);
+    }
+});

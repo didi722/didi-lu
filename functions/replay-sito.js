@@ -368,6 +368,8 @@ ${barreSalute('.palco')}
 }
 .velo-avvio .btn-avvio:hover { box-shadow: 11px 11px 0 var(--inchiostro); }
 .velo-avvio .btn-avvio svg { width: 22px; height: 22px; }
+/* il "Play" e il "Play (sound off)" del motore di Showdown (.playbutton, dentro la scena) non servono: il replay parte dal nostro velo e dai nostri comandi, e sbucavano da sotto */
+.playbutton { display: none !important; }
 .velo-avvio p {
     margin: 0; max-width: 380px;
     padding: 5px 11px 3px;
