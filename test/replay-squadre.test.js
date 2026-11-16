@@ -141,7 +141,7 @@ test('squadre: il replay manda anche chi è sceso in campo in un momento qualsia
         '|switch|p1a: Incineroar|Incineroar, L50, M|100/100', '|switch|p2a: Torkoal|Torkoal, L50, M|100/100', '|turn|1',
         '|faint|p2a: Torkoal', '|switch|p2a: Pelipper|Pelipper, L50, F|100/100', '|switch|p1b: Uru|Urshifu-Rapid-Strike, L50, M|100/100'];
     const presto = squadre(log, 12);
-    assert.deepEqual(presto.scesi, { p1: ['incineroar', 'urshifu'], p2: ['torkoal', 'pelipper'] }, 'anche chi scende dopo');
+    assert.deepEqual(presto.scesi, { p1: ['Incineroar', 'Urshifu-Rapid-Strike'], p2: ['Torkoal', 'Pelipper'] }, 'anche chi scende dopo, con la forma');
     assert.deepEqual(presto.dim, { p1: 4, p2: 4 });
     assert.equal(stato(presto, 'p1', 'Urshifu'), 0, 'ma lo stato è ancora "non sceso"');
     assert.deepEqual(squadre(['|switch|p1a: A|Pikachu, L82|100/100'], 1).dim, { p1: 0, p2: 0 }, 'senza |teamsize| nessun numero');
@@ -161,7 +161,7 @@ test('squadre, formati con team preview: nell\'intestazione restano solo i Poké
     const fuori = lato => p.file[lato].contenitori.filter(c => c.classi.has('rg-voce-fuori')).length;
     assert.equal(fuori('header-gifs-didi'), 0);
     // chi è sceso in un momento del set (anche più avanti: Urshifu) resta; chi non è mai sceso e non è dichiarato sparisce
-    p.manda({ p1: rosa1, p2: [{ s: 'Torkoal', st: 1 }, { s: 'Pelipper', st: 2 }], scesi: { p1: ['incineroar', 'rillaboom', 'urshifu'], p2: ['torkoal', 'pelipper'] }, dim: { p1: 4, p2: 4 } });
+    p.manda({ p1: rosa1, p2: [{ s: 'Torkoal', st: 1 }, { s: 'Pelipper', st: 2 }], scesi: { p1: ['Incineroar', 'Rillaboom', 'Urshifu-Rapid-Strike'], p2: ['Torkoal', 'Pelipper'] }, dim: { p1: 4, p2: 4 } });
     const nomiFuori = lato => p.file[lato].contenitori.filter(c => c.classi.has('rg-voce-fuori')).map(c => c.figli[0].dataset.pkm);
     assert.deepEqual(nomiFuori('header-gifs-didi'), ['Amoonguss', 'Garchomp', 'Kyogre']);
     assert.deepEqual(nomiFuori('header-gifs-lu'), ['Dragapult', 'Tyranitar', 'Gengar', 'Mew']);
@@ -174,18 +174,18 @@ test('squadre: i Pokémon che le statistiche del set segnano come portati restan
     const p = paginaConFile({ replayAttuale: { stagione: 's0', sd: 'sd1', match: 'match1' }, setAperto: '2',
         statistiche: { ['setStats/' + chiave]: { p1: { pokemon: [{ specie: 'Incineroar', portato: true }, { specie: 'Amoonguss', portato: true }, { specie: 'Garchomp', portato: false }] }, p2: { pokemon: [] } } } });
     for (const s of ['Incineroar', 'Amoonguss', 'Garchomp']) p.file['header-gifs-didi'].figli.push({ dataset: { pkm: s }, classList: { toggle() {} } });
-    p.manda({ p1: [{ s: 'Incineroar', st: 1 }, { s: 'Amoonguss', st: 0 }, { s: 'Garchomp', st: 0 }], p2: [], scesi: { p1: ['incineroar'], p2: [] }, dim: { p1: 2, p2: 0 } });
+    p.manda({ p1: [{ s: 'Incineroar', st: 1 }, { s: 'Amoonguss', st: 0 }, { s: 'Garchomp', st: 0 }], p2: [], scesi: { p1: ['Incineroar'], p2: [] }, dim: { p1: 2, p2: 0 } });
     await new Promise(r => setTimeout(r, 5));
     assert.deepEqual(p.letti, ['setStats/' + chiave], 'una sola lettura, solo di questo set');
     const fuori = p.file['header-gifs-didi'].contenitori.filter(c => c.classi.has('rg-voce-fuori')).map(c => c.figli[0].dataset.pkm);
     assert.deepEqual(fuori, ['Garchomp'], 'Amoonguss è portato (dalle statistiche) anche se non è sceso; Garchomp è rimasto a casa');
-    p.manda({ p1: [{ s: 'Incineroar', st: 1 }, { s: 'Amoonguss', st: 0 }, { s: 'Garchomp', st: 0 }], p2: [], scesi: { p1: ['incineroar'], p2: [] }, dim: { p1: 2, p2: 0 } });
+    p.manda({ p1: [{ s: 'Incineroar', st: 1 }, { s: 'Amoonguss', st: 0 }, { s: 'Garchomp', st: 0 }], p2: [], scesi: { p1: ['Incineroar'], p2: [] }, dim: { p1: 2, p2: 0 } });
     assert.equal(p.letti.length, 1, 'non si rilegge a ogni messaggio');
 });
 
 test('squadre, Random: la fila costruita dal replay mostra tutti quelli visti, niente viene tolto', () => {
     const p = paginaConFile();
-    p.manda({ p1: [{ s: 'Dhelmise', st: 1 }, { s: 'Kingambit', st: 0 }], p2: [{ s: 'Arceus', st: 1 }], scesi: { p1: ['dhelmise'], p2: ['arceus'] }, dim: { p1: 0, p2: 0 } });
+    p.manda({ p1: [{ s: 'Dhelmise', st: 1 }, { s: 'Kingambit', st: 0 }], p2: [{ s: 'Arceus', st: 1 }], scesi: { p1: ['Dhelmise'], p2: ['Arceus'] }, dim: { p1: 0, p2: 0 } });
     assert.equal(p.file['header-gifs-didi'].contenitori.filter(c => c.classi.has('rg-voce-fuori')).length, 0);
     assert.deepEqual(p.pkm('header-gifs-didi'), ['Dhelmise', 'Kingambit']);
 });
@@ -194,4 +194,26 @@ test('squadre: matches.html dice al gestore quale stagione e quale set sono aper
     assert.match(matches, /window\.replayAttuale\.stagione = stagione;/);
     assert.match(matches, /db\.ref\('setStats\/' \+ chiave\)\.once\('value'\)/);
     assert.match(finestre, /\.mini-gifs-row \.rg-voce\.rg-voce-fuori \{ display: none; \}/);
+});
+
+test('squadre, forme diverse della stessa specie (quattro Rotom): ognuno si riconosce dal nome esatto, per gli stati e per i portati', async () => {
+    // nel replay: scende Rotom-Heat, non il primo Rotom della presentazione
+    const log = ['|poke|p1|Rotom-Wash, L50|', '|poke|p1|Rotom-Heat, L50|', '|poke|p1|Rotom-Frost, L50|', '|poke|p1|Rotom-Mow, L50|', '|poke|p1|Gengar, L50, M|', '|poke|p1|Mew, L50|',
+        '|teamsize|p1|4', '|start', '|switch|p1a: Rotom|Rotom-Heat, L50|100/100', '|switch|p1b: Gengar|Gengar, L50, M|100/100', '|turn|1', '|faint|p1a: Rotom'];
+    const r = squadre(log, log.length);
+    assert.equal(stato(r, 'p1', 'Rotom-Heat'), 2, 'è Rotom-Heat che è sceso ed è andato KO');
+    assert.equal(stato(r, 'p1', 'Rotom-Wash'), 0, 'gli altri Rotom restano dove sono');
+    assert.equal(stato(r, 'p1', 'Rotom-Frost'), 0);
+    assert.equal(r.p1.length, 6, 'nessun doppione');
+    assert.deepEqual(r.scesi.p1, ['Rotom-Heat', 'Gengar']);
+    // nella pagina: sei sprite (4 Rotom, Gengar, Mew); portati Rotom-Heat, Gengar e, dalle statistiche, Rotom-Mow
+    const p = paginaConFile({ replayAttuale: { stagione: 's0', sd: 'sd1', match: 'match1' }, setAperto: '1',
+        statistiche: { 'setStats/s0/sd1/match1/set1': { p1: { pokemon: [{ specie: 'Rotom-Mow', portato: true }] }, p2: { pokemon: [] } } } });
+    for (const n of ['Rotom-Wash', 'Rotom-Heat', 'Rotom-Frost', 'Rotom-Mow', 'Gengar', 'Mew']) p.file['header-gifs-didi'].figli.push({ dataset: { pkm: n }, classList: { toggle() {} } });
+    p.manda({ p1: r.p1, p2: [], scesi: r.scesi, dim: r.dim });
+    await new Promise(res => setTimeout(res, 5));
+    const fuori = p.file['header-gifs-didi'].contenitori.filter(c => c.classi.has('rg-voce-fuori')).map(c => c.figli[0].dataset.pkm);
+    assert.deepEqual(fuori, ['Rotom-Wash', 'Rotom-Frost', 'Mew'], 'restano Rotom-Heat e Gengar (scesi) e Rotom-Mow (dalle statistiche); gli altri Rotom e Mew sono rimasti a casa');
+    const ko = p.file['header-gifs-didi'].contenitori.filter(c => c.classi.has('rg-voce-ko')).map(c => c.figli[0].dataset.pkm);
+    assert.deepEqual(ko, ['Rotom-Heat'], 'il KO è di Rotom-Heat, non del primo Rotom');
 });

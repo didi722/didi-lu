@@ -758,6 +758,7 @@ ${barreSalute('.palco')}
         // Alla pagina che contiene il replay (matches.html) si manda, per ogni lato, l'elenco dei Pokémon: { s: specie, st: 0 non ancora sceso | 1 sceso in campo | 2 KO }.
         const baseSpecie = t => String(t || '').split(',')[0].trim();
         const chiaveSpecie = t => baseSpecie(t).split('-')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        const idSquadra = t => baseSpecie(t).toLowerCase().replace(/[^a-z0-9]/g, '');      // con la forma: "Rotom-Wash" → rotomwash
         let ultimeSquadre = '';
         function calcolaSquadre() {
             const coda = battle.stepQueue || [];
@@ -778,7 +779,9 @@ ${barreSalute('.palco')}
                     let voce = l.per[m[2]];
                     if (!voce && cmd !== 'faint') {
                         const specie = baseSpecie(parti[3]);
-                        voce = l.rosa.find(r => r.st === 0 && chiaveSpecie(r.s) === chiaveSpecie(specie));
+                        // prima per nome esatto (con quattro Rotom di forme diverse non si scambiano), poi per specie (Urshifu-* della presentazione → Urshifu-Rapid-Strike)
+                        voce = l.rosa.find(r => r.st === 0 && idSquadra(r.s) === idSquadra(specie))
+                            || l.rosa.find(r => r.st === 0 && chiaveSpecie(r.s) === chiaveSpecie(specie));
                         if (!voce) { voce = { s: specie, st: 0 }; l.rosa.push(voce); }
                         l.per[m[2]] = voce;
                     }
@@ -802,8 +805,8 @@ ${barreSalute('.palco')}
                 const cmd = parti[1];
                 if (cmd === 'switch' || cmd === 'drag' || cmd === 'replace') {
                     const m = /^(p[12])[a-d]?: /.exec(parti[2] || '');
-                    const k = m && chiaveSpecie(parti[3]);
-                    if (k && scesi[m[1]].indexOf(k) < 0) scesi[m[1]].push(k);
+                    const nome = m && baseSpecie(parti[3]);
+                    if (nome && scesi[m[1]].indexOf(nome) < 0) scesi[m[1]].push(nome);
                 } else if (cmd === 'teamsize' && dim[parti[2]] !== undefined) dim[parti[2]] = parseInt(parti[3], 10) || 0;
             }
             cachePortati = { n: coda.length, v: { scesi, dim } };
