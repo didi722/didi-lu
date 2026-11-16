@@ -178,3 +178,11 @@ test('replay da PC: la scocca grande e semitrasparente è indipendente dallo sch
     assert.match(matches, /modal\.style\.setProperty\('--sy', /);
     assert.match(matches, /new ResizeObserver\(\(\) => posizionaConsoleReplay\(/);
 });
+
+test('replay da PC: i cartellini del campo in colonna partono dall\'alto della colonna (non dal centro dello schermo)', () => {
+    const i = finestre.indexOf('#replayModal.campo-laterale .replay-campo {');
+    assert.ok(i >= 0);
+    const regola = finestre.slice(i, finestre.indexOf('}', i)).replace(/\s+/g, ' ');
+    assert.match(regola, /flex-direction: column;[^}]*justify-content: flex-start/);
+    assert.doesNotMatch(regola, /justify-content: center/);
+});

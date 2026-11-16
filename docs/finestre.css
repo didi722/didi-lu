@@ -452,7 +452,7 @@
 #replayModal.campo-laterale .replay-palco { position: relative; flex-wrap: nowrap; }
 #replayModal.campo-laterale .replay-campo {
     position: absolute; top: 0; bottom: 0; right: 100%; margin-right: 20px; width: 170px; max-width: none; flex: none;
-    flex-direction: column; flex-wrap: nowrap; align-items: flex-end; justify-content: center; gap: 10px; overflow-y: auto; overflow-x: hidden; padding: 4px 6px 4px 0;
+    flex-direction: column; flex-wrap: nowrap; align-items: flex-end; justify-content: flex-start; gap: 10px; overflow-y: auto; overflow-x: hidden; padding: 4px 6px 4px 0;
 }
 #replayModal .rcampo-voce {
     display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 2px 6px; max-width: 100%; box-sizing: border-box;

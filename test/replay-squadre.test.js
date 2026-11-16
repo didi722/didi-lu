@@ -77,7 +77,7 @@ function paginaConFile(opzioni = {}) {
     const fine = matches.indexOf("    window.addEventListener('message', e => {", matches.indexOf("e.data.tipo !== 'replay-squadre'"));
     assert.ok(inizio > 0 && fine > inizio);
     const creaFila = () => {
-        const fila = { figli: [], dataset: {}, classi: new Set(), classList: { add: c => fila.classi.add(c) }, appendChild: img => { img.parentNode = fila; fila.figli.push(img); }, insertBefore: (nuovo, prima) => { nuovo.parentNode = fila; fila.contenitori.push(nuovo); }, contenitori: [], querySelector: s => (s === 'img' ? fila.figli[0] || null : null), querySelectorAll: () => fila.figli };
+        const fila = { figli: [], dataset: {}, classi: new Set(), classList: { add: c => fila.classi.add(c), remove: c => fila.classi.delete(c) }, replaceChildren: () => { fila.figli = []; fila.contenitori = []; }, appendChild: img => { img.parentNode = fila; fila.figli.push(img); }, insertBefore: (nuovo, prima) => { nuovo.parentNode = fila; fila.contenitori.push(nuovo); }, contenitori: [], querySelector: s => (s === 'img' ? fila.figli[0] || null : null), querySelectorAll: () => fila.figli };
         return fila;
     };
     const file = { 'header-gifs-didi': creaFila(), 'header-gifs-lu': creaFila() };
@@ -94,7 +94,7 @@ function paginaConFile(opzioni = {}) {
         }
     });
     vm.runInContext(matches.slice(inizio, fine), ctx);
-    return { file, letti, manda: dati => gestore({ source: 'f', data: { tipo: 'replay-squadre', ...dati } }), pkm: lato => file[lato].figli.map(i => i.dataset.pkm) };
+    return { file, letti, azzera: () => ctx.window.azzeraSquadreReplay(), manda: dati => gestore({ source: 'f', data: { tipo: 'replay-squadre', ...dati } }), pkm: lato => file[lato].figli.map(i => i.dataset.pkm) };
 }
 
 test('squadre, Random: la fila costruita dal replay si allunga con i Pokémon che scendono in campo (prima restava ai primi), senza doppioni', () => {
@@ -181,6 +181,39 @@ test('squadre: i Pokémon che le statistiche del set segnano come portati restan
     assert.deepEqual(fuori, ['Garchomp'], 'Amoonguss è portato (dalle statistiche) anche se non è sceso; Garchomp è rimasto a casa');
     p.manda({ p1: [{ s: 'Incineroar', st: 1 }, { s: 'Amoonguss', st: 0 }, { s: 'Garchomp', st: 0 }], p2: [], scesi: { p1: ['Incineroar'], p2: [] }, dim: { p1: 2, p2: 0 } });
     assert.equal(p.letti.length, 1, 'non si rilegge a ogni messaggio');
+});
+
+test('squadre, Random: cambiando set (un altro documento del replay) la fila costruita dal replay riparte da zero, senza i Pokémon dei set visti prima', () => {
+    const p = paginaConFile();
+    p.manda({ doc: 'set1', p1: [{ s: 'Dhelmise', st: 1 }, { s: 'Kingambit', st: 1 }], p2: [{ s: 'Arceus', st: 1 }] });
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Dhelmise', 'Kingambit']);
+    // l'altro set: la fila è solo la sua
+    p.manda({ doc: 'set2', p1: [{ s: 'Gengar', st: 1 }], p2: [{ s: 'Pikachu', st: 1 }, { s: 'Eevee', st: 0 }] });
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Gengar']);
+    assert.deepEqual(p.pkm('header-gifs-lu'), ['Pikachu', 'Eevee']);
+    // dentro lo stesso replay la fila continua a crescere
+    p.manda({ doc: 'set2', p1: [{ s: 'Gengar', st: 2 }, { s: 'Mimikyu', st: 1 }], p2: [{ s: 'Pikachu', st: 1 }] });
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Gengar', 'Mimikyu']);
+    // e a ogni cambio di set la pagina svuota subito le file (senza aspettare il primo messaggio del nuovo replay)
+    p.azzera();
+    assert.deepEqual(p.pkm('header-gifs-didi'), []);
+    assert.deepEqual(p.pkm('header-gifs-lu'), []);
+    p.manda({ doc: 'set3', p1: [{ s: 'Dragapult', st: 1 }], p2: [] });
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Dragapult']);
+    // il replay dà a ogni documento il suo identificativo, e caricaVideoDirect (cambio di set) azzera le file
+    assert.match(replay, /const ID_DOC = Math\.random\(\)/);
+    assert.match(replay, /tipo: 'replay-squadre', doc: ID_DOC,/);
+    assert.match(matches, /if \(window\.azzeraSquadreReplay\) window\.azzeraSquadreReplay\(\);/);
+});
+
+test('squadre: una fila con il team vero dell\'intestazione resta anche cambiando set (solo quelle costruite dal replay si svuotano)', () => {
+    const p = paginaConFile();
+    const fila = p.file['header-gifs-didi'];
+    fila.figli.push({ dataset: { pkm: 'Garchomp' }, classList: { toggle() {} } });
+    p.manda({ doc: 'a', p1: [{ s: 'Garchomp', st: 1 }], p2: [] });
+    p.manda({ doc: 'b', p1: [{ s: 'Garchomp', st: 0 }], p2: [] });
+    p.azzera();
+    assert.deepEqual(p.pkm('header-gifs-didi'), ['Garchomp']);
 });
 
 test('squadre, Random: la fila costruita dal replay mostra tutti quelli visti, niente viene tolto', () => {

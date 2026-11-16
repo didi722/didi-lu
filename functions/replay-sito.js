@@ -812,13 +812,15 @@ ${barreSalute('.palco')}
             cachePortati = { n: coda.length, v: { scesi, dim } };
             return cachePortati.v;
         }
+        // ogni replay (ogni set) ha il suo identificativo: la pagina capisce da lì che è cambiato il set e azzera le file dell'intestazione costruite dal replay (Random)
+        const ID_DOC = Math.random().toString(36).slice(2) + Date.now().toString(36);
         function inviaSquadre() {
             if (window.parent === window) return;
             const squadre = calcolaSquadre();
             const firma = JSON.stringify(squadre);
             if (firma === ultimeSquadre) return;
             ultimeSquadre = firma;
-            try { window.parent.postMessage({ tipo: 'replay-squadre', p1: squadre.p1, p2: squadre.p2, scesi: squadre.scesi, dim: squadre.dim }, '*'); } catch (e) { /* la pagina non ascolta */ }
+            try { window.parent.postMessage({ tipo: 'replay-squadre', doc: ID_DOC, p1: squadre.p1, p2: squadre.p2, scesi: squadre.scesi, dim: squadre.dim }, '*'); } catch (e) { /* la pagina non ascolta */ }
         }
 
         // --- Comandi ---
