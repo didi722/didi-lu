@@ -3867,6 +3867,9 @@ async function gestisciCambioFormatoHelper() {
     const infoFilters = document.getElementById('helper-dynamic-filters');
 
     if (infoFilters) infoFilters.innerHTML = '';
+    // Tutti i Pokémon del formato, senza la scelta che il team deve rispettare (il tipo del Monotype, l'iniziale...): servono ai confronti (velocità, danni, copertura) con i team
+    // degli altri, che possono avere un'altra scelta. Si riempie solo se il formato chiede una scelta; altrimenti la lista da scegliere è già tutta.
+    if (grid) grid.poolFormatoCompleto = null;
 
     if (!selectedFormatId) {
         if (grid) grid.innerHTML = ''; 
@@ -3949,6 +3952,13 @@ async function gestisciCambioFormatoHelper() {
             if (initCognome) inizialiUniche.add(initCognome);
 
             const arrayIniziali = Array.from(inizialiUniche);
+
+            // la lista del formato senza la regola dell'iniziale: i team degli altri hanno altre iniziali
+            const senzaIniziale = JSON.parse(JSON.stringify(regolamento));
+            delete senzaIniziale.restrizioni.pokemon.name_starts;
+            const risultatoSenza = await generaListaPokémonPerFormato(senzaIniziale, jsonDati);
+            if (selectedFormatId !== window.currentHelperFormatId) return;
+            if (grid && Array.isArray(risultatoSenza.pokemon) && risultatoSenza.pokemon.length) grid.poolFormatoCompleto = risultatoSenza.pokemon;
 
             // Funzione helper per applicare il filtro per lettera
             const applicaFiltroIniziale = async (lettera) => {
@@ -4098,6 +4108,7 @@ async function gestisciCambioFormatoHelper() {
             const risultatoFiltroBase = await generaListaPokémonPerFormato(regolamentoTemporaneo, jsonDati);
             if (selectedFormatId !== window.currentHelperFormatId) return;
             const poolPokemonBase = risultatoFiltroBase.pokemon;
+            if (grid && Array.isArray(poolPokemonBase) && poolPokemonBase.length) grid.poolFormatoCompleto = poolPokemonBase;      // tutti i tipi, non solo quello scelto
 
             const vecchioContainer = infoFilters.querySelector('#helper-same-across-container');
             if (vecchioContainer) vecchioContainer.remove();
@@ -5132,6 +5143,9 @@ async function tbCompletaTipiTooltip(pkm, tooltip) {
 function aggiornaBottoneBuildTeam(lista) {
         if (Array.isArray(lista) && lista.length && window.currentHelperFormatId) {
         tbPoolPerFormato[window.currentHelperFormatId] = lista; // riusata dal dettaglio dei team del box
+        // e quella di tutto il formato per i confronti (la stessa lista se il formato non chiede una scelta)
+        const grid = document.getElementById('helper-pkm-grid');
+        tbPoolConfrontoPerFormato[window.currentHelperFormatId] = (grid && Array.isArray(grid.poolFormatoCompleto) && grid.poolFormatoCompleto.length) ? grid.poolFormatoCompleto : lista;
     }
     const btn = document.getElementById('helper-build-team-btn');
     if (btn) btn.style.display = (Array.isArray(lista) && lista.length > 0) ? 'flex' : 'none';
@@ -5635,7 +5649,7 @@ function tbCalcolaAttacco() {
     });
     const attaccanti = membri.filter(x => x.mosse.length);
 
-    const bersagli = tbStato.pool.filter(v => v.sp && Array.isArray(v.sp.types)).map(v => {
+    const bersagli = tbPoolConfronto().filter(v => v.sp && Array.isArray(v.sp.types)).map(v => {
         const abilita = tbAbilitaLegali(v.sp);
         if (!abilita.length) abilita.push('');
         let migliore = 0;
@@ -6087,10 +6101,11 @@ function tbMinacceCalc() {
     const cache = tbStato.cacheMinacce;
     if (cache && cache.firma === tbStato.firma) return cache.lista;
 
-    const nelPool = new Set(tbStato.pool.map(v => v.specieId));
+    const confronto = tbPoolConfronto();
+    const nelPool = new Set(confronto.map(v => v.specieId));
     const visti = new Set();
     const lista = [];
-    for (const v of tbStato.pool) {
+    for (const v of confronto) {
         if (!v.sp || !v.sp.baseStats || !Array.isArray(v.sp.types)) continue;
         if ((v.sp.evos || []).some(e => nelPool.has(tbToID(e)))) continue;
         const abilita = tbAbilitaLegali(v.sp);
@@ -6768,6 +6783,7 @@ function tbHtmlRuoli() {
 // altrimenti la calcola l'helper restando invisibile, come fa "Edit in team builder"
 // =====================================================================
 const tbPoolPerFormato = {};   // formatId → lista del formato calcolata dall'helper
+const tbPoolConfrontoPerFormato = {};   // formatId → TUTTI i Pokémon del formato (senza la scelta del team: tipo del Monotype, iniziale...), per i confronti dei tooltip
 let tbStatoDettaglio = null;   // stato del team aperto nel dettaglio (null finché non è pronto)
 let tbStatoInUso = null;       // stato "prestato" a tbStato in questo momento
 let tbTokenDettaglio = null;
@@ -6922,12 +6938,13 @@ async function tbPreparaDettaglio(team) {
 
         const lista = await tbPoolDelFormato(formato.id, pokemonTeam);
         if (token !== tbTokenDettaglio) return;
+        const listaConfronto = tbPoolConfrontoPerFormato[formato.id] || lista;
         await applicaGenerazioneFormato(formato.regolamento);   // tipi, statistiche e mosse della generazione del formato (le calcola il tag)
         if (token !== tbTokenDettaglio) return;
 
         const stato = {};
         tbEseguiCon(stato, () => {
-            tbInizializzaStato(`${formato.id}|${lista.length}|${lista.map(p => p.id).join(',')}`, formato.regolamento, lista);
+            tbInizializzaStato(`${formato.id}|${lista.length}|${lista.map(p => p.id).join(',')}`, formato.regolamento, lista, listaConfronto);
             tbCaricaTeamEsistente(pokemonTeam);
             tbStato.solaLettura = true; // niente nomi cliccabili: il team del box non si modifica da qui
         });
@@ -7227,7 +7244,7 @@ function tbHtmlSpeedTier() {
     const base = sp.baseStats.spe;
     const mia = tbCalcolaStat('spe', base, s.evs.spe, s.ivs.spe, s.natura);
 
-    const altri = tbStato.pool.filter(v => v.sp && v.sp.baseStats).map(v => ({
+    const altri = tbPoolConfronto().filter(v => v.sp && v.sp.baseStats).map(v => ({
         nome: v.nome,
         max: tbCalcolaStat('spe', v.sp.baseStats.spe, 252, 31, nat.max),
         min: tbCalcolaStat('spe', v.sp.baseStats.spe, 0, 0, nat.min)
@@ -8127,6 +8144,8 @@ async function apriTeamBuilder() {
     const grid = document.getElementById('helper-pkm-grid');
     const lista = grid && Array.isArray(grid.originalPokemonList) ? grid.originalPokemonList : [];
     const formatId = window.currentHelperFormatId;
+    // tutto il formato, per i confronti dei tooltip (con il Monotype Spettro: anche i Pokémon degli altri tipi)
+    const listaConfronto = (grid && Array.isArray(grid.poolFormatoCompleto) && grid.poolFormatoCompleto.length) ? grid.poolFormatoCompleto : (tbPoolConfrontoPerFormato[formatId] || lista);
 
     if (!formatId || lista.length === 0) {
         alert("Choose a format with at least one available Pokémon first.");
@@ -8169,11 +8188,11 @@ async function apriTeamBuilder() {
         const firma = `${formatId}|${lista.length}|${lista.map(p => p.id).join(',')}`;
         if (tbModifica) {
             // Modifica di un team del box: si riparte sempre dal team salvato
-            tbInizializzaStato(firma, regolamento, lista);
+            tbInizializzaStato(firma, regolamento, lista, listaConfronto);
             tbCaricaTeamEsistente(tbModifica.pokemon);
             tbModifica.testoIniziale = tbTestoShowdown();
         } else if (tbStato.firma !== firma) {
-            tbInizializzaStato(firma, regolamento, lista);
+            tbInizializzaStato(firma, regolamento, lista, listaConfronto);
         } else {
             tbStato.regolamento = regolamento;
             tbStato.deltaGen = deltaGenCorrente;
@@ -8249,7 +8268,35 @@ window.addEventListener('beforeunload', (e) => {
     e.returnValue = '';
 });
 
-function tbInizializzaStato(firma, regolamento, lista) {
+/** I Pokémon con cui si confronta il team nei tooltip (velocità, danni, copertura): tutto il formato, non solo quelli tra cui si può scegliere per la scelta del team */
+function tbPoolConfronto() {
+    return tbStato.poolConfronto || tbStato.pool;
+}
+
+// Da una lista di Pokémon del formato (dell'helper) alle voci del Team Builder: specie, nome, BST, immagine; dal BST più alto. Escluse le specie con tutte le abilità bannate.
+function tbCostruisciPool(lista) {
+    const visti = new Set();
+    return lista.map(pkm => {
+        const candidati = [pkm.id, pkm.name, pkm.spriteId].map(tbToID).filter(Boolean);
+        const specieId = candidati.find(c => tbSpecie(c)) || candidati[0];
+        const sp = tbSpecie(specieId);
+        return {
+            specieId,
+            sp,
+            nome: tbNomeBello(sp, pkm.name || pkm.id),
+            bst: tbBST(sp),
+            spriteId: pkm.spriteId || (sp ? tbSpriteId(sp) : specieId)
+        };
+    }).filter(v => {
+        if (!v.specieId || visti.has(v.specieId)) return false;
+                // Tutte le sue abilità sono bannate (es. Shedinja con Wonder Guard): non selezionabile
+        if (v.sp && tbAbilitaLegali(tbSpecieBase(v.sp), true).length && !tbAbilitaLegali(tbSpecieBase(v.sp)).length) return false;
+        visti.add(v.specieId);
+        return true;
+    }).sort((a, b) => (b.bst - a.bst) || a.nome.localeCompare(b.nome)); // dal BST più alto
+}
+
+function tbInizializzaStato(firma, regolamento, lista, listaConfronto) {
     const struttura = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
     const gen = parseInt(regolamento.genRuleValue, 10) ||
                 parseInt(String(regolamento.vgcGen || '').replace(/\D/g, ''), 10) || 9;
@@ -8268,25 +8315,9 @@ function tbInizializzaStato(firma, regolamento, lista) {
     tbStato.oggetti = null;
         tbStato.filtroTipo = '';
 
-    const visti = new Set();
-    tbStato.pool = lista.map(pkm => {
-        const candidati = [pkm.id, pkm.name, pkm.spriteId].map(tbToID).filter(Boolean);
-        const specieId = candidati.find(c => tbSpecie(c)) || candidati[0];
-        const sp = tbSpecie(specieId);
-        return {
-            specieId,
-            sp,
-            nome: tbNomeBello(sp, pkm.name || pkm.id),
-            bst: tbBST(sp),
-            spriteId: pkm.spriteId || (sp ? tbSpriteId(sp) : specieId)
-        };
-    }).filter(v => {
-        if (!v.specieId || visti.has(v.specieId)) return false;
-                // Tutte le sue abilità sono bannate (es. Shedinja con Wonder Guard): non selezionabile
-        if (v.sp && tbAbilitaLegali(tbSpecieBase(v.sp), true).length && !tbAbilitaLegali(tbSpecieBase(v.sp)).length) return false;
-        visti.add(v.specieId);
-        return true;
-    }).sort((a, b) => (b.bst - a.bst) || a.nome.localeCompare(b.nome)); // dal BST più alto
+    // i Pokémon tra cui scegliere (con la scelta del team: il tipo del Monotype, l'iniziale...) e, per i confronti dei tooltip, tutti quelli del formato
+    tbStato.pool = tbCostruisciPool(lista);
+    tbStato.poolConfronto = Array.isArray(listaConfronto) && listaConfronto.length && listaConfronto !== lista ? tbCostruisciPool(listaConfronto) : tbStato.pool;
 }
 
 // Da un Pokémon "salvato" (il formato prodotto da parseShowdown) allo slot del Team Builder.
