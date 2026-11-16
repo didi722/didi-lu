@@ -169,3 +169,13 @@ test('REGOLE-DATABASE.md: il nodo setStats e i passi per spostare i dati sono sc
     assert.match(r, /"setStats": \{ "\.read": true, "\.write": "auth != null" \}/);
     assert.match(r, /Sposta le statistiche dei set/);
 });
+
+test('ogni pagina che usa i moduli delle statistiche (badge, fiocchi, Stats, Hall of Fame, Match of the week...) carica db-leggero.js: senza, le statistiche dei set (nodo a parte) non si rimettono nei match e i numeri sono sbagliati', () => {
+    const moduli = ['fiocchi.js', 'stats.js', 'palmares.js', 'scheda-battaglia.js', 'mvp-voto.js', 'match-settimana.js', 'stats-formato.js', 'hall-of-fame.js', 'badge-allenatore.js', 'badge-team.js'];
+    const mancano = [];
+    for (const f of fs.readdirSync(DOCS).filter(n => n.endsWith('.html'))) {
+        const h = leggiFile(f);
+        if (moduli.some(m => h.includes(`src="${m}"`)) && !h.includes('src="db-leggero.js"')) mancano.push(f);
+    }
+    assert.deepEqual(mancano, []);
+});
