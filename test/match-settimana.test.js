@@ -458,7 +458,7 @@ test('home: il banner sta sotto le stagioni, nascosto finché non c\'è un set; 
     assert.ok(idx.indexOf('id="match-settimana"') > idx.indexOf('id="link-next"'), 'dopo le tre stagioni');
     assert.match(idx, /mostraMatchSettimana\(unite\);/);
     assert.match(idx, /MatchSettimana\.monta\(window, blocco, \{/);
-    assert.match(idx, /caricaBadge: \(\) => Fiocchi\.carica\(db\)/);
+    assert.match(idx, /caricaBadge: riassunto \? null : \(\) => Fiocchi\.carica\(db\)/, 'con il riassunto i badge ci sono già: le statistiche non si scaricano');
     for (const f of ['fiocchi.js', 'badge-team.js']) assert.ok(idx.includes(`<script src="${f}"></script>`), f);
     assert.match(idx, /<link rel="stylesheet" href="badge-team\.css">/);
     // i nomi dei team troppo lunghi scorrono avanti e indietro (lo stesso meccanismo di Matches e del simulatore)

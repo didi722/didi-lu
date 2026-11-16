@@ -1,0 +1,31 @@
+name: Riassunto del Match of the week
+
+# Calcola il Match of the week di ogni settimana, con i badge dei team e del Pokémon protagonista, e lo salva in matchSettimana: la home legge quello e non scarica più le
+# statistiche di tutto il sito (è la pagina più visitata). Gira da solo ogni tre ore e si può lanciare a mano (Actions → Riassunto del Match of the week → Run workflow;
+# la prima volta, dopo averlo aggiunto, per averlo subito). Se smette di funzionare per più di 12 ore la home torna a calcolarsi il banner da sé: costa di più, non si rompe.
+# Il nodo matchSettimana lo scrive solo questo workflow (le regole del database non lo fanno scrivere a nessun altro).
+
+on:
+  schedule:
+    - cron: '41 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: 'Solo prova: stampa cosa scriverebbe, senza scrivere'
+        type: boolean
+        default: false
+
+jobs:
+  riassunto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Installa firebase-admin
+        run: npm install firebase-admin
+      - name: Calcola e salva il riassunto
+        run: node .github/workflows/riassunto-home.js ${{ inputs.prova && '--prova' || '' }}
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

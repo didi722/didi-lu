@@ -324,8 +324,8 @@ test('statistiche: contano le stagioni chiuse nel perimetro scelto; la beta e qu
 });
 
 // ---------- 5b. il conteggio delle stagioni scadute (mvp-voto.js) ----------
-function caricaVoto(db) {
-    const finestra = {};
+function caricaVoto(db, extra = {}) {
+    const finestra = { ...extra };
     const contesto = vm.createContext({ console: { log() {}, warn() {}, error() {} }, window: finestra, document: { addEventListener() {}, getElementById: () => null, querySelector: () => null }, db });
     finestra.Mvp = Mvp;
     finestra.Statistiche = { calcola };
@@ -424,6 +424,22 @@ test('concludiScadute con i giocatori come funzione: li legge solo se c\'è davv
     assert.deepEqual(Object.keys(fatti).sort(), ['s1', 's2']);
     assert.equal(letture, 1, 'una lettura sola per tutte le stagioni');
     assert.equal(db.leggi('seasons/s2/mvp/risultato/vincitori/0/specie'), 'Garchomp');
+});
+
+test('concludiScadute senza le statistiche dei set nei match (la home): le legge solo delle stagioni da contare, una volta ciascuna, e le rimette nei match', async () => {
+    const DbLeggero = require('../docs/db-leggero.js');
+    const dacontare = { s1: stagioneScaduta(fa(30)), s2: stagioneScaduta(fa(31)), s3: stagioneScaduta(fa(5)) };      // s3: ancora nelle 24 ore
+    const richieste = [];
+    const caricaStatistiche = async id => { richieste.push(id); return {}; };
+    const db = creaDb({ seasons: copia(dacontare), players: giocatori });
+    const fatti = copia(await caricaVoto(db, { DbLeggero }).concludiScadute(dacontare, async () => giocatori, { caricaStatistiche }));
+    assert.deepEqual(Object.keys(fatti).sort(), ['s1', 's2']);
+    assert.deepEqual(richieste.sort(), ['s1', 's2'], 'solo le stagioni da contare');
+    // senza l'opzione (Stats, che ha già le statistiche) niente letture in più
+    richieste.length = 0;
+    await caricaVoto(creaDb({ seasons: copia(dacontare), players: giocatori }), { DbLeggero }).concludiScadute(dacontare, giocatori);
+    assert.deepEqual(richieste, []);
+    assert.match(leggi('docs/index.html'), /\{ caricaStatistiche: id => DbLeggero\.setStatsStagione\(db, id\) \}/, 'la home le passa');
 });
 
 test('la campanella (sfide.js) avvisa del voto MVP aperto: carica gli script che servono, segue le chiuse da meno di 24 ore e porta al voto', () => {

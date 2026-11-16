@@ -327,6 +327,53 @@
             + `<div class="ms-azione"><a class="ms-replay" href="${esc(linkReplay(s, da))}" title="${esc(['Watch the replay', [s.categoria, `Set ${s.numeroSet} · Match ${s.numeroMatch}`, quando, s.nomeStagione, `Match ${s.punteggioMatch}`].filter(Boolean).join(' · ')].join('\n'))}" aria-label="Watch the replay">&#9654; Replay</a></div></div>`;
     }
 
+    // I campi di un badge che servono a disegnare la medaglietta (BadgeTeam/Fiocchi: testoMedaglia, htmlMedaglietta): il resto (soglie, progresso...) non si salva
+    const CAMPI_BADGE = ['id', 'nome', 'icona', 'descrizione', 'unita', 'valore', 'livello', 'livelloNome', 'classeLivello', 'immagine'];
+    const snello = b => Object.fromEntries(CAMPI_BADGE.filter(k => b[k] !== undefined).map(k => [k, b[k]]));
+
+    /** "Urshifu-*" (forma nascosta nel team preview, nei set salvati prima della correzione): si cerca la forma vera tra i Pokémon di quel team */
+    function specieVera(risultato, specie, g) {
+        if (!/\*/.test(specie)) return specie;
+        const prefisso = specie.replace(/\*$/, '').toLowerCase();
+        const forme = (risultato.pokemon || []).filter(x => idDi(x.player) === g.id && idDi(x.team) === idDi(g.team) && !/\*/.test(x.specie) && String(x.specie).toLowerCase().startsWith(prefisso));
+        return forme.length === 1 ? forme[0].specie : specie;
+    }
+
+    /**
+     * I badge del banner come DATI (senza HTML, snelli: si possono salvare nel database): quelli presi dai due team (BadgeTeam) e i due fiocchi più alti del Pokémon protagonista (Fiocchi).
+     * Servono le statistiche di tutto il sito; le calcola il workflow del riassunto (riassunto-home.js) così la home non deve scaricarle.
+     * @param {object} risultato  Statistiche.calcola(...) di tutto il sito (Fiocchi.carica(db))
+     * @param {object} s          il set scelto
+     * @param {{ Fiocchi, BadgeTeam }} lib
+     * @returns {{ p1: object[], p2: object[], prot: object[] }}
+     */
+    function badgeDati(risultato, s, lib) {
+        const fuori = { p1: [], p2: [], prot: [] };
+        if (!s || !lib || !lib.Fiocchi || !lib.BadgeTeam) return fuori;
+        for (const k of ['p1', 'p2']) {
+            const g = s.giocatori[k];
+            if (!g.id || !g.team) continue;                         // senza team (random) non ci sono badge di team
+            fuori[k] = lib.BadgeTeam.guadagnati(lib.BadgeTeam.calcola(lib.BadgeTeam.trova(risultato, { player: g.id, team: g.team }))).map(snello);
+        }
+        const p = s.protagonista, g = p && s.giocatori[p.lato];
+        if (p && p.specie && g && g.id && g.team) {
+            // sul medaglione stanno i due fiocchi più alti, senza il "+N" (non c'è posto)
+            fuori.prot = lib.Fiocchi.guadagnati(lib.Fiocchi.calcola(lib.Fiocchi.trova(risultato, { player: g.id, team: g.team, specie: specieVera(risultato, p.specie, g) }))).slice(0, 2).map(snello);
+        }
+        return fuori;
+    }
+
+    /** L'HTML delle medagliette dai dati di badgeDati (anche salvati nel database: i campi vuoti possono mancare) */
+    function badgeHtml(dati, lib) {
+        const d = dati || {};
+        const lista = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? Object.values(x) : []);
+        return {
+            p1: lib.BadgeTeam.htmlMini(lista(d.p1), 2),
+            p2: lib.BadgeTeam.htmlMini(lista(d.p2), 2),
+            prot: lista(d.prot).map(f => lib.Fiocchi.htmlMedaglietta(f)).join('')
+        };
+    }
+
     /**
      * I badge da mettere nel banner: quelli dei due team (BadgeTeam) e quelli del Pokémon protagonista (Fiocchi), le stesse medagliette del Box e delle pagine dei team.
      * @param {object} risultato  Statistiche.calcola(...) di tutto il sito (Fiocchi.carica(db))
@@ -344,18 +391,41 @@
         }
         const p = s.protagonista, g = p && s.giocatori[p.lato];
         if (p && p.specie && g && g.id && g.team) {
-            // "Urshifu-*" (forma nascosta nel team preview, nei set salvati prima della correzione): si cerca la forma vera tra i Pokémon di quel team
-            let specie = p.specie;
-            if (/\*/.test(specie)) {
-                const prefisso = specie.replace(/\*$/, '').toLowerCase();
-                const forme = (risultato.pokemon || []).filter(x => idDi(x.player) === g.id && idDi(x.team) === idDi(g.team) && !/\*/.test(x.specie) && String(x.specie).toLowerCase().startsWith(prefisso));
-                if (forme.length === 1) specie = forme[0].specie;
-            }
-            // sul medaglione stanno i due fiocchi più alti, senza il "+N" (non c'è posto)
-            const presi = lib.Fiocchi.guadagnati(lib.Fiocchi.calcola(lib.Fiocchi.trova(risultato, { player: g.id, team: g.team, specie })));
+            const presi = lib.Fiocchi.guadagnati(lib.Fiocchi.calcola(lib.Fiocchi.trova(risultato, { player: g.id, team: g.team, specie: specieVera(risultato, p.specie, g) })));
             fuori.prot = presi.slice(0, 2).map(f => lib.Fiocchi.htmlMedaglietta(f)).join('');
         }
         return fuori;
+    }
+
+    // -----------------------------------------------------
+    // Il riassunto salvato nel database (workflow riassunto-home.js): la home non scarica le statistiche di tutto il sito
+    // -----------------------------------------------------
+    const ETA_MASSIMA_RIASSUNTO = 12 * 60 * 60 * 1000;      // più vecchio di così (il workflow gira ogni 3 ore: ha smesso di funzionare) la home si calcola il banner da sé
+
+    /**
+     * Il riassunto di tutte le settimane, per salvarlo in matchSettimana: per ogni settimana il suo set e i badge già calcolati. Puro: lo prova test/match-settimana.test.js.
+     * @param {{ seasons, players, adesso }} dati  le stagioni con le statistiche dei set rimesse nei match
+     * @param {{ Statistiche, Fiocchi, BadgeTeam }} lib
+     */
+    function riassunto({ seasons, players, adesso = Date.now() }, lib) {
+        const { elenco } = settimane(seasons, { adesso });
+        const fuori = { v: 1, aggiornato: adesso, settimane: [] };
+        if (!elenco.length) return fuori;
+        const risultato = lib.Statistiche.calcola({ seasons, players }, { stagione: 'all' });
+        fuori.settimane = elenco.map(w => ({ inizio: w.inizio, fine: w.fine, numero: w.numero, anno: w.anno, quanti: w.quanti, scelto: w.scelto, badge: badgeDati(risultato, w.scelto, lib) }));
+        return JSON.parse(JSON.stringify(fuori));           // senza undefined: il database non li accetta
+    }
+
+    /** Il riassunto si può usare? (c'è, è della versione giusta e non è vecchio) */
+    function riassuntoValido(r, adesso = Date.now()) {
+        return !!r && typeof r === 'object' && r.v === 1 && Number.isFinite(r.aggiornato) && adesso - r.aggiornato < ETA_MASSIMA_RIASSUNTO && adesso - r.aggiornato > -60 * 60 * 1000;
+    }
+
+    /** Dal riassunto salvato a ciò che si dà a monta().aggiorna(): { elenco, indice } (come settimane()); i badge restano nella settimana */
+    function daRiassunto(r) {
+        const lista = r && r.settimane ? (Array.isArray(r.settimane) ? r.settimane : Object.values(r.settimane)) : [];
+        const elenco = lista.filter(w => w && w.scelto && w.scelto.giocatori).map(w => ({ ...w, quanti: Number(w.quanti) || 1 }));
+        return { elenco, indice: elenco.length - 1 };
     }
 
     // -----------------------------------------------------
@@ -394,12 +464,16 @@
             if (mio !== stato.giro) return false;                // nel frattempo è stato chiesto altro: vale l'ultima richiesta
             radice.innerHTML = html(w.scelto, { giocatori, gif, settimana: etichettaSettimana(w, adesso()), indice: i, totale: stato.elenco.length, animazione });
             if (win && win.MedaglionePkm) win.MedaglionePkm.coloraMedaglioni(win, radice);       // il colore del tipo arriva appena PokeAPI risponde
+            // i badge: già calcolati nel riassunto della settimana (la home non scarica le statistiche) oppure, in loro assenza, calcolati sulle statistiche di tutto il sito
+            const mettiBadge = b => { for (const k of ['p1', 'p2', 'prot']) { const casella = radice.querySelector && radice.querySelector(`[data-ms-badge="${k}"]`); if (casella) casella.innerHTML = b[k]; } };
+            if (w.badge && win && win.Fiocchi && win.BadgeTeam) {
+                try { mettiBadge(badgeHtml(w.badge, win)); } catch (e) { /* senza badge il banner resta com'è */ }
+            }
             // i badge arrivano a banner già visibile (servono le statistiche di tutto il sito): se nel frattempo si è passati a un'altra settimana non si scrive più
-            if (caricaBadge && win && win.Fiocchi && win.BadgeTeam) {
+            else if (caricaBadge && win && win.Fiocchi && win.BadgeTeam) {
                 Promise.resolve().then(caricaBadge).then(risultato => {
                     if (mio !== stato.giro || !radice.querySelector) return;
-                    const b = badge(risultato, w.scelto, win);
-                    for (const k of ['p1', 'p2', 'prot']) { const casella = radice.querySelector(`[data-ms-badge="${k}"]`); if (casella) casella.innerHTML = b[k]; }
+                    mettiBadge(badge(risultato, w.scelto, win));
                 }).catch(() => {});
             }
             // le settimane vicine si preparano subito: scorrendo, avatar e colori ci sono già
@@ -467,5 +541,5 @@
         return { aggiorna, vai, stato };
     }
 
-    return { analizzaSet, candidati, settimane, scegli, spostamento, etichettaSettimana, lunediDi, numeroSettimana, linkReplay, html, badge, monta, giornoDi };
+    return { analizzaSet, candidati, settimane, scegli, spostamento, etichettaSettimana, lunediDi, numeroSettimana, linkReplay, html, badge, badgeDati, badgeHtml, riassunto, riassuntoValido, daRiassunto, ETA_MASSIMA_RIASSUNTO, monta, giornoDi };
 });

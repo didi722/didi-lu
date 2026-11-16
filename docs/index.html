@@ -501,7 +501,8 @@ let mvpControllato = false;
 function contaMvpScaduti() {
     if (mvpControllato || !datiStagioniMvp || !auth.currentUser || !window.MvpVoto) return;
     mvpControllato = true;
-    MvpVoto.concludiScadute(datiStagioniMvp, async () => (await db.ref('players').once('value')).val() || {})
+    // con il riassunto del Match of the week la home non ha le statistiche dei set: per le (rare) stagioni da contare si leggono solo quelle (setStats/{stagione})
+    MvpVoto.concludiScadute(datiStagioniMvp, async () => (await db.ref('players').once('value')).val() || {}, window.DbLeggero ? { caricaStatistiche: id => DbLeggero.setStatsStagione(db, id) } : {})
         .catch(e => console.warn('MVP: stagioni scadute non contate', e));
 }
 
@@ -509,14 +510,15 @@ function contaMvpScaduti() {
 // colori e gli avatar dei due allenatori. Il nodo `seasons` si rilegge a ogni cambiamento del database: il banner si ridisegna solo se cambia qualcosa
 // di ciò che mostra, e chi sta guardando una settimana vecchia ci resta.
 let matchSettimanaBanner = null;
-async function mostraMatchSettimana(data) {
+// `riassunto`: quello salvato dal workflow (matchSettimana: settimane e badge già calcolati, la home non scarica le statistiche dei set); senza, si calcola da `data` (le stagioni con le statistiche)
+async function mostraMatchSettimana(data, riassunto) {
     const sezione = document.getElementById('match-settimana');
     const blocco = document.getElementById('ms-blocco');
     if (!sezione || !blocco || !window.MatchSettimana) return;
     if (!matchSettimanaBanner) {
         matchSettimanaBanner = MatchSettimana.monta(window, blocco, {
             gif: window.SpritePkm ? s => SpritePkm.gif(s) : null,
-            caricaBadge: () => Fiocchi.carica(db),          // i badge dei team e del Pokémon protagonista (le stesse statistiche del Box)
+            caricaBadge: riassunto ? null : () => Fiocchi.carica(db),          // i badge dei team e del Pokémon protagonista (le stesse statistiche del Box); nel riassunto ci sono già
             leggiGiocatore: async id => {
                 const info = (await db.ref(`players/${id}/info`).once('value')).val() || {};
                 return { colore: info.color || '', avatar: info.avatar || '' };
@@ -524,7 +526,7 @@ async function mostraMatchSettimana(data) {
         });
     }
     let esito = null;
-    try { esito = MatchSettimana.settimane(data); } catch (e) { console.warn('Match della settimana non disponibile:', e); }
+    try { esito = riassunto ? MatchSettimana.daRiassunto(riassunto) : MatchSettimana.settimane(data); } catch (e) { console.warn('Match della settimana non disponibile:', e); }
     const ce = !!(esito && esito.elenco.length);
     await matchSettimanaBanner.aggiorna(ce ? esito : null);
     sezione.hidden = !(ce && blocco.firstChild);          // si mostra a banner disegnato
@@ -536,19 +538,33 @@ function caricaStagioniHome() {
     console.log("⏳ Avvio caricamento stagioni...");
     const seasonsRef = db.ref('seasons');
 
-    // Le statistiche dei set stanno in un nodo a parte (setStats/…: db-leggero.js). Servono al Match of the week e all'MVP: si seguono con un secondo ascolto e le due cose
-    // si rimettono insieme (le stagioni nella forma di sempre) a ogni cambiamento dell'una o dell'altra.
-    let stagioniGrezze = null, statisticheSet = null;
-    const rimettiInsieme = () => {
+    // Il Match of the week: se il workflow (riassunto-home.js) ha salvato il riassunto (matchSettimana) e non è vecchio, la home lo usa e NON scarica le statistiche dei set (~700 KB,
+    // con tutti i giocatori ~900 KB: la pagina più visitata). Se manca o ha più di 12 ore si fa come prima: le statistiche dei set (setStats/…: db-leggero.js) si seguono con un
+    // secondo ascolto e le due cose si rimettono insieme (le stagioni nella forma di sempre) a ogni cambiamento dell'una o dell'altra.
+    let stagioniGrezze = null, statisticheSet = null, bannerDalRiassunto = false;
+    const riassuntoPronto = db.ref('matchSettimana').once('value')
+        .then(snap => { const r = snap.val(); return window.MatchSettimana && MatchSettimana.riassuntoValido(r) ? r : null; })
+        .catch(() => null);
+    riassuntoPronto.then(r => {
+        if (r) return;
+        db.ref('setStats').on('value', (snap) => { statisticheSet = snap.val() || {}; rimettiInsieme(); }, () => { /* senza, restano le statistiche dentro ai match (dati non ancora spostati) */ });
+    });
+    const rimettiInsieme = async () => {
         if (!stagioniGrezze) return;
+        const riassunto = await riassuntoPronto;
+        if (riassunto) {
+            datiStagioniMvp = stagioniGrezze;
+            contaMvpScaduti();
+            if (!bannerDalRiassunto) { bannerDalRiassunto = true; mostraMatchSettimana(null, riassunto); }
+            return;
+        }
         const unite = window.DbLeggero ? DbLeggero.unisciSetStats(stagioniGrezze, statisticheSet) : stagioniGrezze;
         datiStagioniMvp = unite;
         contaMvpScaduti();
         mostraMatchSettimana(unite);
     };
-    db.ref('setStats').on('value', (snap) => { statisticheSet = snap.val() || {}; rimettiInsieme(); }, () => { /* senza, restano le statistiche dentro ai match (dati non ancora spostati) */ });
-    
-    seasonsRef.on('value', (snapshot) => {
+
+        seasonsRef.on('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) {
             console.warn("⚠️ Nessun dato trovato nel nodo 'seasons'");
