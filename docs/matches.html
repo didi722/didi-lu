@@ -2868,6 +2868,22 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
     // Con il team vero (formati con team preview) restano solo i Pokémon portati: quelli scesi in campo in un momento qualsiasi del set (li manda il replay, "scesi") e quelli che
     // le statistiche del set segnano come portati anche se non sono mai scesi (le scrive il server: si leggono solo per il set aperto).
     const chiaveSquadra = t => String(t || '').split('-')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const idSq = t => String(t || '').toLowerCase().replace(/[^a-z0-9]/g, '');      // con la forma: "Rotom-Wash" → rotomwash
+    /**
+     * A ogni sprite il suo Pokémon tra `nomi`: prima per nome esatto (forma compresa: quattro Rotom di forme diverse non si scambiano), poi, per quelli che non coincidono
+     * (la presentazione dice "Urshifu-*", il combattimento "Urshifu-Rapid-Strike"), per specie. Dà per ogni sprite l'indice in `nomi` (-1 = nessuno); ognuno si usa una volta sola.
+     */
+    function abbina(nomiSprite, nomi) {
+        const preso = new Set(), indici = nomiSprite.map(() => -1);
+        const cerca = (confronta) => nomiSprite.forEach((n, i) => {
+            if (indici[i] >= 0) return;
+            const j = nomi.findIndex((v, k) => !preso.has(k) && confronta(v, n));
+            if (j >= 0) { indici[i] = j; preso.add(j); }
+        });
+        cerca((v, n) => idSq(v) === idSq(n));
+        cerca((v, n) => chiaveSquadra(v) === chiaveSquadra(n));
+        return indici;
+    }
     const portatiSet = {};          // { 'stagione/showdown/matchN/setK': { p1: [chiavi], p2: [chiavi] } } (vuoto se non si sa)
     let ultimeSquadre = null;
     const setAperto = () => { const b = document.querySelector('.btn-set.is-selected'); return b ? String(b.dataset.set || '').replace(/\D/g, '') : ''; };
@@ -2878,7 +2894,7 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
     function leggiPortati(chiave) {
         if (!chiave || chiave in portatiSet) return;
         portatiSet[chiave] = { p1: [], p2: [] };
-        const lato = (st, l) => ((st[l] && st[l].pokemon) || []).filter(x => x && x.portato).map(x => chiaveSquadra(x.specie));
+        const lato = (st, l) => ((st[l] && st[l].pokemon) || []).filter(x => x && x.portato).map(x => String(x.specie || ''));
         db.ref('setStats/' + chiave).once('value').then(snap => {
             const st = snap.val() || {};
             portatiSet[chiave] = { p1: lato(st, 'p1'), p2: lato(st, 'p2') };
@@ -2895,10 +2911,9 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
             // a ogni messaggio si aggiungono quelli che ancora non ci sono. Una fila con il team vero dell'intestazione non si tocca (se non per togliere chi è rimasto a casa).
             if ((!fila.querySelector('img') || fila.dataset.daReplay === '1') && window.SpritePkm) {
                 fila.dataset.daReplay = '1';
-                const presenti = [...fila.querySelectorAll('img')].map(img => chiaveSquadra(img.dataset.pkm));
-                rosa.forEach(r => {
-                    const gia = presenti.indexOf(chiaveSquadra(r.s));
-                    if (gia >= 0) { presenti.splice(gia, 1); return; }
+                const presenti = new Set(abbina([...fila.querySelectorAll('img')].map(img => img.dataset.pkm), rosa.map(r => r.s)));
+                rosa.forEach((r, j) => {
+                    if (presenti.has(j)) return;
                     const img = document.createElement('img');
                     img.src = SpritePkm.gif(String(r.s));
                     img.className = 'header-gif';
@@ -2906,12 +2921,16 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
                     fila.appendChild(img);
                 });
             }
-            // i portati: chi è sceso in campo in un momento qualsiasi del set + chi le statistiche dicono portato
-            const portati = new Set([...((dati.scesi && dati.scesi[lato]) || []), ...(dichiarati[lato] || [])].map(chiaveSquadra));
+            // i portati: chi è sceso in campo in un momento qualsiasi del set + chi le statistiche dicono portato (nomi con la forma, senza doppioni)
+            const portati = [];
+            for (const n of [...((dati.scesi && dati.scesi[lato]) || []), ...(dichiarati[lato] || [])]) if (n && !portati.some(x => idSq(x) === idSq(n))) portati.push(String(n));
             const teamVero = fila.dataset.daReplay !== '1';
-            const usati = new Set();
             fila.classList.add('rg-attiva');
-            fila.querySelectorAll('img').forEach(img => {
+            const sprite = [...fila.querySelectorAll('img')];
+            const nomiSprite = sprite.map(img => img.dataset.pkm);
+            const aStato = abbina(nomiSprite, rosa.map(r => r.s));        // lo stato di ogni sprite (KO, in campo)
+            const aPortato = abbina(nomiSprite, portati);                 // quali sprite sono stati portati
+            sprite.forEach((img, n) => {
                 // ogni sprite sta in un contenitore: la barra rossa dei KO è sua, così non diventa grigia e trasparente insieme allo sprite
                 let voce = img.parentNode;
                 if (!voce || voce === fila || !voce.classList || !voce.classList.contains('rg-voce')) {
@@ -2920,12 +2939,9 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
                     fila.insertBefore(voce, img);
                     voce.appendChild(img);
                 }
-                const k = chiaveSquadra(img.dataset.pkm);
-                const i = rosa.findIndex((r, j) => !usati.has(j) && chiaveSquadra(r.s) === k);
-                if (i >= 0) usati.add(i);
-                const st = i >= 0 ? Number(rosa[i].st) || 0 : 0;
+                const st = aStato[n] >= 0 ? Number(rosa[aStato[n]].st) || 0 : 0;
                 // chi è rimasto a casa non si mostra (solo se si sa chi è stato portato: prima che il replay lo dica resta tutta la squadra)
-                voce.classList.toggle('rg-voce-fuori', teamVero && portati.size > 0 && !portati.has(k) && st === 0);
+                voce.classList.toggle('rg-voce-fuori', teamVero && portati.length > 0 && aPortato[n] < 0 && st === 0);
                 img.classList.toggle('rg-ko', st === 2);
                 voce.classList.toggle('rg-voce-ko', st === 2);
                 img.classList.toggle('rg-in', st === 1);
