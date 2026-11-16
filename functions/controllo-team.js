@@ -14,11 +14,16 @@
 // Showdown nella Gen 8 li segna "Future" perché non ci sono in Spada e Scudo: il sito NON si fida di quel segno, ma solo della generazione
 // di debutto (le funzioni genSpecie, genMossa, genAbilita, genStrumento qui sotto).
 //
+// In più, ogni mossa deve essere nel movepool della specie (e dei suoi stadi precedenti) in quella generazione: "Jellicent non impara Soak in nessuna generazione" è un
+// problema anche se Soak esiste. Lo stesso elenco che offre il Team Builder (mossePossibili); si controlla solo se la fonte dà i learnset (fonti.learnset).
+//
 //   ControlloTeam.problemiDelSet(set, regole, fonti)  -> [testo dei problemi]
 //     set    { nome, specie, abilita, strumento, mosse: [...], livello? }       (`specie` è il nome per cercarla, `nome` come lo si mostra)
 //     regole { gen, delta, livello?, meccaniche?, controllaSpecie? }            (delta: DatiGen.carica(gen), null per la Gen 9)
-//     fonti  { specie(nome), abilita(nome), strumento(nome), mossa(nome), base(sp) }
-//                    ognuna restituisce la voce dei dati di Showdown ({ num, gen?, forme, baseSpecies, abilities... }) o null se non esiste
+//     fonti  { specie(nome), abilita(nome), strumento(nome), mossa(nome), base(sp), learnset(id)? }
+//                    ognuna restituisce la voce dei dati di Showdown ({ num, gen?, forme, baseSpecies, abilities... }) o null se non esiste;
+//                    learnset(id) restituisce { mossa: ["9M", "8L20", ...] } della sola specie `id` (senza gli stadi precedenti) o null; facoltativa: senza, le mosse non si controllano
+//     regole.controllaMosse === false  salta il controllo del movepool
 //
 // Funziona nel browser (window.ControlloTeam) e in Node (require). ATTENZIONE: questo file esiste in due copie identiche,
 // docs/controllo-team.js (Box e simulatore sul sito) e functions/controllo-team.js (Cloud Functions): modificane una e copiala sull'altra.
@@ -86,6 +91,115 @@
         return 3;
     }
 
+    // -----------------------------------------------------
+    // 2b. LE MOSSE CHE UNA SPECIE PUÒ IMPARARE
+    // -----------------------------------------------------
+    // "9M", "8L20", "7E"... → la prima cifra è la generazione. Le mosse sono retroattive anche nei formati "within": quello che cambia è l'elenco dei Pokémon, non le mosse
+    // (Zapdos impara Tailwind, di Gen 7, anche nel VGC di Gen 8).
+    function fonteValida(fonte, gen) {
+        const s = String(fonte);
+        const generazioni = /^\d+$/.test(s) ? s.split('').map(Number) : [parseInt(s.charAt(0), 10)];
+        return generazioni.some(g => !isNaN(g) && g <= gen);
+    }
+
+    // Specie che esistono già nella gen del formato ma di cui Showdown ha solo il learnset di una gen successiva (forme di Hisui, Wyrdeer, Kleavor, Ursaluna, Basculegion, Sneasler,
+    // Overqwil, Enamorus): si usa la gen più vicina con dati
+    function genRipiegoLearnset(sp, learnset, gen, fonti) {
+        if (!sp || !learnset || genSpecie(sp, n => fonti.specie(n)) > gen) return 0;
+        const genDati = Object.values(learnset).flatMap(f => [].concat(f)).map(f => parseInt(String(f).charAt(0), 10)).filter(g => !isNaN(g));
+        if (!genDati.length || genDati.some(g => g <= gen)) return 0;
+        return Math.min(...genDati);
+    }
+
+    /** Tutte le fonti da cui una specie impara ogni mossa: la sua, quella degli stadi precedenti, delle forme da cui cambia e di quelle di battaglia. { mossa: [fonti] } */
+    function raccogliLearnset(specieId, gen, fonti) {
+        const risultato = {};
+        const visti = new Set();
+        const coda = [specieId];
+        while (coda.length) {
+            const id = coda.shift();
+            if (!id || visti.has(id)) continue;
+            visti.add(id);
+            const sp = fonti.specie(id);
+            const learnset = fonti.learnset(id);
+            const genRipiego = genRipiegoLearnset(sp, learnset, gen, fonti);
+            let haMosse = false;
+            if (learnset) {
+                for (const [mossa, f] of Object.entries(learnset)) {
+                    let lista = [].concat(f);
+                    if (genRipiego) {
+                        lista = lista.filter(x => parseInt(String(x).charAt(0), 10) === genRipiego).map(x => gen + String(x).slice(1));
+                        if (!lista.length) continue;
+                    }
+                    haMosse = true;
+                    if (!risultato[mossa]) risultato[mossa] = [];
+                    risultato[mossa].push(...lista);
+                }
+            }
+            if (!sp) continue;
+            if (sp.prevo) coda.push(idDi(sp.prevo));
+            if (sp.changesFrom) coda.push(idDi(sp.changesFrom));
+            if (sp.battleOnly) [].concat(sp.battleOnly).forEach(b => coda.push(idDi(b)));
+            if (!haMosse && sp.baseSpecies && idDi(sp.baseSpecies) !== id) coda.push(idDi(sp.baseSpecies));
+        }
+        return risultato;
+    }
+
+    /**
+     * Gli id delle mosse che la specie può avere in quella generazione (movepool, retroattivo; mosse esistite almeno in quella generazione); il Team Builder offre queste.
+     * Smeargle (Sketch): qualsiasi mossa esistente → { qualsiasi: true }. Se non si hanno dati di learnset per la specie → null (non si può dire: non si blocca niente).
+     * @param {string} specieId  id della specie (come in Showdown: "urshifurapidstrike")
+     * @param {number} gen
+     * @param {{ specie, mossa, learnset }} fonti
+     * @returns {Set<string>|{qualsiasi: true}|null}
+     */
+    function mossePossibili(specieId, gen, fonti) {
+        if (!fonti || typeof fonti.learnset !== 'function') return null;
+        const learnset = raccogliLearnset(specieId, gen, fonti);
+        if (!Object.keys(learnset).length) return null;
+        if (learnset.sketch && learnset.sketch.some(f => fonteValida(f, gen))) return { qualsiasi: true };
+        const ids = new Set();
+        for (const [id, fontiMossa] of Object.entries(learnset)) {
+            if (!fontiMossa.some(f => fonteValida(f, gen))) continue;
+            const m = fonti.mossa(id);
+            if (m && genMossa(m) > gen) continue;
+            ids.add(id);
+        }
+        return ids;
+    }
+
+    /** L'id di una mossa come sta nei learnset: "Hidden Power Fire" è "hiddenpower" */
+    const idMossaLearnset = id => (/^hiddenpower/.test(id) && id !== 'hiddenpower' ? 'hiddenpower' : id);
+
+    /** I problemi delle mosse di un set che la specie non può imparare in quella generazione (quelle che non esistono in quella generazione le segnala controllaSet) */
+    function mosseNonImparabili(set, sp, gen, fonti, nome) {
+        // alcuni strumenti cambiano la forma (Rusted Sword: Zacian → Zacian-Crowned, Griseous Orb: Giratina → Giratina-Origin...): le mosse sono quelle della forma, non della base
+        const strumento = set.strumento && String(set.strumento).toLowerCase() !== 'none' && fonti.strumento ? fonti.strumento(set.strumento) : null;
+        let forma = strumento && strumento.forcedForme ? fonti.specie(strumento.forcedForme) : null;
+        if (!forma && strumento) {
+            // la forma che richiede quello strumento (Zacian-Crowned: Rusted Sword; Zamazenta-Crowned: Rusted Shield)
+            const nomeStrumento = idDi(strumento.name || set.strumento);
+            forma = [].concat(sp.otherFormes || []).map(n => fonti.specie(n)).find(f => f && [].concat(f.requiredItem || [], f.requiredItems || []).some(n => idDi(n) === nomeStrumento)) || null;
+        }
+        const spMosse = forma && idDi(forma.baseSpecies || forma.name) === idDi(sp.baseSpecies || sp.name) ? forma : sp;
+        let possibili = mossePossibili(idDi(spMosse.name), gen, fonti);
+        // i cappelli di Pikachu (Original, Partner, World...) sono solo un cappello: Showdown ha per loro learnset ridotti, ma le mosse sono quelle di Pikachu
+        if (possibili && !possibili.qualsiasi && spMosse.baseSpecies === 'Pikachu' && spMosse.name !== 'Pikachu') {
+            const base = mossePossibili('pikachu', gen, fonti);
+            if (base && !base.qualsiasi) possibili = new Set([...possibili, ...base]);
+        }
+        if (!possibili || possibili.qualsiasi) return [];
+        const problemi = [];
+        for (const nomeMossa of set.mosse || []) {
+            const m = nomeMossa ? fonti.mossa(nomeMossa) : null;
+            if (!m) continue;                                   // una mossa che non esiste la segnala già controllaSet
+            if (genMossa(m) > gen) continue;                    // esiste solo dopo: l'ha già segnalata controllaSet
+            const id = idMossaLearnset(idDi(m.name || nomeMossa));
+            if (!possibili.has(id)) problemi.push(`${nome}: ${m.name || nomeMossa} is not in its movepool in Gen ${gen}.`);
+        }
+        return problemi;
+    }
+
     /** Generazione in cui è nato uno strumento (0 = non lo dice: vale in ogni generazione). */
     const genStrumento = i => (i && i.gen) || 0;
 
@@ -127,6 +241,8 @@
             if (!dalBase.some(x => x.includes('is not one of its abilities'))) trovati = trovati.filter(x => !x.includes('is not one of its abilities'));
         }
         problemi.push(...trovati);
+        // le mosse devono essere nel movepool della specie (la stessa regola dell'elenco del Team Builder); una specie che non esiste ancora in quella generazione l'ha già segnalata
+        if (sp && regole.controllaMosse !== false && fonti.learnset && genSpecie(sp, n => fonti.specie(n)) <= gen) problemi.push(...mosseNonImparabili(set, sp, gen, fonti, nome));
         return problemi;
     }
 
@@ -157,6 +273,8 @@
             abilita: nome => trova(Dex.abilities.get(nome)),
             strumento: nome => trova(Dex.items.get(nome)),
             mossa: nome => trova(Dex.moves.get(nome)),
+            // il learnset della sola specie (gli stadi precedenti li raccoglie mossePossibili)
+            learnset: id => { const l = Dex.species.getLearnsetData ? Dex.species.getLearnsetData(id) : null; return l && l.learnset ? l.learnset : null; },
             base: sp => (sp && (sp.battleOnly || /^(Mega|Primal)/.test(sp.forme || '')) ? base(sp) : null)
         };
     }
@@ -170,5 +288,5 @@
         return problemiDelTeam(lista, regole, fontiDaDex(Dex));
     }
 
-    return { genSpecie, genMossa, genAbilita, genStrumento, problemiDelSet, problemiDelTeam, fontiDaDex, problemiDeiSetShowdown };
+    return { genSpecie, genMossa, genAbilita, genStrumento, mossePossibili, problemiDelSet, problemiDelTeam, fontiDaDex, problemiDeiSetShowdown };
 });

@@ -123,15 +123,16 @@ function fontiDelBox(Dex) {
     const copia = (voce, campi) => { const o = {}; for (const c of campi) if (voce[c] !== undefined) o[c] = voce[c]; return o; };
     const id = t => String(t || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const pokedex = {}, mosse = {}, abilita = {}, strumenti = {};
-    for (const s of Dex.species.all()) if (s.exists) pokedex[s.id] = copia(s, ['num', 'name', 'baseSpecies', 'forme', 'battleOnly', 'abilities']);
+    for (const s of Dex.species.all()) if (s.exists) pokedex[s.id] = copia(s, ['num', 'name', 'baseSpecies', 'forme', 'battleOnly', 'abilities', 'prevo', 'changesFrom', 'otherFormes', 'requiredItem', 'requiredItems']);
     for (const m of Dex.moves.all()) if (m.exists) mosse[id(m.name)] = copia(m, ['num', 'name', 'isMax', 'isZ']);   // il Box li cerca per nome (Hidden Power Bug...)
     for (const a of Dex.abilities.all()) if (a.exists) abilita[a.id] = copia(a, ['num', 'name']);
-    for (const i of Dex.items.all()) if (i.exists) strumenti[i.id] = copia(i, ['num', 'name', 'gen', 'megaStone', 'zMove']);
+    for (const i of Dex.items.all()) if (i.exists) strumenti[i.id] = copia(i, ['num', 'name', 'gen', 'megaStone', 'zMove', 'forcedForme']);
     return {
         specie: nome => pokedex[id(nome)] || null,
         abilita: nome => abilita[id(nome)] || null,
         strumento: nome => strumenti[id(nome)] || null,
         mossa: nome => mosse[id(nome)] || null,
+        learnset: id => { const l = Dex.species.getLearnsetData(id); return l && l.learnset ? l.learnset : null; },      // il Box li legge dal learnsets.js di Showdown: gli stessi dati
         base: sp => (sp.battleOnly || /^(Mega|Primal)/.test(sp.forme || '')) ? (pokedex[id(Array.isArray(sp.battleOnly) ? sp.battleOnly[0] : (sp.battleOnly || sp.baseSpecies))] || sp) : null
     };
 }

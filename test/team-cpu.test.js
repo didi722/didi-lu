@@ -722,16 +722,17 @@ test('Zapdos con Tailwind in Gen 8: la CPU e il Team Builder lo ammettono sia in
     assert.ok(apprese.has('tailwind'), 'mosseApprese: Tailwind (7T) manca in Gen 8');
     assert.ok(apprese.has('thunderbolt'));
 
-    // la stessa funzione di box.html (tbFonteValida), con lo stato del Team Builder per i due tipi di formato
-    const box = fs.readFileSync(path.join(DOCS, 'box.html'), 'utf8');
-    const inizio = box.indexOf('function tbFonteValida(');
-    const corpo = box.slice(inizio, box.indexOf('\n}\n', inizio) + 2);
-    for (const within of [false, true]) {
-        const ctx = { tbStato: { gen: 8, within } };
-        require('node:vm').runInNewContext(`${corpo}; risultati = { tailwind: ['9M', '7T', '6T'].some(tbFonteValida), soloGen9: ['9M'].some(tbFonteValida) };`, ctx);
-        assert.equal(ctx.risultati.tailwind, true, `Team Builder (within=${within}): Tailwind (7T) deve essere ammesso in Gen 8`);
-        assert.equal(ctx.risultati.soloGen9, false, `Team Builder (within=${within}): una mossa solo di Gen 9 non esiste in Gen 8`);
-    }
+    // la regola di cosa può imparare una specie è quella condivisa (controllo-team.js) che usa il Team Builder: Tailwind (7T) vale in Gen 8, una mossa solo di Gen 9 no
+    // (retroattiva: la stessa risposta per i formati "within" e "up to", che cambiano i Pokémon e non le mosse)
+    const CT = require('../docs/controllo-team.js');
+    const fonti = CT.fontiDaDex(dex);
+    const possibili = CT.mossePossibili('zapdos', 8, fonti);
+    assert.ok(possibili.has('tailwind'), 'Team Builder: Tailwind (7T) deve essere ammesso in Gen 8');
+    assert.ok(possibili.has('thunderbolt'));
+    const g9 = CT.fontiDaDex(sim.Dex.forGen(9));
+    assert.ok(CT.mossePossibili('zapdos', 9, g9).has('tailwind'));
+    assert.ok(!possibili.has('terablast'), 'una mossa solo di Gen 9 non esiste in Gen 8');
+    assert.ok(g9.mossa('terablast'), 'ma in Gen 9 sì');
 });
 
 // Le mosse "Past" (tolte da Scarlatto e Violetto: Fishious Rend, Wake-Up Slap...) valgono solo nei formati "within" e nel VGC, dove i Pokémon sono quelli di Gen 9.

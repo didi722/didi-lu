@@ -2683,6 +2683,8 @@ async function validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento) {
         abilita: nome => tbDex.abilities[tbToID(nome)] || null,
         strumento: nome => tbDex.items[tbToID(nome)] || null,
         mossa: nome => tbDex.moves[tbToID(nome)] || null,
+        // il movepool di ogni mossa: ogni mossa del team deve essere in quello della specie (la stessa regola dell'elenco del Team Builder)
+        learnset: id => (tbDex.learnsets && tbDex.learnsets[id] && tbDex.learnsets[id].learnset) || null,
         base: sp => (sp.battleOnly || /^(Mega|Primal)/.test(sp.forme || '')) ? tbSpecieBase(sp) : null
     };
     const regole = {
@@ -5175,68 +5177,8 @@ function tbGenSpecie(sp) {
     return ControlloTeam.genSpecie(sp, nome => tbSpecie(tbToID(nome)));
 }
 
-// Specie che esistono già nella gen del formato ma di cui Showdown ha solo il learnset
-// di una gen successiva (forme di Hisui, Wyrdeer, Kleavor, Ursaluna, Basculegion,
-// Sneasler, Overqwil, Enamorus): si usa la gen più vicina con dati
-function tbGenRipiegoLearnset(sp, learnset) {
-    if (!sp || !learnset || tbGenSpecie(sp) > tbStato.gen) return 0;
-
-    const genDati = Object.values(learnset)
-        .flatMap(fonti => [].concat(fonti))
-        .map(f => parseInt(String(f).charAt(0), 10))
-        .filter(g => !isNaN(g));
-
-    if (!genDati.length || genDati.some(g => g <= tbStato.gen)) return 0;
-    return Math.min(...genDati);
-}
-
-function tbRaccogliLearnset(specieId) {
-    const risultato = {};
-    const visti = new Set();
-    const coda = [specieId];
-
-    while (coda.length) {
-        const id = coda.shift();
-        if (!id || visti.has(id)) continue;
-        visti.add(id);
-
-        const sp = tbSpecie(id);
-        const voce = tbDex.learnsets[id];
-        const learnset = voce && voce.learnset;
-        const genRipiego = tbGenRipiegoLearnset(sp, learnset);
-        let haMosse = false;
-
-        if (learnset) {
-            Object.entries(learnset).forEach(([mossa, fonti]) => {
-                let lista = [].concat(fonti);
-                if (genRipiego) {
-                    lista = lista
-                        .filter(f => parseInt(String(f).charAt(0), 10) === genRipiego)
-                        .map(f => tbStato.gen + String(f).slice(1));
-                    if (!lista.length) return;
-                }
-                haMosse = true;
-                if (!risultato[mossa]) risultato[mossa] = [];
-                risultato[mossa].push(...lista);
-            });
-        }
-
-        if (!sp) continue;        if (sp.prevo) coda.push(tbToID(sp.prevo));
-        if (sp.changesFrom) coda.push(tbToID(sp.changesFrom));
-        if (sp.battleOnly) [].concat(sp.battleOnly).forEach(b => coda.push(tbToID(b)));
-        if (!haMosse && sp.baseSpecies && tbToID(sp.baseSpecies) !== id) coda.push(tbToID(sp.baseSpecies));
-    }
-
-    return risultato;
-}
-
-// "9M", "8L20", "7E"... → la prima cifra è la generazione. Le mosse sono retroattive anche nei formati "within": quello che
-// cambia è l'elenco dei Pokémon, non le mosse (Zapdos impara Tailwind, di Gen 7, anche nel VGC di Gen 8)
-function tbFonteValida(fonte) {
-    const s = String(fonte);
-    const generazioni = /^\d+$/.test(s) ? s.split('').map(Number) : [parseInt(s.charAt(0), 10)];
-    return generazioni.some(g => !isNaN(g) && g <= tbStato.gen);
-}
+// Cosa può imparare una specie (movepool, forme di Hisui, retroattività...) lo decide ControlloTeam.mossePossibili (controllo-team.js), la stessa regola del salvataggio, del simulatore e
+// del server: vedi tbFontiControllo
 
 // Le mosse di Leggende Arceus valgono Gen 8, come le forme di Hisui (controllo-team.js)
 function tbGenMossa(m) {
@@ -5287,20 +5229,28 @@ function tbMossaAmmessaDalFormato(m) {
     });
 }
 
+// I dati di Showdown nella forma che vuole ControlloTeam (controllo-team.js): la regola di cosa può imparare una specie è UNA sola, per il Team Builder, il salvataggio, il
+// simulatore e il server
+function tbFontiControllo() {
+    return {
+        specie: nome => tbSpecie(tbToID(nome)),
+        mossa: nome => tbDex.moves[tbToID(nome)] || null,
+        learnset: id => (tbDex.learnsets && tbDex.learnsets[id] && tbDex.learnsets[id].learnset) || null
+    };
+}
+
 function tbMosseLegali(specieId) {
     if (tbStato.cacheMosse[specieId]) return tbStato.cacheMosse[specieId];
 
-    const learnset = tbRaccogliLearnset(specieId);
+    const possibili = ControlloTeam.mossePossibili(specieId, tbStato.gen, tbFontiControllo());
     let ids;
 
-    if (learnset.sketch && learnset.sketch.some(tbFonteValida)) {
+    if (possibili && possibili.qualsiasi) {
         // Smeargle: Sketch permette qualsiasi mossa esistente nella generazione
         ids = Object.keys(tbDex.moves).filter(id => tbGenMossa(tbDex.moves[id]) <= tbStato.gen && id !== 'struggle' && id !== 'chatter');
     } else {
-        ids = Object.keys(learnset).filter(id =>
-            learnset[id].some(tbFonteValida) &&
-            (!tbDex.moves[id] || tbGenMossa(tbDex.moves[id]) <= tbStato.gen)
-        );    }
+        ids = possibili ? [...possibili] : [];
+    }
 
     const legali = ids
         .map(id => tbDex.moves[id] ? { id, dati: tbDex.moves[id] } : null)
@@ -8378,9 +8328,24 @@ function tbSlotDaSalvato(p, soloDelFormato) {
     const effetto = TB_NATURE[natura];
     const oggetto = p.strumento && p.strumento !== 'None' ? tbToID(p.strumento) : '';
     const mosseSalvate = Array.isArray(p.mosse) ? p.mosse : Object.values(p.mosse || {});
-    const mosse = mosseSalvate.map(m => tbToID(m))
-        .filter(id => id && tbDex.moves[id] && !voceBannata(tbStato.regolamento?.restrizioni, 'mosse', tbDex.moves[id].name))
-        .slice(0, 4);
+    let mosse = mosseSalvate.map(m => tbToID(m))
+        .filter(id => id && tbDex.moves[id] && !voceBannata(tbStato.regolamento?.restrizioni, 'mosse', tbDex.moves[id].name));
+    // Importando un testo, le mosse che la specie non può avere in questa generazione si scartano (e si dice quali): sono le stesse che il Team Builder non offre.
+    // Caricando un team già salvato si lasciano com'è: se ne accorge il controllo al salvataggio, e chi lo apre vede cosa c'è.
+    const scartate = [];
+    if (soloDelFormato) {
+        const legali = new Set(tbMosseLegali(specieId).map(m => m.id));
+        // una specie senza dati di learnset non si può giudicare: si tiene tutto
+        if (legali.size) {
+            mosse = mosse.filter(id => {
+                const idLearnset = /^hiddenpower/.test(id) ? 'hiddenpower' : id;
+                if (legali.has(id) || legali.has(idLearnset)) return true;
+                scartate.push(tbDex.moves[id].name);
+                return false;
+            });
+        }
+    }
+    mosse = mosse.slice(0, 4);
     while (mosse.length < 4) mosse.push('');
 
     return { slot: {
@@ -8401,7 +8366,7 @@ function tbSlotDaSalvato(p, soloDelFormato) {
         shiny: !!p.shiny,
         gigantamax: !!p.gigantamax,
         livelloDynamax: intero(p.livelloDynamax, 10)
-    } };
+    }, avvisi: scartate.length ? [`${tbNomeBello(sp)} cannot use ${scartate.join(', ')} in this format (not in its movepool in Gen ${tbStato.gen}, or not allowed): left out.`] : [] };
 }
 
 // Riempie gli slot con un team salvato nel box (stesso formato prodotto da parseShowdown)
@@ -8430,7 +8395,7 @@ function tbImportaTesto(testo) {
     const nuovi = [], saltati = [];
     lista.forEach(p => {
         const r = tbSlotDaSalvato(p, true);
-        if (r.slot) nuovi.push(r.slot);
+        if (r.slot) { nuovi.push(r.slot); saltati.push(...(r.avvisi || [])); }
         else saltati.push(r.motivo);
     });
     if (!nuovi.length) return { ok: false, messaggio: saltati.join(' ') };
