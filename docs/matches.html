@@ -2698,6 +2698,8 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
 
     // I comandi del replay precedente non valgono più: riappaiono quando il nuovo replay si fa vivo
     if (window.nascondiComandiReplay) window.nascondiComandiReplay();
+    // e così le file dei Pokémon dell'intestazione costruite dal replay di prima (Random)
+    if (window.azzeraSquadreReplay) window.azzeraSquadreReplay();
 
     // 3. Logica di caricamento URL
     if (urlFile && (urlFile.startsWith('http') || urlFile.startsWith('https'))) {
@@ -2902,6 +2904,20 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
             if (ultimeSquadre) applicaSquadre(ultimeSquadre);
         }).catch(() => { /* senza queste statistiche restano i Pokémon scesi in campo */ });
     }
+    // Cambiando set (o replay) le file costruite dal replay (Random) si svuotano: i Pokémon del set di prima non c'entrano con quello nuovo. Quelle con il team vero dell'intestazione
+    // restano (il loro stato lo riscrive il primo messaggio del nuovo replay).
+    let docSquadre = null;
+    function azzeraFileSquadre() {
+        ultimeSquadre = null;
+        for (const idFila of ['header-gifs-didi', 'header-gifs-lu']) {
+            const fila = document.getElementById(idFila);
+            if (!fila || fila.dataset.daReplay !== '1') continue;
+            fila.replaceChildren();
+            delete fila.dataset.daReplay;
+            fila.classList.remove('rg-attiva');
+        }
+    }
+    window.azzeraSquadreReplay = azzeraFileSquadre;
     function applicaSquadre(dati) {
         const dichiarati = portatiSet[chiavePortati()] || {};
         for (const [lato, idFila] of [['p1', 'header-gifs-didi'], ['p2', 'header-gifs-lu']]) {
@@ -2953,6 +2969,8 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
     window.addEventListener('message', e => {
         const f = frame();
         if (!f || e.source !== f.contentWindow || !e.data || e.data.tipo !== 'replay-squadre') return;
+        // un altro documento (un altro set, o il replay riavviato da capo con un'altra pagina): niente resta di quello di prima
+        if (e.data.doc !== docSquadre) { docSquadre = e.data.doc; azzeraFileSquadre(); }
         ultimeSquadre = e.data;
         leggiPortati(chiavePortati());
         applicaSquadre(e.data);
