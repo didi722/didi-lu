@@ -373,6 +373,9 @@
                 // cosa ha già "non avuto effetto" contro di lui (|-immune|): i tipi delle mosse, e le mosse di stato di chi le ha provate.
                 // Vale finché resta in campo: sotto Illusion il suo tipo vero non si vede, ma una mossa che non fa niente lo dice
                 immuneTipi: new Set(), immuneMosse: new Set(),
+                // i tipi cambiati durante la partita (Inzuppa, Camuffamento, Burn Up, Reflect Type...: |-start|...|typechange|Water) e il tipo aggiunto (Halloween, Maledizione
+                // del bosco: typeadd). null = quelli della specie. Si perdono uscendo dal campo
+                tipiCambiati: null, tipoAggiunto: null,
                 // per la memoria della serie (solo dell'avversario): la specie con cui è entrato (le Mega cambiano), quante volte ha usato ogni mossa
                 // (e quante al primo turno in campo), se ha aperto la partita, lo strumento che aveva, e cosa ricordavo di lui dalle partite di prima
                 specieOrig: specie, usi: {}, usiT1: {}, apertura: false, strumentoVisto: null, memoria: null
@@ -423,8 +426,9 @@
                     if (cmd !== 'replace') {
                         // chi esce dal campo perde potenziamenti e il conto delle protezioni; chi entra parte pulito
                         const uscente = l.attivi[pos.slot] && l.attivi[pos.slot] !== pos.nome ? l.mons[l.attivi[pos.slot]] : null;
-                        if (uscente) { uscente.boost = boostVuoti(); uscente.protezioniDiFila = 0; uscente.ultimaProtezione = -9; uscente.immuneTipi.clear(); uscente.immuneMosse.clear(); uscente.dinamax = false; }
+                        if (uscente) { uscente.boost = boostVuoti(); uscente.protezioniDiFila = 0; uscente.ultimaProtezione = -9; uscente.immuneTipi.clear(); uscente.immuneMosse.clear(); uscente.dinamax = false; uscente.tipiCambiati = null; uscente.tipoAggiunto = null; }
                         m.boost = boostVuoti(); m.turnoEntrata = this.turno; m.ultimaMossa = null; m.posto = pos.slot; m.dinamax = false;
+                        m.tipiCambiati = null; m.tipoAggiunto = null;      // chi entra ha i tipi della sua specie
                         m.protezioniDiFila = 0; m.ultimaProtezione = -9;
                     }
                     if (this.turno === 0 && pos.lato !== this.lato && cmd === 'switch') m.apertura = true;      // in campo prima del turno 1: l'apertura
@@ -446,13 +450,19 @@
                 }
                 case 'detailschange': case '-formechange': {
                     const m = this._mon(p[1]);
-                    if (m) { const d = leggiDettagli(p[2]); m.specie = d.specie; m.immuneTipi.clear(); }
+                    if (m) { const d = leggiDettagli(p[2]); m.specie = d.specie; m.immuneTipi.clear(); m.tipiCambiati = null; m.tipoAggiunto = null; }
                     break;
                 }
                 case '-start': {
                     // un cambio di tipo (Inzuppa, Camuffamento, Maledizione del bosco...): i tipi non sono più quelli di prima
                     const m = this._mon(p[1]);
-                    if (m && /typechange|typeadd/i.test(p[2] || '')) m.immuneTipi.clear();
+                    if (m && /typechange|typeadd/i.test(p[2] || '')) {
+                        m.immuneTipi.clear();
+                        // i tipi di adesso: "typechange|Water" (o "Fire/Flying"; "???" = senza tipo), "typeadd|Ghost" si somma ai suoi
+                        const tipi = String(p[3] || '').split('/').map(t => t.trim()).filter(t => t && t !== '???');
+                        if (/typechange/i.test(p[2])) { m.tipiCambiati = tipi; m.tipoAggiunto = null; }
+                        else if (tipi.length) m.tipoAggiunto = tipi[0];
+                    }
                     // Dynamax: per tre turni gli HP sono doppi e le mosse diventano Max. Si fa una volta sola per partita e per lato
                     if (m && /^Dynamax/i.test(p[2] || '')) {
                         m.dinamax = true;
@@ -651,7 +661,9 @@
                 // un avversario in Dynamax ha il doppio degli HP (la percentuale che si vede è sul massimo di adesso)
                 hpMax *= 2; hp = Math.round(hpMax * m.pct / 100);
             }
-            const tipiBase = sp.types.slice();
+            // i tipi di adesso: quelli della specie, o quelli cambiati in partita (Inzuppa: Shedinja diventa Acqua e non è più debole a Coleottero e Spettro)
+            const tipiBase = (m.tipiCambiati ? m.tipiCambiati.slice() : sp.types.slice());
+            if (m.tipoAggiunto && !tipiBase.includes(m.tipoAggiunto)) tipiBase.push(m.tipoAggiunto);
             const vista = {
                 nome: m.nome, specie: sp.name, tipi: tera ? [tera] : tipiBase, tipiBase, livello: m.livello, stat,
                 hp, hpMax: Math.max(1, hpMax), boost: m.boost, stato: m.stato === 'fnt' ? '' : m.stato, abilita: abilita || null,
