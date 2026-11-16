@@ -203,7 +203,7 @@ test('cache: stagioniConStats si ricorda (seasons e setStats si leggono una volt
 });
 
 test('cache: le pagine di statistica leggono players e le stagioni dalla cache; chi scrive la svuota; Hub e Matches non la usano', () => {
-    for (const f of ['stats.js', 'palmares.js', 'scheda-battaglia.js', 'players.html', 'formats.html', 'app-precarica.js', 'fiocchi.js']) assert.match(leggiFile(f), /DbLeggero\.lettura\(db, 'players'\)|DbLeggero\.lettura\(db, 'players'\)/, f);
+    for (const f of ['stats.js', 'palmares.js', 'scheda-battaglia.js', 'players.html', 'formats.html', 'app-precarica.js', 'fiocchi.js']) assert.match(leggiFile(f), /DbLeggero\.lettura\(db, 'players'\)/, f);
     for (const f of ['stats.js', 'palmares.js', 'fiocchi.js', 'box.html', 'formats.html']) assert.match(leggiFile(f), /DbLeggero\.stagioniConStats\(db\)/, f);
     const r = leggiFile('risultati-match.js');
     assert.match(r, /function svuotaCachePagine\(\) \{\s*try \{ if \(typeof DbLeggero !== 'undefined'/);
