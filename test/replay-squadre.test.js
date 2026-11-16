@@ -76,7 +76,7 @@ function paginaConFile() {
     const fine = matches.indexOf("    window.addEventListener('message', e => {", matches.indexOf("e.data.tipo !== 'replay-squadre'"));
     assert.ok(inizio > 0 && fine > inizio);
     const creaFila = () => {
-        const fila = { figli: [], dataset: {}, classi: new Set(), classList: { add: c => fila.classi.add(c) }, appendChild: img => fila.figli.push(img), querySelector: s => (s === 'img' ? fila.figli[0] || null : null), querySelectorAll: () => fila.figli };
+        const fila = { figli: [], dataset: {}, classi: new Set(), classList: { add: c => fila.classi.add(c) }, appendChild: img => { img.parentNode = fila; fila.figli.push(img); }, insertBefore: (nuovo, prima) => { nuovo.parentNode = fila; fila.contenitori.push(nuovo); }, contenitori: [], querySelector: s => (s === 'img' ? fila.figli[0] || null : null), querySelectorAll: () => fila.figli };
         return fila;
     };
     const file = { 'header-gifs-didi': creaFila(), 'header-gifs-lu': creaFila() };
@@ -87,7 +87,7 @@ function paginaConFile() {
         frame: () => ({ contentWindow: 'f' }),
         document: {
             getElementById: id => file[id],
-            createElement: () => ({ dataset: {}, className: '', classList: { toggle() {} }, set title(v) {} })
+            createElement: () => { const el = { dataset: {}, className: '', classi: new Set(), figli: [], parentNode: null, appendChild: f => { f.parentNode = el; el.figli.push(f); }, set title(v) {} }; el.classList = { toggle: (c, on) => (on ? el.classi.add(c) : el.classi.delete(c)), contains: c => el.className.split(' ').includes(c), add: c => el.classi.add(c) }; return el; }
         }
     });
     vm.runInContext(matches.slice(inizio, fine), ctx);
@@ -115,4 +115,19 @@ test('squadre: una fila con il team vero dell\'intestazione non si tocca (nessun
     p.manda({ p1: [{ s: 'Garchomp', st: 1 }, { s: 'Rotom', st: 1 }], p2: [] });
     assert.deepEqual(p.pkm('header-gifs-didi'), ['Garchomp'], 'il team dell\'intestazione resta quello');
     assert.match(matches, /delete container\.dataset\.daReplay;/);
+});
+
+test('squadre: ogni sprite sta in un contenitore con la sua barretta rossa se è KO (non sull\'immagine, che diventa grigia e trasparente), e il CSS la disegna', () => {
+    const p = paginaConFile();
+    p.manda({ p1: [{ s: 'Dhelmise', st: 2 }, { s: 'Kingambit', st: 1 }], p2: [{ s: 'Arceus', st: 0 }] });
+    const fila = p.file['header-gifs-didi'];
+    assert.equal(fila.contenitori.length, 2, 'uno per sprite');
+    assert.ok(fila.contenitori.every(c => c.className === 'rg-voce' && c.figli.length === 1));
+    assert.deepEqual(fila.contenitori.map(c => c.classi.has('rg-voce-ko')), [true, false], 'solo chi è andato KO ha la barra');
+    p.manda({ p1: [{ s: 'Dhelmise', st: 2 }, { s: 'Kingambit', st: 1 }, { s: 'Corviknight', st: 1 }], p2: [{ s: 'Arceus', st: 0 }] });
+    assert.equal(fila.contenitori.length, 3, 'i contenitori non si raddoppiano e il nuovo sprite ha il suo');
+    const css = fs.readFileSync(path.join(DOCS, 'finestre.css'), 'utf8');
+    assert.match(css, /\.mini-gifs-row \.rg-voce\.rg-voce-ko::before \{ opacity: 1;/);
+    assert.match(css, /\.mini-gifs-row \.rg-voce::before \{[^}]*background: #e53935;/);
+    assert.match(css, /#replayModal\.tel \.replay-mini-header \.mini-gifs-row \.rg-voce \{ flex: 1 1 0;/, 'anche da telefono gli sprite si dividono la fila');
 });

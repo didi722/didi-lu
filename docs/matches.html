@@ -2891,11 +2891,20 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
             const usati = new Set();
             fila.classList.add('rg-attiva');
             fila.querySelectorAll('img').forEach(img => {
+                // ogni sprite sta in un contenitore: la barretta rossa dei KO è sua, così non diventa grigia e trasparente insieme allo sprite
+                let voce = img.parentNode;
+                if (!voce || voce === fila || !voce.classList || !voce.classList.contains('rg-voce')) {
+                    voce = document.createElement('span');
+                    voce.className = 'rg-voce';
+                    fila.insertBefore(voce, img);
+                    voce.appendChild(img);
+                }
                 const k = chiaveSquadra(img.dataset.pkm);
                 const i = rosa.findIndex((r, j) => !usati.has(j) && chiaveSquadra(r.s) === k);
                 if (i >= 0) usati.add(i);
                 const st = i >= 0 ? Number(rosa[i].st) || 0 : 0;
                 img.classList.toggle('rg-ko', st === 2);
+                voce.classList.toggle('rg-voce-ko', st === 2);
                 img.classList.toggle('rg-in', st === 1);
                 img.title = (img.dataset.pkm || '') + (st === 2 ? ' · KO' : st === 1 ? ' · in play' : '');
             });

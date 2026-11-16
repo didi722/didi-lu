@@ -799,3 +799,9 @@ html:not(.app-shell) #replayModal:not(.tel) .replay-versus {
 #replayModal .mini-gifs-row.rg-attiva img { opacity: .5; transition: opacity .25s ease, filter .25s ease; }
 #replayModal .mini-gifs-row.rg-attiva img.rg-in { opacity: 1; }
 #replayModal .mini-gifs-row.rg-attiva img.rg-ko { opacity: .28; filter: grayscale(1); }
+/* chi è andato KO ha anche una piccola barra rossa sopra lo sprite (sta nel contenitore, non sull'immagine: il grigio e la trasparenza non la toccano) */
+#replayModal .mini-gifs-row .rg-voce { position: relative; display: flex; flex: none; }
+#replayModal .mini-gifs-row .rg-voce::before { content: ''; position: absolute; top: 0; left: 18%; right: 18%; height: 4px; background: #e53935; border-radius: 2px; box-shadow: 0 0 0 1px var(--nb-ink, #000); opacity: 0; transform: scaleX(.4); transition: opacity .25s ease, transform .25s ease; pointer-events: none; z-index: 1; }
+#replayModal .mini-gifs-row .rg-voce.rg-voce-ko::before { opacity: 1; transform: none; }
+html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row .rg-voce { flex: 1 1 0; min-width: 0; max-width: 24px; }
+html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row .rg-voce::before { height: 3px; }
