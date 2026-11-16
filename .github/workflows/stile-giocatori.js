@@ -15,6 +15,7 @@ const { initializeApp, cert } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
 const path = require('path');
 const Stile = require(path.join(__dirname, '..', '..', 'docs', 'stile-giocatore.js'));
+const DbLeggero = require(path.join(__dirname, '..', '..', 'docs', 'db-leggero.js'));
 const Situazioni = require(path.join(__dirname, '..', '..', 'docs', 'cpu-situazioni.js'));
 const ReplaySito = require(path.join(__dirname, '..', '..', 'docs', 'replay-sito.js'));
 const MetaLega = require(path.join(__dirname, '..', '..', 'docs', 'meta-lega.js'));
@@ -52,7 +53,8 @@ async function pubblicaMeta(stagioni) {
 }
 
 async function main() {
-  const stagioni = (await db.ref('seasons').once('value')).val() || {};
+  // le statistiche dei set stanno in un nodo a parte (setStats/…): si rimettono nei match (quelle ancora dentro ai match, non spostate, valgono come prima)
+  const stagioni = DbLeggero.unisciSetStats((await db.ref('seasons').once('value')).val() || {}, (await db.ref('setStats').once('value')).val() || {});
   const nodi = Stile.profili(stagioni);
   const ids = Object.keys(nodi).sort();
   console.log(`${ids.length} allenatori con scelte registrate${prova ? ' (prova: non si scrive niente)' : ''}.`);

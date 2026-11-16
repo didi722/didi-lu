@@ -41,7 +41,10 @@ function calcolaPuntiMatch(setVinti, isBO3) {
  *   data, categoria,
  *   replays,                   // { set1: { url, vincitore: "1"|"2" }, ... }
  *   setStats                   // (facoltativo) { set1: <analizzaSet() di statistiche-set.js>, ... }
- *                              // dei set giocati sul sito; se manca si tengono quelli già salvati
+ *                              // dei set giocati sul sito; se manca si tengono quelli già salvati.
+ *                              // Si salvano in un nodo a parte: setStats/{stagione}/{showdown}/match{N} (dentro il match pesavano l'84% di una stagione e ogni
+ *                              // pagina che leggeva una stagione le scaricava); se quel nodo non si può scrivere (regole del database non ancora aggiornate) si
+ *                              // ripiega sul posto di prima, dentro al match
  * }
  *
  * Restituisce { stagioneChiusa, vincitoreStagione, totalDays }
@@ -51,6 +54,7 @@ async function registraRisultatoMatch(r) {
     const { stagione, showdownId, matchNum } = r;
     const pathShowdown = `seasons/${stagione}/showdowns/${showdownId}`;
     const pathMatch = `${pathShowdown}/matches/match${matchNum}`;
+    const pathSetStats = `setStats/${stagione}/${showdownId}/match${matchNum}`;
 
     // --- 1. PUNTEGGIO, VINCITORE E PUNTI ---
     const [s1, s2] = r.score.split('-').map(v => parseInt(v) || 0);
@@ -93,11 +97,21 @@ async function registraRisultatoMatch(r) {
     }
 
     // Statistiche per set (KO, ultimo rimasto...): le calcola il server a fine set.
-    // Una modifica fatta a mano non le ha: in quel caso restano quelle già salvate.
-    const setStats = (r.setStats && Object.keys(r.setStats).length)
-        ? r.setStats
-        : (matchEsistente && matchEsistente.setStats) || null;
-    if (setStats) datiMatch.setStats = setStats;
+    // Una modifica fatta a mano non le ha: in quel caso restano quelle già salvate (nel nodo a parte o, se non sono ancora state spostate, dentro al match).
+    let setStats = (r.setStats && Object.keys(r.setStats).length) ? r.setStats : null;
+    if (!setStats) {
+        let salvate = null;
+        try { salvate = (await db.ref(pathSetStats).once('value')).val(); } catch (e) { /* non leggibile: restano quelle dentro al match, se ci sono */ }
+        setStats = salvate || (matchEsistente && matchEsistente.setStats) || null;
+    }
+    if (setStats) {
+        try {
+            await db.ref(pathSetStats).set(setStats);
+        } catch (e) {
+            console.warn('setStats non scrivibile nel nodo a parte (regole del database da aggiornare): restano dentro al match', e && e.message);
+            datiMatch.setStats = setStats;
+        }
+    }
 
     await db.ref(pathMatch).set(datiMatch);
 
@@ -617,6 +631,9 @@ async function ricalcolaStatisticheGlobali(pId) {
     try {
         const seasonsSnap = await db.ref(`seasons`).once('value');
         const seasons = seasonsSnap.val() || {};
+        // le statistiche dei set stanno in un nodo a parte (setStats/{stagione}/{showdown}/match{N}); quelle ancora dentro al match (dati non spostati) valgono come prima
+        let setStatsNodo = {};
+        try { setStatsNodo = (await db.ref('setStats').once('value')).val() || {}; } catch (e) { /* senza, restano quelle dentro ai match */ }
         
         const playerSnap = await db.ref(`players/${pId}`).once('value');
         const playerData = playerSnap.val() || {};
@@ -756,7 +773,7 @@ async function ricalcolaStatisticheGlobali(pId) {
                             setW: isP1 ? Number(mData.p1score || 0) : Number(mData.p2score || 0),
                             setL: isP1 ? Number(mData.p2score || 0) : Number(mData.p1score || 0),
                             lato: isP1 ? 'p1' : 'p2',
-                            setStats: mData.setStats || null
+                            setStats: ((setStatsNodo[sId] || {})[sdId] || {})[mKey] || mData.setStats || null
                         });
 
                         if (!statsLeaderboard.formats[categoria]) {

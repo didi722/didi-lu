@@ -2401,7 +2401,7 @@ async function preparaStatsFormato() {
     stats.innerHTML = '<p class="fmt-classifica-vuota">Calculating stats...</p>';
     try {
         await caricaScriptStatsFormato();
-        if (!datiStagioniFormato) datiStagioniFormato = (await db.ref('seasons').once('value')).val() || {};
+        if (!datiStagioniFormato) datiStagioniFormato = (await DbLeggero.stagioniConStats(db)) || {};      // con le statistiche dei set (db-leggero.js)
         if (statsFormato !== stato) return;      // nel frattempo si è aperto un altro formato
         stato.risultato = true;
         disegnaStatsFormato();

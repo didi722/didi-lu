@@ -195,8 +195,10 @@
         const S = Stat || (finestra && finestra.Statistiche);
         if (!S) return Promise.reject(new Error('Statistiche non disponibile'));
         if (!cache) {
-            cache = Promise.all([db.ref('seasons').once('value'), db.ref('players').once('value')])
-                .then(([s, p]) => S.calcola({ seasons: s.val() || {}, players: p.val() || {} }, { stagione: 'all' }))
+            // le stagioni con le statistiche dei set rimesse nei loro match (db-leggero.js: stanno in un nodo a parte)
+            const stagioni = finestra && finestra.DbLeggero ? finestra.DbLeggero.stagioniConStats(db) : db.ref('seasons').once('value').then(s => s.val() || {});
+            cache = Promise.all([stagioni, db.ref('players').once('value')])
+                .then(([s, p]) => S.calcola({ seasons: s || {}, players: p.val() || {} }, { stagione: 'all' }))
                 .catch(e => { cache = null; throw e; });
         }
         return cache;
