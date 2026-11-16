@@ -613,3 +613,9 @@ test('badge: se il protagonista è "Urshifu-*" (forma nascosta nel team preview)
     M.badge({ pokemon: [] }, s, lib);
     assert.deepEqual(cercati, ['Urshifu-*'], 'senza una forma sola resta il segnaposto');
 });
+
+test('il tag della settimana ha una larghezza fissa (uguale per tutte le settimane); sul telefono si adatta alla riga', () => {
+    const css = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'docs', 'match-settimana.css'), 'utf8');
+    assert.match(css, /\.ms-sett \{[^}]*justify-content: center; box-sizing: border-box; width: 250px;/);
+    assert.match(css, /\.ms-sett \{ flex: 1 1 auto; width: auto; justify-content: center; \}/);
+});

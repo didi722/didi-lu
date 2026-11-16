@@ -794,3 +794,8 @@ html:not(.app-shell) #replayModal:not(.tel) .replay-versus {
 .rv-avatar { position: absolute; bottom: 0; height: var(--rv-h); width: auto; image-rendering: pixelated; filter: drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); user-select: none; }
 .rv-sx { left: max(calc(var(--rv-h) / 2 + 8px), calc(var(--rv-margine) / 2)); transform: translateX(-50%) scaleX(-1); }      /* il primo guarda a destra, verso la console */
 .rv-dx { right: max(calc(var(--rv-h) / 2 + 8px), calc(var(--rv-margine) / 2)); transform: translateX(50%); }
+
+/* ---------- Replay: le squadre nell'intestazione (chi è sceso in campo, chi è andato KO) ---------- */
+#replayModal .mini-gifs-row.rg-attiva img { opacity: .5; transition: opacity .25s ease, filter .25s ease; }
+#replayModal .mini-gifs-row.rg-attiva img.rg-in { opacity: 1; }
+#replayModal .mini-gifs-row.rg-attiva img.rg-ko { opacity: .28; filter: grayscale(1); }

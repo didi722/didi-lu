@@ -55,7 +55,8 @@ body.pg-index.con-match .home-seasons-container { min-height: 0; margin-top: aut
     user-select: none; -webkit-user-select: none;       /* cliccando in fretta sulle frecce non si seleziona la data */
     overflow: hidden;                                   /* con gli angoli tondi (tema morbido) lo sfondo delle frecce non esce dal bordo */
 }
-.ms-sett { display: flex; align-items: baseline; gap: 8px; padding: 6px 13px 3px; white-space: nowrap; font: 900 13px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
+.ms-sett { display: flex; align-items: baseline; justify-content: center; box-sizing: border-box; width: 250px; gap: 8px; padding: 6px 8px 3px;      /* larghezza fissa: tutte le settimane hanno lo stesso tag */
+    white-space: nowrap; font: 900 13px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
 .ms-sett span { font-weight: 800; opacity: .65; }
 .ms-freccia {
     display: grid; place-items: center; width: 30px; margin: 0; padding: 0; background: transparent; color: inherit; border: 0; border-radius: 0; cursor: pointer;
@@ -184,7 +185,7 @@ body.pg-index.con-match .home-seasons-container { min-height: 0; margin-top: aut
     .ms { padding-top: 14px; }
     .ms-t { position: static; display: inline-block; margin: -34px 0 8px -4px; }
     .ms-pager { position: static; justify-content: space-between; margin: 0 0 14px; rotate: none; }
-    .ms-sett { flex: 1 1 auto; justify-content: center; }
+    .ms-sett { flex: 1 1 auto; width: auto; justify-content: center; }
     .ms-scontro { grid-template-columns: minmax(0, 1fr); gap: 14px; }
     .ms-azione { flex-basis: 100%; width: auto; }
     .ms-replay { max-width: 180px; }
