@@ -26,31 +26,44 @@ function adatta({ larghezza, altezza, campo, altezze = { '.replay-mini-header': 
     };
     const ctx = vm.createContext({
         document: { getElementById: () => modal, documentElement: { clientWidth: larghezza, clientHeight: altezza, classList: { contains: () => false } } },
-        window: { innerHeight: altezza, matchMedia: () => ({ matches: false }) }, Math
+        window: { innerHeight: altezza, matchMedia: () => ({ matches: false }) }, Math, posizionaConsoleReplay: () => {}
     });
     vm.runInContext(matches.slice(inizio, fine) + '\nadattaReplayAlloSchermo();', ctx);
-    return { classi: [...classi].sort(), scala: proprieta['--gba-scala'], righe: proprieta['--righe-campo'] };
+    return { classi: [...classi].sort(), larg: proprieta['--schermo-larg'], sch: proprieta['--sch'], righe: proprieta['--righe-campo'] };
 }
 
-test('la console non cambia misura né modalità quando compaiono o spariscono i cartellini del campo (colonna o riga, a tutte le misure di finestra)', () => {
+test('lo schermo non cambia misura né modalità quando compaiono o spariscono i cartellini del campo (colonna o riga, a tutte le misure di finestra)', () => {
     for (const [larghezza, altezza] of [[1920, 1080], [1536, 864], [1440, 900], [1366, 768], [1280, 720], [1100, 800], [1000, 700]]) {
         const senza = adatta({ larghezza, altezza, campo: false });
         const con = adatta({ larghezza, altezza, campo: true });
-        assert.deepEqual(con, senza, `${larghezza}x${altezza}: con i cartellini la console resta com'era`);
-        assert.ok(Number(senza.scala) > 0.3);
+        assert.deepEqual(con, senza, `${larghezza}x${altezza}: con i cartellini lo schermo resta com'era`);
+        assert.ok(parseFloat(senza.larg) >= 420, `${larghezza}x${altezza}: schermo largo ${senza.larg}`);
     }
     // la modalità la decide la finestra: larga, in colonna; stretta, in riga
     assert.ok(adatta({ larghezza: 1920, altezza: 1080, campo: false }).classi.includes('campo-laterale'));
-    assert.ok(!adatta({ larghezza: 1100, altezza: 800, campo: false }).classi.includes('campo-laterale'));
+    assert.ok(!adatta({ larghezza: 900, altezza: 700, campo: false }).classi.includes('campo-laterale'), 'una finestra stretta: i cartellini in riga sopra lo schermo');
     // in riga si riservano una o due righe di cartellini secondo la larghezza
     assert.equal(adatta({ larghezza: 1440, altezza: 900, campo: false }).righe, 1);
-    assert.equal(adatta({ larghezza: 1100, altezza: 800, campo: false }).righe, 2);
+    assert.equal(adatta({ larghezza: 900, altezza: 700, campo: false }).righe, 2);
 });
 
-test('in riga lo spazio della riga dei cartellini si toglie sempre alla console (con o senza cartellini): la console sta tutta nello schermo', () => {
+test('in riga lo spazio della riga dei cartellini si toglie sempre allo schermo (con o senza cartellini): lo schermo sta tutto nella finestra', () => {
     const r = adatta({ larghezza: 1440, altezza: 900, campo: false });
-    // intestazione 157 + comandi 60 + momenti 26 + riga 27 + spazi: tutto dentro i 900 px
-    assert.ok(647 * Number(r.scala) + 157 + 60 + 26 + 27 <= 900, `scala ${r.scala}`);
+    // intestazione 157 + comandi 60 + momenti 26 + riga 27 + spazi: tutto dentro i 900 px (lo schermo è il campo, 438 × 360 ingranditi)
+    const alto = parseFloat(r.larg) * 360 / 438;
+    assert.ok(alto + 157 + 60 + 26 + 27 <= 900, `schermo ${r.larg}`);
+    // la scala dei 438 px della scena dà proprio la larghezza dello schermo
+    assert.ok(Math.abs(parseFloat(r.sch) * 438 - parseFloat(r.larg)) < 0.5);
+});
+
+test('lo schermo del replay da PC è grande: occupa quanto ci sta (in altezza) fino a metà finestra circa, e mai meno di 420 px', () => {
+    const grande = adatta({ larghezza: 1920, altezza: 950, campo: true });
+    assert.ok(parseFloat(grande.larg) > 700, `a 1920 × 950 lo schermo è largo ${grande.larg}`);
+    assert.ok(parseFloat(grande.larg) <= 1920 * 0.48 + 0.5);
+    const piccola = adatta({ larghezza: 900, altezza: 500, campo: false });
+    assert.ok(parseFloat(piccola.larg) >= 420);
+    // intero: niente mezzi pixel che farebbero un pixel di scorrimento
+    assert.match(grande.larg, /^\d+px$/);
 });
 
 test('CSS: i posti di comandi, momenti chiave e riga del campo sono riservati anche quando sono nascosti; la loro larghezza non allarga il palco', () => {
@@ -84,7 +97,7 @@ test('replay da PC: i due allenatori ai lati della console, dietro a tutto e fuo
     const pc = regola('html:not(.app-shell) #replayModal:not(.tel) .replay-versus');
     assert.match(pc, /display: block; position: fixed; inset: 0; z-index: -1;[^}]*pointer-events: none/, 'fuori dal flusso, sotto ogni cosa, e il clic passa (chiude la finestra)');
     assert.match(pc, /--rv-h: clamp\(150px, calc\(var\(--rv-margine\) \* 1\.15\), 46vh\)/, 'la grandezza segue lo spazio che la console lascia ai lati');
-    assert.match(pc, /--rv-margine: calc\(\(100vw - 1150px \* var\(--gba-scala, 1\) - 106px\) \/ 2\)/);
+    assert.match(pc, /--rv-margine: calc\(\(100vw - var\(--schermo-larg, calc\(1150px \* var\(--gba-scala, 1\)\)\) - 106px\) \/ 2\)/, 'i lati sono quello che lo schermo grande lascia');
     // la riga in diagonale come nel simulatore (60% in alto, 40% in basso), senza colori di sfondo
     assert.match(finestre, /\.rv-taglio-b \{[^}]*clip-path: polygon\(calc\(60% - 7px\) 0, calc\(60% \+ 7px\) 0, calc\(40% \+ 7px\) 100%, calc\(40% - 7px\) 100%\)/);
     // le due metà: colore e motivo della pagina pubblica di ognuno (--pp-sfondo*), un po' trasparenti
@@ -128,10 +141,40 @@ test('creaSfondoVersus: la riga con i due colori e un avatar per lato (il primo 
     assert.equal(r.box.stile['--c1'], '#31c489');
     assert.equal(r.box.stile['--c2'], '#e0457b');
     assert.equal(r.box.figli.filter(f => f.tag === 'i').length, 3, 'metà del primo, riga nera, metà del secondo');
-    assert.equal(r.caricate.length, 2);
+    assert.equal(r.caricate.length, 3, 'la scocca e i due avatar');
     await Promise.all(r.caricate);        // anche quello rotto finisce (e si toglie)
-    const avatar = r.box.figli.filter(f => f.tag === 'img');
+    const immagini = r.box.figli.filter(f => f.tag === 'img');
+    const avatar = immagini.filter(f => /rv-avatar/.test(f.className));
     assert.equal(avatar.length, 1, 'l\'avatar rotto non resta');
     assert.equal(avatar[0].className, 'rv-avatar rv-sx');
-    assert.equal(ctx.creaSfondoVersus('', '', '#000', '#000').caricate.length, 0, 'senza avatar niente da aspettare');
+    // la scocca del Game Boy Advance sta nello strato, prima degli avatar (quindi sotto)
+    const console_ = immagini.find(f => f.className === 'rv-console');
+    assert.ok(console_ && /immagini\/advance\.png$/.test(console_.src), 'la scocca c\'è');
+    assert.ok(r.box.figli.indexOf(console_) < r.box.figli.indexOf(avatar[0]), 'la scocca sta sotto gli avatar');
+    assert.equal(ctx.creaSfondoVersus('', '', '#000', '#000').caricate.length, 1, 'senza avatar resta da aspettare solo la scocca');
+});
+
+test('replay da PC: la scocca grande e semitrasparente è indipendente dallo schermo (nello strato dietro), che mostra solo il campo senza le bande di Showdown; non sul telefono né nell\'app', () => {
+    const regola = sel => {
+        const i = finestre.indexOf(sel + ' {');
+        assert.ok(i >= 0, sel);
+        return finestre.slice(i, finestre.indexOf('}', i)).replace(/\s+/g, ' ');
+    };
+    assert.match(regola('#replayModal .rv-console'), /display: none/, 'nascosta di default (telefono e app)');
+    const grande = regola('html:not(.app-shell) #replayModal:not(.tel) .rv-console');
+    assert.match(grande, /position: absolute;[^}]*opacity: \.5;[^}]*pointer-events: none/, 'semitrasparente e il clic passa');
+    assert.match(grande, /width: calc\(var\(--schermo-larg, 640px\) \/ \.34\)/, 'lo schermo bianco dell\'immagine (34%) largo quanto lo schermo');
+    assert.match(grande, /left: calc\(var\(--sx, 50vw\)[^;]*\.498\)/);
+    assert.match(grande, /top: calc\(var\(--sy, 50vh\)[^;]*\.505\)/);
+    // la vecchia scocca nel flusso non c'è più e lo schermo è la finestra (campo 438 × 360, senza le bande)
+    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) .gba-shell'), /display: none/);
+    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) .gba-container'), /width: var\(--schermo-larg, 438px\); height: calc\(var\(--schermo-larg, 438px\) \* 360 \/ 438\)/);
+    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) .gba-screen-area .replay-content'), /width: 438px; height: 360px;[^}]*zoom: var\(--sch, 1\)/);
+    // le bande laterali (circa il 16% a destra e a sinistra della scena 640 × 360) restano fuori dalla finestra
+    assert.match(regola('html:not(.app-shell) #replayModal:not(.tel) #replayFrame'), /left: -101px; width: 640px/);
+    assert.equal(640 - 2 * 101, 438, 'il campo che resta è largo 438 px');
+    // lo schermo si centra sulla scocca: --sx e --sy li scrive posizionaConsoleReplay e si rifanno quando cambia qualcosa
+    assert.match(matches, /modal\.style\.setProperty\('--sx', /);
+    assert.match(matches, /modal\.style\.setProperty\('--sy', /);
+    assert.match(matches, /new ResizeObserver\(\(\) => posizionaConsoleReplay\(/);
 });

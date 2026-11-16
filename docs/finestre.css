@@ -781,7 +781,7 @@ html:not(.app-shell) #replayModal:not(.tel):not(.campo-laterale) .replay-campo[h
    di ognuno), senza colori di sfondo. La grandezza segue lo spazio che la console lascia ai lati (--gba-scala). Sul telefono e nell'app non ci sono. */
 #replayModal .replay-versus { display: none; }
 html:not(.app-shell) #replayModal:not(.tel) .replay-versus {
-    --rv-margine: calc((100vw - 1150px * var(--gba-scala, 1) - 106px) / 2);
+    --rv-margine: calc((100vw - var(--schermo-larg, calc(1150px * var(--gba-scala, 1))) - 106px) / 2);
     --rv-h: clamp(150px, calc(var(--rv-margine) * 1.15), 46vh);
     display: block; position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
 }
@@ -806,3 +806,29 @@ html:not(.app-shell) #replayModal:not(.tel) .replay-versus {
 #replayModal .mini-gifs-row .rg-voce.rg-voce-ko::before { opacity: 1; transform: rotate(-45deg); }
 html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row .rg-voce { flex: 1 1 0; min-width: 0; max-width: 24px; }
 html:not(.app-shell) #replayModal.tel .replay-mini-header .mini-gifs-row .rg-voce::before { height: 3px; top: calc(50% - 1.5px); }
+
+
+/* ---------- Replay da PC: lo schermo grande e la scocca grande, semitrasparente e indipendente ----------
+   Lo schermo del replay è una finestra al centro, nel flusso come prima: mostra solo il campo (438 × 360 della scena 640 × 360, senza le bande laterali di Showdown con gli
+   allenatori) ingrandito di --sch. La scocca non ne fa più parte: è un'immagine molto più grande nello strato dietro a tutto (.rv-console, dentro .replay-versus: sopra i colori
+   dei due allenatori, sotto avatar, riquadri, comandi e tasti dei set), centrata sullo schermo (--sx, --sy li scrive adattaReplayAlloSchermo) e semitrasparente. È scalata perché lo
+   schermo bianco dell'immagine (34% della larghezza) sia largo quanto la finestra, che è più alta e ne copre un po' la cornice scura sopra e sotto. Esce dalla finestra: lo strato
+   la taglia. Telefono e app non cambiano. */
+#replayModal .rv-console { display: none; }
+html:not(.app-shell) #replayModal:not(.tel) .rv-console {
+    display: block; position: absolute; max-width: none; height: auto; opacity: .5; pointer-events: none; user-select: none;
+    width: calc(var(--schermo-larg, 640px) / .34);
+    left: calc(var(--sx, 50vw) - var(--schermo-larg, 640px) / .34 * .498);          /* lo schermo dell'immagine sta al 49,8% della larghezza... */
+    top: calc(var(--sy, 50vh) - var(--schermo-larg, 640px) / .34 * .5625 * .505);   /* ...e al 50,5% dell'altezza (immagine 16:9) */
+}
+html:not(.app-shell) #replayModal:not(.tel) .gba-shell { display: none; }
+html:not(.app-shell) #replayModal:not(.tel) .gba-container {
+    zoom: 1; z-index: auto; margin: 0;
+    width: var(--schermo-larg, 438px); height: calc(var(--schermo-larg, 438px) * 360 / 438);
+}
+html:not(.app-shell) #replayModal:not(.tel) .gba-screen-area {
+    top: 0; left: 0; transform: none; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center; border-radius: 6px;
+}
+html:not(.app-shell) #replayModal:not(.tel) .gba-screen-area .replay-content { flex: none; width: 438px; height: 360px; margin: 0; box-shadow: none; zoom: var(--sch, 1); }
+html:not(.app-shell) #replayModal:not(.tel) #replayFrame { top: -22px; left: -101px; width: 640px; height: 382px; }   /* le bande di 101px a destra e a sinistra restano fuori */
