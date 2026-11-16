@@ -641,7 +641,7 @@ test('medaglione: se PokeAPI non conosce il nome come scritto (forme, specie con
     assert.equal(chiamate.length, prima, 'una richiesta sola per specie, poi si ricorda');
 });
 
-test('html: se il set si decide all\'ultimo KO e tutti i Pokémon (di tutti e due i lati) sono andati KO, il protagonista del vincitore resta acceso e in evidenza; gli altri restano spenti', () => {
+test('html: se il set si decide all\'ultimo KO e tutti i Pokémon (di tutti e due i lati) sono andati KO, il protagonista del vincitore resta acceso; gli altri restano spenti', () => {
     const tuttiKo = {
         v: 3, turni: 20, vincitore: 'p1',
         p1: lato('Ada', [pk('A1', { svenuto: true, turnoKo: 3 }), pk('A2', { svenuto: true, turnoKo: 6 }), pk('Bombirdier', { svenuto: true, turnoKo: 20, ultimo: true, koFatti: 3 })]),
@@ -650,8 +650,8 @@ test('html: se il set si decide all\'ultimo KO e tutti i Pokémon (di tutti e du
     const s = M.scegli(stagioni({ match1: match('2026-10-29', { set1: tuttiKo }) }), { adesso: OGGI });
     assert.equal(s.protagonista.specie, 'Bombirdier');
     const h = M.html(s, { giocatori: {}, gif: x => `g/${x}.gif`, settimana: { titolo: 'This week', intervallo: '' }, indice: 0, totale: 1 });
-    assert.equal((h.match(/class="ms-spr ms-mvp"/g) || []).length, 1, 'un solo Pokémon in evidenza');
+    assert.equal((h.match(/class="ms-spr ms-mvp"/g) || []).length, 1, 'un solo Pokémon acceso');
     assert.match(h, /<img class="ms-spr ms-mvp" src="g\/Bombirdier\.gif" alt="Bombirdier" title="Bombirdier \(MVP\)"/);
     assert.equal((h.match(/class="ms-spr ms-ko"/g) || []).length, 2 + 3, 'tutti gli altri (2 di Ada, 3 di Bea) sono spenti');
-    assert.match(leggi('match-settimana.css'), /\.ms-spr\.ms-mvp \{ filter: drop-shadow\(0 0 2px #ffd84a\)/);
+    assert.doesNotMatch(leggi('match-settimana.css'), /\.ms-spr\.ms-mvp \{/, 'senza alone: l\'MVP è acceso e basta');
 });
