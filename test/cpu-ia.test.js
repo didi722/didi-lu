@@ -1690,3 +1690,58 @@ test('_senzaEffetto: solo mosse di danno, mai su alleati, mai con un\'abilità c
     assert.equal(ia._senzaEffetto(mio, eq, null, [null, avv[1]], ctx), true, 'a più bersagli, tutti immuni: sì');
     assert.equal(ia._senzaEffetto(mio, eq, null, [null, null], ctx), false, 'nessun bersaglio vivo');
 });
+
+// ===================================================
+// CAMBI DI TIPO IN PARTITA
+// ===================================================
+// Inzuppa (Soak) rende Shedinja di tipo Acqua: Coleottero e Spettro non sono più super efficaci (e con Wonder Guard servono super efficaci per colpirlo).
+// La CPU prima si fidava dei tipi della specie e continuava a provarci.
+const ROTOM = [{ specie: 'Rotom', item: 'Leftovers', mosse: ['Shadow Ball', 'Bug Buzz', 'Thunderbolt', 'Energy Ball'] }];
+const SOAK = ['|-start|p1a: Shedinja|typechange|Water|[from] move: Soak', '|turn|2'];
+
+test('Inzuppa: Shedinja diventa Acqua e la CPU smette di cercare di colpirlo con Coleottero e Spettro; passa a Elettro o Erba', async () => {
+    const { sim, ia } = await cervello();
+    const r = creaRichiesta(sim.Dex, { squadra: ROTOM, attivi: [0] });
+    const prima = scelta(ia, r, [...logAvversario([{ specie: 'Shedinja' }], false), ...logMiaSquadra(ROTOM, [0])]);
+    assert.ok(['move 1', 'move 2'].includes(prima), `contro un Shedinja Coleottero/Spettro: Spettro o Coleottero (scelta: ${prima})`);
+    const dopo = scelta(ia, r, SOAK);
+    assert.ok(['move 3', 'move 4'].includes(dopo), `Shedinja ora è Acqua: Elettro o Erba (scelta: ${dopo})`);
+    const v = ia.vista(ia.lati.p1.mons.Shedinja);
+    assert.deepEqual(v.tipi, ['Water']);
+});
+
+test('cambio di tipo: Reflect Type/typechange con più tipi, "???" (senza tipo), typeadd (Halloween, Maledizione del bosco) si sommano; le forme e le uscite dal campo rimettono i tipi della specie', async () => {
+    const { sim, ia } = await cervello();
+    const r = creaRichiesta(sim.Dex, { squadra: ROTOM, attivi: [0] });
+    scelta(ia, r, [...logAvversario([{ specie: 'Shedinja' }], false), ...logMiaSquadra(ROTOM, [0])]);
+    const m = ia.lati.p1.mons.Shedinja;
+    const tipi = () => ia.vista(m).tipi;
+    assert.deepEqual(tipi(), ['Bug', 'Ghost'], 'all\'inizio i tipi della specie');
+    ia.osserva(['|-start|p1a: Shedinja|typechange|Fire/Flying|[from] move: Reflect Type|[of] p2a: Rotom']);
+    assert.deepEqual(tipi(), ['Fire', 'Flying'], 'più tipi insieme');
+    ia.osserva(['|-start|p1a: Shedinja|typeadd|Grass|[from] move: Forest\'s Curse']);
+    assert.deepEqual(tipi(), ['Fire', 'Flying', 'Grass'], 'il tipo aggiunto si somma');
+    ia.osserva(['|-start|p1a: Shedinja|typechange|Flying|[from] move: Burn Up']);
+    assert.deepEqual(tipi(), ['Flying'], 'un nuovo cambio sostituisce (e toglie il tipo aggiunto)');
+    ia.osserva(['|-start|p1a: Shedinja|typechange|???|[from] move: Burn Up']);
+    assert.deepEqual(tipi(), [], 'senza tipo');
+    // cambia forma: tornano quelli della specie
+    ia.osserva(['|-start|p1a: Shedinja|typechange|Water|[from] move: Soak', '|detailschange|p1a: Shedinja|Shedinja, L50']);
+    assert.deepEqual(tipi(), ['Bug', 'Ghost']);
+    // esce dal campo: i tipi cambiati non lo seguono
+    ia.osserva(['|-start|p1a: Shedinja|typechange|Water|[from] move: Soak']);
+    assert.deepEqual(tipi(), ['Water']);
+    ia.osserva(['|switch|p1a: Pikachu|Pikachu, L50|100/100']);
+    assert.deepEqual(tipi(), ['Bug', 'Ghost'], 'fuori dal campo ha di nuovo i suoi tipi');
+    ia.osserva(['|switch|p1a: Shedinja|Shedinja, L50|100/100']);
+    assert.deepEqual(tipi(), ['Bug', 'Ghost'], 'e rientra con i suoi tipi');
+});
+
+test('cambio di tipo: vale anche per un Pokémon della CPU (la CPU sa che l\'avversario l\'ha cambiato di tipo e ne tiene conto nel difendersi)', async () => {
+    const { sim, ia } = await cervello();
+    const r = creaRichiesta(sim.Dex, { squadra: ROTOM, attivi: [0] });
+    scelta(ia, r, [...logAvversario([{ specie: 'Pikachu' }], false), ...logMiaSquadra(ROTOM, [0])]);
+    ia.osserva(['|-start|p2a: Rotom|typechange|Grass|[from] move: Soak']);
+    const mio = ia.lati.p2.mons.Rotom;
+    assert.deepEqual(ia.vista(mio).tipi, ['Grass']);
+});
