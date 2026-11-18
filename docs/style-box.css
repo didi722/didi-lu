@@ -5137,6 +5137,7 @@ input.tb-title {
     letter-spacing: var(--nb-spaziatura, .04em);
     line-height: 1.2;
     text-align: left;
+    text-transform: none;       /* mentre si scrive il nome si vedono maiuscole e minuscole, com'è il nome vero del team */
     cursor: text;
     border-radius: var(--nb-raggio, 0px);
 }
