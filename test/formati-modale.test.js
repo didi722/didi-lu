@@ -53,6 +53,21 @@ test('scorrendo, i tasti in alto con testo (Team Builder...) si riducono alla so
     assert.match(temi, /body\.menu-compatto:is\(\.nb, \.pg-public\) \.auth-interaction:not\(:hover\):not\(:focus-visible\) #auth-text \{ display: none; \}/);
 });
 
+test('compatti: la colonna dei tasti parte sempre sotto il tasto utente, anche nelle pagine con la striscia nera (dove lui sta a 42px e non a 20px)', () => {
+    const temi = fs.readFileSync(path.join(__dirname, '..', 'docs', 'temi.css'), 'utf8');
+    const px = (re, nome) => { const m = temi.match(re); assert.ok(m, nome); return Number(m[1]); };
+    const utenteBase = px(/:is\(body\.nb, body\.pg-public\) \.top-auth-bar \{ position: fixed; top: (\d+)px;/, 'top del tasto utente');
+    const utenteConStriscia = px(/body\.nb:has\(\.top-bar\) \.top-auth-bar \{ top: (\d+)px; \}/, 'top del tasto utente con la striscia');
+    const colonnaBase = px(/body\.menu-compatto\.nb \.tasti-alto \{ top: (\d+)px; right: 20px;/, 'top della colonna');
+    const colonnaConStriscia = px(/body\.menu-compatto\.nb:has\(\.top-bar\) \.tasti-alto \{ top: (\d+)px; \}/, 'top della colonna con la striscia');
+    const compatto = 44, respiro = 10;                      // il tasto utente compatto è alto 44px
+    assert.ok(colonnaBase >= utenteBase + compatto + respiro, `${colonnaBase} sovrapposta al tasto utente (${utenteBase} + ${compatto})`);
+    assert.ok(colonnaConStriscia >= utenteConStriscia + compatto + respiro, `${colonnaConStriscia} sovrapposta al tasto utente (${utenteConStriscia} + ${compatto})`);
+    // sul telefono il tasto utente sta a 42px in tutte le pagine (#auth-content)
+    assert.match(temi, /body\.nb:not\(\.pg-profile\) #auth-content \{ position: fixed; top: 42px;/);
+    assert.ok(px(/body\.menu-compatto\.nb \.tasti-alto \{ top: (\d+)px; right: 12px;/, 'top sul telefono') >= 42 + compatto + respiro);
+});
+
 test('compatti (pagina scorsa): i tasti in alto hanno la misura del tasto utente e stanno sotto di lui, con lo stesso bordo destro', () => {
     const temi = fs.readFileSync(path.join(__dirname, '..', 'docs', 'temi.css'), 'utf8');
     assert.match(temi, /\.auth-interaction:not\(:hover\):not\(:focus-visible\) \{[^}]*width: 44px; height: 44px; padding: 0/);
