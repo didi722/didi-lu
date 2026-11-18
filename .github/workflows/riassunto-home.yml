@@ -1,8 +1,9 @@
 name: Riassunto del Match of the week
 
 # Calcola il Match of the week di ogni settimana, con i badge dei team e del Pokémon protagonista, e lo salva in matchSettimana: la home legge quello e non scarica più le
-# statistiche di tutto il sito (è la pagina più visitata). Gira da solo ogni tre ore e si può lanciare a mano (Actions → Riassunto del Match of the week → Run workflow;
-# la prima volta, dopo averlo aggiunto, per averlo subito). Se smette di funzionare per più di 12 ore la home torna a calcolarsi il banner da sé: costa di più, non si rompe.
+# statistiche di tutto il sito (è la pagina più visitata). Parte da solo a ogni match nuovo (la Function avviaRiassuntoHome, functions/avvia-riassunto.js), poi ogni tre ore
+# (la pianificazione di GitHub, che di fatto gira ogni 8-10 ore, resta come rete di sicurezza) e si può lanciare a mano (Actions → Riassunto del Match of the week → Run
+# workflow). Se smette di funzionare per più di 12 ore la home torna a calcolarsi il banner da sé: costa di più, non si rompe.
 # Il nodo matchSettimana lo scrive solo questo workflow (le regole del database non lo fanno scrivere a nessun altro).
 
 on:
@@ -14,6 +15,11 @@ on:
         description: 'Solo prova: stampa cosa scriverebbe, senza scrivere'
         type: boolean
         default: false
+
+# una esecuzione alla volta: più match registrati di fila ne mettono in coda al massimo una (GitHub scarta le altre in attesa), che parte dopo e legge i dati più recenti
+concurrency:
+  group: riassunto-home
+  cancel-in-progress: false
 
 jobs:
   riassunto:
