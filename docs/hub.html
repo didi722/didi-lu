@@ -12,10 +12,12 @@
     <link rel="stylesheet" href="finestre.css">
     <link rel="stylesheet" href="dettagli.css">
 <link rel="stylesheet" href="badge-team.css">
+<link rel="stylesheet" href="etichette-team.css">
     <script src="dati-gen.js"></script>
     <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
 <script src="team-bloccati.js"></script>
+<script src="etichette-team.js"></script>
 <script src="somiglianza-team.js"></script>
 <script src="mvp.js"></script>
 <script src="statistiche.js"></script>
@@ -958,6 +960,10 @@ async function openTeamPicker(format, nomeUtenteClean) {
 
     const teamsSnap = await db.ref(`players/${nomeUtenteClean}/teams`).once('value');
     const allTeams = teamsSnap.val() || {};
+    // le etichette del giocatore (etichette-team.js): si possono filtrare i team da iscrivere, come nel Box
+    const etichetteDef = (await db.ref(`players/${nomeUtenteClean}/etichette`).once('value')).val() || {};
+    const elencoEtichette = EtichetteTeam.elenco(etichetteDef);
+    const escEt = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     // Perché un team non si può iscrivere (somiglianza-team.js): troppo simile a un team non modificabile (iscritto a una stagione iniziata), o a un altro che si iscrive
     // adesso o è già iscritto a una stagione con le iscrizioni aperte (alla chiusura i due sarebbero non modificabili e romperebbero la regola). Dipende da chi è
@@ -969,6 +975,27 @@ async function openTeamPicker(format, nomeUtenteClean) {
     const title = document.getElementById('modal-format-title');
     
     container.innerHTML = '';
+
+    // --- FILTRO PER ETICHETTA (solo se il giocatore ne ha) ---
+    const vecchioFiltro = modal.querySelector('.filtro-etichetta-iscrizione');
+    if (vecchioFiltro) vecchioFiltro.remove();
+    let filtroEtichetta = '';
+    const applicaFiltroEtichetta = () => {
+        for (const o of opzioni) o.div.hidden = !EtichetteTeam.corrisponde(allTeams[o.id], etichetteDef, filtroEtichetta);
+        const nessuno = opzioni.length && opzioni.every(o => o.div.hidden);
+        let vuoto = container.querySelector('.team-filtro-vuoto');
+        if (nessuno && !vuoto) { vuoto = document.createElement('p'); vuoto.className = 'team-filtro-vuoto'; vuoto.textContent = 'No teams with this label.'; container.appendChild(vuoto); }
+        else if (!nessuno && vuoto) vuoto.remove();
+    };
+    if (elencoEtichette.length) {
+        const sel = document.createElement('select');
+        sel.className = 'filtro-etichetta-iscrizione';
+        sel.setAttribute('aria-label', 'Filter by label');
+        sel.innerHTML = '<option value="">All labels</option><option value="' + EtichetteTeam.NESSUNA + '">No label</option>' +
+            elencoEtichette.map(e => `<option value="${escEt(e.id)}">${escEt(e.nome)}</option>`).join('');
+        sel.onchange = () => { filtroEtichetta = sel.value; applicaFiltroEtichetta(); };
+        container.before(sel);
+    }
 
     // --- TOOLTIP GLOBALE ESTERNO ---
     let globalTooltip = document.getElementById('global-team-tooltip');
@@ -1049,6 +1076,8 @@ async function openTeamPicker(format, nomeUtenteClean) {
                         onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(pkmnName)}')"><figcaption>${escapeHtmlFormato(pkmnName)}</figcaption></figure>`;
             }).join('');
 
+            const pillole = EtichetteTeam.diTeam(data, etichetteDef).map(e =>
+                `<span class="etichetta-pillola" style="background:${e.colore};color:${EtichetteTeam.coloreTesto(e.colore)}">${escEt(e.nome)}</span>`).join('');
             div.innerHTML = `
                 <div class="team-info-wrapper">
                     <strong>${data.nome}</strong>
@@ -1056,6 +1085,7 @@ async function openTeamPicker(format, nomeUtenteClean) {
                         <div class="info-icon">i</div>
                     </div>
                 </div>
+                ${pillole ? `<div class="card-etichette">${pillole}</div>` : ''}
             `;
             
             const infoIcon = div.querySelector('.info-icon');
@@ -1107,6 +1137,7 @@ async function openTeamPicker(format, nomeUtenteClean) {
             container.appendChild(div);
         }
     });
+    applicaFiltroEtichetta();
     
     updateTitleAndUI();
     confirmBtn.onclick = () => inviaSelezioneTeam(format, nomeUtenteClean, allTeams, selectedTeamIds);
