@@ -52,3 +52,15 @@ test('scorrendo, i tasti in alto con testo (Team Builder...) si riducono alla so
     assert.match(temi, /body\.menu-compatto\.nb \.tasti-alto > \*:not\(:hover\):not\(:focus-visible\) \.tasto-testo \{ display: none; \}/);
     assert.match(temi, /body\.menu-compatto:is\(\.nb, \.pg-public\) \.auth-interaction:not\(:hover\):not\(:focus-visible\) #auth-text \{ display: none; \}/);
 });
+
+test('compatti (pagina scorsa): i tasti in alto hanno la misura del tasto utente e stanno sotto di lui, con lo stesso bordo destro', () => {
+    const temi = fs.readFileSync(path.join(__dirname, '..', 'docs', 'temi.css'), 'utf8');
+    assert.match(temi, /\.auth-interaction:not\(:hover\):not\(:focus-visible\) \{[^}]*width: 44px; height: 44px; padding: 0/);
+    assert.match(temi, /body\.menu-compatto\.nb \.tasti-alto \{ top: 74px; right: 20px;/);
+    assert.match(temi, /body\.menu-compatto\.nb \.tasti-alto > \*:not\(:hover\):not\(:focus-visible\) \{ width: 44px !important; min-width: 44px; height: 44px !important; \}/);
+    assert.match(temi, /body\.menu-compatto\.nb \.tasti-alto \{ top: 96px; right: 12px;/, 'sul telefono: il tasto utente sta a 42px');
+    // New format (Formats) è nella stessa fila e ha il testo che sparisce
+    const formats = fs.readFileSync(path.join(__dirname, '..', 'docs', 'formats.html'), 'utf8');
+    assert.match(formats, /class="btn-floating-admin"[^>]*>\s*<span class="plus-icon">\+<\/span><span class="tasto-testo">New format<\/span>/);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'controlli.js'), 'utf8'), /'\.sfide-btn, \.btn-floating-admin, \.btn-floating-helper'/);
+});
