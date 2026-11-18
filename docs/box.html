@@ -3660,24 +3660,20 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
 function cancellaTeamDaFirebase(teamId) {
     if (!teamId) return alert("Error: Team ID not found");
 
-
-
-    // 2. Conferma finale
+    // Conferma finale
     if (confirm("Are you absolutely sure? This action is irreversible and the team will be removed from the Box.")) {
-        // sia dinamico se la funzione è condivisa, o corretto per questa pagina.
+        // Il Box com'è adesso (filtri, vista, cartella, punto della pagina) si mette da parte PRIMA: dopo il ricaricamento torna com'era
+        mettiDaParteIlBox('');
         db.ref(`players/${playerID}/teams/${teamId}`).remove()
             .then(() => {
-                alert("Error: Team deleted successfully!");
-                chiudiTeamModal();
-                // Ricarichiamo i dati per aggiornare la griglia dei team
-                if (typeof caricaBox === "function") caricaBox();
+                alert("Team deleted successfully!");
+                location.reload();          // solo a cancellazione finita (prima si ricaricava subito, anche con la cancellazione ancora in corso)
             })
             .catch(e => {
                 console.error("Error: Error during team deletion:", e);
+                try { sessionStorage.removeItem(CHIAVE_DOPO_UPDATE()); } catch (err) { /* pazienza */ }
                 alert("Error: Technical error during deletion.");
             });
-
-            location.reload();
     }
 }
 
