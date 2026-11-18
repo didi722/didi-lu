@@ -127,6 +127,15 @@
 
     // ---------------------------------------------------------------- disegno
     const pausa = ms => new Promise(ok => setTimeout(ok, ms));
+    const IMMAGINE_VS = 'immagini/app/seasons-vs.webp';        // il VS in 3D che usa anche l'app (Seasons); se non si carica resta la scritta
+    let immagineVs = null;                                       // { img, pronta: Promise<boolean> }: si carica una volta sola
+    function caricaImmagineVs(win) {
+        if (immagineVs) return immagineVs;
+        const img = new win.Image();
+        const pronta = new Promise(ok => { img.onload = () => ok(true); img.onerror = () => ok(false); });
+        img.src = IMMAGINE_VS;
+        return (immagineVs = { img, pronta });
+    }
 
     /** Si può fare? Non nell'app (lì lo sfondo non c'è), non in palestra, non a pagina nascosta, non con "riduci movimento", non senza Web Animations */
     function puoRiprodurre(win) {
@@ -158,9 +167,12 @@
         if (win.__introVs) win.__introVs.termina(true);
         // gli avatar devono essere già caricati: servono le loro misure (di solito lo sono da un pezzo; al primo set ci può voler un attimo)
         const immagini = Array.from(sfondo.querySelectorAll('.vs-avatar'));
-        const pronte = immagini.every(i => i.complete);
+        // (e il VS in immagine: se manca o tarda, resta la scritta)
+        const vs = typeof win.Image === 'function' ? caricaImmagineVs(win) : null;
+        const pronte = immagini.every(i => i.complete) && (!vs || vs.img.complete);
         if (pronte) return costruisci(win, opz, sfondo);
         const caricate = immagini.map(i => (i.complete ? Promise.resolve() : new Promise(ok => { i.addEventListener('load', ok, { once: true }); i.addEventListener('error', ok, { once: true }); })));
+        if (vs) caricate.push(vs.pronta);
         return Promise.race([Promise.all(caricate), pausa(1500)]).then(() => costruisci(win, opz, sfondo));
     }
 
@@ -241,7 +253,14 @@
 
         // il VS sulla riga nera e il tabellone sotto
         const centro = elemento(doc, 'div', 'vi-centro');
-        const vs = elemento(doc, 'div', 'vi-vs', 'VS');
+        const vs = elemento(doc, 'div', 'vi-vs');
+        vs.appendChild(elemento(doc, 'span', 'vi-vs-testo', 'VS'));
+        if (immagineVs && immagineVs.img.complete && immagineVs.img.naturalWidth > 0) {
+            const img = doc.createElement('img');
+            img.className = 'vi-vs-img'; img.alt = ''; img.draggable = false; img.src = IMMAGINE_VS;
+            vs.appendChild(img);
+            vs.classList.add('ha-img');         // il testo resta solo di ripiego
+        }
         const tabellone = elemento(doc, 'div', 'vi-tabellone');
         if (testi.etichetta) tabellone.appendChild(elemento(doc, 'div', 'vi-et', testi.etichetta));
         if (testi.punteggio) tabellone.appendChild(elemento(doc, 'div', 'vi-pt', testi.punteggio));
