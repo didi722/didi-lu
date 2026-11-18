@@ -13,14 +13,14 @@ const vm = require('node:vm');
 const box = fs.readFileSync(path.join(__dirname, '..', 'docs', 'box.html'), 'utf8');
 const estrai = (testo, da, a) => { const i = testo.indexOf(da); const j = testo.indexOf(a, i + da.length); assert.ok(i >= 0 && j > i, `non trovo ${da} … ${a}`); return testo.slice(i, j); };
 
-test('cablaggio: lo stato si mette da parte nel salvataggio di un team, nuovo o modificato (dopo il ritorno al simulatore, prima del reload), non nella cancellazione', () => {
+test('cablaggio: lo stato si mette da parte nel salvataggio di un team, nuovo o modificato (dopo il ritorno al simulatore, prima del reload); la cancellazione ha il suo, provato più sotto', () => {
     const salva = estrai(box, 'async function salvaTeamSuFirebase', '// Funzione per ELIMINARE');
     const parte = salva.indexOf("mettiDaParteIlBox(editingId || '');");
     assert.ok(parte > 0, 'chiamata sia per l\'update (id del team) sia per un team nuovo (id vuoto)');
     assert.ok(salva.indexOf('if (INCORPORATO)') < parte && parte < salva.indexOf('location.reload()'));
     assert.equal((salva.match(/mettiDaParteIlBox/g) || []).length, 1);
     const elimina = estrai(box, 'function cancellaTeamDaFirebase', '// MODIFICA uno specifico team');
-    assert.ok(!/mettiDaParteIlBox/.test(elimina), 'la cancellazione non conserva niente');
+    assert.equal((elimina.match(/mettiDaParteIlBox/g) || []).length, 1, 'anche la cancellazione conserva il Box (una chiamata)');
     // la fotografia si prende all'apertura della modifica
     const apri = estrai(box, 'async function modificaTeamNelBuilder', 'tbModifica = {');
     assert.match(apri, /fotoBoxPrimaDiModificare = fotografiaBox\(teamId\)/);
@@ -227,4 +227,14 @@ test('la validità conta dal salvataggio, non da quando è stata presa la fotogr
     a.fn.imposta({ ...a.fn.fotografiaBox('T1'), scorri: 654, t: Date.now() - 45 * 60 * 1000 });
     a.fn.mettiDaParteIlBox('T1');
     assert.equal(a.fn.leggiBoxMessoDaParte().scorri, 654);
+});
+
+test('cancellare un team: il Box si mette da parte prima, e la pagina si ricarica solo a cancellazione finita', () => {
+    const box = fs.readFileSync(path.join(__dirname, '..', 'docs', 'box.html'), 'utf8');
+    const i = box.indexOf('function cancellaTeamDaFirebase(teamId) {');
+    const f = box.slice(i, box.indexOf('// MODIFICA uno specifico team', i));
+    assert.ok(f.indexOf("mettiDaParteIlBox('')") > f.indexOf('confirm(') && f.indexOf("mettiDaParteIlBox('')") < f.indexOf('.remove()'), 'si mette da parte dopo la conferma e prima di cancellare');
+    assert.match(f, /\.remove\(\)\s*\.then\(\(\) => \{[\s\S]*?location\.reload\(\)/, 'il ricaricamento è dentro il then');
+    assert.equal((f.match(/location\.reload\(\)/g) || []).length, 1);
+    assert.match(f, /\.catch\(e => \{[\s\S]*?sessionStorage\.removeItem\(CHIAVE_DOPO_UPDATE\(\)\)/, 'se la cancellazione fallisce la fotografia non resta');
 });
