@@ -131,6 +131,7 @@
     }
 
     window.addEventListener('resize', programma);
+    window.addEventListener('tavolo-rimisura', adatta);      // battle-vista.js: cronaca mostrata o nascosta, da misurare subito
     if (window.ResizeObserver) {
         // Cambia l'altezza dei contenuti (es. comandi più alti): si riadatta la scala.
         // Nel layout a colonna basta il resize della finestra.

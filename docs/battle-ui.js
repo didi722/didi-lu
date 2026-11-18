@@ -1441,6 +1441,7 @@ function vestiPalestra(gym) {
     if (comp && SP) decor.append(el('img', { class: 'vs-compagno', 'data-colonna': 'dx', src: SP.gif(comp.nome, comp.shiny), alt: '', draggable: 'false', 'data-pkm': comp.nome, onerror: ev => { if (!SP.ritenta(ev.target)) ev.target.remove(); } }));
     document.body.prepend(decor);
     const posiziona = () => {
+        if (window.tavoloScivola) return;         // il tavolo sta scivolando (battle-vista.js): a fine corsa
         const colonne = ['lato-p1', 'lato-p2'].map(id => $(id)).filter(Boolean).map(e => e.getBoundingClientRect()).filter(r => r.width > 0).sort((x, y) => x.left - y.left);
         if (colonne.length < 2) return;
         for (const img of decor.querySelectorAll('[data-colonna]')) {
@@ -1513,6 +1514,7 @@ async function vestiVersus(nomeP1, nomeP2, aspetto2 = null) {
         document.body.classList.add('versus');
         // gli avatar stanno centrati sotto le colonne dei player (le griglie dei 6 Pokémon): così si vedono a ogni misura di schermo
         const posiziona = () => {
+            if (window.tavoloScivola) return;         // il tavolo sta scivolando (battle-vista.js): a fine corsa
             for (const [classe, colonna] of [['vs-sx', 'left'], ['vs-dx', 'right']]) {
                 const avatar = fondo.querySelector(`.${classe} .vs-avatar`);
                 if (!avatar) continue;

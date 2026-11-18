@@ -430,3 +430,29 @@ test('gli avatar dello sfondo scivolano quando il tavolo si sposta, e senza cron
     assert.match(f[1], /Math\.max\(centro, Math\.min\(\(r\.right \+ W\) \/ 2, W - w \* 0\.4\)\)/);
     assert.ok(ui.includes('centroAvatar(r, colonna, avatar)') && ui.includes("centroAvatar(sx ? colonne[0] : colonne[1], sx ? 'left' : 'right', img)"));
 });
+
+test('il tavolo scivola al nuovo posto (FLIP con la proprietà translate) quando la cronaca si mostra o si nasconde', () => {
+    const vista = leggi('battle-vista.js'), ui = leggi('battle-ui.js');
+    // si misura prima, si applica, battle-layout.js rimisura subito (niente fotogramma a metà), poi i pezzi partono dal vecchio posto
+    const i = vista.indexOf('const prima = fotoTavolo(radice);');
+    assert.ok(i > 0);
+    const corpo = vista.slice(i, i + 700);
+    assert.ok(corpo.indexOf('applicaCronaca(radice, stato.cronaca)') < corpo.indexOf("new radice.Event('tavolo-rimisura')") && corpo.indexOf("new radice.Event('tavolo-rimisura')") < corpo.indexOf('scivolaTavolo(radice, prima)'));
+    assert.match(layout, /addEventListener\('tavolo-rimisura', adatta\)/);
+    // translate (non transform: i pezzi inclinati restano inclinati), solo nel layout "una schermata", senza la cronaca che sparisce, non con "riduci movimento"
+    assert.match(vista, /animate\(\{ translate: \[/);
+    assert.match(vista, /getAttribute\('data-modo'\) === 'fit'/);
+    assert.match(vista, /classList\.contains\('colonna-log'\)/);
+    assert.match(vista, /prefers-reduced-motion: reduce/);
+    // gli avatar dello sfondo aspettano la fine della corsa del tavolo e poi si rimettono a posto
+    assert.match(vista, /radice\.tavoloScivola = true/);
+    assert.match(vista, /radice\.tavoloScivola = false;[^}]*tavolo-adattato/);
+    assert.equal((ui.match(/if \(window\.tavoloScivola\) return;/g) || []).length, 2);
+});
+
+test('senza animazioni nel browser (o con la pagina finta dei test) il tasto della cronaca funziona lo stesso', () => {
+    const { radice, html, ids } = paginaFinta();
+    V.avvia(radice);
+    ids['btn-cronaca'].emetti('click');
+    assert.equal(html.getAttribute('data-cronaca'), 'nascosta');
+});

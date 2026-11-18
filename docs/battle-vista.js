@@ -166,6 +166,45 @@
         try { if (radice.MouseEvent && e.dispatchEvent) e.dispatchEvent(new radice.MouseEvent('mouseout', { bubbles: true })); } catch (err) { /* resta com'è */ }
     }
 
+    // ---- il tavolo scivola (FLIP) ----
+    // Mostrando o nascondendo la cronaca le colonne cambiano posto di colpo. Si misura dove stavano, si rimisura il tavolo subito (battle-layout.js ascolta
+    // 'tavolo-rimisura'), e ogni pezzo parte dal vecchio posto e va al nuovo con la proprietà `translate` (che non tocca la sua inclinazione). Solo nel layout "una schermata".
+    const DURATA_SCIVOLA = 450, CURVA_SCIVOLA = 'cubic-bezier(.4, 0, .2, 1)';
+    function pezziTavolo(doc) {
+        const tavolo = doc.querySelector && doc.querySelector('.tavolo');
+        return tavolo && doc.documentElement.getAttribute('data-modo') === 'fit' ? Array.prototype.slice.call(tavolo.children).filter(e => !(e.classList && e.classList.contains('colonna-log'))) : [];
+    }
+    function fotoTavolo(radice) {
+        try {
+            const doc = radice.document;
+            if (typeof radice.matchMedia === 'function' && radice.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+            return pezziTavolo(doc).map(e => { const r = e.getBoundingClientRect(); return { e, x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+        } catch (err) { return null; }
+    }
+    function scivolaTavolo(radice, prima) {
+        try {
+            const doc = radice.document, scala = doc.getElementById('scala');
+            if (!prima || !prima.length || !scala || !scala.offsetWidth || doc.documentElement.getAttribute('data-modo') !== 'fit') return;
+            const k = scala.getBoundingClientRect().width / scala.offsetWidth || 1;      // i pezzi stanno dentro .scala, che è scalata
+            const animazioni = [];
+            prima.forEach(f => {
+                if (!f.e.animate) return;
+                const r = f.e.getBoundingClientRect();
+                const dx = (f.x - (r.left + r.width / 2)) / k, dy = (f.y - (r.top + r.height / 2)) / k;
+                if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+                animazioni.push(f.e.animate({ translate: [dx + 'px ' + dy + 'px', '0px 0px'] }, { duration: DURATA_SCIVOLA, easing: CURVA_SCIVOLA }));
+            });
+            // finché i pezzi si muovono le loro misure non sono quelle vere: gli avatar dello sfondo (battle-ui.js) aspettano la fine, poi si rimettono al loro posto
+            if (animazioni.length) {
+                radice.tavoloScivola = true;
+                const fine = () => { radice.tavoloScivola = false; if (typeof radice.dispatchEvent === 'function') radice.dispatchEvent(new radice.Event('tavolo-adattato')); };
+                Promise.all(animazioni.map(a => a.finished)).then(fine, fine);
+            }
+            const log = doc.querySelector('.colonna-log');         // la cronaca che torna compare piano
+            if (log && log.animate && doc.documentElement.getAttribute('data-cronaca') !== 'nascosta') log.animate({ opacity: [0, 1] }, { duration: DURATA_SCIVOLA, easing: CURVA_SCIVOLA });
+        } catch (err) { /* il tavolo è già al suo posto: si salta solo l'animazione */ }
+    }
+
     function monta(radice) {
         const doc = radice.document;
         if (!doc || inApp(doc)) return;
@@ -185,7 +224,12 @@
             tastoCronaca.addEventListener('click', () => {
                 stato.cronaca = stato.cronaca === 'nascosta' ? 'visibile' : 'nascosta';
                 scrive(mem, CHIAVE_CRONACA, stato.cronaca === 'nascosta' ? 'nascosta' : null);
+                const prima = fotoTavolo(radice);
                 applicaCronaca(radice, stato.cronaca);
+                if (prima && typeof radice.dispatchEvent === 'function' && typeof radice.Event === 'function') {
+                    radice.dispatchEvent(new radice.Event('tavolo-rimisura'));      // battle-layout.js misura subito: niente fotogramma a metà
+                    scivolaTavolo(radice, prima);
+                }
                 segnaCronaca();
                 chiudiFumetto(radice, tastoCronaca);
             });
