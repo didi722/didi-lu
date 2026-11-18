@@ -14,6 +14,7 @@ const { getStorage } = require('firebase-admin/storage');
 const { getAuth } = require('firebase-admin/auth');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onValueWritten, onValueCreated } = require('firebase-functions/v2/database');
+const { defineSecret } = require('firebase-functions/params');
 const { getMessaging } = require('firebase-admin/messaging');
 // partita.js porta con sé il simulatore completo di Showdown (migliaia di file): si carica alla prima richiesta e non all'avvio,
 // così il contenitore apre subito la porta e supera il controllo di avvio di Cloud Run anche quando leggere i file è lento
@@ -122,6 +123,18 @@ exports.salvaPartitaConclusa = onValueWritten(
     async evento => {
         if (evento.data.after.val() !== 'da_salvare') return;
         await prendiServizio().salvaPartita(evento.params.id);
+    }
+);
+
+
+// Il Match of the week della home: quando nasce il nodo delle statistiche di un match nuovo si lancia subito il workflow che ricalcola il riassunto (avvia-riassunto.js).
+// Il segreto si crea una volta: `firebase functions:secrets:set GITHUB_ACTIONS_TOKEN` (un token di GitHub con "Actions: Read and write" solo su questa repo).
+const TOKEN_GITHUB = defineSecret('GITHUB_ACTIONS_TOKEN');
+exports.avviaRiassuntoHome = onValueCreated(
+    { ref: '/setStats/{stagione}/{showdown}/{match}', instance: ISTANZA_DB, region: REGIONE, memory: '256MiB', secrets: [TOKEN_GITHUB] },
+    async evento => {
+        const esito = await require('./avvia-riassunto').avviaRiassunto({ token: TOKEN_GITHUB.value(), stagione: evento.params.stagione });
+        console.log(`Riassunto del Match of the week (${evento.params.stagione}/${evento.params.showdown}/${evento.params.match}):`, esito.avviato ? 'workflow avviato' : `non avviato (${esito.motivo})`);
     }
 );
 

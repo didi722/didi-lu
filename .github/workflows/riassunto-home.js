@@ -1,6 +1,7 @@
 // Il riassunto del Match of the week per la home: per ogni settimana il set più bello e i badge dei due team e del Pokémon protagonista, già calcolati.
 // Lo salva in matchSettimana (lo legge la home al posto delle statistiche di tutto il sito: ~700 KB di setStats + 210 KB di players a ogni visita, contro pochi KB).
 // Se il riassunto manca o ha più di 12 ore la home si calcola il banner da sé (come prima): se questo workflow smette di funzionare il sito non si rompe, costa solo di più.
+// Parte a ogni match nuovo (Function avviaRiassuntoHome, functions/avvia-riassunto.js), con la pianificazione ogni 3 ore come rete di sicurezza e a mano.
 // La logica è in docs/match-settimana.js (riassunto, provata in test/match-settimana.test.js); qui si legge, si calcola e si scrive.
 //
 //   node .github/workflows/riassunto-home.js            scrive il riassunto

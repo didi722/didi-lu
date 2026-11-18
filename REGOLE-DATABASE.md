@@ -189,10 +189,21 @@ badge già pronti); la home legge quello.
   (`".write": false`; l'admin SDK le salta).
 - **Chi lo legge:** la home (`docs/index.html`). Se il riassunto manca, ha un'altra versione o ha più di 12 ore, la home fa come prima (scarica le statistiche e calcola il banner da sé):
   se il workflow smette di funzionare il sito non si rompe, costa solo di più.
-- **Quanto è fresco:** un set appena giocato compare nel banner alla prossima esecuzione (fino a 3 ore).
+- **Quanto è fresco:** a ogni match nuovo la Function `avviaRiassuntoHome` (`functions/avvia-riassunto.js`) lancia il workflow: il banner si aggiorna in un paio di minuti.
+  Scatta alla creazione di `setStats/{stagione}/{showdown}/match{N}` (match registrato dal sito o salvato dal simulatore; la stagione `sbeta` è esclusa). Più match ravvicinati non
+  ammucchiano esecuzioni: il workflow ha una coda (una in corso e al massimo una in attesa). La pianificazione ogni 3 ore (in pratica 8-10: GitHub la esegue con comodo) resta
+  come rete di sicurezza. Se la Function non parte (token mancante o scaduto) si legge nei log e il riassunto si aggiorna con la pianificazione.
 - **L'MVP:** il conteggio dei voti scaduti, che in home si fa raramente, legge le statistiche solo della stagione da contare (`setStats/<stagione>`).
 
 **Come attivarlo (in quest'ordine):**
 1. Aggiungere alle regole del database il nodo `matchSettimana` (blocco qui sopra) e pubblicarle.
 2. GitHub → Actions → *Riassunto del Match of the week* → Run workflow. Con `prova` stampa le ultime settimane e quanto pesa il riassunto senza scrivere; poi lanciarlo senza `prova`.
 3. Aprire la home (cache pulita): il banner si vede come prima. In Console → Realtime Database deve esserci `matchSettimana` con `aggiornato` e `settimane`.
+
+**Avvio automatico a ogni match nuovo (una volta):**
+1. GitHub → Settings → Developer settings → Fine-grained personal access tokens → *Generate new token*: repository solo `didi722/didi-lu`, permesso *Actions: Read and write*,
+   scadenza al massimo 1 anno (da rinnovare: scaduto, l'avvio automatico smette in silenzio e resta la pianificazione).
+2. Salvarlo come segreto delle Functions (da Cloud Shell): `firebase functions:secrets:set GITHUB_ACTIONS_TOKEN` e incollare il token. Mai nel codice né in `functions/.env`.
+3. Pubblicare la funzione: `firebase deploy --only functions:avviaRiassuntoHome`.
+4. Prova: registrare un match (o riscriverne le statistiche) e guardare GitHub → Actions: parte *Riassunto del Match of the week* con evento «workflow_dispatch». Nei log della
+   funzione (`firebase functions:log --only avviaRiassuntoHome`) compare «workflow avviato».
