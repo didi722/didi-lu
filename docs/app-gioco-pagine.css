@@ -404,7 +404,7 @@
     html.app-shell .etichette-finestra p { color: rgba(255, 255, 255, .8); font-size: calc(11 * var(--u)); opacity: 1; }
     html.app-shell .etichette-riga input[type="text"] { background: rgba(255, 255, 255, .1); color: #fff; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .35); border-radius: calc(8 * var(--u)); }
     html.app-shell .etichette-riga input[type="text"]::placeholder { color: rgba(255, 255, 255, .5); }
-    html.app-shell .etichette-riga input[type="color"] { border: calc(3 * var(--u)) solid rgba(255, 255, 255, .5); border-radius: calc(8 * var(--u)); }
+    html.app-shell .etichette-riga input[type="color"] { border: calc(3 * var(--u)) solid rgba(255, 255, 255, .5); border-radius: 50%; }
     html.app-shell .etichette-riga button { background: #2a2468; color: #fff; border: calc(3 * var(--u)) solid #000; border-radius: calc(8 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; }
     html.app-shell .etichette-nuova { border-top: calc(3 * var(--u)) dashed rgba(255, 255, 255, .3); }
     html.app-shell .etichette-chiudi { background: var(--gx-giallo, #ffbd44); border: calc(3 * var(--u)) solid #000; border-radius: calc(10 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 #000; }
