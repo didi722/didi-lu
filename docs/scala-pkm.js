@@ -86,6 +86,23 @@
         return (0.26 + 0.74 * t) * palcoPx;
     }
 
+    /**
+     * Quanta parte dell'altezza della sua immagine occupa il Pokémon (visibile-pkm.js, generato dagli sprite): 1 se riempie l'immagine. La GIF di chi salta, rimbalza o vola
+     * (Spoink: 58%) ha una tela molto più alta del Pokémon: l'altezza vera si dà al Pokémon che si vede, e l'immagine si fa più alta di tanto.
+     */
+    function quotaVisibile(nome) {
+        const carica = f => { try { return typeof module === 'object' && module.exports ? require(f) : null; } catch (e) { return null; } };
+        const t = radice.VisibilePkm || carica('./visibile-pkm.js');
+        if (!t) return 1;
+        const S = radice.SpritePkm || carica('./sprite-pkm.js');
+        const grezzo = String(nome == null ? '' : nome).toLowerCase();
+        const candidati = [];
+        try { if (S) candidati.push(S.id(nome)); } catch (e) { /* si prova il resto */ }
+        candidati.push(grezzo.replace(/[^a-z0-9-]/g, ''), grezzo.replace(/[^a-z0-9]/g, ''));
+        for (const id of candidati) { const q = Number(t[id]); if (q > 0 && q <= 1) return q; }
+        return 1;
+    }
+
     /** Di quanto è staccato da terra chi fluttua (px), in proporzione alla sua altezza */
     const sollevamento = altezzaPx => Math.round(altezzaPx * 0.2);
 
@@ -156,7 +173,7 @@
         let h = altezzaDaSolo(d.altezzaM, palcoPx);
         let alza = d.vola ? sollevamento(h) : 0;
         if (h + alza > palcoPx) { const f = palcoPx / (h + alza); h *= f; alza *= f; }
-        img.style.height = Math.round(h) + 'px';
+        img.style.height = Math.round(h / quotaVisibile(nome)) + 'px';       // h è l'altezza del Pokémon che si vede: l'immagine è più alta se ha vuoto intorno
         img.style.width = 'auto';
         img.style.maxHeight = 'none';
         img.style.setProperty('--alza', Math.round(alza) + 'px');
@@ -188,7 +205,8 @@
         const d = await misure(nome);
         const r = scenaConAllenatore(d.altezzaM, { allenatorePx: aPx, spazioPx, vola: d.vola, regola: regolaDi(nome) });
         let hA = r.allenatore, hP = r.pokemon;
-        const wA = hA * nA.w / nA.h, wP = hP * (pokemon.naturalWidth || 1) / (pokemon.naturalHeight || 1);
+        const q = quotaVisibile(nome);       // hP è l'altezza del Pokémon che si vede; l'immagine è più alta se ha vuoto intorno (salti, voli)
+        const wA = hA * nA.w / nA.h, wP = (hP / q) * (pokemon.naturalWidth || 1) / (pokemon.naturalHeight || 1);
         // se non ci stanno uno accanto all'altro, prima il Pokémon si sovrappone un po' all'allenatore (fino a un terzo della sua larghezza), poi si rimpicciolisce tutto
         let sovrapposto = 0;
         if (larghezzaMax && wA + wP > larghezzaMax) {
@@ -198,7 +216,7 @@
         }
         pokemon.style.marginLeft = sovrapposto ? '-' + Math.round(sovrapposto) + 'px' : '';
         allenatore.style.height = Math.round(hA) + 'px'; allenatore.style.width = 'auto'; allenatore.style.maxHeight = 'none';
-        pokemon.style.height = Math.round(hP) + 'px'; pokemon.style.width = 'auto'; pokemon.style.maxHeight = 'none';
+        pokemon.style.height = Math.round(hP / q) + 'px'; pokemon.style.width = 'auto'; pokemon.style.maxHeight = 'none';
         pokemon.style.setProperty('--alza', (d.vola ? sollevamento(hP) : 0) + 'px');
         pokemon.classList.toggle('sc-vola', d.vola);
         pokemon.dataset.sc = '1';
@@ -207,6 +225,6 @@
 
     return {
         FORME_SPECIALI, RIMPICCIOLISCI, INGRANDISCI, A_TERRA, GALLEGGIANO,
-        nomeApi, fluttua, regolaDi, scenaConAllenatore, altezzaDaSolo, sollevamento, dallaTabella, misure, dimensiona, scena
+        nomeApi, fluttua, regolaDi, quotaVisibile, scenaConAllenatore, altezzaDaSolo, sollevamento, dallaTabella, misure, dimensiona, scena
     };
 });
