@@ -36,3 +36,13 @@ test('matches: il contenuto non finisce mai sotto le pubblicità fisse (margine 
     assert.match(r[1], /margin-left: max\(18%, calc\(var\(--nb-ads, 220px\) \+ 24px\)\)/);
     assert.match(css, /@media \(max-width: 900px\) \{\s*\.hub-container \{ margin-left: 0;/, 'sul telefono (pubblicità nascoste) resta zero');
 });
+
+test('i tasti in alto (campanella, Team Builder...) sono fissi come il tasto utente: scorrendo non scappano via', () => {
+    const temi = fs.readFileSync(path.join(__dirname, '..', 'docs', 'temi.css'), 'utf8');
+    const r = /\n\.tasti-alto \{([^}]*)\}/.exec(temi);
+    assert.ok(r);
+    assert.match(r[1], /position:\s*fixed/);
+    assert.match(temi, /\.top-auth-bar \{ position: fixed;/, 'come il tasto utente');
+    const mvp = fs.readFileSync(path.join(__dirname, '..', 'docs', 'mvp.css'), 'utf8');
+    assert.match(mvp, /body\.nb:not\(\.pg-profile\) \.btn-mvp \{\s*position: fixed !important;/);
+});

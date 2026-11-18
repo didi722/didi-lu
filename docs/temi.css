@@ -265,7 +265,7 @@ body.menu-compatto:is(.nb, .pg-public) .auth-interaction:not(:hover):not(:focus-
    tasto ci sia (la campanella e le battaglie compaiono solo a chi è iscritto, "New format" solo all'admin...).
    Stesso linguaggio per tutti: cartellino con bordo, ombra, angoli e carattere del tema. */
 .tasti-alto {
-    position: absolute;
+    position: fixed;                   /* fissi come il tasto utente: scorrendo la pagina restano al loro posto, non scappano via */
     top: 100px;
     right: 40px;
     z-index: 150;                      /* sopra la barra del titolo (z-index 100 in Players, Matches, Stats, Rules) */
