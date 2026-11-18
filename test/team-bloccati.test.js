@@ -119,3 +119,19 @@ test('iscrittiInStagioniAperte: una stagione senza stato è aperta (come per l\'
     for (const vuoto of [null, undefined, {}, { s1: null }, { s1: {} }]) assert.deepEqual(TB.iscrittiInStagioniAperte(vuoto, { giocatore: 'didi', formato: 'F' }), []);
     assert.deepEqual(TB.iscrittiInStagioniAperte(aOggetto), [], 'senza giocatore né formato non c\'è niente da trovare');
 });
+
+test('nomeGiaUsato: un nome per team (senza badare a maiuscole e spazi), escluso il team che si sta modificando', () => {
+    const TB = require('../docs/team-bloccati.js');
+    const teams = { a: { nome: 'Rain Team', categoria: 'VGC' }, b: { nome: ' Sun ', categoria: 'OU' } };
+    assert.equal(TB.nomeGiaUsato(teams, 'rain team').id, 'a');
+    assert.equal(TB.nomeGiaUsato(teams, '  SUN').id, 'b', 'anche in un altro formato');
+    assert.equal(TB.nomeGiaUsato(teams, 'Rain Team', 'a'), null, 'il team che si modifica non è omonimo di sé');
+    assert.equal(TB.nomeGiaUsato(teams, 'Rain Team', 'b').id, 'a');
+    assert.equal(TB.nomeGiaUsato(teams, 'Snow'), null);
+    assert.equal(TB.nomeGiaUsato(teams, ''), null);
+    assert.equal(TB.nomeGiaUsato(null, 'x'), null);
+    assert.equal(TB.nomeGiaUsato([{ id: 'z', nome: 'Hail' }], 'hail').id, 'z', 'anche un array');
+    // il Box lo usa prima di validare e salvare
+    const box = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'docs', 'box.html'), 'utf8');
+    assert.match(box, /TeamBloccati\.nomeGiaUsato\(teamDelBox, nomeTeamScelto, editingId\)/);
+});

@@ -3545,6 +3545,13 @@ async function salvaTeamSuFirebase({ nome, categoria, testo, editingId = null } 
             if (!regolamento) { await avvisoSenzaLoader("Error: Format not found."); return; }
         } catch (error) { await avvisoSenzaLoader("Error: Database error: " + error.message); return; }
 
+        // Un nome per team: due team omonimi (anche in formati diversi) si confonderebbero, perché il blocco dopo l'iscrizione a una stagione guarda il nome
+        try {
+            const teamDelBox = (await databaseRef.child(`players/${playerID}/teams`).once('value')).val();
+            const omonimo = TeamBloccati.nomeGiaUsato(teamDelBox, nomeTeamScelto, editingId);
+            if (omonimo) { await avvisoSenzaLoader(`A team named "${omonimo.nome}" already exists in your Box. Choose a different name.`); return; }
+        } catch (error) { console.warn('Error: duplicate team name check skipped:', error); }
+
 const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
         datiTeamDaSalvare.pokemon = pulisciCampiPokemon(parseShowdown(testoAdattato), regolamento);
         datiTeamDaSalvare.testoShowdown = testoAdattato;
