@@ -184,7 +184,7 @@ body.mvp-aperto { overflow: hidden; }
    campanella a destra; il tasto dell'MVP sta tra i due, a sinistra della campanella */
 @media (max-width: 900px) {
     body.nb:not(.pg-profile) .btn-mvp {
-        position: absolute !important;
+        position: fixed !important;           /* come la campanella (temi.css): fisso, non scappa via scorrendo */
         top: 114px;
         right: 66px;
         left: auto;
