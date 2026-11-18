@@ -157,3 +157,11 @@ test('app-battaglia.js: "← Play" in alto a sinistra non esce con un tocco (con
     assert.match(css, /body:has\(\.messaggio > \.ab-annulla\) \.btn-hub \{ display: none; \}/, 'col Back lì, "← Play" non c\'è');
     assert.match(css, /html\.app \.ab-conferma \{ position: fixed; inset: 0;/);
 });
+
+test('app, telefono girato: i tasti delle reazioni stanno nelle righe di mezzo della colonna di sinistra, non sotto il riquadro del match (che sta nel piede)', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'app-battaglia.css'), 'utf8');
+    const orizz = css.slice(css.indexOf('@media (orientation: landscape) and (max-height: 520px)'), css.indexOf('@media (orientation: portrait) and (max-width: 700px)'));
+    assert.match(orizz, /html\.app \.rz-barra \{[^}]*grid-column: 1; grid-row: 2 \/ 4;/);
+    assert.match(orizz, /html\.app \.cab-insegna \{ grid-column: 1; grid-row: 4;/, 'il riquadro del match sta nel piede, riga 4');
+    assert.match(orizz, /\.rz-barra \.rz-tasti \{ display: grid; grid-template-columns: repeat\(2/);
+});

@@ -395,6 +395,13 @@
     html.app .ins-match { text-align: center; }
     html.app .ins-tabellone { display: flex; justify-content: center; }
     html.app .cab-campo { grid-column: 3; grid-row: 4; align-self: end; justify-content: flex-end; }
+    /* chi guarda: i tasti delle reazioni stanno nella colonna di sinistra, nelle due righe di mezzo (sopra il riquadro del match, che sta nel piede): a due a due, senza titolo */
+    html.app .rz-barra { grid-column: 1; grid-row: 2 / 4; align-self: start; min-height: 0; padding: 0; gap: 3px; flex-direction: column; align-items: stretch; z-index: 5; }
+    html.app .rz-barra .rz-titolo { display: none; }
+    html.app .rz-barra .rz-tasti { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+    html.app .rz-barra .rz-btn { justify-content: center; gap: 2px; padding: 2px 3px 1px; box-shadow: 2px 2px 0 #000; font-size: .65rem; }
+    html.app .rz-barra .rz-glifo { font-size: 1rem; }
+    html.app .rz-barra .rz-nota { font-size: .55rem; }
     /* nei passi dopo il menu (mosse, squadra, bersagli) il tasto Back prende il posto di "← Box" e la squadra occupa anche il piede */
     html.app body:is([data-ab="mosse"], [data-ab="cambi"], [data-ab="bersagli"]) .btn-hub { display: none; }
     html.app body:is([data-ab="cambi"], [data-ab="cambio"], [data-ab="bersagli"]) :is(.cab-insegna, .cab-campo) { display: none; }
