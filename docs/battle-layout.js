@@ -84,6 +84,7 @@
         scalaCampo();
         radice.setAttribute('data-pronto', '');
         statoBottone();
+        window.dispatchEvent(new Event('tavolo-adattato'));      // gli avatar dello sfondo si rimettono sotto le colonne (battle-ui.js)
     }
 
     var inAttesa = false;

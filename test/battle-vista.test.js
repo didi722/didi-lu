@@ -413,3 +413,20 @@ test('i commenti del CSS non nascondono mai il resto: nessun "/*" dentro un comm
         assert.ok(!/\/\*(?:(?!\*\/)[\s\S])*?\/\*/.test(f), `${nome}: un commento ne apre un altro`);
     }
 });
+
+test('gli avatar dello sfondo scivolano quando il tavolo si sposta, e senza cronaca vanno verso il margine', () => {
+    const ui = leggi('battle-ui.js'), versus = leggi('style-versus.css');
+    // scivolano: transizione su left (messa dopo il primo posizionamento) e riposizionamento appena battle-layout.js ha misurato
+    assert.match(versus, /body\.vs-scivola :is\(\.vs-avatar, \.vs-compagno\)\s*\{\s*transition:\s*left [\d.]+s/);
+    assert.match(versus, /prefers-reduced-motion: reduce\) \{ body\.vs-scivola[^}]*transition:\s*none/);
+    assert.match(layout, /dispatchEvent\(new Event\('tavolo-adattato'\)\)/);
+    assert.equal((ui.match(/addEventListener\('tavolo-adattato', posiziona\)/g) || []).length, 2, 'sia lo sfondo dei due allenatori sia quello della palestra');
+    assert.equal((ui.match(/avatarScivolano\(\);/g) || []).length, 2);
+    // il centro: sotto la colonna, tranne a cronaca nascosta nel layout "una schermata", dove va a metà tra margine e console senza rientrare né uscire troppo
+    const f = /function centroAvatar\(colonna, lato, img\) \{([\s\S]*?)\n\}/.exec(ui);
+    assert.ok(f, 'centroAvatar manca');
+    assert.match(f[1], /data-cronaca'\) !== 'nascosta' \|\| html\.getAttribute\('data-modo'\) !== 'fit'/);
+    assert.match(f[1], /Math\.min\(centro, Math\.max\(r\.left \/ 2, w \* 0\.4\)\)/);
+    assert.match(f[1], /Math\.max\(centro, Math\.min\(\(r\.right \+ W\) \/ 2, W - w \* 0\.4\)\)/);
+    assert.ok(ui.includes('centroAvatar(r, colonna, avatar)') && ui.includes("centroAvatar(sx ? colonne[0] : colonne[1], sx ? 'left' : 'right', img)"));
+});

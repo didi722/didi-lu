@@ -1444,11 +1444,13 @@ function vestiPalestra(gym) {
         const colonne = ['lato-p1', 'lato-p2'].map(id => $(id)).filter(Boolean).map(e => e.getBoundingClientRect()).filter(r => r.width > 0).sort((x, y) => x.left - y.left);
         if (colonne.length < 2) return;
         for (const img of decor.querySelectorAll('[data-colonna]')) {
-            const r = img.dataset.colonna === 'sx' ? colonne[0] : colonne[1];
-            img.style.setProperty('--vs-x', `${Math.round(r.left + r.width / 2)}px`);
+            const sx = img.dataset.colonna === 'sx';
+            img.style.setProperty('--vs-x', `${Math.round(centroAvatar(sx ? colonne[0] : colonne[1], sx ? 'left' : 'right', img))}px`);
         }
     };
     posiziona();
+    avatarScivolano();
+    window.addEventListener('tavolo-adattato', posiziona);
     window.addEventListener('resize', posiziona);
     setInterval(posiziona, 700);
     // il compagno è in scala con l'avatar del capopalestra (altezza vera del Pokémon, allenatore alto 1,70 m: ScalaPkm.scena); chi vola sta un po' sollevato
@@ -1466,6 +1468,23 @@ function vestiPalestra(gym) {
     }
     return tema;
 }
+
+/**
+ * x (px) del centro di un avatar dello sfondo: di norma sotto la sua colonna. Con la cronaca nascosta ai lati del tavolo non c'è altro: l'avatar va verso il margine della
+ * finestra, a metà tra il margine e la console, ma senza mai tornare dentro la colonna né uscire più del 40% della sua larghezza.
+ */
+function centroAvatar(colonna, lato, img) {
+    const centro = colonna.left + colonna.width / 2;
+    const html = document.documentElement;
+    const console_ = document.querySelector('.console');
+    if (html.getAttribute('data-cronaca') !== 'nascosta' || html.getAttribute('data-modo') !== 'fit' || !console_) return centro;
+    const r = console_.getBoundingClientRect(), W = html.clientWidth;
+    const w = img ? img.getBoundingClientRect().width : 0;
+    if (lato === 'left') return Math.min(centro, Math.max(r.left / 2, w * 0.4));
+    return Math.max(centro, Math.min((r.right + W) / 2, W - w * 0.4));
+}
+/** Gli avatar scivolano (invece di scattare) quando il tavolo si sposta: la transizione parte dopo il primo posizionamento */
+function avatarScivolano() { requestAnimationFrame(() => document.body.classList.add('vs-scivola')); }
 
 // Partite tra due allenatori (ufficiali, amichevoli, prove dal sito): lo sfondo è la "carta di sfida" dei due. La pagina è divisa in diagonale: a sinistra lo sfondo della pagina pubblica
 // del primo (colore, motivo, nome gigante) con il suo avatar grande, a destra lo stesso per il secondo (stile in style-versus.css).
@@ -1501,10 +1520,12 @@ async function vestiVersus(nomeP1, nomeP2, aspetto2 = null) {
                 if (colonne.length < 2) continue;
                 colonne.sort((x, y) => x.left - y.left);
                 const r = colonna === 'left' ? colonne[0] : colonne[1];
-                avatar.style.setProperty('--vs-x', `${Math.round(r.left + r.width / 2)}px`);
+                avatar.style.setProperty('--vs-x', `${Math.round(centroAvatar(r, colonna, avatar))}px`);
             }
         };
         posiziona();
+        avatarScivolano();
+        window.addEventListener('tavolo-adattato', posiziona);
         window.addEventListener('resize', posiziona);
         setInterval(posiziona, 700);       // il tavolo si rimisura da solo (battle-layout.js)
     } catch (e) {
