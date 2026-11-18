@@ -336,7 +336,7 @@ function apriSelezione({ format, teams, stagioni, regolamenti, giaSelezionati = 
         const e = {
             nome, classi: new Set(), style: {}, figli: [], title: '', innerHTML: '', innerText: '', disabled: false,
             classList: { add: c => e.classi.add(c), remove: c => e.classi.delete(c), contains: c => e.classi.has(c), toggle: (c, on) => (on ? e.classi.add(c) : e.classi.delete(c)) },
-            appendChild: f => { e.figli.push(f); return f; },
+            appendChild: f => { e.figli.push(f); return f; }, remove() {}, before() {},
             querySelector: () => nuovo('interno'),
             set className(v) { e.classi = new Set(String(v).split(/\s+/).filter(Boolean)); },
             get className() { return [...e.classi].join(' '); }
@@ -371,7 +371,7 @@ function apriSelezione({ format, teams, stagioni, regolamenti, giaSelezionati = 
     const ambiente = {
         document: documento, db, seasonId: 's1', alert: t => avvisi.push(t),
         DbLeggero: { stagioniLeggere: async () => { if (dbRotto) throw new Error('rete'); return stagioni; } },
-        TeamBloccati: TB, SomiglianzaTeam: S,
+        TeamBloccati: TB, SomiglianzaTeam: S, EtichetteTeam: require('../docs/etichette-team.js'),
         SpritePkm: { gif: () => 'x.gif', id: () => 'x' }, escapeHtmlFormato: t => t,
         closeTeamModal() {}, apriDettaglioTeam() {}, inviaSelezioneTeam() {}
     };
