@@ -316,7 +316,7 @@
                     ...nuovoRisultati(),
                     stagioni: new Set(), stagioniVinte: new Set(), sdVisti: new Set(), ultimoUso: '',
                     elenco: [],   // i suoi match in ordine di data: servono alle serie
-                    sdAttuale: 0, sdMax: 0   // showdown vinti di fila (solo quelli decisi)
+                    sdAttuale: 0, sdMax: 0, sdMaxData: ''   // showdown vinti di fila (solo quelli decisi) e il giorno del record
                 };
             }
             if (formato && !squadre[chiave].formato) squadre[chiave].formato = formato;
@@ -468,7 +468,7 @@
                 const t = squadra(s.io, nome, '');
                 t.showdown.giocati++;
                 if (s.deciso) {
-                    if (s.vinto) { t.showdown.vinti++; t.sdAttuale++; if (t.sdAttuale > t.sdMax) t.sdMax = t.sdAttuale; }
+                    if (s.vinto) { t.showdown.vinti++; t.sdAttuale++; if (t.sdAttuale > t.sdMax) { t.sdMax = t.sdAttuale; t.sdMaxData = s.data || ''; } }
                     else { t.showdown.persi++; t.sdAttuale = 0; }
                 }
             }
@@ -529,7 +529,7 @@
         });
 
         const elencoTeams = Object.values(squadre).map(t => ({
-            serie: { ...serieDi(t.elenco), showdownMax: t.sdMax, showdownAttuale: t.sdAttuale },
+            serie: { ...serieDi(t.elenco), showdownMax: t.sdMax, showdownAttuale: t.sdAttuale, showdownMaxData: t.sdMaxData },
             chiave: t.chiave, player: t.player,
             playerNome: info(t.player).name || t.player,
             colore: info(t.player).color || '',

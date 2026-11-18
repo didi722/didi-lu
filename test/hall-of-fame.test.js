@@ -42,6 +42,33 @@ test('records: il podio di ogni primato, a parità in ordine alfabetico; i recor
     assert.deepEqual(H.records(null), []);
 });
 
+test('records: la più lunga serie di showdown vinti, per gli allenatori e per i team, con il giorno del record; a zero non c\'è', () => {
+    const r = H.records({
+        players: [
+            giocatore('Didi', { serie: { vittorieMax: 0, pulitaMax: 2, showdownMax: 4, showdownMaxData: '2026-10-24' }, eloPicco: 1100 }),
+            giocatore('Lu', { serie: { vittorieMax: 0, pulitaMax: 0, showdownMax: 7, showdownMaxData: '2026-11-02' } }),
+            giocatore('Ada', { serie: { vittorieMax: 0, pulitaMax: 0, showdownMax: 4 } }),
+            giocatore('Zed')
+        ],
+        teams: [{ nome: 'Alfa', playerNome: 'Didi', serie: { showdownMax: 3, showdownMaxData: '2026-10-24' } }, { nome: 'Beta', playerNome: 'Lu', serie: { showdownMax: 5 } }, { nome: 'Gamma', playerNome: 'Ada', serie: { showdownMax: 0 } }],
+        pokemon: []
+    });
+    const per = id => r.find(x => x.id === id);
+    const sdA = per('sd-allenatore');
+    assert.equal(sdA.gruppo, 'Trainers');
+    assert.equal(sdA.titolo, 'Longest showdown streak');
+    assert.deepEqual(sdA.voci.map(v => [v.nome, v.valore]), [['Lu', '7'], ['Ada', '4'], ['Didi', '4']], 'a pari valore in ordine alfabetico; chi è a zero non entra');
+    assert.equal(sdA.voci[0].quando, '2026-11-02');
+    const sdT = per('sd-team');
+    assert.equal(sdT.gruppo, 'Teams');
+    assert.deepEqual(sdT.voci.map(v => [v.nome, v.valore, v.sotto]), [['Beta', '5', 'Lu'], ['Alfa', '3', 'Didi']]);
+    assert.equal(sdT.voci[1].quando, '2026-10-24');
+    // vicino alle altre serie, e nel markup compare con il suo titolo
+    const ids = r.map(x => x.id);
+    assert.ok(ids.indexOf('sd-allenatore') > ids.indexOf('pulita-allenatore') && ids.indexOf('sd-allenatore') < ids.indexOf('elo'));
+    assert.match(H.htmlRecords(r), /Longest showdown streak/);
+});
+
 test('records dai dati veri: Statistiche.calcola produce un podio per ogni primato senza errori', () => {
     const m = (p1, p2, a, b, data, extra = {}) => ({ player1: p1, player1Id: p1, player2: p2, player2Id: p2, winnerId: a > b ? p1 : p2, team1: 'A', team2: 'B', p1score: a, p2score: b, p1points: a, p2points: b, data, categoria: 'VGC', p1EloAtMatch: 1000, p2EloAtMatch: 1000, p1DeltaElo: 16, p2DeltaElo: -16, ...extra });
     const dati = { players: { didi: { info: { name: 'Didi' } }, lu: { info: { name: 'Lu' } } }, seasons: { s1: { info: { name: 'S1', status: 'closed' }, showdowns: { sd1: { info: { categoria: 'VGC', data: '2026-03-01' }, matches: { m1: m('didi', 'lu', 2, 0, '2026-03-01'), m2: m('didi', 'lu', 2, 1, '2026-03-02') } } } } } };
