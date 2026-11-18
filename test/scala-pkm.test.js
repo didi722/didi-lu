@@ -137,10 +137,43 @@ test('docs/altezze-pkm.js è quello che genera tools/altezze-pkm/genera.cjs dai 
     for (const k of ['pikachu', 'charizard', 'mr-mime', 'tapu-koko', 'ho-oh', 'porygon-z', 'urshifu-rapid-strike', 'terapagos', 'ogerpon-wellspring', 'iron-valiant']) assert.ok(T[k], k);
 });
 
+// ---------- la quota visibile degli sprite (docs/visibile-pkm.js, generata da tools/visibile-pkm/genera.cjs) ----------
+test('visibile-pkm.js: la quota del Pokémon dentro la sua GIF, solo per chi sta sotto il 95%; quella di Spoink è la misura vera dello sprite', () => {
+    const V = require('../docs/visibile-pkm.js');
+    const { leggiGif, misura } = require('../tools/visibile-pkm/gif.cjs');
+    const valori = Object.values(V);
+    assert.ok(valori.length > 100 && valori.every(q => q > 0.3 && q < 0.95), 'tutte sotto il 95%');
+    for (const id of ['spoink', 'zubat', 'golbat', 'magikarp']) {
+        const m = misura(leggiGif(fs.readFileSync(path.join(__dirname, '..', 'docs', 'sprites', 'ani', `${id}.gif`))));
+        assert.equal(V[id], Math.round((m.tipico / m.altezzaTela) * 100) / 100, id);
+    }
+    assert.ok(V.spoink < 0.65, 'Spoink occupa poco più della metà della sua immagine');
+    assert.equal(V.pikachu, undefined, 'chi riempie l\'immagine non c\'è');
+});
+
+test('quotaVisibile: per nome (anche con maiuscole e punteggiatura); 1 per chi riempie l\'immagine o non si conosce', () => {
+    assert.equal(S.quotaVisibile('Spoink'), require('../docs/visibile-pkm.js').spoink);
+    assert.equal(S.quotaVisibile('spoink'), S.quotaVisibile('SPOINK'));
+    for (const n of ['Pikachu', 'Cyndaquil', 'non-esiste', '', null, undefined]) assert.equal(S.quotaVisibile(n), 1, String(n));
+});
+
+test('la scala dà l\'altezza vera al Pokémon che si vede: l\'immagine di chi ha molto vuoto intorno è più alta di tanto', () => {
+    const sorgente = fs.readFileSync(path.join(__dirname, '..', 'docs', 'scala-pkm.js'), 'utf8');
+    assert.match(sorgente, /pokemon\.style\.height = Math\.round\(hP \/ q\) \+ 'px'/, 'accanto all\'allenatore');
+    assert.match(sorgente, /img\.style\.height = Math\.round\(h \/ quotaVisibile\(nome\)\) \+ 'px'/, 'da solo (Stats)');
+    const card = fs.readFileSync(path.join(__dirname, '..', 'docs', 'public-card.js'), 'utf8');
+    assert.match(card, /posto\.style\.setProperty\('--h', String\(misure\.pokemon \/ quotaVisibile\(gif\)\)\)/, 'pagina pubblica');
+    const html = fs.readFileSync(path.join(__dirname, '..', 'docs', 'public.html'), 'utf8');
+    assert.ok(html.indexOf('visibile-pkm.js') > 0 && html.indexOf('visibile-pkm.js') < html.indexOf('public-card.js'), 'la tabella prima di public-card.js');
+    const battle = fs.readFileSync(path.join(__dirname, '..', 'docs', 'battle.html'), 'utf8');
+    assert.ok(battle.indexOf('visibile-pkm.js') > battle.indexOf('altezze-pkm.js') && battle.indexOf('visibile-pkm.js') < battle.indexOf('scala-pkm.js'));
+});
+
 test('le pagine che mettono i Pokémon in scala caricano la tabella prima di scala-pkm.js', () => {
     const { SCRIPT_PAGINE } = require('../docs/app.js');
     for (const p of ['matches.html', 'players.html', 'stats.html']) {
         const l = SCRIPT_PAGINE[p];
         assert.ok(l.indexOf('altezze-pkm.js') >= 0 && l.indexOf('altezze-pkm.js') < l.indexOf('scala-pkm.js'), p);
+        assert.ok(l.indexOf('visibile-pkm.js') > l.indexOf('altezze-pkm.js') && l.indexOf('visibile-pkm.js') < l.indexOf('scala-pkm.js'), `${p}: la quota visibile prima della scala`);
     }
 });

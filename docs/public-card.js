@@ -160,6 +160,13 @@
         set.style.setProperty('--sposta', String(Math.max(0, Math.round((400 - gruppo - 36) / 2 * 10) / 10)));
     }
 
+    /** Quanta parte dell'altezza della sua immagine occupa il Pokémon (visibile-pkm.js): la GIF di chi salta, rimbalza o vola (Spoink) ha molto vuoto trasparente intorno */
+    function quotaVisibile(url) {
+        const m = /\/([a-z0-9-]+)\.gif(?:$|\?)/i.exec(String(url || ''));
+        const q = m && window.VisibilePkm ? Number(window.VisibilePkm[m[1].toLowerCase()]) : 0;
+        return q > 0 && q <= 1 ? q : 1;
+    }
+
     let giri = 0;
     async function montaPokemonPreferito(set, posto, nomeGrezzo) {
         const mio = ++giri;
@@ -202,7 +209,7 @@
 
         set.style.setProperty('--ht', String(misure.allenatore));
         posto.className = `pp-pkm ${dietro ? 'pp-dietro' : 'pp-davanti'}${vola ? ' pp-vola' : ''}${regola === 'rimpicciolisci' ? ' pp-enorme' : ''}`;      // i giganti (Kyogre, Wailord) escono dal bordo destro del palco
-        posto.style.setProperty('--h', String(misure.pokemon));
+        posto.style.setProperty('--h', String(misure.pokemon / quotaVisibile(gif)));      // l'altezza vera è quella del Pokémon che si vede, non quella dell'immagine
         // Il nome non è scritto sul palco (lo si riconosce a vista): resta solo nell'alt per chi legge lo schermo
         const img = h('img', { src: gif, alt: nomeGrezzo, class: 'pp-pkm-img' });
         // se la GIF (piccola, a pixel) viene ingrandita più del doppio — un Pokémon alto come Dhelmise: 65 px di GIF per ~300 di palco — il browser la sfoca: con la classe
