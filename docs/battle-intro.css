@@ -75,6 +75,20 @@ html.app .vi { display: none; }
 .vi-righe { display: flex; flex-direction: column; gap: .15em; margin-top: .15em; }
 .vi-righe span { font: 800 clamp(.7rem, 1.25vw, 1.1rem)/1.25 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
 
+/* se la partita non è ancora pronta quando il tabellone è stato letto: una riga sotto il tabellone dice cosa si sta aspettando (e i puntini corrono) */
+.vi-attesa {
+    position: absolute; left: 50%; top: 100%; margin-top: clamp(12px, 2.4vh, 24px); translate: -50% 8px; z-index: 2;
+    box-sizing: border-box; max-width: min(86vw, 30rem); padding: .38em .95em .26em; text-align: center; white-space: nowrap;
+    background: var(--inchiostro, #000); color: var(--carta, #fff); border-radius: var(--raggio, 0px);
+    box-shadow: var(--shs-3, 3px 3px 0 rgba(0, 0, 0, .3));      /* adesivo scuro: ombra trasparente, non nera piena */
+    font: 800 clamp(.7rem, 1.25vw, 1rem)/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .14em; text-transform: uppercase;
+    opacity: 0; transition: opacity .3s ease, translate .3s ease; pointer-events: none;
+}
+.vi-attesa::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom; animation: vi-punti 1.2s steps(4, end) infinite; }
+@keyframes vi-punti { to { width: 1.1em; } }
+.vi.vi-in-attesa .vi-attesa { opacity: 1; translate: -50% 0; }
+@media (prefers-reduced-motion: reduce) { .vi-attesa::after { animation: none; width: 1.1em; } }
+
 .vi-lampo { position: absolute; inset: 0; z-index: 8; background: #fff; opacity: 0; pointer-events: none; }
 
 /* telefono in verticale: il centro sta un po' più in alto (sotto ci sono gli avatar con i loro tag) e il tabellone è più compatto */

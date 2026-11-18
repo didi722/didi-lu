@@ -69,7 +69,8 @@ test('battle-ui.js: lo stato "tra_set" riporta alla scelta del team, a campo fer
     const pannello = corpo(src, 'disegnaPannello');
     assert.ok(pannello.indexOf('animazioneInCorso()') < pannello.indexOf("online.stato === 'tra_set'"), 'prima l\'animazione');
     // chi ascolta i "pronti" ridisegna la lobby giusta
-    assert.equal((src.match(/battaglia\.on\('pronti', p => \{ online\.pronti = p; ridisegnaLobby\(\); aggiornaStati\(\); \}\)/g) || []).length, 2, 'match ufficiale e amichevole');
+    // (e fanno partire l'intro VS quando sono tutti e due pronti: introSePronti)
+    assert.equal((src.match(/battaglia\.on\('pronti', p => \{ online\.pronti = p; ridisegnaLobby\(\); aggiornaStati\(\); introSePronti\(\); \}\)/g) || []).length, 2, 'match ufficiale e amichevole');
 });
 
 test('battle-ui.js: in una serie con team cambiabili il set nuovo parte subito e le colonne dei player ripartono da capo', () => {

@@ -90,6 +90,10 @@ let online = null;          // { id, info, funzioni, stato, pronti, risultati, s
 // Scena di Showdown del set in corso
 let scena = null;           // { battle, tooltips, righe, turnoVisto }
 let versusInCorso = 0, versusPronto = Promise.resolve();     // lo sfondo "sfida" è in costruzione? (vestiVersus: l'intro lo aspetta)
+// L'intro "VS" che aspetta che la partita sia pronta (introVersus con attendi): { pronta() }. Resta finché introPronta() non la libera.
+let introSet = null, timerProntaCpu = null, introGenerazione = 0;     // (introGenerazione cambia a ogni introAbbandona: una partenza anticipata in ritardo lo vede e non parte)
+let personaAnticipata = null;   // contro la CPU: la promessa dell'avversario scelto in anticipo e dello sfondo già costruito (anticipaIntroCpu)
+let ultimoProgresso = '';       // l'ultimo passo del caricamento scritto sul campo ("Loading your team…"): l'intro lo ripete finché aspetta
 let prossimaScena = null;   // righe di un nuovo set arrivato mentre il set precedente si sta ancora animando
 const attesaScena = [];     // cose da fare quando le animazioni arrivano in fondo
 let setVisti = 0;
@@ -137,7 +141,7 @@ window.battagliaPronta = true;
 // Modalità locale: team scelti da Firebase, stesso schermo
 // -----------------------------------------------------
 async function preparaDaSito(chiavi) {
-    mostraMessaggioCampo('Loading the showdown…');
+    mostraProgresso('Loading the showdown…');
 
     let dati;
     try {
@@ -231,7 +235,7 @@ async function preparaCpu(chiaveTeam) {
     const ritorno = $('link-hub');
     ritorno.href = inApp() ? 'practice.html' : 'box.html';
     ritorno.textContent = inApp() ? '← Play' : '← Box';
-    mostraMessaggioCampo('Loading your team…');
+    mostraProgresso('Loading your team…');
 
     let dati, primo;
     try {
@@ -240,12 +244,13 @@ async function preparaCpu(chiaveTeam) {
         const utente = firebase.auth().currentUser;
         if (!utente) throw new Error('Log in on the site to practice against the CPU.');
         if (!chiaveTeam) throw new Error('No team selected: open this page from your Box.');
+        anticipaIntroCpu(leggiNomeUtente(utente));      // l'intro parte subito e copre il resto del caricamento (il team della CPU...)
         dati = await caricaPerProva(firebase.database(), utente, chiaveTeam);
         if (!DexSim.formats.get(dati.formato).exists) {
             throw new Error(`The simulator format "${dati.formato}" doesn't exist. Fix the formatoSimulatore field of the ${dati.categoria} ruleset.`);
         }
         if (dati.problemi.length) throw new Error(`This team can't be used in ${dati.categoria}: ${dati.problemi.join('; ')}`);
-        mostraMessaggioCampo(`Building a CPU team for ${dati.categoria}…`);
+        mostraProgresso(`Building a CPU team for ${dati.categoria}…`);
         primo = await nuovoTeamCpu(dati.regolamento, { iniziali: dati.iniziali, db: dbPerLaMeta() });
         if (!primo.team) {
             throw new Error(`The CPU couldn't build a team for ${dati.categoria}${primo.avvisi.length ? ' (' + primo.avvisi[0] + ')' : ''}.`);
@@ -317,10 +322,14 @@ async function preparaCpuRandom(idFormato) {
     if (!formato || !DexSim.formats.get(formato.id).exists) {
         return mostraMessaggioCampo(`"${idFormato}" isn't a Random Battle this site can play.`);
     }
-    mostraMessaggioCampo(`Getting ${formato.nome} ready…`);
+    mostraProgresso(`Getting ${formato.nome} ready…`);
     let io;
+    const generatori = caricaGeneratoriRandom();
+    generatori.catch(() => { /* l'errore lo gestisce l'await qui sotto */ });
     try {
-        [io] = await Promise.all([profiloDiChiGioca(), caricaGeneratoriRandom()]);
+        io = await profiloDiChiGioca();
+        anticipaIntroCpu(io.nome);          // l'intro parte subito e copre il caricamento dei generatori dei team
+        await generatori;
     } catch (errore) {
         console.error(errore);
         return mostraMessaggioCampo(`Couldn't load the Random Battle team generator: ${errore.message}`);
@@ -413,18 +422,57 @@ async function cosmeticiPresiOra() {
     try { presiCache = (await firebase.database().ref('cosmeticiPresi').once('value')).val() || {}; } catch (e) { presiCache = {}; }
     return presiCache;
 }
-async function assegnaPersonaCpu() {
-    if (!cpu || cpu.palestra || !self.CpuPersona) return;
+async function scegliPersonaCpu() {
     const presi = await cosmeticiPresiOra();
     const p = self.CpuPersona.scegli({ presi, colori: (self.Cosmetici && self.Cosmetici.COLORI_FIRMA) || [] });
     const motivi = Object.keys((self.PaginaPubblica && self.PaginaPubblica.MOTIVI) || { punti: 1 }).filter(m => m !== 'nessuno');
     p.motivo = motivi[Math.floor(Math.random() * motivi.length)] || 'punti';
+    return p;
+}
+const aspettoPersona = p => ({ nome: p.nome, colore: p.colore, avatar: p.avatar, pagina: { sfondo: { motivo: p.motivo, forza: 2, scritta: true } } });
+
+async function assegnaPersonaCpu() {
+    if (!cpu || cpu.palestra || !self.CpuPersona) return;
+    // la prima battaglia di una pagina ha già il suo avversario, lo sfondo e l'intro che sta girando (anticipaIntroCpu): si riprendono, senza rifarli
+    const anticipata = personaAnticipata ? await personaAnticipata : null;
+    personaAnticipata = null;
+    const p = anticipata ? anticipata.p : await scegliPersonaCpu();
     cpu.persona = p;
     config.p2.nome = p.nome;
     config.p2.avatar = p.avatar;
     document.documentElement.style.setProperty('--colore-p2', p.colore);
     impostaNomeGiocatore('p2', p.nome);
-    vestiVersus(config.p1.nome, p.nome, { nome: p.nome, colore: p.colore, avatar: p.avatar, pagina: { sfondo: { motivo: p.motivo, forza: 2, scritta: true } } });
+    if (!anticipata || !anticipata.sfondo) vestiVersus(config.p1.nome, p.nome, aspettoPersona(p));
+}
+
+/** Il nome di chi gioca, dal suo profilo ('' se non si legge) */
+function leggiNomeUtente(utente) {
+    return firebase.database().ref(`users/${utente.uid}/name`).once('value').then(s => s.val() || '').catch(() => '');
+}
+
+/**
+ * Contro la CPU l'intro non aspetta la fine dei caricamenti: parte appena si sa chi gioca (chi sfida e l'avversario scelto dalla CPU), li copre, e si apre quando
+ * il simulatore ha dato la prima richiesta (introPronta). L'avversario e lo sfondo "sfida" si preparano qui e la prima battaglia li riprende (assegnaPersonaCpu).
+ * `nomeGiocatore`: il nome o una promessa del nome. Non lancia mai e non si aspetta: il caricamento va avanti da solo.
+ */
+function anticipaIntroCpu(nomeGiocatore) {
+    if (!self.BattleIntro || !self.CpuPersona || inApp() || document.body.classList.contains('palestra')) return;
+    const generazione = introGenerazione;
+    personaAnticipata = (async () => {
+        try {
+            const nome = await nomeGiocatore;
+            if (!nome) return null;
+            const p = await scegliPersonaCpu();
+            await vestiVersus(nome, p.nome, aspettoPersona(p));
+            const sfondo = !!document.querySelector('.vs-sfondo');
+            if (generazione !== introGenerazione) return { p, sfondo };       // nel frattempo è comparso un errore: l'intro non deve coprirlo
+            introVersus(1, { attendi: true, contesto: { nomi: { sx: nome, dx: p.nome }, dati: { tipo: 'cpu', battaglia: 1, serie: { v: 0, p: 0, n: 0 } } } });
+            return { p, sfondo };
+        } catch (errore) {
+            console.warn('Versus intro not started early', errore);
+            return null;
+        }
+    })();
 }
 
 async function iniziaContro(team) {
@@ -632,7 +680,7 @@ async function dopoModificaTeam() {
 // -----------------------------------------------------
 async function preparaOnline(chiavi) {
     $('opzione-bot').hidden = true;
-    mostraMessaggioCampo('Connecting to the match…');
+    mostraProgresso('Connecting to the match…');
 
     if (!window.firebase || !firebase.functions) {
         return mostraMessaggioCampo('Firebase did not load: check the scripts in battle.html.');
@@ -678,7 +726,7 @@ async function preparaOnline(chiavi) {
     battaglia = new BattagliaOnline({ id, lato, db: firebase.database(), funzioni });
     collegaEventi(battaglia);
     battaglia.on('stato', s => { online.stato = s; aggiornaFase(); });
-    battaglia.on('pronti', p => { online.pronti = p; ridisegnaLobby(); aggiornaStati(); });
+    battaglia.on('pronti', p => { online.pronti = p; ridisegnaLobby(); aggiornaStati(); introSePronti(); });
     battaglia.on('risultati', r => { online.risultati = r; disegnaInfo(); });
     battaglia.on('avversario', passo => {
         online.sceltaAvversario = passo;
@@ -702,7 +750,7 @@ async function preparaAmichevole(idSfida) {
     const ritorno = $('link-hub');
     ritorno.href = inApp() ? 'practice.html' : 'players.html';
     ritorno.textContent = inApp() ? '← Play' : '← Trainers';
-    mostraMessaggioCampo('Connecting to the friendly match…');
+    mostraProgresso('Connecting to the friendly match…');
 
     if (!window.firebase || !firebase.functions) {
         return mostraMessaggioCampo('Firebase did not load: check the scripts in battle.html.');
@@ -748,7 +796,7 @@ async function preparaAmichevole(idSfida) {
     battaglia = new BattagliaOnline({ id, lato, db: firebase.database(), funzioni });
     collegaEventi(battaglia);
     battaglia.on('stato', s => { online.stato = s; aggiornaFase(); });
-    battaglia.on('pronti', p => { online.pronti = p; ridisegnaLobby(); aggiornaStati(); });
+    battaglia.on('pronti', p => { online.pronti = p; ridisegnaLobby(); aggiornaStati(); introSePronti(); });
     battaglia.on('risultati', r => {
         online.risultati = r;
         disegnaInfo();
@@ -822,7 +870,7 @@ function aggiornaFase() {
     } else {
         if (s !== 'tra_set') nascondiLobby();
         nascondiMessaggio();
-        if (s === 'in_corso' && daLobby) introVersus(1);
+        if (s === 'in_corso' && daLobby && !introSet) introVersus(1, { attendi: true });      // (di solito è già partita quando i due si sono detti pronti: introSePronti) si apre quando il set è in scena (nuovoSet)
         // a match finito il conto alla rovescia verso un nuovo set non ha più senso (e non deve coprire l'esito)
         if (s !== 'in_corso') fermaPausaSet();
         if (s === 'da_salvare' || s === 'salvataggio') {
@@ -1313,7 +1361,8 @@ function quandoScenaFerma(fn) {
 }
 
 function avviaProssimaScena() {
-    if (prossimaScena) introVersus(prossimoSet);        // il set nuovo entra in scena sotto l'intro: il cambio di scena non si vede
+    const conIntro = !!prossimaScena;
+    if (conIntro && !introSet) introVersus(prossimoSet);        // il set nuovo entra in scena sotto l'intro: il cambio di scena non si vede
     const righe = prossimaScena || [];
     prossimaScena = null;
     fermaPausaSet();
@@ -1323,6 +1372,7 @@ function avviaProssimaScena() {
     rinnovaSquadre();
     if (righe.length) aggiungiAScena(righe);
     ridisegnaComandi();
+    if (conIntro) introPronta();        // (l'intro partita quando i due si sono detti pronti aspettava proprio questo)
 }
 
 // Nei Random i team sono nuovi a ogni set, e nelle amichevoli con team cambiabili ognuno può aver scelto un team diverso: le colonne dei
@@ -1551,9 +1601,12 @@ async function vestiVersus(nomeP1, nomeP2, aspetto2 = null) {
 // Intro "VS" prima di ogni set (battle-intro.js)
 // -----------------------------------------------------
 // La schermata a due colori sale sopra a tutto, entrano gli avatar con i nomi, compare il VS con un tabellone (nelle stagioni match, set e punteggio; contro la
-// CPU battaglia e serie; nelle amichevoli al meglio di più set, set e punteggio) e poi si apre sul simulatore. Parte quando un set sta per cominciare: la prima
-// volta all'uscita dalla lobby (o all'avvio di una battaglia contro la CPU), poi a ogni set nuovo che entra in scena. Chi arriva a set già iniziato (pagina
-// ricaricata, spettatore che entra dopo) non la vede. Non c'è nell'app né in palestra.
+// CPU battaglia e serie; nelle amichevoli al meglio di più set, set e punteggio) e poi si apre sul simulatore.
+// Non arriva dopo i caricamenti: li copre. Contro la CPU parte appena si sa chi gioca (anticipaIntroCpu), mentre si costruisce il team della CPU e si carica il resto, e si
+// apre alla prima richiesta del simulatore. Nei match online parte quando i due si sono detti pronti (introSePronti), mentre il server prepara il set, e si apre quando il
+// set è in scena (nuovoSet; avviaProssimaScena dopo una scelta del team). Nei set seguenti di una serie, dopo la pausa, parte e si apre da sola. Resta aperta al più
+// qualche secondo oltre il tempo fisso (T.attesaMax) e si chiude subito se compare un errore sul campo (mostraMessaggioCampo).
+// Chi arriva a set già iniziato (pagina ricaricata, spettatore che entra dopo) non la vede. Non c'è nell'app né in palestra.
 
 // Nelle stagioni: i match già giocati dello showdown, per dire il punteggio (si legge una volta, in sottofondo)
 function leggiMatchPrecedenti() {
@@ -1586,18 +1639,60 @@ function contestoIntro(numeroSet) {
     return null;
 }
 
-function introVersus(numeroSet) {
+/**
+ * Fa partire l'intro. Con `attendi` resta aperta finché la partita non è pronta (introPronta): così copre i caricamenti invece di arrivare dopo. `contesto` (nomi e dati
+ * del tabellone) serve quando la pagina non ha ancora config e cpu (la partenza anticipata contro la CPU).
+ */
+function introVersus(numeroSet, { attendi = false, contesto = null } = {}) {
     try {
-        if (!self.BattleIntro || !config || inApp() || document.body.classList.contains('palestra') || (cpu && cpu.palestra)) return;
+        if (!self.BattleIntro || (!config && !contesto) || inApp() || document.body.classList.contains('palestra') || (cpu && cpu.palestra)) return;
+        let pronta = null;
+        const attesa = attendi ? new Promise(ok => { pronta = ok; }) : null;
+        if (attendi) introSet = { pronta };
         const parti = () => {
             try {
-                const c = contestoIntro(numeroSet);
-                if (c) self.BattleIntro.riproduci({ win: window, nomi: c.nomi, testi: self.BattleIntro.testiIntro(c.dati) }).catch(errore => console.warn('Versus intro failed', errore));
-            } catch (errore) { console.warn('Versus intro skipped', errore); }
+                const c = contesto || contestoIntro(numeroSet);
+                if (c) self.BattleIntro.riproduci({ win: window, nomi: c.nomi, testi: self.BattleIntro.testiIntro(c.dati), attesa, stato: ultimoProgresso }).catch(errore => console.warn('Versus intro failed', errore));
+                else if (pronta) pronta();
+            } catch (errore) {
+                console.warn('Versus intro skipped', errore);
+                if (pronta) pronta();
+            }
         };
         if (versusInCorso) Promise.race([versusPronto, new Promise(ok => setTimeout(ok, 2500))]).then(parti);
         else parti();
     } catch (errore) { console.warn('Versus intro skipped', errore); }
+}
+
+/** La partita è pronta: l'intro che aspettava può aprirsi (non prima del suo tempo fisso). Senza intro in attesa non fa niente. */
+function introPronta() {
+    clearTimeout(timerProntaCpu);
+    timerProntaCpu = null;
+    const i = introSet;
+    introSet = null;
+    if (i) i.pronta();
+}
+
+/** Un messaggio sul campo (un errore) va letto: l'intro in attesa si chiude subito */
+function introAbbandona() {
+    introGenerazione++;
+    clearTimeout(timerProntaCpu);
+    timerProntaCpu = null;
+    introSet = null;
+    if (self.__introVs) self.__introVs.termina(true);
+}
+
+/**
+ * Nei match online l'intro parte quando i due giocatori si sono detti pronti, non quando il server ha già avviato il set: copre l'attesa (il server che parte,
+ * la scena che si prepara) e si apre appena il set è in scena (nuovoSet per il primo set, avviaProssimaScena per quelli dopo una scelta del team). Il server pubblica set,
+ * log e richieste insieme, dopo aver segnato lo stato "in corso": per questo non si apre allo stato ma al set.
+ */
+function introSePronti() {
+    if (!online || introSet || online.giaSalvato) return;
+    const { p1, p2 } = online.pronti || {};
+    if (!p1 || !p2) return;
+    if (online.stato === 'lobby') introVersus(1, { attendi: true });
+    else if (online.stato === 'tra_set' && online.amichevole) introVersus(Object.keys(online.risultati || {}).length + 1, { attendi: true });
 }
 
 /** L'insegna in alto nel simulatore, in palestra: chi la tiene (faccia, aura, nome con il suo font e il suo effetto), la tappa e il vantaggio, sempre in vista */
@@ -1688,7 +1783,13 @@ function avviaBattaglia() {
     nascondiMessaggio();
     nuovoSet();
     disegnaInfo();
-    if (cpu && !cpu.palestra) introVersus();        // ogni battaglia contro la CPU comincia con l'intro: numero della battaglia e serie
+    if (cpu && !cpu.palestra) {
+        // ogni battaglia contro la CPU comincia con l'intro: numero della battaglia e serie. La prima di una pagina è già partita (anticipaIntroCpu).
+        // Si apre alla prima richiesta del simulatore (collegaEventi) o, se tarda, dopo 5 s.
+        if (!introSet) introVersus(undefined, { attendi: true });
+        clearTimeout(timerProntaCpu);
+        timerProntaCpu = setTimeout(introPronta, 5000);
+    }
     // il cervello conosce la strategia del team che sta giocando (non si vede da nessuna parte: il team si chiama "Team N")
     // ...e quali meccaniche di generazione ammette il formato (Dynamax, Mosse Z, Mega, Teracristal): se è spento, la CPU non ci pensa nemmeno
     if (cpu) {
@@ -1725,6 +1826,7 @@ function nuovoSet(numero) {
     } else {
         nascondiEsito();
         creaScena({ recupera });
+        if (numero) introPronta();      // il primo set di un match online è in scena: l'intro che aspettava (partita quando i due si sono detti pronti) può aprirsi
     }
 }
 
@@ -1740,6 +1842,7 @@ function collegaEventi(b) {
     });
 
     b.on('richiesta', (lato, richiesta) => {
+        if (cpu) introPronta();          // il simulatore ha fatto la sua parte: l'intro (che copriva i caricamenti) può aprirsi
         if (cpu && lato === 'p2' && richiesta.rqid !== cpu.rqid) { cpu.rqid = richiesta.rqid; cpu.errori = 0; }   // richiesta nuova: si riparte dalla scelta migliore
         const p = pannelli[lato];
         const errore = p.erroreInSospeso;   // es. "[Unavailable choice]": il simulatore manda subito una richiesta aggiornata
@@ -2372,11 +2475,21 @@ function disegnaInfo() {
    }
 
 function mostraMessaggioCampo(testo) {
+    introAbbandona();           // un messaggio sul campo (un errore, di solito) va letto: l'intro che aspettava si chiude
     $('testo-palco').textContent = testo;
     $('messaggio-palco').hidden = false;
 }
+// Un passo del caricamento ("Loading your team…"): non è un errore, quindi l'intro che copre il caricamento resta e lo ripete in una sua riga
+function mostraProgresso(testo) {
+    ultimoProgresso = testo;
+    $('testo-palco').textContent = testo;
+    $('messaggio-palco').hidden = false;
+    if (self.__introVs && self.__introVs.stato) self.__introVs.stato(testo);
+}
 function nascondiMessaggio() {
+    ultimoProgresso = '';
     $('messaggio-palco').hidden = true;
+    if (self.__introVs && self.__introVs.stato) self.__introVs.stato('');
 }
 
 function mostraEsito(titolo, { sotto = '', azioni = [] } = {}) {
