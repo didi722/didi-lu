@@ -56,7 +56,7 @@ test('scorrendo, i tasti in alto con testo (Team Builder...) si riducono alla so
 test('compatti (pagina scorsa): i tasti in alto hanno la misura del tasto utente e stanno sotto di lui, con lo stesso bordo destro', () => {
     const temi = fs.readFileSync(path.join(__dirname, '..', 'docs', 'temi.css'), 'utf8');
     assert.match(temi, /\.auth-interaction:not\(:hover\):not\(:focus-visible\) \{[^}]*width: 44px; height: 44px; padding: 0/);
-    assert.match(temi, /body\.menu-compatto\.nb \.tasti-alto \{ top: 74px; right: 20px;/);
+    assert.match(temi, /body\.menu-compatto\.nb \.tasti-alto \{ top: 74px; right: 20px; gap: 10px; flex-direction: column; align-items: flex-end;/);
     assert.match(temi, /body\.menu-compatto\.nb \.tasti-alto > \*:not\(:hover\):not\(:focus-visible\) \{ width: 44px !important; min-width: 44px; height: 44px !important; \}/);
     assert.match(temi, /body\.menu-compatto\.nb \.tasti-alto \{ top: 96px; right: 12px;/, 'sul telefono: il tasto utente sta a 42px');
     // New format (Formats) è nella stessa fila e ha il testo che sparisce

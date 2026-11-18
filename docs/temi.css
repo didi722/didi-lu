@@ -323,7 +323,7 @@ body.nb .tasti-alto .tasto-testo { line-height: 1; }
 /* Scorrendo la pagina (menu-sito.js mette menu-compatto su <body>) i tasti con testo (Team Builder, New format...) si riducono alla sola icona, come il tasto utente: tornano interi al passaggio del mouse o col fuoco */
 body.menu-compatto.nb .tasti-alto > *:not(:hover):not(:focus-visible) { padding: 0; gap: 0; }
 /* compatti: stessa misura del tasto utente (44px) e in colonna sotto di lui, con lo stesso bordo destro */
-body.menu-compatto.nb .tasti-alto { top: 74px; right: 20px; gap: 10px; }
+body.menu-compatto.nb .tasti-alto { top: 74px; right: 20px; gap: 10px; flex-direction: column; align-items: flex-end; }      /* in colonna: campanella, Team Builder, New format... tutti sotto il tasto utente, allineati a destra */
 body.menu-compatto.nb .tasti-alto > *:not(:hover):not(:focus-visible) { width: 44px !important; min-width: 44px; height: 44px !important; }
 .tasti-alto { transition: top .15s ease, right .15s ease; }
 body.menu-compatto.nb .tasti-alto > *:not(:hover):not(:focus-visible) .tasto-testo { display: none; }
@@ -703,7 +703,7 @@ body.pg-box { --nb-sezione: "BOX"; }
 
     /* la fila dei tasti in alto, sotto il titolo */
     .tasti-alto { top: 114px; right: 12px; gap: 12px; z-index: 150; }
-    body.menu-compatto.nb .tasti-alto { top: 96px; right: 12px; gap: 10px; }      /* sotto il tasto utente (top 42px + 44px + 10px), stesso bordo destro */
+    body.menu-compatto.nb .tasti-alto { top: 96px; right: 12px; gap: 10px; flex-direction: column; align-items: flex-end; }      /* sotto il tasto utente (top 42px + 44px + 10px), stesso bordo destro */
     body.nb .tasti-alto > * { min-width: 42px; height: 42px !important; padding: 0 9px; font-size: .7rem; }
     body.nb .tasti-alto > .sfide-btn svg { width: 22px; height: 22px; }
     body.nb .sfide-badge { top: -9px; right: -9px; }
