@@ -580,14 +580,20 @@ function apriCreazioneFormato() {
 
     modal.style.setProperty('display', 'flex', 'important');
 
+    collegaChiusuraModaleFormato(modal);
+}
+
+// La X e il velo chiudono il modale di creazione/modifica del formato (lo stesso modale: lo collegano sia "aggiungi" sia "modifica")
+function collegaChiusuraModaleFormato(modal) {
+    const closeBtn = document.getElementById('close-format-modal');
     if (closeBtn) {
         closeBtn.onclick = () => modal.style.setProperty('display', 'none', 'important');
     }
     // Sfondo cliccabile per chiudere (versione robusta)
-    modal.onclick = (e) => { 
+    modal.onclick = (e) => {
         // Se il click NON è avvenuto dentro .format-modal-content, chiudi il modale
         if (!e.target.closest('.format-modal-content')) {
-            modal.style.setProperty('display', 'none', 'important'); 
+            modal.style.setProperty('display', 'none', 'important');
         }
     };
 }
@@ -2072,7 +2078,10 @@ function apriModaleModificaFormato(id, dataJsonB64) {
 
     // Mostra il Modale
     const modal = document.getElementById('format-modal');
-    if (modal) modal.style.setProperty('display', 'flex', 'important');
+    if (modal) {
+      modal.style.setProperty('display', 'flex', 'important');
+      collegaChiusuraModaleFormato(modal);      // la X non si collegava: lo faceva solo l'apertura per creare un formato
+    }
 
   } catch (e) {
     console.error("Error loading modification data:", e);
