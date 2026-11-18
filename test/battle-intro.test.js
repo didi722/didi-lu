@@ -39,6 +39,17 @@ test('T: tutto entra prima che la diagonale si apra, e l\'intro dura poco (è un
     assert.ok(T.apertura - T.ritardoTabellone - T.tabellone >= 800, 'il tabellone resta in vista almeno 0,8 s per leggerlo');
     assert.equal(T.totale, T.apertura + T.durataApertura + T.pausaFine);
     assert.ok(T.totale <= 3500, `${T.totale} ms: troppo lunga per essere prima di ogni set`);
+    // l'attesa della partita ha un tetto (oltre, la diagonale si apre lo stesso) e i primi istanti sono protetti da un clic per sbaglio
+    assert.ok(T.attesaMax >= 5000 && T.attesaMax <= 20000, `attesaMax ${T.attesaMax}`);
+    assert.ok(T.protezione >= 200 && T.protezione < T.apertura, `protezione ${T.protezione}`);
+});
+
+test('ritardoApertura: mai prima del tempo fisso, subito se è già passato', () => {
+    assert.equal(B.ritardoApertura(0), B.T.apertura);
+    assert.equal(B.ritardoApertura(500), B.T.apertura - 500);
+    assert.equal(B.ritardoApertura(B.T.apertura), 0);
+    assert.equal(B.ritardoApertura(B.T.apertura + 4000), 0);
+    for (const no of [undefined, null, NaN, 'x', -5]) assert.equal(B.ritardoApertura(no), B.T.apertura, String(no));
 });
 
 // ---------- cosa scrive il tabellone ----------
@@ -55,13 +66,13 @@ test('testiIntro, contro la CPU: numero della battaglia, serie e (solo se ci son
     assert.deepEqual(B.testiIntro({ tipo: 'cpu', formato: 'gen9 vgc' }).righe, ['SERIES SCORE', 'GEN9 VGC']);
 });
 
-test('testiIntro, nelle stagioni: match, punteggio dei set, set, showdown (solo se qualcuno ha già vinto) e formato', () => {
+test('testiIntro, nelle stagioni: match, punteggio dei set, set, punteggio dei match (sempre) e formato', () => {
     const t = B.testiIntro({ tipo: 'ufficiale', formato: 'Monotype Doubles', match: 2, matchTotali: 3, set: 2, setTotali: 3, punti: { sx: 1, dx: 0 }, showdown: { sx: 1, dx: 0 } });
-    assert.deepEqual(t, { etichetta: 'MATCH 2/3', punteggio: '1 – 0', righe: ['SET 2/3', 'SHOWDOWN 1 – 0', 'MONOTYPE DOUBLES'] });
+    assert.deepEqual(t, { etichetta: 'MATCH 2/3', punteggio: '1 – 0', righe: ['SET 2/3', 'MATCH SCORE 1 – 0', 'MONOTYPE DOUBLES'] });
     // primo match, primo set: niente showdown da dire
     const primo = B.testiIntro({ tipo: 'ufficiale', match: 1, matchTotali: 3, set: 1, setTotali: 3, punti: { sx: 0, dx: 0 }, showdown: { sx: 0, dx: 0 } });
-    assert.deepEqual(primo, { etichetta: 'MATCH 1/3', punteggio: '0 – 0', righe: ['SET 1/3'] });
-    assert.ok(!primo.righe.some(r => /SHOWDOWN/.test(r)));
+    assert.deepEqual(primo, { etichetta: 'MATCH 1/3', punteggio: '0 – 0', righe: ['SET 1/3', 'MATCH SCORE 0 – 0'] });
+    assert.ok(primo.righe.includes('MATCH SCORE 0 – 0'), 'tutti i punteggi si dicono, anche 0 – 0');
     // al meglio di 5
     assert.equal(B.testiIntro({ tipo: 'ufficiale', match: 3, matchTotali: 3, set: 5, setTotali: 5, punti: { sx: 2, dx: 2 }, showdown: { sx: 1, dx: 1 } }).righe[0], 'SET 5/5');
     // senza dati dei set il match si dice lo stesso
@@ -175,11 +186,19 @@ test('riproduci: dove non si può o non c\'è lo sfondo vale false subito, senza
 });
 
 // ---------- la mappa sinistra/destra → giocatore (la funzione vera di battle-ui.js) ----------
-function contestoIntroCon(stato) {
+/** Le funzioni vere di battle-ui.js, con uno stato finto: dentro `with (S)` le variabili della pagina (config, online, introSet...) sono le proprietà di S */
+function funzioniUi(stato, ...nomi) {
     const nomeDi = (battleUi.match(/^const nomeDi = [^\n]+$/m) || [])[0];
     assert.ok(nomeDi, 'const nomeDi in battle-ui.js');
-    const corpo = `with (S) {\n${nomeDi}\n${funzione(battleUi, 'punteggio')}\n${funzione(battleUi, 'contestoIntro')}\nreturn contestoIntro;\n}`;
-    return new Function('S', corpo)({ MATCH_PER_SHOWDOWN: 3, self: { BattleIntro: B }, config: null, mioLato: null, cpu: null, online: null, ...stato });
+    const corpo = `with (S) {\n${nomeDi}\n${nomi.map(n => funzione(battleUi, n)).join('\n')}\nreturn { ${nomi.join(', ')} };\n}`;
+    return new Function('S', corpo)(stato);
+}
+const statoBase = (extra = {}) => ({
+    MATCH_PER_SHOWDOWN: 3, self: { BattleIntro: B }, config: null, mioLato: null, cpu: null, online: null,
+    ...extra
+});
+function contestoIntroCon(stato) {
+    return funzioniUi(statoBase(stato), 'punteggio', 'contestoIntro').contestoIntro;
 }
 const nomiDue = { p1: { nome: 'Anna' }, p2: { nome: 'Bruno' } };
 
@@ -213,7 +232,7 @@ test('contestoIntro, stagioni: chi gioca sta a sinistra; i punti dei set e dello
         assert.deepEqual(c.dati.showdown, { sx: 1, dx: 0 });
     }
     // il tabellone che ne esce
-    assert.deepEqual(B.testiIntro(io2.dati), { etichetta: 'MATCH 2/3', punteggio: '2 – 1', righe: ['SET 3/3', 'SHOWDOWN 0 – 1', 'GEN9 VGC'] });
+    assert.deepEqual(B.testiIntro(io2.dati), { etichetta: 'MATCH 2/3', punteggio: '2 – 1', righe: ['SET 3/3', 'MATCH SCORE 0 – 1', 'GEN9 VGC'] });
 });
 
 test('contestoIntro, stagioni: i match di prima non ancora letti (o non leggibili) non bloccano l\'intro', () => {
@@ -222,7 +241,7 @@ test('contestoIntro, stagioni: i match di prima non ancora letti (o non leggibil
         const c = contestoIntroCon({ config: nomiDue, online: { info, risultati: {}, matchPrecedenti }, mioLato: 'p1' })();
         assert.deepEqual(c.dati.showdown, { sx: 0, dx: 0 });
         assert.equal(c.dati.set, 1, 'senza numero di set è il primo');
-        assert.equal(B.testiIntro(c.dati).righe.some(r => /SHOWDOWN/.test(r)), false);
+        assert.ok(B.testiIntro(c.dati).righe.includes('MATCH SCORE 0 – 0'));
     }
 });
 
@@ -245,14 +264,14 @@ test('battle.html: carica lo stile e lo script dell\'intro, prima di quelli che 
 
 test('battle-ui.js: l\'intro parte con ogni battaglia contro la CPU (non in palestra) e con ogni set nuovo', () => {
     const avvia = funzione(battleUi, 'avviaBattaglia');
-    assert.match(avvia, /nuovoSet\(\);\s*disegnaInfo\(\);\s*if \(cpu && !cpu\.palestra\) introVersus\(\);/);
+    assert.match(avvia, /nuovoSet\(\);\s*disegnaInfo\(\);\s*if \(cpu && !cpu\.palestra\) \{[^}]*introVersus\(undefined, \{ attendi: true \}\);/);
     // i set dal secondo in poi: quando il set nuovo entra in scena, con il suo numero
-    assert.match(funzione(battleUi, 'avviaProssimaScena'), /^function avviaProssimaScena\(\) \{\s*if \(prossimaScena\) introVersus\(prossimoSet\);/);
+    assert.match(funzione(battleUi, 'avviaProssimaScena'), /^function avviaProssimaScena\(\) \{\s*const conIntro = !!prossimaScena;\s*if \(conIntro && !introSet\) introVersus\(prossimoSet\);/);
     // il primo set di un match online: all'uscita dalla lobby, non per chi arriva a partita già iniziata
     const fase = funzione(battleUi, 'aggiornaFase');
     assert.ok(fase.indexOf("const daLobby = online.statoPrima === 'lobby';") > 0);
     assert.ok(fase.indexOf('const daLobby') < fase.indexOf('online.statoPrima = s;'), 'lo stato di prima si legge prima di sovrascriverlo');
-    assert.match(fase, /if \(s === 'in_corso' && daLobby\) introVersus\(1\);/);
+    assert.match(fase, /if \(s === 'in_corso' && daLobby && !introSet\) introVersus\(1, \{ attendi: true \}\);/);
 });
 
 test('battle-ui.js: l\'intro non c\'è nell\'app né in palestra, e aspetta lo sfondo nuovo (le sfide contro la CPU lo rifanno a ogni partita)', () => {
@@ -319,23 +338,35 @@ test('battle-intro.css: le metà e lo sfondo vero hanno la stessa diagonale', ()
     assert.ok(veri.includes('60% 0, 100% 0, 100% 100%, 40% 100%'), 'metà destra vera');
 });
 
-test('battle-intro.js: le animazioni di apertura restano al loro posto (fill forwards), l\'intro si può saltare e se ne chiude una prima di aprirne un\'altra', () => {
-    // tutto ciò che parte da T.apertura deve restare com'è alla fine e non coprire le animazioni di prima sulla stessa proprietà
-    const chiamate = battleIntro.split('\n').filter(r => /\bA\(/.test(r) && /delay: T\.apertura\b/.test(r));
-    assert.ok(chiamate.length >= 6, `${chiamate.length} animazioni di apertura`);
-    for (const r of chiamate) assert.match(r, /fill: 'forwards'/, r.trim());
+test('battle-intro.js: le animazioni di apertura restano al loro posto (fill forwards) e nascono all\'apertura; l\'intro si può saltare e se ne chiude una prima di aprirne un\'altra', () => {
+    // l'apertura si crea quando la partita è pronta (non all'inizio): parte dal tempo fisso, ma mai prima
+    const apri = battleIntro.slice(battleIntro.indexOf('const apri = () => {'), battleIntro.indexOf('// dopo il tempo fisso, se la partita non è pronta, compare la riga'));
+    assert.match(apri, /const ritardo = ritardoApertura\(trascorso\(\)\);/);
+    assert.match(apri, /const B = \(e, keyframes, opzioni\) => \{\s*const a = e\.animate\(keyframes, \{ fill: 'forwards', delay: ritardo, \.\.\.opzioni \}\);/);
+    const aperture = apri.split('\n').filter(r => /\bB\(/.test(r) && !/const B =/.test(r));
+    assert.ok(aperture.length >= 6, `${aperture.length} animazioni di apertura`);
+    // nessuna animazione "fissa" parte dal tempo di apertura (sarebbero create prima di sapere se la partita è pronta), tranne le oscillazioni dell'attesa
+    const fisse = battleIntro.split('\n').filter(r => /\bA\(/.test(r) && /delay: T\.apertura\b/.test(r));
+    assert.deepEqual(fisse, [], 'animazioni di apertura create all\'inizio');
+    // le oscillazioni dell'attesa non coprono niente prima di cominciare
+    assert.match(battleIntro, /const O = \(e, keyframes, opzioni\) => \{\s*const a = e\.animate\(keyframes, \{ fill: 'none', delay: T\.apertura, iterations: Infinity/);
     // i tempi vengono da T, non scritti in giro
     assert.doesNotMatch(battleIntro.replace(/const T = \{[\s\S]*?\};/, ''), /delay: \d{3,}/);
-    // salto: clic o tocco, Invio, Spazio, Esc; i tasti non arrivano al simulatore
+    // salto: clic o tocco, Invio, Spazio, Esc; i tasti non arrivano al simulatore; nei primi istanti un clic per sbaglio non la chiude
     assert.match(battleIntro, /addEventListener\('pointerdown', suClic\)/);
     assert.match(battleIntro, /e\.key === 'Enter' \|\| e\.key === ' ' \|\| e\.key === 'Escape'/);
     assert.match(battleIntro, /doc\.addEventListener\('keydown', suTasto, true\)/);
     assert.match(battleIntro, /e\.stopPropagation\(\)/);
-    // un'intro nuova chiude quella in corso; a pagina nascosta si chiude da sola
+    assert.match(battleIntro, /if \(trascorso\(\) < T\.protezione\) return;/);
+    // un'intro nuova chiude quella in corso; a pagina nascosta e, se la partita non arriva mai, dopo l'attesa massima si chiude da sola
     assert.match(battleIntro, /if \(win\.__introVs\) win\.__introVs\.termina\(true\);/);
-    assert.match(battleIntro, /T\.totale \+ 2500/);
+    assert.match(battleIntro, /attesaMax \+ T\.totale \+ 2500/);
+    assert.match(battleIntro, /Promise\.race\(\[pronta, scaduta\]\)/);
+    assert.match(battleIntro, /Promise\.resolve\(opz\.attesa\)\.catch\(\(\) => null\)/, 'senza attesa o con un errore è subito pronta');
     // gli avatar veri tornano visibili comunque
     assert.match(battleIntro, /sfondo\.classList\.remove\('vi-in-corso'\)/);
+    // la riga che dice che si aspetta si può cambiare da fuori
+    assert.match(battleIntro, /win\.__introVs = \{ radice, termina, stato: scriviStato \};/);
 });
 
 test('battle-intro.js: il VS è l\'immagine dell\'app (immagini/app/seasons-vs.webp, che esiste), con la scritta di ripiego', () => {
@@ -344,4 +375,213 @@ test('battle-intro.js: il VS è l\'immagine dell\'app (immagini/app/seasons-vs.w
     assert.match(leggi('app-seasons.js'), /immaginiDi\('vs'\)/, 'è lo stesso VS che usa l\'app');
     assert.match(battleIntro, /elemento\(doc, 'span', 'vi-vs-testo', 'VS'\)/, 'ripiego se l\'immagine non si carica');
     assert.match(battleIntro, /caricate\.push\(vs\.pronta\)/, 'si aspetta l\'immagine (al massimo 1,5 s) prima di partire');
+});
+
+// ---------- l'intro che copre i caricamenti (battle-ui.js) ----------
+function ambienteIntro(extra = {}) {
+    const chiamate = [];
+    const terminate = [];
+    const S = statoBase({
+        introSet: null, timerProntaCpu: null, introGenerazione: 0, versusInCorso: 0, versusPronto: Promise.resolve(), ultimoProgresso: '',
+        window: {}, document: { body: { classList: { contains: () => !!extra.palestra } } },
+        inApp: () => !!extra.app, console: { warn() {} },
+        ...extra
+    });
+    S.self = {
+        BattleIntro: {
+            ...B,
+            riproduci: opz => { chiamate.push(opz); if (extra.riproduciLancia) throw new Error('boom'); return Promise.resolve(true); }
+        },
+        __introVs: { termina: subito => terminate.push(subito) }
+    };
+    const f = funzioniUi(S, 'punteggio', 'contestoIntro', 'introVersus', 'introPronta', 'introAbbandona', 'introSePronti');
+    return { S, f, chiamate, terminate };
+}
+const configCpu = { p1: { nome: 'Didi' }, p2: { nome: 'CPU' } };
+
+test('introVersus con attendi: parte subito e resta in attesa finché introPronta non la libera (una volta sola)', async () => {
+    const { S, f, chiamate } = ambienteIntro({ config: configCpu, cpu: {} });
+    f.introVersus(undefined, { attendi: true });
+    assert.equal(chiamate.length, 1);
+    assert.ok(chiamate[0].attesa instanceof Promise, 'la promessa di attesa');
+    assert.deepEqual(chiamate[0].nomi, { sx: 'Didi', dx: 'CPU' });
+    assert.equal(chiamate[0].testi.etichetta, 'BATTLE 1');
+    assert.ok(S.introSet, 'in attesa');
+    let aperta = false;
+    chiamate[0].attesa.then(() => { aperta = true; });
+    await new Promise(ok => setTimeout(ok, 5));
+    assert.equal(aperta, false, 'finché la partita non è pronta resta chiusa');
+    f.introPronta();
+    await new Promise(ok => setTimeout(ok, 5));
+    assert.equal(aperta, true);
+    assert.equal(S.introSet, null);
+    f.introPronta();                       // di nuovo: niente
+    assert.equal(chiamate.length, 1);
+});
+
+test('introVersus senza attendi: nessuna attesa; l\'ultimo messaggio di caricamento passa alla sua riga', () => {
+    const { S, f, chiamate } = ambienteIntro({ config: configCpu, cpu: {}, ultimoProgresso: 'Building a CPU team for VGC Gen 9…' });
+    f.introVersus(2);
+    assert.equal(chiamate.length, 1);
+    assert.equal(chiamate[0].attesa, null);
+    assert.equal(S.introSet, null);
+    assert.equal(chiamate[0].stato, 'Building a CPU team for VGC Gen 9…');
+});
+
+test('introVersus: con un contesto parte anche prima che la pagina abbia config e cpu (la partenza anticipata)', () => {
+    const { f, chiamate } = ambienteIntro({ config: null, cpu: null });
+    f.introVersus(1, { attendi: true, contesto: { nomi: { sx: 'Didi', dx: 'Aquarush' }, dati: { tipo: 'cpu', battaglia: 1, serie: { v: 0, p: 0, n: 0 } } } });
+    assert.equal(chiamate.length, 1);
+    assert.deepEqual(chiamate[0].nomi, { sx: 'Didi', dx: 'Aquarush' });
+    // senza né config né contesto non c'è niente da dire
+    const vuota = ambienteIntro({ config: null, cpu: null });
+    vuota.f.introVersus(1, { attendi: true });
+    assert.equal(vuota.chiamate.length, 0);
+    assert.equal(vuota.S.introSet, null);
+});
+
+test('introVersus: né nell\'app né in palestra', () => {
+    for (const extra of [{ app: true }, { palestra: true }, { cpu: { palestra: { nome: 'Capo' } } }]) {
+        const { S, f, chiamate } = ambienteIntro({ config: configCpu, cpu: {}, ...extra });
+        f.introVersus(1, { attendi: true });
+        assert.equal(chiamate.length, 0, JSON.stringify(Object.keys(extra)));
+        assert.equal(S.introSet, null);
+    }
+});
+
+test('introVersus: se il disegno dell\'intro fallisce la promessa di attesa si scioglie da sola (niente resta ad aspettare)', async () => {
+    const { f, chiamate } = ambienteIntro({ config: configCpu, cpu: {}, riproduciLancia: true });
+    f.introVersus(1, { attendi: true });
+    assert.equal(chiamate.length, 1);
+    let sciolta = false;
+    chiamate[0].attesa.then(() => { sciolta = true; });
+    await new Promise(ok => setTimeout(ok, 5));
+    assert.equal(sciolta, true);
+});
+
+test('introAbbandona: chiude subito l\'intro, toglie l\'attesa e cambia la generazione (una partenza anticipata in ritardo non parte)', () => {
+    const { S, f, terminate } = ambienteIntro({ config: configCpu, cpu: {} });
+    f.introVersus(1, { attendi: true });
+    const prima = S.introGenerazione;
+    f.introAbbandona();
+    assert.equal(S.introSet, null);
+    assert.equal(S.introGenerazione, prima + 1);
+    assert.deepEqual(terminate, [true]);
+});
+
+test('introSePronti: quando i due sono pronti e il set non è ancora partito l\'intro parte e aspetta il set', () => {
+    const online = (extra = {}) => ({ info: { categoria: 'Gen9 OU', bestOf: 3, match: 1 }, risultati: {}, pronti: { p1: true, p2: true }, stato: 'lobby', giaSalvato: false, ...extra });
+    // prima lobby
+    let t = ambienteIntro({ config: nomiDue, online: online() });
+    t.f.introSePronti();
+    assert.equal(t.chiamate.length, 1);
+    assert.ok(t.chiamate[0].attesa instanceof Promise);
+    assert.ok(t.S.introSet);
+    t.f.introSePronti();                    // altri eventi "pronti" mentre aspetta: niente doppioni
+    assert.equal(t.chiamate.length, 1);
+    // uno solo pronto: niente
+    t = ambienteIntro({ config: nomiDue, online: online({ pronti: { p1: true, p2: false } }) });
+    t.f.introSePronti();
+    assert.equal(t.chiamate.length, 0);
+    // il set è già partito (gli eventi arrivano in ordine diverso): ci pensa aggiornaFase
+    t = ambienteIntro({ config: nomiDue, online: online({ stato: 'in_corso' }) });
+    t.f.introSePronti();
+    assert.equal(t.chiamate.length, 0);
+    // una partita già salvata (lobby di un match finito) non rifà l'intro
+    t = ambienteIntro({ config: nomiDue, online: online({ giaSalvato: true }) });
+    t.f.introSePronti();
+    assert.equal(t.chiamate.length, 0);
+    // senza partita online
+    t = ambienteIntro({ config: nomiDue, online: null });
+    t.f.introSePronti();
+    assert.equal(t.chiamate.length, 0);
+});
+
+test('introSePronti: tra un set e l\'altro (amichevoli con team cambiabili) parte con il numero del set che sta per cominciare; nelle stagioni no', () => {
+    const risultati = { set1: { vincitore: 'p1' }, set2: { vincitore: 'p2' } };
+    const amichevole = { amichevole: true, info: { categoria: 'Gen9 OU', bestOf: 5, cambioTeam: true }, risultati, pronti: { p1: true, p2: true }, stato: 'tra_set' };
+    const t = ambienteIntro({ config: nomiDue, online: amichevole });
+    t.f.introSePronti();
+    assert.equal(t.chiamate.length, 1);
+    assert.equal(t.chiamate[0].testi.righe[0], 'SET 3/5');
+    assert.equal(t.chiamate[0].testi.punteggio, '1 – 1');
+    const ufficiale = ambienteIntro({ config: nomiDue, online: { ...amichevole, amichevole: false } });
+    ufficiale.f.introSePronti();
+    assert.equal(ufficiale.chiamate.length, 0);
+});
+
+test('battle-ui.js: i passi del caricamento non chiudono l\'intro, un messaggio sul campo (un errore) sì', () => {
+    const msg = funzione(battleUi, 'mostraMessaggioCampo');
+    assert.match(msg, /introAbbandona\(\);/);
+    const progresso = funzione(battleUi, 'mostraProgresso');
+    assert.doesNotMatch(progresso, /introAbbandona/);
+    assert.match(progresso, /ultimoProgresso = testo;/);
+    assert.match(progresso, /self\.__introVs\.stato\(testo\)/);
+    assert.match(funzione(battleUi, 'nascondiMessaggio'), /self\.__introVs\.stato\(''\)/);
+    // i sei passi del caricamento
+    for (const t of ["'Loading the showdown…'", "'Loading your team…'", '`Building a CPU team for ${dati.categoria}…`', '`Getting ${formato.nome} ready…`', "'Connecting to the match…'", "'Connecting to the friendly match…'"]) {
+        assert.ok(battleUi.includes(`mostraProgresso(${t})`), t);
+        assert.ok(!battleUi.includes(`mostraMessaggioCampo(${t})`), `${t} è un passo, non un errore`);
+    }
+    // gli errori restano messaggi sul campo
+    for (const t of ["`Couldn't start the practice:", "`Couldn't open the match:", "`Couldn't open the friendly match:", "`Couldn't load the match:"]) {
+        assert.ok(battleUi.includes(`mostraMessaggioCampo(${t}`), t);
+    }
+});
+
+test('battle-ui.js, contro la CPU: l\'intro parte appena si sa chi gioca, mentre il resto si carica, e la prima battaglia riprende avversario e sfondo senza rifarli', () => {
+    // prova di un team: subito dopo il login e prima di leggere team e formato
+    const cpuTeam = funzione(battleUi, 'preparaCpu');
+    assert.ok(cpuTeam.indexOf('anticipaIntroCpu(leggiNomeUtente(utente));') > 0);
+    assert.ok(cpuTeam.indexOf('anticipaIntroCpu(') < cpuTeam.indexOf('await caricaPerProva('), 'prima del caricamento del team');
+    assert.ok(cpuTeam.indexOf('anticipaIntroCpu(') < cpuTeam.indexOf('await nuovoTeamCpu('), 'prima della costruzione del team della CPU');
+    // Random: appena si sa il nome, prima di aspettare i generatori
+    const random = funzione(battleUi, 'preparaCpuRandom');
+    assert.ok(random.indexOf('const generatori = caricaGeneratoriRandom();') < random.indexOf('io = await profiloDiChiGioca();'), 'i generatori si scaricano in parallelo');
+    assert.ok(random.indexOf('anticipaIntroCpu(io.nome);') < random.indexOf('await generatori;'));
+    assert.match(random, /generatori\.catch\(/, 'un errore dei generatori prima dell\'await non resta "non gestito"');
+    // la partenza anticipata: avversario, sfondo, poi l'intro in attesa; non parte se nel frattempo c'è un errore
+    const anticipa = funzione(battleUi, 'anticipaIntroCpu');
+    assert.match(anticipa, /await vestiVersus\(nome, p\.nome, aspettoPersona\(p\)\);/);
+    assert.match(anticipa, /generazione !== introGenerazione\) return/);
+    assert.match(anticipa, /introVersus\(1, \{ attendi: true, contesto: \{ nomi: \{ sx: nome, dx: p\.nome \}, dati: \{ tipo: 'cpu', battaglia: 1,/);
+    assert.match(anticipa, /inApp\(\)/);
+    assert.match(anticipa, /document\.body\.classList\.contains\('palestra'\)/);
+    // la prima battaglia riprende l'avversario scelto (e aspetta che la partenza anticipata abbia finito: niente due avversari)
+    const persona = funzione(battleUi, 'assegnaPersonaCpu');
+    assert.match(persona, /const anticipata = personaAnticipata \? await personaAnticipata : null;/);
+    assert.match(persona, /if \(!anticipata \|\| !anticipata\.sfondo\) vestiVersus\(config\.p1\.nome, p\.nome, aspettoPersona\(p\)\);/);
+    assert.match(persona, /personaAnticipata = null;/);
+});
+
+test('battle-ui.js, contro la CPU: l\'intro si apre alla prima richiesta del simulatore (o dopo 5 s), una sola intro per battaglia', () => {
+    const avvia = funzione(battleUi, 'avviaBattaglia');
+    assert.match(avvia, /if \(!introSet\) introVersus\(undefined, \{ attendi: true \}\);/, 'la prima è già partita; le rivincite la fanno partire qui');
+    assert.match(avvia, /timerProntaCpu = setTimeout\(introPronta, 5000\);/);
+    const eventi = funzione(battleUi, 'collegaEventi');
+    assert.match(eventi, /b\.on\('richiesta', \(lato, richiesta\) => \{\s*if \(cpu\) introPronta\(\);/, 'solo contro la CPU: online la pronta la danno aggiornaFase e avviaProssimaScena');
+});
+
+test('battle-ui.js, online: l\'intro parte quando i due sono pronti, si apre quando il set è in scena', () => {
+    // il primo set: l'evento "pronti" la fa partire (introSePronti); si apre quando il set è in scena (nuovoSet), non allo stato "in corso" (il server pubblica set, log e
+    // richieste dopo, tutti insieme); se non era partita parte allo stato "in corso", sempre in attesa
+    assert.equal((battleUi.match(/introSePronti\(\); \}\);/g) || []).length, 2, 'match di stagione e amichevole');
+    assert.match(funzione(battleUi, 'aggiornaFase'), /if \(s === 'in_corso' && daLobby && !introSet\) introVersus\(1, \{ attendi: true \}\);/);
+    assert.doesNotMatch(funzione(battleUi, 'aggiornaFase'), /introPronta/, 'lo stato non apre l\'intro');
+    const nuovo = funzione(battleUi, 'nuovoSet');
+    assert.match(nuovo, /creaScena\(\{ recupera \}\);\s*if \(numero\) introPronta\(\);/, 'solo con il numero del set (online): contro la CPU si apre alla prima richiesta');
+    // i set dopo una scelta del team: la apre avviaProssimaScena, a scena rifatta; se non era partita parte lì
+    const prossima = funzione(battleUi, 'avviaProssimaScena');
+    assert.match(prossima, /const conIntro = !!prossimaScena;/);
+    assert.match(prossima, /if \(conIntro && !introSet\) introVersus\(prossimoSet\);/);
+    assert.ok(prossima.indexOf('creaScena();') < prossima.indexOf('if (conIntro) introPronta();'), 'si apre dopo aver rifatto la scena');
+});
+
+test('battle-intro.css: la riga "in attesa" sta sotto il tabellone, compare solo in attesa e usa il tema', () => {
+    assert.match(css, /\.vi-attesa \{[^}]*position: absolute;[^}]*top: 100%;[^}]*opacity: 0;/);
+    assert.match(css, /\.vi\.vi-in-attesa \.vi-attesa \{ opacity: 1;/);
+    const regola = css.match(/\.vi-attesa \{([^}]*)\}/)[1];
+    assert.match(regola, /background: var\(--inchiostro/);
+    assert.match(regola, /box-shadow: var\(--shs-3/, 'adesivo scuro: ombra trasparente');
+    assert.match(css, /@keyframes vi-punti/);
 });

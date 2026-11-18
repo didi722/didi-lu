@@ -7,7 +7,9 @@
 //   3. in centro, sulla riga nera, compare "VS" e sotto un tabellone: nelle stagioni match, set e punteggio; contro la CPU il numero della battaglia e la
 //      serie; nelle amichevoli (se sono al meglio di più set) set e punteggio;
 //   4. la diagonale si apre: le due metà escono ai lati e gli avatar scivolano al loro posto sullo sfondo, esattamente dove stanno ora.
-// Un clic, un tocco o Invio / Spazio / Esc la saltano. Non c'è nell'app, in palestra, o con "riduci movimento".
+// Parte prima che la partita sia pronta e ne copre i caricamenti: la diagonale si apre solo quando la pagina lo dice (`attesa`), non prima del tempo fisso e non oltre
+// T.attesaMax. Nel frattempo il VS pulsa piano, gli avatar ondeggiano e una riga dice cosa si sta aspettando.
+// Un clic, un tocco o Invio / Spazio / Esc la saltano (non nei primi istanti). Non c'è nell'app, in palestra, o con "riduci movimento".
 //
 // Le parti pure (testi del tabellone, punteggio dello showdown, colore del testo) si provano in Node (test/battle-intro.test.js); il resto disegna con
 // il Web Animations API: tutte le animazioni nascono insieme (così si possono fermare e guardare a un istante preciso) e il disegno finale coincide
@@ -28,7 +30,9 @@
         tabellone: 320, ritardoTabellone: 800,
         apertura: 2300, durataApertura: 720,
         uscitaCentro: 300,
-        pausaFine: 60
+        pausaFine: 60,
+        attesaMax: 12000,         // se la partita non è pronta entro tanto, la diagonale si apre lo stesso
+        protezione: 350           // nei primi istanti un clic o un tasto non la salta (chi ha appena premuto "Ready" non deve chiuderla per sbaglio)
     };
     T.totale = T.apertura + T.durataApertura + T.pausaFine;
     const CURVE = {
@@ -67,7 +71,7 @@
         const punti = c.punti || { sx: 0, dx: 0 };
         const setRiga = c.setTotali > 1 ? `SET ${c.set || 1}/${c.setTotali}` : '';
         if (c.tipo === 'ufficiale') {
-            const sd = c.showdown && (num(c.showdown.sx) + num(c.showdown.dx)) > 0 ? `SHOWDOWN ${trat(num(c.showdown.sx), num(c.showdown.dx))}` : '';
+            const sd = c.showdown ? `MATCH SCORE ${trat(num(c.showdown.sx), num(c.showdown.dx))}` : '';       // sempre, anche 0 – 0: match, punteggio dei match, set e punteggio dei set
             return {
                 etichetta: `MATCH ${c.match || 1}/${c.matchTotali || 3}`,
                 punteggio: c.setTotali > 1 ? trat(num(punti.sx), num(punti.dx)) : null,
@@ -125,6 +129,12 @@
         return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#000' : '#fff';
     }
 
+    /** Fra quanti ms deve cominciare l'apertura, se la partita è pronta quando ne sono passati `trascorsi` dall'inizio: mai prima del tempo fisso, subito se è già passato */
+    function ritardoApertura(trascorsi) {
+        const t = Number(trascorsi);
+        return Math.max(0, T.apertura - (Number.isFinite(t) && t > 0 ? t : 0));
+    }
+
     // ---------------------------------------------------------------- disegno
     const pausa = ms => new Promise(ok => setTimeout(ok, ms));
     const IMMAGINE_VS = 'immagini/app/seasons-vs.webp';        // il VS in 3D che usa anche l'app (Seasons); se non si carica resta la scritta
@@ -155,7 +165,10 @@
     }
 
     /**
-     * Fa partire l'intro. opz: { win, nomi: { sx, dx }, testi: testiIntro(...) }.
+     * Fa partire l'intro. opz: { win, nomi: { sx, dx }, testi: testiIntro(...), attesa?, attesaMax?, stato? }.
+     * `attesa` è una promessa: finché non si risolve (la partita non è ancora pronta, la pagina sta caricando) l'intro resta com'è, con il VS che pulsa e una
+     * riga "Getting ready…" (`stato`, o `win.__introVs.stato(testo)` per cambiarla), poi la diagonale si apre. Non si apre mai prima del tempo fisso (T.apertura)
+     * né oltre `attesaMax`. Senza `attesa` si apre al tempo fisso.
      * Ritorna una promessa che si risolve a intro finita (true) o subito (false) se non c'è niente da fare. Se un'intro è già in corso, quella si chiude.
      */
     function riproduci(opz) {
@@ -277,17 +290,27 @@
         doc.body.appendChild(radice);
         sfondo.classList.add('vi-in-corso');        // gli avatar veri aspettano sotto: ricompaiono, al loro posto, quando l'intro finisce (altrimenti si vedrebbero doppi)
 
-        // ---- le animazioni: tutte insieme, con i loro ritardi ----
+        // la riga che dice che si sta aspettando (appare solo se la partita non è pronta quando il tabellone è stato letto)
+        const rigaAttesa = elemento(doc, 'div', 'vi-attesa');
+        const scriviStato = testo => {
+            const t = String(testo == null ? '' : testo).replace(/[….]+\s*$/, '').trim();
+            rigaAttesa.textContent = (t || 'Getting ready').toUpperCase();
+        };
+        scriviStato(opz.stato);
+        centro.appendChild(rigaAttesa);
+
+        // ---- le animazioni di quello che si vede mentre si legge: tutte insieme, con i loro ritardi ----
         const animazioni = [];
         const A = (e, keyframes, opzioni) => {
             const a = e.animate(keyframes, { fill: 'both', ...opzioni });
             animazioni.push(a);
             return a;
         };
-        const aperte = [];       // le animazioni di apertura degli avatar: il punto d'arrivo si ricontrolla un attimo prima
+        const t0 = Date.now();
+        const trascorso = () => Date.now() - t0;
+        const ritardoFuori = '104%';
 
         // 1. le metà si incontrano (con un piccolo rimbalzo) e c'è un lampo
-        const ritardoFuori = '104%';
         A(metà[0], { translate: [`-${ritardoFuori} 0`, '2% 0', '0% 0'] }, { duration: T.entraMeta, easing: CURVE.entra });
         A(metà[1], { translate: [`${ritardoFuori} 0`, '-2% 0', '0% 0'] }, { duration: T.entraMeta, easing: CURVE.entra });
         A(lampo, { opacity: [0, 0.5, 0] }, { duration: 240, delay: T.entraMeta - 40 });
@@ -304,35 +327,31 @@
         // 3. il VS e il tabellone
         A(vs, { scale: [3.2, 0.9, 1], rotate: ['-16deg', '-3deg', '-4deg'], opacity: [0, 1, 1], offset: [0, 0.62, 1] }, { duration: T.vs, delay: T.ritardoVs, easing: CURVE.pop });
         A(tabellone, { translate: ['0 46px', '0 0'], opacity: [0, 1] }, { duration: T.tabellone, delay: T.ritardoTabellone, easing: CURVE.entra });
-        // 4. la diagonale si apre: le metà escono ai lati, il centro e i tag spariscono, gli avatar vanno al loro posto.
-        //    (fill 'forwards' e non 'both': prima del loro inizio non devono coprire le animazioni di prima sulla stessa proprietà)
-        A(metà[0], { translate: ['0% 0', `-${ritardoFuori} 0`] }, { duration: T.durataApertura, delay: T.apertura, easing: CURVE.apre, fill: 'forwards' });
-        A(metà[1], { translate: ['0% 0', `${ritardoFuori} 0`] }, { duration: T.durataApertura, delay: T.apertura, easing: CURVE.apre, fill: 'forwards' });
-        A(centro, { opacity: [1, 0], scale: [1, 1.35] }, { duration: T.uscitaCentro, delay: T.apertura, easing: 'ease-in', fill: 'forwards' });
-        personaggi.forEach((p, i) => {
-            A(p.tag, { opacity: [1, 0], translate: ['0 0', '0 -18px'] }, { duration: T.uscitaCentro, delay: T.apertura, easing: 'ease-in', fill: 'forwards' });
-            A(p.corpo, { scale: [ingr * 1.06, 1] }, { duration: T.durataApertura, delay: T.apertura, easing: CURVE.apre, fill: 'forwards' });
-            aperte.push(A(p.ancora, { left: [`${lati[i].riposo}px`, `${lati[i].finale()}px`] }, { duration: T.durataApertura, delay: T.apertura, easing: CURVE.apre, fill: 'forwards' }));
-        });
-        // il tavolo può essersi spostato mentre si leggeva (la scena sotto si è disegnata): il punto d'arrivo si rimisura appena prima di aprire
-        const ricontrolla = win.setTimeout(() => {
-            aperte.forEach((a, i) => {
-                try { a.effect.setKeyframes({ left: [`${lati[i].riposo}px`, `${lati[i].finale()}px`] }); } catch (e) { /* resta com'è */ }
-            });
-        }, Math.max(0, T.apertura - 60));
+        // 3b. dopo il tempo fisso, se la partita non è ancora pronta, tutto resta in vita: il VS pulsa piano e gli avatar ondeggiano
+        const oscillazioni = [];
+        const O = (e, keyframes, opzioni) => {
+            const a = e.animate(keyframes, { fill: 'none', delay: T.apertura, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out', ...opzioni });
+            animazioni.push(a);
+            oscillazioni.push({ e, a });
+        };
+        O(vs, { scale: [1, 1.06] }, { duration: 700 });
+        personaggi.forEach((p, i) => O(p.corpo, { rotate: ['-1.2deg', '1.2deg'] }, { duration: 1100 + i * 140 }));
 
         // ---- fine, o salto ----
-        let finita = false, chiudi;
+        let finita = false, aperta = false, chiudi;
+        let timerAttesa = null, timerMisura = [], scadenza = null;
         const promessa = new Promise(ok => { chiudi = ok; });
         const scollega = () => {
             doc.removeEventListener('keydown', suTasto, true);
             radice.removeEventListener('pointerdown', suClic);
         };
+        const fermaTimer = () => {
+            [timerAttesa, scadenza, sicurezza, ...timerMisura].forEach(t => win.clearTimeout(t));
+        };
         const smonta = esito => {
             if (finita) return;
             finita = true;
-            win.clearTimeout(ricontrolla);
-            win.clearTimeout(sicurezza);
+            fermaTimer();
             scollega();
             animazioni.forEach(a => { try { a.cancel(); } catch (e) { /* già fermata */ } });
             sfondo.classList.remove('vi-in-corso');
@@ -344,24 +363,79 @@
             if (finita) return;
             if (subito) return smonta(false);
             // saltata: si dissolve in fretta
+            fermaTimer();
             animazioni.forEach(a => { try { a.cancel(); } catch (e) { /* già fermata */ } });
             scollega();
             const d = radice.animate({ opacity: [1, 0] }, { duration: 160, fill: 'forwards' });
             d.finished.then(() => smonta(false), () => smonta(false));
         };
-        const suClic = e => { e.preventDefault(); termina(false); };
+        const suClic = e => {
+            if (trascorso() < T.protezione) return;
+            e.preventDefault();
+            termina(false);
+        };
         const suTasto = e => {
-            if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); termina(false); }
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
+                e.preventDefault(); e.stopPropagation();
+                if (trascorso() >= T.protezione) termina(false);
+            }
         };
         radice.addEventListener('pointerdown', suClic);
         doc.addEventListener('keydown', suTasto, true);
-        const sicurezza = win.setTimeout(() => smonta(true), T.totale + 2500);      // a pagina nascosta i fotogrammi si fermano: si chiude comunque
-        const finali = animazioni.map(a => a.finished.catch(() => null));
-        Promise.all(finali).then(() => { if (!finita) win.setTimeout(() => smonta(true), T.pausaFine); });
+        // a pagina nascosta i fotogrammi si fermano: si chiude comunque
+        const attesaMax = Number(opz.attesaMax) > 0 ? Number(opz.attesaMax) : T.attesaMax;
+        const sicurezza = win.setTimeout(() => smonta(true), attesaMax + T.totale + 2500);
 
-        win.__introVs = { radice, termina };
+        // 4. la diagonale si apre: le metà escono ai lati, il centro e i tag spariscono, gli avatar vanno al loro posto.
+        //    Si apre al tempo fisso, ma non prima che la partita sia pronta. Le animazioni nascono qui (e non all'inizio) perché il punto d'arrivo degli avatar
+        //    si legge adesso: la scena sotto si è disegnata nel frattempo e il tavolo può essersi spostato.
+        //    (fill 'forwards' e non 'both': prima del loro inizio non devono coprire le animazioni di prima sulla stessa proprietà)
+        const apri = () => {
+            if (aperta || finita) return;
+            aperta = true;
+            win.clearTimeout(timerAttesa);
+            radice.classList.remove('vi-in-attesa');
+            const ritardo = ritardoApertura(trascorso());
+            const aperture = [], arrivi = [];
+            const B = (e, keyframes, opzioni) => {
+                const a = e.animate(keyframes, { fill: 'forwards', delay: ritardo, ...opzioni });
+                animazioni.push(a);
+                aperture.push(a);
+                return a;
+            };
+            // gli avatar che ondeggiavano si fermano piano (fermarli di colpo li farebbe scattare)
+            personaggi.forEach(p => {
+                let attuale = 'none';
+                try { attuale = win.getComputedStyle(p.corpo).rotate; } catch (e) { /* niente */ }
+                if (attuale && attuale !== 'none' && !/^0(deg)?$/.test(attuale)) B(p.corpo, { rotate: [attuale, '0deg'] }, { duration: 260, delay: 0, easing: 'ease-out' });
+            });
+            oscillazioni.filter(o => o.e !== vs).forEach(o => { try { o.a.cancel(); } catch (e) { /* già fermata */ } });
+            B(metà[0], { translate: ['0% 0', `-${ritardoFuori} 0`] }, { duration: T.durataApertura, easing: CURVE.apre });
+            B(metà[1], { translate: ['0% 0', `${ritardoFuori} 0`] }, { duration: T.durataApertura, easing: CURVE.apre });
+            B(centro, { opacity: [1, 0], scale: [1, 1.35] }, { duration: T.uscitaCentro, easing: 'ease-in' });
+            personaggi.forEach((p, i) => {
+                B(p.tag, { opacity: [1, 0], translate: ['0 0', '0 -18px'] }, { duration: T.uscitaCentro, easing: 'ease-in' });
+                B(p.corpo, { scale: [ingr * 1.06, 1] }, { duration: T.durataApertura, easing: CURVE.apre });
+                arrivi.push(B(p.ancora, { left: [`${lati[i].riposo}px`, `${lati[i].finale()}px`] }, { duration: T.durataApertura, easing: CURVE.apre }));
+            });
+            // il tavolo può ancora spostarsi mentre si apre: il punto d'arrivo si rimisura appena prima di partire e a metà corsa
+            const rimisura = () => arrivi.forEach((a, i) => {
+                try { a.effect.setKeyframes({ left: [`${lati[i].riposo}px`, `${lati[i].finale()}px`] }); } catch (e) { /* resta com'è */ }
+            });
+            if (ritardo >= 80) timerMisura.push(win.setTimeout(rimisura, ritardo - 60));
+            timerMisura.push(win.setTimeout(rimisura, ritardo + 220));
+            Promise.all(aperture.map(a => a.finished.catch(() => null))).then(() => { if (!finita) win.setTimeout(() => smonta(true), T.pausaFine); });
+        };
+
+        // dopo il tempo fisso, se la partita non è pronta, compare la riga che lo dice
+        timerAttesa = win.setTimeout(() => { if (!aperta && !finita) radice.classList.add('vi-in-attesa'); }, T.apertura);
+        const pronta = Promise.resolve(opz.attesa).catch(() => null);          // senza `attesa` (o con un errore) è subito pronta
+        const scaduta = new Promise(ok => { scadenza = win.setTimeout(ok, attesaMax); });
+        Promise.race([pronta, scaduta]).then(() => { win.clearTimeout(scadenza); apri(); });
+
+        win.__introVs = { radice, termina, stato: scriviStato };
         return promessa;
     }
 
-    return { T, CURVE, INGRANDIMENTO, VISIBILE, testiIntro, punteggioShowdown, disposizione, testoSu, puoRiprodurre, riproduci };
+    return { T, CURVE, INGRANDIMENTO, VISIBILE, testiIntro, punteggioShowdown, disposizione, ritardoApertura, testoSu, puoRiprodurre, riproduci };
 });

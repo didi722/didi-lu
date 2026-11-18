@@ -369,7 +369,8 @@ test('CPU come allenatore: nome, avatar e colore a caso tra i liberi; sfondo sfi
     assert.match(bu, /async function assegnaPersonaCpu\(\)/);
     assert.match(bu, /async function iniziaContro\(team\) \{\s*await assegnaPersonaCpu\(\);/);
     assert.match(bu, /async function iniziaRandom\(\) \{\s*await assegnaPersonaCpu\(\);/);
-    assert.match(bu, /vestiVersus\(config\.p1\.nome, p\.nome, \{/, 'sfondo sfida anche contro la CPU');
+    assert.match(bu, /vestiVersus\(config\.p1\.nome, p\.nome, aspettoPersona\(p\)\)/, 'sfondo sfida anche contro la CPU');
+    assert.match(bu, /const aspettoPersona = p => \(\{ nome: p\.nome, colore: p\.colore, avatar: p\.avatar, pagina: \{ sfondo: \{ motivo: p\.motivo, forza: 2, scritta: true \} \} \}\);/);
     assert.match(bu, /data-colonna': 'sx'/, 'palestra: avatar a sinistra');
     assert.match(bu, /data-colonna': 'dx'/, 'palestra: compagno a destra');
     assert.match(leggi('docs', 'battle.html'), /<script src="cpu-persona\.js"><\/script>/);
