@@ -21,3 +21,10 @@ test('sia "aggiungi formato" sia "modifica formato" collegano la chiusura dopo a
     const modifica = corpo('apriModaleModificaFormato');
     assert.match(modifica, /setProperty\('display', 'flex', 'important'\);\s*collegaChiusuraModaleFormato\(modal\)/);
 });
+
+test('il titolo del team nell\'editor del Team Builder è un campo che mostra maiuscole e minuscole (non tutto in maiuscolo)', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-box.css'), 'utf8');
+    const r = [...css.matchAll(/(?:^|\n)input\.tb-title \{([^}]*)\}/g)].map(m => m[1]).join('\n');
+    assert.ok(r, 'regola del campo mancante');
+    assert.match(r, /text-transform:\s*none/);
+});
