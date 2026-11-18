@@ -223,3 +223,15 @@ test('replay da PC: lo schermo (e la scocca centrata su di lui) sta al centro de
         assert.ok(r.classi.includes('campo-laterale') === ((larghezza - W) / 2 >= 190), `${larghezza}x${altezza}: la colonna dei cartellini sta a sinistra se c'è posto dalla parte dello schermo`);
     }
 });
+
+test('replay: un clic fuori dalla partita chiede "Close replay?" con un popup del sito (non l\'avviso del browser); la X in alto chiude subito', () => {
+    assert.match(matches, /<div id="replayModal" class="replay-modal" onclick="chiediChiudiReplay\(\)">/);
+    assert.match(matches, /<span class="close-replay" onclick="event\.stopPropagation\(\); chiudiReplay\(\)">/, 'la X non passa dalla conferma (e non fa salire il clic allo sfondo)');
+    const i = matches.indexOf('window.chiediChiudiReplay = function');
+    const corpo = matches.slice(i, matches.indexOf('window.chiudiReplay = function', i));
+    assert.match(corpo, /Close replay\?/);
+    assert.doesNotMatch(corpo, /\bconfirm\(/, 'niente avviso del browser');
+    assert.match(corpo, /if \(chiudi\) window\.chiudiReplay\(\)/, 'si chiude solo dopo la conferma');
+    assert.match(corpo, /e\.key === 'Escape'/);
+    assert.match(finestre, /\.rc-conferma-velo \{ position: fixed; inset: 0; z-index: 10050;/, 'sopra il replay (10000)');
+});

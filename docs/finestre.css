@@ -853,3 +853,23 @@ html:not(.app-shell) #replayModal:not(.tel) .gba-screen-area {
 }
 html:not(.app-shell) #replayModal:not(.tel) .gba-screen-area .replay-content { flex: none; width: 438px; height: 360px; margin: 0; zoom: var(--sch, 1); }
 html:not(.app-shell) #replayModal:not(.tel) #replayFrame { top: -22px; left: -101px; width: 640px; height: 382px; }   /* le bande di 101px a destra e a sinistra restano fuori */
+
+
+/* ---------- Replay: "Close replay?" prima di chiudere con un clic fuori dalla partita ---------- */
+.rc-conferma-velo { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .35); }
+.rc-conferma {
+    box-sizing: border-box; width: min(340px, 100%); padding: 22px 20px 18px; text-align: center;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
+    color: var(--nb-ink, #000); border: 4px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+}
+.rc-conferma b { display: block; margin: 0 0 16px; font: 900 1.25rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .04em; }
+.rc-conferma-azioni { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.rc-conferma-tasto {
+    padding: 9px 16px 7px; cursor: pointer; background: #fff; color: #000;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .05em; text-transform: uppercase;
+    transition: translate .1s ease, box-shadow .1s ease, background-color .1s ease;
+}
+.rc-conferma-tasto:hover, .rc-conferma-tasto:focus-visible { translate: -2px -2px; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); background-color: var(--nb-giallo, #ffbd44); outline: none; }
+.rc-conferma-chiudi { background: var(--nb-rosso, #ff4444); color: #fff; }
+.rc-conferma-chiudi:hover, .rc-conferma-chiudi:focus-visible { background-color: var(--nb-rosso, #ff4444); filter: brightness(1.08); }
