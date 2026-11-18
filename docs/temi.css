@@ -325,6 +325,8 @@ body.menu-compatto.nb .tasti-alto > *:not(:hover):not(:focus-visible) { padding:
 /* compatti: stessa misura del tasto utente (44px) e in colonna sotto di lui, con lo stesso bordo destro */
 body.menu-compatto.nb .tasti-alto { top: 74px; right: 20px; gap: 10px; flex-direction: column; align-items: flex-end; }      /* in colonna: campanella, Team Builder, New format... tutti sotto il tasto utente, allineati a destra */
 body.menu-compatto.nb .tasti-alto > *:not(:hover):not(:focus-visible) { width: 44px !important; min-width: 44px; height: 44px !important; }
+/* le pagine con la striscia nera (top-bar) tengono il tasto utente più in basso (42px, vedi sopra): la colonna compatta scende con lui (42 + 44 + 10) */
+body.menu-compatto.nb:has(.top-bar) .tasti-alto { top: 96px; }
 .tasti-alto { transition: top .15s ease, right .15s ease; }
 body.menu-compatto.nb .tasti-alto > *:not(:hover):not(:focus-visible) .tasto-testo { display: none; }
 body.nb .tasti-alto .sfide-badge { border-radius: var(--nb-raggio); }
