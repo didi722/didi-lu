@@ -1,0 +1,88 @@
+/* =====================================================================
+   INTRO "VS" PRIMA DI OGNI SET (battle-intro.js)
+   ---------------------------------------------------------------------
+   Una copia a tutto schermo dello sfondo "sfida" (style-versus.css) che sta sopra a tutto per tre secondi: le due metà colorate, la riga nera in diagonale, gli
+   avatar con il tag del nome, il VS e un tabellone (match e punteggio, oppure battaglia e serie). Poi si apre e resta lo sfondo vero, che non si è mai mosso.
+   Colori, ombre, angoli e caratteri sono quelli del tema del giocatore (variabili --nb-* e --sh-* di style-battle.css). Nell'app non c'è.
+   ===================================================================== */
+.vi { position: fixed; inset: 0; z-index: 9500; overflow: hidden; pointer-events: auto; cursor: pointer; user-select: none; -webkit-user-select: none; }
+html.app .vi { display: none; }
+.vs-sfondo.vi-in-corso .vs-avatar { visibility: hidden; }      /* durante l'intro gli avatar sono quelli dell'intro */
+
+/* le metà sono copie di .vs-lato (style-versus.css): colore, motivo e nome gigante già ci sono. In più la riga nera sul loro bordo, che si apre con loro */
+.vi .vs-lato { will-change: translate; }
+.vi .vs-lato::after { content: ''; position: absolute; inset: 0; background: #000; }
+.vi .vs-sx::after { clip-path: polygon(calc(60% - 8px) 0, 60% 0, 40% 100%, calc(40% - 8px) 100%); }
+.vi .vs-dx::after { clip-path: polygon(60% 0, calc(60% + 8px) 0, calc(40% + 8px) 100%, 40% 100%); }
+
+/* l'avatar: un punto d'ancoraggio (left, in px, lo anima l'intro) e un corpo centrato su di lui che cresce e cala dal piede */
+.vi-pg { position: absolute; bottom: 0; width: 0; height: 0; z-index: 3; will-change: translate, left; }
+.vi-corpo {
+    position: absolute; left: 0; bottom: 0; translate: -50% 0; transform-origin: 50% 100%;
+    display: flex; flex-direction: column; align-items: center; will-change: scale;
+}
+.vi-avatar {
+    display: block; width: auto; image-rendering: pixelated;
+    filter: drop-shadow(0 0 5px var(--pal-aura, transparent)) drop-shadow(0 0 16px var(--pal-aura, transparent)) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3));
+}
+.vi-dx .vi-avatar { transform: scaleX(-1); }
+
+/* il tag del nome, sopra la testa: nel colore dell'allenatore, come il tag della sua colonna */
+.vi-tag {
+    box-sizing: border-box; max-width: 42vw; margin-bottom: clamp(6px, 1.4vh, 16px); padding: .32em .7em .18em;
+    border: 4px solid #000; border-radius: var(--raggio, 0px); box-shadow: var(--sh-5, 5px 5px 0 #000);
+    font: 900 clamp(1.05rem, 2.5vw, 2.2rem)/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .03em); text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    rotate: calc(-4deg * var(--nb-rot, 1));
+}
+.vi-dx .vi-tag { rotate: calc(4deg * var(--nb-rot, 1)); }
+
+/* il centro: il VS sulla riga nera e il tabellone sotto */
+.vi-centro {
+    position: absolute; left: 50%; top: 50%; translate: -50% -54%; z-index: 5;
+    display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 1.8vh, 20px);
+}
+.vi-vs {
+    font-family: 'Archivo Black', 'Arial Black', Impact, sans-serif;
+    font-size: clamp(84px, min(17vw, 27vh), 250px); line-height: .9; letter-spacing: -.02em;
+    color: var(--ambra, #ffbd44);
+    -webkit-text-stroke: clamp(4px, .6vw, 9px) #000; paint-order: stroke fill;
+    text-shadow: .05em .05em 0 #000;
+    rotate: calc(-4deg * var(--nb-rot, 1));
+}
+.vi-tabellone {
+    box-sizing: border-box; min-width: clamp(150px, 22vw, 300px); max-width: min(80vw, 30rem); padding: .55em 1em .6em;
+    background: #000; color: #fff; text-align: center;
+    border: 3px solid var(--ambra, #ffbd44); border-radius: var(--raggio, 0px); box-shadow: var(--shs-5, 5px 5px 0 rgba(0, 0, 0, .3));      /* blocco nero: ombra trasparente (--shs), non nera piena */
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    rotate: calc(2deg * var(--nb-rot, 1));
+}
+.vi-et {
+    display: inline-block; padding: .18em .8em .08em; background: var(--ambra, #ffbd44); color: #000;
+    font: 900 clamp(.8rem, 1.5vw, 1.35rem)/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase;
+}
+.vi-pt {
+    margin: .12em 0 .02em; color: var(--ambra, #ffbd44); white-space: nowrap;
+    font: 400 clamp(2.4rem, 6.4vw, 5.6rem)/1.05 'Archivo Black', 'Arial Black', Impact, sans-serif; letter-spacing: .03em;
+}
+.vi-righe { display: flex; flex-direction: column; gap: .15em; margin-top: .15em; }
+.vi-righe span { font: 800 clamp(.7rem, 1.25vw, 1.1rem)/1.25 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; opacity: .88; }
+
+.vi-lampo { position: absolute; inset: 0; z-index: 8; background: #fff; opacity: 0; pointer-events: none; }
+
+/* telefono in verticale: il centro sta un po' più in alto (sotto ci sono gli avatar con i loro tag) e il tabellone è più compatto */
+@media (max-width: 720px) {
+    .vi-tag { max-width: 46vw; border-width: 3px; }
+    .vi-centro { top: 37%; }
+    .vi-vs { font-size: clamp(64px, 22vw, 120px); }
+    .vi-tabellone { border-width: 2px; padding: .45em .8em .5em; }
+    .vi-righe span { font-size: .72rem; letter-spacing: .08em; }
+}
+/* schermo basso (telefono in orizzontale): il VS e il tabellone si stringono per non finire sugli avatar */
+@media (max-height: 520px) and (min-width: 721px) {
+    .vi-vs { font-size: min(17vw, 21vh); }
+    .vi-tabellone { padding: .4em .9em .45em; }
+    .vi-pt { font-size: clamp(1.8rem, 5vw, 3.2rem); }
+    .vi-righe span { font-size: .7rem; }
+}

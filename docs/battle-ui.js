@@ -89,6 +89,7 @@ let online = null;          // { id, info, funzioni, stato, pronti, risultati, s
 
 // Scena di Showdown del set in corso
 let scena = null;           // { battle, tooltips, righe, turnoVisto }
+let versusInCorso = 0, versusPronto = Promise.resolve();     // lo sfondo "sfida" è in costruzione? (vestiVersus: l'intro lo aspetta)
 let prossimaScena = null;   // righe di un nuovo set arrivato mentre il set precedente si sta ancora animando
 const attesaScena = [];     // cose da fare quando le animazioni arrivano in fondo
 let setVisti = 0;
@@ -516,7 +517,7 @@ function mostraFineCpu(vincitore) {
     cpu.ultimoVincitore = vincitore;
     ricordaLaPartita();
     // la partita entra nel conto della sessione una volta sola (il cartello si può ridisegnare)
-    if (cpu.conMemoria && !cpu.palestra && cpu.cerebro && !cpu.cerebro.contata) {
+    if (!cpu.palestra && cpu.cerebro && !cpu.cerebro.contata) {        // il conto della serie serve anche all'intro (battaglia N, 2 – 1), Random compresi
         cpu.cerebro.contata = true;
         const q = cpu.sessione || (cpu.sessione = { v: 0, p: 0, n: 0 });
         if (!vincitore) q.n++; else if (vincitore === config.p1.nome) q.v++; else q.p++;
@@ -655,6 +656,7 @@ async function preparaOnline(chiavi) {
     $('link-hub').href = `matches.html?id=${encodeURIComponent(info.stagione)}`;
     online = { id, info, funzioni, giaSalvato, stato: null, pronti: {}, risultati: {}, sceltaAvversario: null, datiMatch: null };
     config = { formato: info.formato, etichetta: info.categoria, p1: { nome: info.p1.nome }, p2: { nome: info.p2.nome } };
+    leggiMatchPrecedenti();       // per il punteggio dello showdown nell'intro
     impostaNomeGiocatore('p1', info.p1.nome);
     impostaNomeGiocatore('p2', info.p2.nome);
     vestiVersus(info.p1.nome, info.p2.nome);
@@ -805,6 +807,7 @@ const nomeDi = lato => (config && config[lato] ? config[lato].nome : lato.toUppe
 // Cosa mostrare a seconda della fase del match
 function aggiornaFase() {
     const s = online.stato;
+    const daLobby = online.statoPrima === 'lobby';       // il primo set comincia adesso (chi arriva a partita già in corso non vede l'intro)
     const eraInGioco = ['in_corso', 'da_salvare', 'salvataggio'].includes(online.statoPrima);
     online.statoPrima = s;
     disegnaInfo();
@@ -819,6 +822,7 @@ function aggiornaFase() {
     } else {
         if (s !== 'tra_set') nascondiLobby();
         nascondiMessaggio();
+        if (s === 'in_corso' && daLobby) introVersus(1);
         // a match finito il conto alla rovescia verso un nuovo set non ha più senso (e non deve coprire l'esito)
         if (s !== 'in_corso') fermaPausaSet();
         if (s === 'da_salvare' || s === 'salvataggio') {
@@ -1309,6 +1313,7 @@ function quandoScenaFerma(fn) {
 }
 
 function avviaProssimaScena() {
+    if (prossimaScena) introVersus(prossimoSet);        // il set nuovo entra in scena sotto l'intro: il cambio di scena non si vede
     const righe = prossimaScena || [];
     prossimaScena = null;
     fermaPausaSet();
@@ -1490,6 +1495,10 @@ function avatarScivolano() { requestAnimationFrame(() => document.body.classList
 // Partite tra due allenatori (ufficiali, amichevoli, prove dal sito): lo sfondo è la "carta di sfida" dei due. La pagina è divisa in diagonale: a sinistra lo sfondo della pagina pubblica
 // del primo (colore, motivo, nome gigante) con il suo avatar grande, a destra lo stesso per il secondo (stile in style-versus.css).
 async function vestiVersus(nomeP1, nomeP2, aspetto2 = null) {
+    // l'intro "VS" (introVersus) aspetta che lo sfondo nuovo sia pronto: le sfide contro la CPU lo cambiano a ogni partita
+    let costruito;
+    versusInCorso++;
+    versusPronto = Promise.all([versusPronto, new Promise(ok => { costruito = ok; })]);
     try {
         if (document.body.classList.contains('palestra') || !window.firebase || !self.Palestra) return;
         const db = firebase.database();
@@ -1532,7 +1541,63 @@ async function vestiVersus(nomeP1, nomeP2, aspetto2 = null) {
         setInterval(posiziona, 700);       // il tavolo si rimisura da solo (battle-layout.js)
     } catch (e) {
         console.warn('Versus background not drawn', e);
+    } finally {
+        versusInCorso--;
+        costruito();
     }
+}
+
+// -----------------------------------------------------
+// Intro "VS" prima di ogni set (battle-intro.js)
+// -----------------------------------------------------
+// La schermata a due colori sale sopra a tutto, entrano gli avatar con i nomi, compare il VS con un tabellone (nelle stagioni match, set e punteggio; contro la
+// CPU battaglia e serie; nelle amichevoli al meglio di più set, set e punteggio) e poi si apre sul simulatore. Parte quando un set sta per cominciare: la prima
+// volta all'uscita dalla lobby (o all'avvio di una battaglia contro la CPU), poi a ogni set nuovo che entra in scena. Chi arriva a set già iniziato (pagina
+// ricaricata, spettatore che entra dopo) non la vede. Non c'è nell'app né in palestra.
+
+// Nelle stagioni: i match già giocati dello showdown, per dire il punteggio (si legge una volta, in sottofondo)
+function leggiMatchPrecedenti() {
+    if (!online || online.amichevole || Number(online.info.match) <= 1 || online.matchPrecedenti !== undefined) return;
+    online.matchPrecedenti = null;
+    try {
+        firebase.database().ref(`seasons/${online.info.stagione}/showdowns/${online.info.showdown}/matches`).once('value')
+            .then(snap => { if (online) online.matchPrecedenti = snap.val() || {}; })
+            .catch(errore => console.warn("Earlier matches' score not read", errore));
+    } catch (errore) { console.warn("Earlier matches' score not read", errore); }
+}
+
+// Chi sta a sinistra, chi a destra e cosa scrive il tabellone; null se non c'è una partita di cui dire qualcosa (locale)
+function contestoIntro(numeroSet) {
+    if (!config) return null;
+    const sx = mioLato === 'p2' ? 'p2' : 'p1', dx = sx === 'p1' ? 'p2' : 'p1';
+    const nomi = { sx: nomeDi(sx), dx: nomeDi(dx) };
+    if (cpu && !cpu.palestra) {
+        const q = cpu.sessione || { v: 0, p: 0, n: 0 };
+        return { nomi, dati: { tipo: 'cpu', battaglia: q.v + q.p + q.n + 1, serie: q } };
+    }
+    if (online) {
+        const { s1, s2 } = punteggio(online.risultati);
+        const per = { p1: s1, p2: s2 };
+        const dati = { formato: online.info.categoria, set: numeroSet || 1, setTotali: online.info.bestOf, punti: { sx: per[sx], dx: per[dx] } };
+        if (online.amichevole) return { nomi, dati: { tipo: 'amichevole', ...dati } };
+        const sd = self.BattleIntro.punteggioShowdown(online.matchPrecedenti, online.info.match);
+        return { nomi, dati: { tipo: 'ufficiale', ...dati, match: Number(online.info.match), matchTotali: MATCH_PER_SHOWDOWN, showdown: { sx: sd[sx], dx: sd[dx] } } };
+    }
+    return null;
+}
+
+function introVersus(numeroSet) {
+    try {
+        if (!self.BattleIntro || !config || inApp() || document.body.classList.contains('palestra') || (cpu && cpu.palestra)) return;
+        const parti = () => {
+            try {
+                const c = contestoIntro(numeroSet);
+                if (c) self.BattleIntro.riproduci({ win: window, nomi: c.nomi, testi: self.BattleIntro.testiIntro(c.dati) }).catch(errore => console.warn('Versus intro failed', errore));
+            } catch (errore) { console.warn('Versus intro skipped', errore); }
+        };
+        if (versusInCorso) Promise.race([versusPronto, new Promise(ok => setTimeout(ok, 2500))]).then(parti);
+        else parti();
+    } catch (errore) { console.warn('Versus intro skipped', errore); }
 }
 
 /** L'insegna in alto nel simulatore, in palestra: chi la tiene (faccia, aura, nome con il suo font e il suo effetto), la tappa e il vantaggio, sempre in vista */
@@ -1623,6 +1688,7 @@ function avviaBattaglia() {
     nascondiMessaggio();
     nuovoSet();
     disegnaInfo();
+    if (cpu && !cpu.palestra) introVersus();        // ogni battaglia contro la CPU comincia con l'intro: numero della battaglia e serie
     // il cervello conosce la strategia del team che sta giocando (non si vede da nessuna parte: il team si chiama "Team N")
     // ...e quali meccaniche di generazione ammette il formato (Dynamax, Mosse Z, Mega, Teracristal): se è spento, la CPU non ci pensa nemmeno
     if (cpu) {
