@@ -126,6 +126,6 @@ test('cablaggio: ogni pagina con il tasto del menù carica menu-sito.js dopo tem
 test('foglio dei temi: il pulsante sta fisso in alto a destra in tutte le pagine e compatto è solo l\'icona (intero al passaggio e col fuoco)', () => {
     const css = leggi('temi.css');
     assert.match(css, /:is\(body\.nb, body\.pg-public\) \.top-auth-bar \{ position: fixed; top: 20px; right: 20px; z-index: 3000; \}/);
-    assert.match(css, /body\.menu-compatto:is\(\.nb, \.pg-public\) \.auth-interaction:not\(:hover\):not\(:focus-visible\) \{ padding: 7px 10px; gap: 0; \}/);
+    assert.match(css, /body\.menu-compatto:is\(\.nb, \.pg-public\) \.auth-interaction:not\(:hover\):not\(:focus-visible\) \{ box-sizing: border-box; width: 44px; height: 44px; padding: 0; gap: 0; justify-content: center; \}/);
     assert.match(css, /body\.menu-compatto:is\(\.nb, \.pg-public\) \.auth-interaction:not\(:hover\):not\(:focus-visible\) #auth-text \{ display: none; \}/);
 });
