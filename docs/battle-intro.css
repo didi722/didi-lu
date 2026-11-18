@@ -51,23 +51,29 @@ html.app .vi { display: none; }
     text-shadow: .05em .05em 0 #000;
     rotate: calc(-4deg * var(--nb-rot, 1));
 }
+/* il VS in 3D dell'app (Seasons): al posto della scritta, che resta solo se l'immagine non si carica */
+.vi-vs.ha-img .vi-vs-testo { display: none; }
+.vi-vs-img { display: block; width: clamp(150px, min(30vw, 46vh), 440px); height: auto; filter: drop-shadow(0 6px 5px rgba(0, 0, 0, .45)); }
+/* il tabellone ha il linguaggio delle schede del simulatore (come "esito-card"): carta, bordo, ombra, angoli e carattere del tema del giocatore */
 .vi-tabellone {
-    box-sizing: border-box; min-width: clamp(150px, 22vw, 300px); max-width: min(80vw, 30rem); padding: .55em 1em .6em;
-    background: #000; color: #fff; text-align: center;
-    border: 3px solid var(--ambra, #ffbd44); border-radius: var(--raggio, 0px); box-shadow: var(--shs-5, 5px 5px 0 rgba(0, 0, 0, .3));      /* blocco nero: ombra trasparente (--shs), non nera piena */
+    box-sizing: border-box; min-width: clamp(150px, 22vw, 300px); max-width: min(80vw, 30rem); padding: .6em 1.1em .65em;
+    background: var(--carta, #fff); color: var(--inchiostro, #000); text-align: center;
+    border: var(--bordo-forte, 4px solid #000); border-radius: var(--raggio, 0px); box-shadow: var(--sh-7, 7px 7px 0 #000);
     font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     rotate: calc(2deg * var(--nb-rot, 1));
 }
 .vi-et {
-    display: inline-block; padding: .18em .8em .08em; background: var(--ambra, #ffbd44); color: #000;
-    font: 900 clamp(.8rem, 1.5vw, 1.35rem)/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase;
+    display: inline-block; padding: .22em .85em .12em; background: var(--inchiostro, #000); color: var(--carta, #fff);
+    border-radius: var(--raggio, 0px); box-shadow: var(--shs-4, 4px 4px 0 rgba(0, 0, 0, .3));      /* adesivo scuro: ombra trasparente, non nera piena */
+    font: 800 clamp(.8rem, 1.5vw, 1.35rem)/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase;
+    rotate: calc(-2deg * var(--nb-rot, 1));
 }
 .vi-pt {
-    margin: .12em 0 .02em; color: var(--ambra, #ffbd44); white-space: nowrap;
-    font: 400 clamp(2.4rem, 6.4vw, 5.6rem)/1.05 'Archivo Black', 'Arial Black', Impact, sans-serif; letter-spacing: .03em;
+    margin: .14em 0 .02em; color: var(--inchiostro, #000); white-space: nowrap;
+    font: 900 clamp(2.4rem, 6.4vw, 5.6rem)/1.05 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .03em;
 }
 .vi-righe { display: flex; flex-direction: column; gap: .15em; margin-top: .15em; }
-.vi-righe span { font: 800 clamp(.7rem, 1.25vw, 1.1rem)/1.25 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; opacity: .88; }
+.vi-righe span { font: 800 clamp(.7rem, 1.25vw, 1.1rem)/1.25 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
 
 .vi-lampo { position: absolute; inset: 0; z-index: 8; background: #fff; opacity: 0; pointer-events: none; }
 
@@ -76,12 +82,14 @@ html.app .vi { display: none; }
     .vi-tag { max-width: 46vw; border-width: 3px; }
     .vi-centro { top: 37%; }
     .vi-vs { font-size: clamp(64px, 22vw, 120px); }
-    .vi-tabellone { border-width: 2px; padding: .45em .8em .5em; }
+    .vi-vs-img { width: clamp(120px, 46vw, 220px); }
+    .vi-tabellone { border-width: 3px; padding: .45em .8em .5em; }
     .vi-righe span { font-size: .72rem; letter-spacing: .08em; }
 }
 /* schermo basso (telefono in orizzontale): il VS e il tabellone si stringono per non finire sugli avatar */
 @media (max-height: 520px) and (min-width: 721px) {
     .vi-vs { font-size: min(17vw, 21vh); }
+    .vi-vs-img { width: min(26vw, 40vh); }
     .vi-tabellone { padding: .4em .9em .45em; }
     .vi-pt { font-size: clamp(1.8rem, 5vw, 3.2rem); }
     .vi-righe span { font-size: .7rem; }

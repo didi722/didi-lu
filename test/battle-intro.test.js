@@ -298,7 +298,14 @@ test('battle-intro.css: sta sopra a tutto ma non nell\'app; durante l\'intro gli
     assert.match(css, /\.vi \.vs-sx::after \{[^}]*clip-path: polygon\(calc\(60% - 8px\) 0, 60% 0, 40% 100%, calc\(40% - 8px\) 100%\);/);
     assert.match(css, /\.vi \.vs-dx::after \{[^}]*clip-path: polygon\(60% 0, calc\(60% \+ 8px\) 0, calc\(40% \+ 8px\) 100%, 40% 100%\);/);
     // colori e forme del tema del giocatore, non scritti a mano
-    for (const v of ['--raggio', '--sh-5', '--shs-5', '--nb-font-titoli', '--ambra']) assert.ok(css.includes(`var(${v}`), v);
+    for (const v of ['--raggio', '--sh-5', '--sh-7', '--shs-4', '--nb-font-titoli', '--ambra', '--carta', '--inchiostro', '--bordo-forte']) assert.ok(css.includes(`var(${v}`), v);
+    // il tabellone segue il tema: i colori vengono dalle variabili del tema, non sono scritti a mano (niente blocco nero fisso)
+    const tabellone = css.match(/\.vi-tabellone \{([^}]*)\}/)[1];
+    assert.match(tabellone, /background: var\(--carta/);
+    assert.match(tabellone, /color: var\(--inchiostro/);
+    assert.doesNotMatch(tabellone, /background: #|border: [^;]*#000(?!\))/);
+    // il VS è il 3D dell'app (Seasons), la scritta resta di ripiego
+    assert.match(css, /\.vi-vs\.ha-img \.vi-vs-testo \{ display: none; \}/);
     // telefono (verticale e orizzontale)
     assert.match(css, /@media \(max-width: 720px\)/);
     assert.match(css, /@media \(max-height: 520px\)/);
@@ -329,4 +336,12 @@ test('battle-intro.js: le animazioni di apertura restano al loro posto (fill for
     assert.match(battleIntro, /T\.totale \+ 2500/);
     // gli avatar veri tornano visibili comunque
     assert.match(battleIntro, /sfondo\.classList\.remove\('vi-in-corso'\)/);
+});
+
+test('battle-intro.js: il VS è l\'immagine dell\'app (immagini/app/seasons-vs.webp, che esiste), con la scritta di ripiego', () => {
+    assert.match(battleIntro, /const IMMAGINE_VS = 'immagini\/app\/seasons-vs\.webp';/);
+    assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'app', 'seasons-vs.webp')), 'il file del VS');
+    assert.match(leggi('app-seasons.js'), /immaginiDi\('vs'\)/, 'è lo stesso VS che usa l\'app');
+    assert.match(battleIntro, /elemento\(doc, 'span', 'vi-vs-testo', 'VS'\)/, 'ripiego se l\'immagine non si carica');
+    assert.match(battleIntro, /caricate\.push\(vs\.pronta\)/, 'si aspetta l\'immagine (al massimo 1,5 s) prima di partire');
 });
