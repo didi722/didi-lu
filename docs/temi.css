@@ -320,6 +320,9 @@ body.nb .tasti-alto > .sfide-live-btn.mia:hover { background: var(--nb-carta); }
 body.nb .tasti-alto > .sfide-btn svg { flex: 0 0 auto; width: 24px; height: 24px; }
 body.nb .tasti-alto .tasto-icona { font-size: 1.15rem; line-height: 1; }
 body.nb .tasti-alto .tasto-testo { line-height: 1; }
+/* Scorrendo la pagina (menu-sito.js mette menu-compatto su <body>) i tasti con testo (Team Builder, New format...) si riducono alla sola icona, come il tasto utente: tornano interi al passaggio del mouse o col fuoco */
+body.menu-compatto.nb .tasti-alto > *:has(.tasto-testo):not(:hover):not(:focus-visible) { padding: 0; gap: 0; }
+body.menu-compatto.nb .tasti-alto > *:not(:hover):not(:focus-visible) .tasto-testo { display: none; }
 body.nb .tasti-alto .sfide-badge { border-radius: var(--nb-raggio); }
 body.nb .tasti-alto > .btn-floating-admin .plus-icon { font-size: 1.7rem; font-weight: 700; line-height: 1; }
 

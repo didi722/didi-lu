@@ -46,3 +46,9 @@ test('i tasti in alto (campanella, Team Builder...) sono fissi come il tasto ute
     const mvp = fs.readFileSync(path.join(__dirname, '..', 'docs', 'mvp.css'), 'utf8');
     assert.match(mvp, /body\.nb:not\(\.pg-profile\) \.btn-mvp \{\s*position: fixed !important;/);
 });
+
+test('scorrendo, i tasti in alto con testo (Team Builder...) si riducono alla sola icona come il tasto utente', () => {
+    const temi = fs.readFileSync(path.join(__dirname, '..', 'docs', 'temi.css'), 'utf8');
+    assert.match(temi, /body\.menu-compatto\.nb \.tasti-alto > \*:not\(:hover\):not\(:focus-visible\) \.tasto-testo \{ display: none; \}/);
+    assert.match(temi, /body\.menu-compatto:is\(\.nb, \.pg-public\) \.auth-interaction:not\(:hover\):not\(:focus-visible\) #auth-text \{ display: none; \}/);
+});
