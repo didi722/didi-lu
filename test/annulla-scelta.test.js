@@ -184,7 +184,7 @@ test('style-battle.css: il bersaglio alleato è piccolo e grigio, quelli avversa
     const alleato = /\.btn-pkm\.alleato \{([^}]*)\}/.exec(css);
     assert.ok(alleato, 'regola dell\'alleato mancante');
     assert.match(alleato[1], /font-size: \.6rem/, 'più piccolo di .btn-pkm.grande (.8rem)');
-    assert.match(alleato[1], /background: #e4e4e4/, 'grigio');
+    assert.match(alleato[1], /background: var\(--grigio-pieno-2\)/, 'grigio (il tono dell\'inchiostro sulla carta: segue il tema e la tinta dei neutri; nel classico #e4e4e4)');
     assert.match(alleato[1], /dashed/, 'bordo tratteggiato: si capisce che non è il bersaglio principale');
     assert.match(css, /\.btn-pkm\.grande \{ padding: 3px 11px 3px 3px; font-size: \.8rem/);
     assert.match(css, /\.btn-pkm\.alleato \.picon \{ filter: grayscale\(1\)/);
