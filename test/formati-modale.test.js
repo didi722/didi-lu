@@ -28,3 +28,11 @@ test('il titolo del team nell\'editor del Team Builder è un campo che mostra ma
     assert.ok(r, 'regola del campo mancante');
     assert.match(r, /text-transform:\s*none/);
 });
+
+test('matches: il contenuto non finisce mai sotto le pubblicità fisse (margine sinistro almeno la loro larghezza più un po\' d\'aria)', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-matches.css'), 'utf8');
+    const r = /\n\.hub-container \{([^}]*)\}/.exec(css);
+    assert.ok(r);
+    assert.match(r[1], /margin-left: max\(18%, calc\(var\(--nb-ads, 220px\) \+ 24px\)\)/);
+    assert.match(css, /@media \(max-width: 900px\) \{\s*\.hub-container \{ margin-left: 0;/, 'sul telefono (pubblicità nascoste) resta zero');
+});
