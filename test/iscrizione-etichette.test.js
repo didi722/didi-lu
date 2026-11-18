@@ -1,5 +1,5 @@
 'use strict';
-// hub.html: scegliendo i team da iscrivere a una stagione si filtra per etichetta (le etichette del Box), e ogni team mostra le sue.
+// hub.html: scegliendo i team da iscrivere a una stagione si filtra per etichetta (le etichette del Box), (solo il filtro: le etichette non si mostrano accanto ai team).
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -13,14 +13,14 @@ test('hub.html carica etichette-team.js e il suo stile', () => {
     assert.match(hub, /<link rel="stylesheet" href="etichette-team\.css">/);
 });
 
-test('il selettore dei team: filtro per etichetta solo se il giocatore ne ha, pillole su ogni team, filtro applicato alla lista', () => {
+test('il selettore dei team: filtro per etichetta solo se il giocatore ne ha, nessuna pillola accanto ai team, filtro applicato alla lista', () => {
     const i = hub.indexOf('async function openTeamPicker(');
     const f = hub.slice(i, hub.indexOf('\nasync function apriDettaglioTeam', i));
     assert.match(f, /players\/\$\{nomeUtenteClean\}\/etichette/);
     assert.match(f, /if \(elencoEtichette\.length\) \{[\s\S]*?container\.before\(sel\)/, 'il filtro c\'è solo con delle etichette');
     assert.match(f, /All labels[\s\S]*No label/);
     assert.match(f, /EtichetteTeam\.corrisponde\(allTeams\[o\.id\], etichetteDef, filtroEtichetta\)/);
-    assert.match(f, /EtichetteTeam\.diTeam\(data, etichetteDef\)/);
+    assert.ok(!/etichetta-pillola|EtichetteTeam\.diTeam/.test(f), 'le etichette servono solo a filtrare: nessuna pillola accanto al team');
     assert.match(f, /applicaFiltroEtichetta\(\);\s*updateTitleAndUI\(\);/, 'dopo aver disegnato la lista');
     // la selezione non si perde filtrando: si nasconde soltanto
     assert.match(f, /o\.div\.hidden = /);
