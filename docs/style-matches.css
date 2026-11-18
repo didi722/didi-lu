@@ -18,7 +18,7 @@ body {
 .hub-container {
     max-width: 1400px;
     margin: 0 auto;
-    margin-left: 18%;
+    margin-left: max(18%, calc(var(--nb-ads, 220px) + 24px));      /* mai sotto le pubblicità (fisse, larghe --nb-ads): con zoom o finestre strette il 18% non basta */
     font-family: 'Josefin Sans', sans-serif;
     padding-left: 20px;
     box-sizing: border-box;
