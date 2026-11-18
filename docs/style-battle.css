@@ -22,12 +22,24 @@
    di Showdown hanno bisogno dei loro stili originali.
    ===================================================== */
 :root {
-    --inchiostro: #000;
-    --carta: #fff;
-    --crema: #fffdf6;             /* = sfondo dei tooltip coach del box */
-    --sfondo-a: #f4f4f4;
-    --sfondo-b: #d3d3d3;
-    --ambra: #ffbd44;             /* = --yellow del sito */
+    /* I neutri (inchiostro, carta, crema) e il resto dello stile seguono il tema scelto dal giocatore (temi.css: variabili --nb-*, attributo data-tema su <html>) e il colore dei
+       neutri scelto qui nel simulatore (battle-vista.js, che scrive --nb-ink, --nb-carta e --nb-tip-bg su <html>). Senza temi.css restano i valori del tema classico. */
+    --inchiostro: var(--nb-ink, #000);
+    --carta: var(--nb-carta, #fff);
+    --crema: var(--nb-tip-bg, #fffdf6);             /* = sfondo dei tooltip coach del box */
+    --sfondo-a: color-mix(in srgb, var(--carta) 95.7%, var(--inchiostro));
+    --sfondo-b: color-mix(in srgb, var(--carta) 82.7%, var(--inchiostro));
+    /* i grigi sono sfumature dell'inchiostro sulla carta: se i neutri prendono un colore, anche i grigi */
+    --tenue: color-mix(in srgb, var(--inchiostro) 60%, var(--carta));              /* testi spenti (#666) */
+    --tenue-forte: color-mix(in srgb, var(--inchiostro) 66.7%, var(--carta));      /* #555 */
+    --tenue-scuro: color-mix(in srgb, var(--inchiostro) 80%, var(--carta));        /* #333 */
+    --grigio-bordo: color-mix(in srgb, var(--inchiostro) 45.9%, var(--carta));     /* #8a8a8a */
+    --grigio-ombra: color-mix(in srgb, var(--inchiostro) 39.6%, var(--carta));     /* #9a9a9a */
+    --grigio-pieno: color-mix(in srgb, var(--carta) 92.5%, var(--inchiostro));     /* #ececec */
+    --grigio-pieno-2: color-mix(in srgb, var(--carta) 89.4%, var(--inchiostro));   /* #e4e4e4 */
+    --grigio-scrollbar: color-mix(in srgb, var(--carta) 93.3%, var(--inchiostro)); /* #eee */
+    --grigio-vetro: color-mix(in srgb, var(--inchiostro) 77.3%, var(--carta));     /* #3a3a3a, il bordino del vetro */
+    --ambra: var(--nb-giallo, #ffbd44);             /* = --yellow del sito */
     --conferma: #09ca49;          /* come .btn-save */
     --conferma-scuro: #056425;
     --pericolo: #ea1818;          /* come .btn-cancel */
@@ -40,6 +52,23 @@
     --atterra: translate(3px, 3px) rotate(0deg);
     --tempo: .12s ease;
 
+    /* Ombre: come quelle di temi.css (spostamento in orizzontale e in verticale, sfumatura, colore del tema), a tutte le misure che usa il simulatore.
+       --sh-N: ombra dell'inchiostro (N px); --shs-N: l'ombra trasparente degli adesivi scuri (titoli, formato) */
+    --sh-1: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --sh-2: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --sh-3: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --sh-4: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --sh-5: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --sh-6: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(16px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --sh-7: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(19px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --sh-8: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(22px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --sh-9: calc(9px * var(--nb-kx, 1)) calc(9px * var(--nb-ky, 1)) calc(26px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --sh-12: calc(12px * var(--nb-kx, 1)) calc(12px * var(--nb-ky, 1)) calc(34px * var(--nb-bk, 0)) var(--nb-shcol, var(--inchiostro));
+    --shs-3: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol-titolo, rgba(0, 0, 0, .3));
+    --shs-4: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol-titolo, rgba(0, 0, 0, .3));
+    --shs-5: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol-titolo, rgba(0, 0, 0, .3));
+    --raggio: var(--nb-raggio, 0px);                /* angoli del tema */
+
     /* misure del tavolo "una schermata" (battle-layout.js ne misura il risultato) */
     --w-lato: 176px;
     --w-console: 672px;           /* 640 dello schermo + 2 × 12 di cornice + 2 × 4 di bordo */
@@ -50,7 +79,7 @@
 body {
     margin: 0;
     min-height: 100vh;
-    font-family: 'Montserrat', sans-serif;
+    font-family: var(--nb-font-testo, 'Montserrat', sans-serif);
     color: var(--inchiostro);
     background: linear-gradient(135deg, var(--sfondo-a) -50%, var(--sfondo-b) 100%);
 }
@@ -87,15 +116,15 @@ html[data-modo="fit"]:not([data-pronto]) .scala { visibility: hidden; animation:
 .servizi { grid-area: servizi; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px 16px; }
 
 .btn-hub {
-    --tilt: -2deg;
+    --tilt: calc(-2 * var(--nb-rot, 1) * 1deg);
     padding: 8px 12px 6px;
     background: var(--carta); color: var(--inchiostro);
-    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
-    font: 700 .8rem 'Josefin Sans', sans-serif; text-transform: uppercase; text-decoration: none;
+    border: var(--bordo); box-shadow: var(--sh-4);
+    font: 700 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; text-decoration: none;
     transform: rotate(var(--tilt));
     transition: transform var(--tempo), box-shadow var(--tempo);
 }
-.btn-hub:hover { transform: var(--alza); box-shadow: 7px 7px 0 var(--inchiostro); }
+.btn-hub:hover { transform: var(--alza); box-shadow: var(--sh-7); }
 .btn-hub:active { transform: var(--atterra); box-shadow: 0 0 0 var(--inchiostro); }
 .btn-hub:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 4px; }
 
@@ -110,9 +139,9 @@ html[data-modo="fit"]:not([data-pronto]) .scala { visibility: hidden; animation:
     display: inline-flex; align-items: center; gap: 6px;
     padding: 5px 10px 3px;
     background: var(--pericolo); color: var(--carta);
-    border: 2px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro);
-    font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(2deg);
+    border: 2px solid var(--inchiostro); box-shadow: var(--sh-3);
+    font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
+    transform: rotate(calc(2 * var(--nb-rot, 1) * 1deg));
 }
 .badge-live::before {
     content: ''; width: 8px; height: 8px; border-radius: 50%;
@@ -121,14 +150,14 @@ html[data-modo="fit"]:not([data-pronto]) .scala { visibility: hidden; animation:
 }
 @keyframes pulsa { 50% { opacity: .2; } }
 
-.opzione-bot { display: flex; gap: 6px; align-items: center; font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase; cursor: pointer; }
+.opzione-bot { display: flex; gap: 6px; align-items: center; font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; cursor: pointer; }
 .opzione-bot input { width: 16px; height: 16px; accent-color: var(--inchiostro); }
 
 .btn-audio {
     width: 40px; height: 40px; padding: 5px;
     background: var(--carta);
-    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
-    transform: rotate(3deg);
+    border: var(--bordo); box-shadow: var(--sh-4);
+    transform: rotate(calc(3 * var(--nb-rot, 1) * 1deg));
     cursor: pointer;
     transition: all .3s ease;
 }
@@ -192,12 +221,12 @@ html[data-modo="fit"] .lato > * { flex-shrink: 0; }
     background: var(--colore-mio);
     color: var(--inchiostro);
     border: var(--bordo-forte);
-    box-shadow: 9px 9px 0 var(--inchiostro);
-    font: 700 1.7rem 'Josefin Sans', sans-serif;
+    box-shadow: var(--sh-9);
+    font: 700 1.7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     line-height: 1; letter-spacing: .01em;
     text-transform: uppercase;
     white-space: nowrap; overflow: hidden;      /* il nome lungo scorre (nome-scorrevole.css), niente puntini */
-    transform: rotate(calc(var(--verso) * 4deg));
+    transform: rotate(calc(var(--verso) * 4deg * var(--nb-rot, 1)));
 }
 html[data-modo="fit"] .lato-nome { max-width: 100%; font-size: 2rem; }
 .lato-team {
@@ -206,10 +235,10 @@ html[data-modo="fit"] .lato-nome { max-width: 100%; font-size: 2rem; }
     margin: 0;
     padding: 6px 10px 4px;
     background: var(--inchiostro); color: var(--carta);
-    font: 700 .78rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    font: 700 .78rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
     white-space: nowrap; overflow: hidden;      /* il nome lungo scorre (nome-scorrevole.css), niente puntini */
-    box-shadow: 4px 4px 0 var(--colore-mio);
-    transform: rotate(calc(var(--verso) * -2deg));
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--colore-mio);
+    transform: rotate(calc(var(--verso) * -2deg * var(--nb-rot, 1)));
 }
 html[data-modo="fit"] .lato-team { align-self: flex-start; }
 html[data-modo="fit"] .lato.p2 .lato-team { align-self: flex-end; }
@@ -223,19 +252,19 @@ html[data-modo="fit"] body.vista-p2 .lato.p2 .lato-team { align-self: flex-start
 }
 html[data-modo="fit"] .lato-pkm { flex-basis: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
 .membro {
-    --tilt: -1.5deg;
+    --tilt: calc(-1.5 * var(--nb-rot, 1) * 1deg);
     position: relative;
     box-sizing: border-box;
     display: flex; flex-direction: column; align-items: center; gap: 3px;
     padding: 2px 4px 6px;
     background: var(--carta);
-    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
+    border: var(--bordo); box-shadow: var(--sh-4);
     transform: rotate(var(--tilt));
     transition: transform var(--tempo), box-shadow var(--tempo), background-color var(--tempo);
 }
-.membro:nth-child(4n+2) { --tilt: 1.2deg; }
-.membro:nth-child(4n+3) { --tilt: .8deg; }
-.membro:nth-child(4n+4) { --tilt: -1deg; }
+.membro:nth-child(4n+2) { --tilt: calc(1.2 * var(--nb-rot, 1) * 1deg); }
+.membro:nth-child(4n+3) { --tilt: calc(.8 * var(--nb-rot, 1) * 1deg); }
+.membro:nth-child(4n+4) { --tilt: calc(-1 * var(--nb-rot, 1) * 1deg); }
 /* GIF animate come nel resto del sito: contenute nel riquadro, con l'ombra nera di .modal-sprite */
 .membro > img { display: block; width: 100%; max-width: 48px; aspect-ratio: 1; height: auto; object-fit: contain; filter: drop-shadow(2px 2px 0 var(--inchiostro)); }
 /* La colonna ha un'altezza sola (quella dello schermo): quando è bassa i Pokémon si dispongono su tre colonne e più piccoli,
@@ -248,7 +277,7 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 }
 .membro-nome {
     max-width: 100%;
-    font: 700 .6rem 'Josefin Sans', sans-serif; line-height: 1.1; text-transform: uppercase; text-align: center;
+    font: 700 .6rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1.1; text-transform: uppercase; text-align: center;
     overflow-wrap: anywhere;
 }
 .membro-hp { display: block; width: 100%; height: 5px; border: 2px solid var(--inchiostro); background: var(--carta); visibility: hidden; }
@@ -262,26 +291,26 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
     max-width: 100%; min-width: 0;
     padding: 8px 10px 9px;
     background: var(--carta);
-    border: var(--bordo); box-shadow: 4px 4px 0 var(--colore-mio);
-    font-family: 'Josefin Sans', sans-serif;
+    border: var(--bordo); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--colore-mio);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
 }
 .scheda-titolo {
     margin: 0; padding: 4px 8px 2px;
     background: var(--ambra); color: var(--inchiostro);
     border: 2px solid var(--inchiostro);
-    font: 700 .72rem/1.15 'Josefin Sans', sans-serif; text-transform: uppercase; letter-spacing: .03em;
+    font: 700 .72rem/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .03em;
     overflow-wrap: anywhere;
 }
 .scheda-riga { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 .scheda-elo, .scheda-posizione {
     padding: 3px 8px 1px;
     border: 2px solid var(--inchiostro);
-    font: 700 .74rem/1.25 'Josefin Sans', sans-serif; letter-spacing: .04em; white-space: nowrap; cursor: help;
+    font: 700 .74rem/1.25 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; white-space: nowrap; cursor: help;
 }
 .scheda-elo { background: var(--inchiostro); color: var(--carta); }
 .scheda-elo b { font-weight: 900; }
 .scheda-posizione { background: var(--colore-mio); color: var(--inchiostro); }
-.scheda-etichetta { flex: 0 0 100%; font: 700 .62rem/1 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+.scheda-etichetta { flex: 0 0 100%; font: 700 .62rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
 .scheda-medaglie { gap: 5px; }
 /* i badge del team accanto al nome del team: medagliette e quanti ne ha */
 .scheda-team-badge { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; max-width: 100%; min-width: 0; }
@@ -295,7 +324,7 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
     box-sizing: border-box; width: 28px; height: 28px;
     background: var(--livello);
     border: 3px solid var(--inchiostro); border-radius: 50%;
-    box-shadow: 2px 2px 0 var(--inchiostro);
+    box-shadow: var(--sh-2);
     cursor: help;
 }
 .bt-mini.bt-bronze { --livello: var(--bt-bronzo); }
@@ -304,13 +333,13 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .bt-mini.bt-platinum { --livello: var(--bt-platino); }
 .bt-mini-img { width: 18px; height: 18px; object-fit: contain; }
 .bt-mini .bt-finto { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: .78rem; }
-.bt-mini.bt-altri { width: auto; min-width: 28px; padding: 0 6px; border-radius: 14px; background: var(--carta); font: 900 .66rem/1 'Josefin Sans', sans-serif; color: var(--inchiostro); }
+.bt-mini.bt-altri { width: auto; min-width: 28px; padding: 0 6px; border-radius: 14px; background: var(--carta); font: 900 .66rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); color: var(--inchiostro); }
 /* le medagliette dei fiocchi sul Pokémon, in basso a sinistra; passandoci sopra il fumetto elenca i fiocchi */
 .membro .fiocco-medaglie {
     position: absolute; left: -9px; bottom: -9px; z-index: 3;
     display: flex; align-items: center; gap: 2px;
 }
-.membro .fiocco-medaglie .bt-mini { width: 22px; height: 22px; border-width: 2px; box-shadow: 1px 1px 0 var(--inchiostro); }
+.membro .fiocco-medaglie .bt-mini { width: 22px; height: 22px; border-width: 2px; box-shadow: var(--sh-1); }
 .membro .fiocco-medaglie .bt-mini-img { width: 13px; height: 13px; }
 .membro .fiocco-medaglie .bt-mini .bt-finto { font-size: .6rem; }
 .membro .fiocco-medaglie .bt-mini.bt-altri { min-width: 22px; padding: 0 4px; font-size: .58rem; }
@@ -320,8 +349,8 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
     box-sizing: border-box; width: 224px;
     padding: 9px 12px;
     background: var(--carta); color: var(--inchiostro);
-    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
-    font: 700 .7rem/1.3 'Josefin Sans', sans-serif; text-align: left; text-transform: none;
+    border: var(--bordo); box-shadow: var(--sh-4);
+    font: 700 .7rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-align: left; text-transform: none;
     display: none; pointer-events: none; cursor: default;
 }
 /* si apre dove c'è posto (sopra o sotto, mai fuori dallo schermo): battle-extra.js, apriFumettoFiocchi (aggiunge .aperto) */
@@ -352,10 +381,10 @@ html[data-modo="fit"] body.vista-p2 .lato.p2 .scheda-team-badge { align-self: fl
 /* Bring 6 pick 4: non si sa ancora se è stato portato (avversario),
    oppure si sa che è rimasto fuori (il tuo team). Torna pieno quando scende in campo. */
 /* formato Random: un Pokémon avversario non ancora sceso in campo è una Poké Ball in ombra */
-.membro.ignoto { opacity: .4; box-shadow: 2px 2px 0 var(--inchiostro); }
+.membro.ignoto { opacity: .4; box-shadow: var(--sh-2); }
 .membro.ignoto > img { max-width: 32px; filter: grayscale(1) drop-shadow(1px 1px 0 var(--inchiostro)); }
 html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
-.membro.incerto { opacity: .45; box-shadow: 2px 2px 0 var(--inchiostro); }
+.membro.incerto { opacity: .45; box-shadow: var(--sh-2); }
 .membro.non-portato { opacity: .3; box-shadow: none; transform: none; }
 .membro.incerto.con-tooltip:hover, .membro.incerto.con-tooltip:focus-visible,
 .membro.non-portato.con-tooltip:hover, .membro.non-portato.con-tooltip:focus-visible { opacity: 1; }
@@ -363,22 +392,22 @@ html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
 /* In open sheet: il Pokémon si solleva come un tasto e apre la scheda */
 .membro.con-tooltip { cursor: help; }
 .membro.con-tooltip:hover, .membro.con-tooltip:focus-visible {
-    z-index: 2; transform: var(--alza); box-shadow: 7px 7px 0 var(--inchiostro);
+    z-index: 2; transform: var(--alza); box-shadow: var(--sh-7);
 }
 .membro.con-tooltip:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
 
 /* In campo: fondo del colore del player e cartellino "In" */
-.membro.in-campo { background: color-mix(in srgb, var(--colore-mio) 40%, #fff); }
+.membro.in-campo { background: color-mix(in srgb, var(--colore-mio) 40%, var(--carta)); }
 .membro.in-campo::after {
     content: 'In';
     position: absolute; top: -10px; right: -9px;
     padding: 3px 6px 1px;
     background: var(--inchiostro); color: var(--carta);
-    font: 700 .62rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(8deg);
+    font: 700 .62rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
+    transform: rotate(calc(8 * var(--nb-rot, 1) * 1deg));
 }
 /* KO: piatto, grigio, barrato */
-.membro.ko { background: #ececec; box-shadow: none; transform: none; }
+.membro.ko { background: var(--grigio-pieno); box-shadow: none; transform: none; }
 .membro.ko img { filter: grayscale(1); opacity: .45; }
 .membro.ko .membro-nome { text-decoration: line-through 2px; }
 .membro.ko::before {
@@ -394,7 +423,7 @@ html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
     box-sizing: border-box;
     background: var(--carta);
     border: var(--bordo-forte);
-    box-shadow: 12px 12px 0 var(--inchiostro);
+    box-shadow: var(--sh-12);
 }
 
 /* Insegna: formato del torneo, a che match si è e il tabellone dei set. Fondo ambra a punti
@@ -405,7 +434,7 @@ html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
     display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap;
     padding: 11px 14px 11px;
     background-color: var(--ambra);
-    background-image: radial-gradient(rgba(0, 0, 0, .16) 1.3px, transparent 1.7px);
+    background-image: radial-gradient(color-mix(in srgb, var(--inchiostro) 16%, transparent) 1.3px, transparent 1.7px);
     background-size: 8px 8px;
     border-bottom: var(--bordo-forte);
 }
@@ -414,29 +443,29 @@ html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
     max-width: 100%;
     padding: 8px 14px 5px;
     background: var(--inchiostro); color: var(--carta);
-    font: 700 1.3rem 'Josefin Sans', sans-serif; line-height: 1; text-transform: uppercase;
+    font: 700 1.3rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1; text-transform: uppercase;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    transform: rotate(-2deg);
-    box-shadow: 4px 4px 0 rgba(0, 0, 0, .3);
+    transform: rotate(calc(-2 * var(--nb-rot, 1) * 1deg));
+    box-shadow: var(--shs-4);
 }
 .ins-match {
     padding: 5px 9px 3px;
-    background: var(--crema); border: 2px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro);
-    font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase; white-space: nowrap;
-    transform: rotate(1.5deg);
+    background: var(--crema); border: 2px solid var(--inchiostro); box-shadow: var(--sh-3);
+    font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; white-space: nowrap;
+    transform: rotate(calc(1.5 * var(--nb-rot, 1) * 1deg));
 }
 .ins-match b { font-size: .9rem; }
 .ins-tabellone {
     margin-left: auto;
     display: flex; align-items: stretch;
-    background: var(--crema); border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
-    transform: rotate(1deg);
+    background: var(--crema); border: var(--bordo); box-shadow: var(--sh-4);
+    transform: rotate(calc(1 * var(--nb-rot, 1) * 1deg));
 }
 .ins-punti {
     min-width: 34px; box-sizing: border-box;
     display: flex; align-items: center; justify-content: center;
     padding: 4px 6px 2px;
-    font: 700 1.5rem 'Josefin Sans', sans-serif; line-height: 1;
+    font: 700 1.5rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1;
 }
 .ins-punti.p1 { background: var(--colore-p1); }
 .ins-punti.p2 { background: var(--colore-p2); }
@@ -445,7 +474,7 @@ html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
 .ins-set {
     display: flex; align-items: center; justify-content: center;
     padding: 4px 10px 2px;
-    font: 700 .78rem 'Josefin Sans', sans-serif; text-transform: uppercase; white-space: nowrap;
+    font: 700 .78rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; white-space: nowrap;
 }
 .cab-insegna .badge-live { flex: none; }
 
@@ -459,13 +488,13 @@ html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
 /* bordino del vetro */
 .palco-box::before {
     content: ''; position: absolute; inset: -5px;
-    border: 2px solid #3a3a3a;
+    border: 2px solid var(--grigio-vetro);
     pointer-events: none;
 }
 /* righe di scansione leggerissime sopra la partita */
 .palco-box::after {
     content: ''; position: absolute; inset: 0; z-index: 25;
-    background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .05) 0 1px, transparent 1px 3px);
+    background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--inchiostro) 5%, transparent) 0 1px, transparent 1px 3px);
     pointer-events: none;
 }
 
@@ -480,18 +509,18 @@ html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
     display: inline-flex; align-items: baseline; gap: 6px;
     padding: 5px 9px 3px;
     background: var(--crema);
-    border: 2px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro);
-    font: 700 .78rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(-1.5deg);
+    border: 2px solid var(--inchiostro); box-shadow: var(--sh-3);
+    font: 700 .78rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
+    transform: rotate(calc(-1.5 * var(--nb-rot, 1) * 1deg));
 }
-.campo-voce:nth-child(even) { transform: rotate(1.2deg); }
-.campo-voce small { font: 600 .66rem 'Montserrat', sans-serif; text-transform: none; }
+.campo-voce:nth-child(even) { transform: rotate(calc(1.2 * var(--nb-rot, 1) * 1deg)); }
+.campo-voce small { font: 600 .66rem var(--nb-font-testo, 'Montserrat', sans-serif); text-transform: none; }
 .campo-voce.meteo { background: var(--ambra); }
 .campo-voce.meteo.annullato { text-decoration: line-through 2px; }
 .campo-voce.terreno { background: #d4f7df; }
 .campo-voce.campo { background: #d9ccff; }
 .cab-campo .campo-voce { flex: none; padding: 4px 8px 2px; font-size: .72rem; white-space: nowrap; box-shadow: none; transform: none; }
-.campo-vuoto { font: 700 .72rem 'Josefin Sans', sans-serif; text-transform: uppercase; color: #8a8a8a; }
+.campo-vuoto { font: 700 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; color: var(--grigio-bordo); }
 
 /* Condizioni del lato di un player (Stealth Rock, Tailwind…): sotto i suoi Pokémon */
 .lato-condizioni { flex: 0 0 100%; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 7px; padding: 4px 8px 8px 2px; }
@@ -499,9 +528,9 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
 .lato-condizioni:empty { display: none; }
 .lato-condizioni::before {
     content: 'Side effects'; flex: 0 0 100%;
-    font: 700 .68rem 'Josefin Sans', sans-serif; text-transform: uppercase; color: #555;
+    font: 700 .68rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; color: var(--tenue-forte);
 }
-.lato-condizioni .campo-voce { padding: 3px 7px 1px; font-size: .7rem; transform: none; background: color-mix(in srgb, var(--colore-mio) 35%, #fff); }
+.lato-condizioni .campo-voce { padding: 3px 7px 1px; font-size: .7rem; transform: none; background: color-mix(in srgb, var(--colore-mio) 35%, var(--carta)); }
 
 
 /* ---------- Lo schermo di Showdown ---------- */
@@ -517,6 +546,13 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
    Showdown lo farebbe da solo solo sotto i 640px di finestra e senza contare i margini. */
 #campo { transform: scale(var(--scala-campo, 1)) !important; transform-origin: top left !important; margin-bottom: 0 !important; }
 
+/* Nel browser le bande laterali di Showdown (100px a sinistra e a destra, con il tag del nome e l'avatar dell'allenatore) non servono: i nomi stanno nelle colonne ai lati e gli
+   avatar nello sfondo. Lo schermo mostra solo il campo (440 × 360 della scena 640 × 360), ingrandito di --scala-campo (battle-layout.js) fino a riempire la console.
+   Nell'app (telefono) lo schermo resta intero, con le sue bande: lì colonne e sfondo non ci sono. */
+html:not(.app) .palco .leftbar, html:not(.app) .palco .rightbar { display: none; }
+html:not(.app) .palco { width: calc(440px * var(--scala-campo, 1)); max-width: none; height: calc(360px * var(--scala-campo, 1)); aspect-ratio: auto; }
+html:not(.app) #campo { transform: translateX(calc(-100px * var(--scala-campo, 1))) scale(var(--scala-campo, 1)) !important; }
+
 /* Allenatori: i 6 Pokémon stanno già nelle colonne ai lati */
 .palco .trainer div.teamicons { display: none; }
 /* senza le icone sotto, l'allenatore scende: lo rimetto dov'era (le barre sono alte 450px) */
@@ -528,11 +564,11 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
     padding: 4px 7px 2px;
     background: var(--inchiostro); color: var(--carta);
     border: 2px solid var(--carta);
-    font: 700 .68rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(-3deg);
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, .35);
+    font: 700 .68rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
+    transform: rotate(calc(-3 * var(--nb-rot, 1) * 1deg));
+    box-shadow: var(--shs-3);
 }
-.palco .rightbar .trainer strong { transform: rotate(3deg); }
+.palco .rightbar .trainer strong { transform: rotate(calc(3 * var(--nb-rot, 1) * 1deg)); }
 .palco .trainer div.trainersprite { opacity: 1; }
 
 /* Meteo, terreni e condizioni sono scritti fuori dallo schermo (#cab-campo);
@@ -545,9 +581,9 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
     padding: 4px 9px 2px;
     background: var(--inchiostro); color: var(--carta);
     border: 2px solid var(--carta); border-radius: 0;
-    font: 700 .95rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(-3deg);
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, .35);
+    font: 700 .95rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
+    transform: rotate(calc(-3 * var(--nb-rot, 1) * 1deg));
+    box-shadow: var(--shs-3);
 }
 
 /* Barra dei messaggi ("Go! Togekiss!", "It's super effective!"): una fascia piatta e scura, senza bordi né angoli, nel carattere del sito.
@@ -556,16 +592,16 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
 .palco .messagebar {
     left: 110px; right: 110px; bottom: 10px;
     padding: 5px 12px 2px;
-    background: rgba(0, 0, 0, .88); color: var(--carta);
+    background: color-mix(in srgb, var(--inchiostro) 88%, transparent); color: var(--carta);
     border: 0; border-radius: 0; box-shadow: none; text-shadow: none;
-    font: 400 12.5px/1.4 'Josefin Sans', sans-serif; letter-spacing: .01em;
+    font: 400 12.5px/1.4 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .01em;
 }
-.palco .messagebar strong { color: var(--carta); font: 700 13px 'Josefin Sans', sans-serif; letter-spacing: .02em; }
-.palco .messagebar small { font: 400 11.5px 'Josefin Sans', sans-serif; letter-spacing: .01em; opacity: .9; }
+.palco .messagebar strong { color: var(--carta); font: 700 13px var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .02em; }
+.palco .messagebar small { font: 400 11.5px var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .01em; opacity: .9; }
 
 /* Barre della salute: niente stondature, bordo nero, colori pieni */
 .palco .statbar strong {
-    font: 700 10px/11px 'Josefin Sans', sans-serif; text-transform: uppercase; letter-spacing: .02em;
+    font: 700 10px/11px var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .02em;
     color: var(--inchiostro);
     margin-bottom: 1px;
 }
@@ -574,7 +610,7 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
     width: 148px; height: 6px; padding: 0;
     background: var(--carta);
     border: 2px solid var(--inchiostro); border-radius: 0;
-    box-shadow: 2px 2px 0 var(--inchiostro);
+    box-shadow: var(--sh-2, 2px 2px 0 var(--inchiostro));
 }
 .palco .statbar .hpbar .hp,
 .palco .statbar .hpbar .prevhp { height: 6px; border: 0; border-radius: 0; }
@@ -588,7 +624,7 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
     top: -2px; height: 10px; width: 30px;
     background: var(--inchiostro); color: var(--carta);
     border-radius: 0; text-shadow: none;
-    font: 700 8px/11px 'Josefin Sans', sans-serif;
+    font: 700 8px/11px var(--nb-font-titoli, 'Josefin Sans', sans-serif);
 }
 .palco .rstatbar .hpbar .hptext { right: -32px; border-radius: 0; }
 .palco .lstatbar .hpbar .hptext { left: -32px; border-radius: 0; }
@@ -601,7 +637,7 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
 .palco .statbar span {
     display: inline-block; margin: 0 2px 2px 0; padding: 0 3px;
     border: 1px solid var(--inchiostro); border-radius: 0;
-    font: 700 8px/11px 'Montserrat', sans-serif;
+    font: 700 8px/11px var(--nb-font-testo, 'Montserrat', sans-serif);
 }
 .palco .statbar span.brn { background: #ff4422; color: var(--carta); border: 1px solid var(--inchiostro); border-radius: 0; }
 .palco .statbar span.psn,
@@ -619,50 +655,50 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
     box-sizing: border-box;
     display: flex; align-items: center; justify-content: center;
     padding: 24px;
-    background: rgba(255, 253, 246, .96);
+    background: color-mix(in srgb, var(--crema) 96%, transparent);
     text-align: center;
 }
-.velo p { margin: 0; max-width: 460px; font: 700 1rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.velo p { margin: 0; max-width: 460px; font: 700 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 .lobby { align-items: flex-start; justify-content: stretch; overflow-y: auto; padding: 20px 22px; background: var(--crema); text-align: left; }
 .lobby-interno { width: 100%; }
 .lobby-titolo {
     display: inline-block; margin: 0;
     padding: 6px 13px 4px;
     background: var(--inchiostro); color: var(--carta);
-    font: 700 1.05rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(-2deg);
-    box-shadow: 4px 4px 0 rgba(0, 0, 0, .25);
+    font: 700 1.05rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
+    transform: rotate(calc(-2 * var(--nb-rot, 1) * 1deg));
+    box-shadow: var(--shs-4);
 }
-.velo .lobby-sotto { margin: 14px 0; max-width: none; font: 600 .85rem 'Montserrat', sans-serif; text-transform: none; }
-.lobby-stati { margin: 14px 0 0; padding: 0; list-style: none; font: 700 .95rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.velo .lobby-sotto { margin: 14px 0; max-width: none; font: 600 .85rem var(--nb-font-testo, 'Montserrat', sans-serif); text-transform: none; }
+.lobby-stati { margin: 14px 0 0; padding: 0; list-style: none; font: 700 .95rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 .lobby-stati li { margin-bottom: 6px; }
 .lobby-colonne { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px; }
 
 .scelta-team { display: grid; gap: 12px; }
-.scelta-team-titolo { margin: 0; font: 700 .95rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.scelta-team-titolo { margin: 0; font: 700 .95rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 /* le 6 icone (6 × 40px) stanno su una riga sola */
 .schede-team { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; padding: 2px 8px 8px 2px; }
 .scheda-team {
-    --tilt: -1deg;
+    --tilt: calc(-1 * var(--nb-rot, 1) * 1deg);
     position: relative;
     display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
     padding: 9px 11px;
     background: var(--carta); color: var(--inchiostro);
-    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
+    border: var(--bordo); box-shadow: var(--sh-4);
     font: inherit; text-align: left; cursor: pointer;
     transform: rotate(var(--tilt));
     transition: transform var(--tempo), box-shadow var(--tempo), background-color var(--tempo);
 }
-.scheda-team:nth-child(even) { --tilt: .8deg; }
-.scheda-team:hover:not(:disabled) { z-index: 2; transform: var(--alza); box-shadow: 7px 7px 0 var(--inchiostro); }
+.scheda-team:nth-child(even) { --tilt: calc(.8 * var(--nb-rot, 1) * 1deg); }
+.scheda-team:hover:not(:disabled) { z-index: 2; transform: var(--alza); box-shadow: var(--sh-7); }
 .scheda-team:active:not(:disabled) { transform: var(--atterra); box-shadow: 0 0 0 var(--inchiostro); }
 .scheda-team:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 4px; }
 .scheda-team:disabled { cursor: default; }
 .scheda-team:disabled:not(.scelta) { opacity: .45; transform: none; box-shadow: none; }
 .scheda-team.scelta { background: var(--ambra); }
-.scheda-team-nome { font: 700 .9rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.scheda-team-nome { font: 700 .9rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 /* modalità libera: di che formato è il team */
-.scheda-team-formato { align-self: flex-start; padding: 1px 6px; background: var(--inchiostro); color: #fff; font: 700 .65rem/1.4 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.scheda-team-formato { align-self: flex-start; padding: 1px 6px; background: var(--inchiostro); color: var(--carta); font: 700 .65rem/1.4 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; }
 .scheda-team-icone { display: flex; flex-wrap: wrap; }
 .picon { display: inline-block; flex-shrink: 0; width: 40px; height: 30px; }
 
@@ -674,7 +710,7 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
     position: absolute; inset: 0; z-index: 30;
     display: flex; align-items: center; align-items: safe center; justify-content: center;
     overflow-y: auto;      /* un cartello più alto del palco (con la rivincita) scorre invece di tagliarsi */
-    background: rgba(0, 0, 0, .25);
+    background: color-mix(in srgb, var(--inchiostro) 25%, transparent);
     -webkit-backdrop-filter: blur(3px);
     backdrop-filter: blur(3px);
 }
@@ -682,22 +718,22 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
     box-sizing: border-box; max-width: 480px;
     padding: 22px 24px 20px;
     background: var(--ambra);
-    border: var(--bordo-forte); box-shadow: 9px 9px 0 var(--inchiostro);
+    border: var(--bordo-forte); box-shadow: var(--sh-9);
     text-align: center;
-    transform: rotate(-2deg);
+    transform: rotate(calc(-2 * var(--nb-rot, 1) * 1deg));
     animation: esitoEntra .2s cubic-bezier(.175, .885, .32, 1.275);
 }
 @keyframes esitoEntra {
-    from { opacity: 0; transform: rotate(-2deg) scale(.9) translateY(12px); }
-    to   { opacity: 1; transform: rotate(-2deg) scale(1) translateY(0); }
+    from { opacity: 0; transform: rotate(calc(-2 * var(--nb-rot, 1) * 1deg)) scale(.9) translateY(12px); }
+    to   { opacity: 1; transform: rotate(calc(-2 * var(--nb-rot, 1) * 1deg)) scale(1) translateY(0); }
 }
 .esito-card h2 {
     display: inline-block; margin: 0;
     padding: 6px 16px 4px;
     background: var(--inchiostro); color: var(--carta);
-    font: 700 1.45rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(-2deg);
-    box-shadow: 5px 5px 0 rgba(0, 0, 0, .3);
+    font: 700 1.45rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
+    transform: rotate(calc(-2 * var(--nb-rot, 1) * 1deg));
+    box-shadow: var(--shs-5);
 }
 .esito-card p { margin: 14px 0 0; font-weight: 700; }
 .esito-card .riga-azioni { margin-top: 16px; }
@@ -708,7 +744,7 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
 .rivincita {
     box-sizing: border-box; display: grid; gap: 8px; justify-items: stretch;
     padding: 10px 12px 12px; text-align: left;
-    background: var(--carta); border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
+    background: var(--carta); border: var(--bordo); box-shadow: var(--sh-4);
 }
 .esito-card .rivincita { flex: 1 1 100%; }
 .pannello .rivincita { display: none; margin: 10px; }
@@ -716,18 +752,18 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
 .esito-card:has(.rivincita) { padding: 14px 18px 14px; }
 .esito-card:has(.rivincita) #sotto-vittoria { margin-top: 8px; }
 .esito-card:has(.rivincita) .riga-azioni { margin-top: 10px; gap: 8px; }
-.rivincita p { margin: 0; font: 600 .82rem/1.35 'Montserrat', sans-serif; }
+.rivincita p { margin: 0; font: 600 .82rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); }
 .rivincita .errore { color: var(--pericolo); }
 .rivincita-gruppo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.rivincita-nome { flex: 0 0 100%; font: 700 .66rem/1.2 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.rivincita-nome { flex: 0 0 100%; font: 700 .66rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; }
 .rivincita-scelta {
     padding: 5px 9px 3px; cursor: pointer;
     background: var(--carta); color: var(--inchiostro);
-    border: 2px solid var(--inchiostro); box-shadow: 2px 2px 0 var(--inchiostro);
-    font: 700 .7rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    border: 2px solid var(--inchiostro); box-shadow: var(--sh-2);
+    font: 700 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
     transition: transform .1s ease, box-shadow .1s ease;
 }
-.rivincita-scelta:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--inchiostro); }
+.rivincita-scelta:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: var(--sh-3); }
 .rivincita-scelta.scelta { background: var(--inchiostro); color: var(--carta); }
 .rivincita-scelta:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
 .rivincita-scelta:disabled { cursor: default; opacity: .6; }
@@ -741,10 +777,10 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
     height: 220px;
     background: var(--carta);
     border: var(--bordo);
-    box-shadow: 8px 8px 0 var(--inchiostro);
-    font-family: 'Montserrat', sans-serif;
+    box-shadow: var(--sh-8);
+    font-family: var(--nb-font-testo, 'Montserrat', sans-serif);
     font-size: .78rem;
-    scrollbar-color: var(--inchiostro) #eee;
+    scrollbar-color: var(--inchiostro) var(--grigio-scrollbar);
 }
 /* Tutto in una schermata: la cronaca è alta quanto la console e scorre al suo interno */
 html[data-modo="fit"] .cronaca.battle-log { position: absolute; inset: 0 8px 8px 0; height: auto; }
@@ -754,9 +790,9 @@ html[data-modo="fit"] .cronaca.battle-log { position: absolute; inset: 0 8px 8px
     padding: 4px 10px 2px;
     background: var(--inchiostro); color: var(--carta);
     border: 0;
-    font: 700 .85rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(-1.5deg);
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, .25);
+    font: 700 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
+    transform: rotate(calc(-1.5 * var(--nb-rot, 1) * 1deg));
+    box-shadow: var(--shs-3);
 }
 
 
@@ -780,12 +816,12 @@ html[data-modo="fit"] body.spettatore .comandi { height: auto; }
 }
 .pannello-testa.p1 { background: var(--colore-p1); }
 .pannello-testa.p2 { background: var(--colore-p2); }
-.pannello-testa h2 { margin: 0; font: 700 1rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.pannello-testa h2 { margin: 0; font: 700 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 .stato-avversario {
     margin: 0;
     padding: 3px 8px 1px;
     background: var(--carta); border: 2px solid var(--inchiostro);
-    font: 700 .72rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    font: 700 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
 }
 .stato-avversario:empty { display: none; }
 
@@ -802,10 +838,10 @@ html[data-modo="fit"] body.spettatore .comandi { height: auto; }
 }
 .comandi:not(.doppio) .stato-avversario {
     padding: 5px 10px 3px;
-    border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro);
+    border-width: 3px; box-shadow: var(--sh-3);
     font-size: .78rem;
     background: var(--ambra);
-    transform: rotate(2deg);
+    transform: rotate(calc(2 * var(--nb-rot, 1) * 1deg));
 }
 .comandi:not(.doppio) .stato-avversario[data-stato="scelto"] { background: var(--conferma); }
 .corpo {
@@ -819,35 +855,35 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 .corpo:has(> .messaggio:only-child) { align-content: center; justify-items: center; text-align: center; }
 .striscia {
     margin: 0; padding: 16px 18px 14px;
-    font: 700 .9rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    font: 700 .9rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
 }
 
 .testa-scelta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
-.domanda { margin: 0; font: 700 .95rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.domanda { margin: 0; font: 700 .95rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 .domanda small { font-size: .75rem; }
-.etichetta { margin: 0; font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.etichetta { margin: 0; font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 .messaggio {
     display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px;
     min-height: 40px;
-    font: 700 .9rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    font: 700 .9rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
 }
 
 /* Bottoni flottanti */
 .btn {
-    --tilt: -1.5deg;
+    --tilt: calc(-1.5 * var(--nb-rot, 1) * 1deg);
     position: relative;
     box-sizing: border-box;
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     padding: 10px 16px 8px;
     background: var(--carta); color: var(--inchiostro);
-    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
-    font: 700 .85rem 'Josefin Sans', sans-serif; text-transform: uppercase; text-decoration: none;
+    border: var(--bordo); box-shadow: var(--sh-4);
+    font: 700 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; text-decoration: none;
     cursor: pointer;
     transform: rotate(var(--tilt));
     transition: transform var(--tempo), box-shadow var(--tempo), background-color var(--tempo), color var(--tempo);
 }
-.btn:nth-child(even) { --tilt: 1.2deg; }
-.btn:hover:not(:disabled) { z-index: 2; transform: var(--alza); box-shadow: 7px 7px 0 var(--inchiostro); }
+.btn:nth-child(even) { --tilt: calc(1.2 * var(--nb-rot, 1) * 1deg); }
+.btn:hover:not(:disabled) { z-index: 2; transform: var(--alza); box-shadow: var(--sh-7); }
 .btn:active:not(:disabled) { transform: var(--atterra); box-shadow: 0 0 0 var(--inchiostro); }
 .btn:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 4px; }
 .btn:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; transform: none; }
@@ -855,12 +891,12 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 .btn.primario:hover:not(:disabled) { background: var(--conferma-scuro); color: var(--carta); }
 .btn.scelto { background: var(--colore-mio, var(--ambra)); }
 .btn.nascosto { visibility: hidden; }
-.btn.piccolo { padding: 6px 10px 4px; font-size: .72rem; border-width: 2px; box-shadow: 3px 3px 0 var(--inchiostro); }
-.btn.piccolo:hover:not(:disabled) { box-shadow: 5px 5px 0 var(--inchiostro); }
+.btn.piccolo { padding: 6px 10px 4px; font-size: .72rem; border-width: 2px; box-shadow: var(--sh-3); }
+.btn.piccolo:hover:not(:disabled) { box-shadow: var(--sh-5); }
 .btn.meccanica[aria-pressed="true"] { background: var(--pericolo); color: var(--carta); }
 /* "Choice sent. Waiting…" con il pulsante per ritirare la scelta, e il perché se non si può */
 .annulla-scelta { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; }
-.annulla-errore { font: 700 .72rem 'Josefin Sans', sans-serif; text-transform: uppercase; color: var(--pericolo); }
+.annulla-errore { font: 700 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; color: var(--pericolo); }
 .riga-azioni { display: flex; flex-wrap: wrap; gap: 14px; }
 .riga-azioni.centrata { justify-content: center; }
 
@@ -869,27 +905,27 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 .comandi.doppio .mosse { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .mossa {
     --tipo: #aaaa99;
-    --tilt: -1.2deg;
+    --tilt: calc(-1.2 * var(--nb-rot, 1) * 1deg);
     position: relative;
     box-sizing: border-box;
     display: flex; flex-direction: column; gap: 3px;
     min-height: 54px;
     padding: 6px 10px 5px;
-    background: color-mix(in srgb, var(--tipo) 28%, #fff);
+    background: color-mix(in srgb, var(--tipo) 28%, var(--carta));
     color: var(--inchiostro);
     border: var(--bordo); border-left: 10px solid var(--tipo);
-    box-shadow: 4px 4px 0 var(--inchiostro);
-    font-family: 'Josefin Sans', sans-serif; text-align: left;
+    box-shadow: var(--sh-4);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-align: left;
     cursor: pointer;
     transform: rotate(var(--tilt));
     transition: transform var(--tempo), box-shadow var(--tempo);
 }
-.mossa:nth-child(4n+2) { --tilt: .9deg; }
-.mossa:nth-child(4n+3) { --tilt: -.6deg; }
-.mossa:nth-child(4n+4) { --tilt: 1.3deg; }
+.mossa:nth-child(4n+2) { --tilt: calc(.9 * var(--nb-rot, 1) * 1deg); }
+.mossa:nth-child(4n+3) { --tilt: calc(-.6 * var(--nb-rot, 1) * 1deg); }
+.mossa:nth-child(4n+4) { --tilt: calc(1.3 * var(--nb-rot, 1) * 1deg); }
 .mossa-nome { font-size: .9rem; font-weight: 700; line-height: 1.1; text-transform: uppercase; overflow-wrap: anywhere; }
-.mossa-info { display: flex; justify-content: space-between; gap: 6px; font: 600 .7rem 'Montserrat', sans-serif; }
-.mossa:hover:not(.spenta) { z-index: 2; transform: var(--alza); box-shadow: 7px 7px 0 var(--inchiostro); }
+.mossa-info { display: flex; justify-content: space-between; gap: 6px; font: 600 .7rem var(--nb-font-testo, 'Montserrat', sans-serif); }
+.mossa:hover:not(.spenta) { z-index: 2; transform: var(--alza); box-shadow: var(--sh-7); }
 .mossa:active:not(.spenta) { transform: var(--atterra); box-shadow: 0 0 0 var(--inchiostro); }
 .mossa:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 4px; }
 .mossa.spenta { opacity: .4; cursor: not-allowed; box-shadow: none; transform: none; }
@@ -905,58 +941,58 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 
 /* Pokémon da mandare in campo o da colpire */
 .btn-pkm {
-    --tilt: -1.2deg;
+    --tilt: calc(-1.2 * var(--nb-rot, 1) * 1deg);
     position: relative;
     display: inline-flex; align-items: center; gap: 4px;
     padding: 2px 9px 2px 2px;
     background: var(--carta); color: var(--inchiostro);
-    border: 2px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro);
-    font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    border: 2px solid var(--inchiostro); box-shadow: var(--sh-3);
+    font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
     cursor: pointer;
     transform: rotate(var(--tilt));
     transition: transform var(--tempo), box-shadow var(--tempo), background-color var(--tempo);
 }
-.btn-pkm:nth-child(even) { --tilt: 1.2deg; }
+.btn-pkm:nth-child(even) { --tilt: calc(1.2 * var(--nb-rot, 1) * 1deg); }
 .btn-pkm:hover:not(.spento) {
     z-index: 2;
-    background: color-mix(in srgb, var(--colore-mio, var(--ambra)) 30%, #fff);
-    transform: var(--alza); box-shadow: 5px 5px 0 var(--inchiostro);
+    background: color-mix(in srgb, var(--colore-mio, var(--ambra)) 30%, var(--carta));
+    transform: var(--alza); box-shadow: var(--sh-5);
 }
 .btn-pkm:active:not(.spento) { transform: var(--atterra); box-shadow: 0 0 0 var(--inchiostro); }
 .btn-pkm:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
 .btn-pkm.spento { opacity: .4; cursor: not-allowed; box-shadow: none; transform: none; }
-.btn-pkm.grande { padding: 3px 11px 3px 3px; font-size: .8rem; border-width: 3px; box-shadow: 4px 4px 0 var(--inchiostro); }
-.btn-pkm.grande:hover:not(.spento) { box-shadow: 7px 7px 0 var(--inchiostro); }
+.btn-pkm.grande { padding: 3px 11px 3px 3px; font-size: .8rem; border-width: 3px; box-shadow: var(--sh-4); }
+.btn-pkm.grande:hover:not(.spento) { box-shadow: var(--sh-7); }
 .btn-pkm-testo { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .btn-pkm-hp { display: block; width: 52px; height: 5px; border: 1px solid var(--inchiostro); background: var(--carta); }
 .btn-pkm.grande .btn-pkm-hp { width: 68px; height: 7px; border-width: 2px; }
 /* Compatto (il cambio sotto le mosse): icona e barra della salute, il nome sta nel tooltip */
 .btn-pkm.compatto { flex-direction: column; gap: 2px; padding: 2px 4px 4px; }
 .btn-pkm.compatto .btn-pkm-hp { width: 38px; }
-.btn-pkm.compatto .tag-stato { position: absolute; top: -8px; right: -7px; z-index: 1; font-size: .55rem; transform: rotate(5deg); }
+.btn-pkm.compatto .tag-stato { position: absolute; top: -8px; right: -7px; z-index: 1; font-size: .55rem; transform: rotate(calc(5 * var(--nb-rot, 1) * 1deg)); }
 /* Il compagno come bersaglio: piccolo e grigio. Si può scegliere (certe mosse lo vogliono), ma non salta all'occhio
    e non è grande come i bottoni degli avversari, così non si preme per sbaglio */
 .bersagli-gruppo.alleati { opacity: .8; }
-.bersagli-gruppo.alleati .etichetta { font-size: .62rem; color: #666; }
+.bersagli-gruppo.alleati .etichetta { font-size: .62rem; color: var(--tenue); }
 .btn-pkm.alleato {
     --tilt: 0deg;
     padding: 1px 7px 1px 1px;
-    background: #e4e4e4; color: #666;
-    border: 2px dashed #8a8a8a; box-shadow: 2px 2px 0 #9a9a9a;
+    background: var(--grigio-pieno-2); color: var(--tenue);
+    border: 2px dashed var(--grigio-bordo); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--grigio-ombra);
     font-size: .6rem;
 }
 .btn-pkm.alleato .picon { filter: grayscale(1) opacity(.75); transform: scale(.85); transform-origin: left center; margin-right: -4px; }
-.btn-pkm.alleato .btn-pkm-hp { width: 36px; height: 4px; border-color: #8a8a8a; }
-.btn-pkm.alleato .btn-pkm-nota { background: #8a8a8a; }
-.btn-pkm.alleato:hover:not(.spento) { background: #ececec; transform: none; box-shadow: 3px 3px 0 #9a9a9a; }
-.btn-pkm.alleato:active:not(.spento) { transform: none; box-shadow: 0 0 0 #9a9a9a; }
+.btn-pkm.alleato .btn-pkm-hp { width: 36px; height: 4px; border-color: var(--grigio-bordo); }
+.btn-pkm.alleato .btn-pkm-nota { background: var(--grigio-bordo); }
+.btn-pkm.alleato:hover:not(.spento) { background: var(--grigio-pieno); transform: none; box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--grigio-ombra); }
+.btn-pkm.alleato:active:not(.spento) { transform: none; box-shadow: 0 0 0 var(--grigio-ombra); }
 .btn-pkm-hp span { display: block; height: 100%; }
 .hp-g { background: var(--conferma); }
 .hp-y { background: var(--ambra); }
 .hp-r { background: var(--pericolo); }
 .btn-pkm-ko { font-size: .65rem; }
 .btn-pkm-nota { padding: 1px 4px; background: var(--inchiostro); color: var(--carta); font-size: .6rem; }
-.tag-stato { padding: 1px 4px; border: 1px solid var(--inchiostro); font: 700 .6rem 'Montserrat', sans-serif; }
+.tag-stato { padding: 1px 4px; border: 1px solid var(--inchiostro); font: 700 .6rem var(--nb-font-testo, 'Montserrat', sans-serif); }
 .tag-stato.par { background: #ffcc33; }
 .tag-stato.brn { background: #ff4422; color: var(--carta); }
 .tag-stato.psn, .tag-stato.tox { background: #aa5599; color: var(--carta); }
@@ -968,8 +1004,8 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     position: absolute; top: -11px; right: -8px; z-index: 1;
     padding: 2px 5px 0;
     border: 2px solid var(--inchiostro);
-    font: 700 .6rem 'Josefin Sans', sans-serif; text-transform: uppercase; white-space: nowrap;
-    transform: rotate(4deg);
+    font: 700 .6rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; white-space: nowrap;
+    transform: rotate(calc(4 * var(--nb-rot, 1) * 1deg));
 }
 .eff.super { background: var(--conferma); }
 .eff.poco { background: var(--ambra); }
@@ -979,25 +1015,25 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 /* Team preview: le GIF dei tuoi 6, come carte appoggiate storte */
 .anteprima-griglia { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; padding: 8px 6px 6px 10px; }
 .tessera {
-    --tilt: -2deg;
+    --tilt: calc(-2 * var(--nb-rot, 1) * 1deg);
     position: relative;
     box-sizing: border-box;
     display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;
     height: 100px;
     padding: 6px 4px;
     background: var(--carta); color: var(--inchiostro);
-    border: var(--bordo); box-shadow: 5px 5px 0 var(--inchiostro);
-    font-family: 'Josefin Sans', sans-serif;
+    border: var(--bordo); box-shadow: var(--sh-5);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     cursor: pointer;
     transform: rotate(var(--tilt));
     transition: transform var(--tempo), box-shadow var(--tempo), background-color var(--tempo);
 }
-.tessera:nth-child(6n+2) { --tilt: 1.5deg; }
-.tessera:nth-child(6n+3) { --tilt: -1deg; }
-.tessera:nth-child(6n+4) { --tilt: 2deg; }
-.tessera:nth-child(6n+5) { --tilt: -1.5deg; }
-.tessera:nth-child(6n+6) { --tilt: 1deg; }
-.tessera:hover { z-index: 2; transform: var(--alza); box-shadow: 8px 8px 0 var(--inchiostro); }
+.tessera:nth-child(6n+2) { --tilt: calc(1.5 * var(--nb-rot, 1) * 1deg); }
+.tessera:nth-child(6n+3) { --tilt: calc(-1 * var(--nb-rot, 1) * 1deg); }
+.tessera:nth-child(6n+4) { --tilt: calc(2 * var(--nb-rot, 1) * 1deg); }
+.tessera:nth-child(6n+5) { --tilt: calc(-1.5 * var(--nb-rot, 1) * 1deg); }
+.tessera:nth-child(6n+6) { --tilt: calc(1 * var(--nb-rot, 1) * 1deg); }
+.tessera:hover { z-index: 2; transform: var(--alza); box-shadow: var(--sh-8); }
 .tessera:active { transform: var(--atterra); box-shadow: 0 0 0 var(--inchiostro); }
 .tessera:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 4px; }
 .tessera.scelta { background: var(--colore-mio, var(--ambra)); }
@@ -1012,22 +1048,22 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     display: flex; align-items: center; justify-content: center;
     background: var(--inchiostro); color: var(--carta);
     border: 2px solid var(--carta);
-    font: 700 .95rem 'Josefin Sans', sans-serif;
-    transform: rotate(-8deg);
+    font: 700 .95rem var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    transform: rotate(calc(-8 * var(--nb-rot, 1) * 1deg));
 }
 .tessera-lead {
     position: absolute; top: 6px; right: 6px;
     padding: 2px 5px 1px;
     background: var(--pericolo); color: var(--carta);
     border: 2px solid var(--inchiostro);
-    font: 700 .6rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(4deg);
+    font: 700 .6rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
+    transform: rotate(calc(4 * var(--nb-rot, 1) * 1deg));
 }
 
 /* Messaggi */
 .errore {
     margin: 0; padding: 9px 11px;
-    background: #ffd9d9; border: var(--bordo); box-shadow: 4px 4px 0 var(--pericolo);
+    background: #ffd9d9; border: var(--bordo); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--pericolo);
     font-size: .8rem; font-weight: 600;
 }
 .errore ul { margin: 6px 0 0; padding-left: 18px; }
@@ -1051,13 +1087,13 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     border: var(--bordo);
     border-radius: 0;
     background: var(--crema);
-    box-shadow: 6px 6px 0 var(--inchiostro);
-    font-family: 'Montserrat', sans-serif;
+    box-shadow: var(--sh-6);
+    font-family: var(--nb-font-testo, 'Montserrat', sans-serif);
     color: var(--inchiostro);
-    transform: rotate(-1deg);
+    transform: rotate(calc(-1 * var(--nb-rot, 1) * 1deg));
     transform-origin: bottom left;
 }
-#tooltipwrapper.tooltip-locked .tooltip { border: var(--bordo); background: var(--crema); box-shadow: 6px 6px 0 var(--ambra), 6px 6px 0 3px var(--inchiostro); }
+#tooltipwrapper.tooltip-locked .tooltip { border: var(--bordo); background: var(--crema); box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(16px * var(--nb-bk, 0)) var(--ambra), calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(16px * var(--nb-bk, 0)) calc(3px * var(--nb-kx, 1)) var(--inchiostro); }
 .tooltip-locking-click .tooltip::before, .tooltip-locking-click .tooltip::after,
 .tooltip-locking-tap .tooltip::before, .tooltip-locking-tap .tooltip::after { border-radius: 0; }
 
@@ -1067,9 +1103,9 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     padding: 7px 10px 5px;
     background: var(--ambra);
     border-bottom: var(--bordo);
-    font: 700 .95rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    font: 700 .95rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
 }
-#tooltipwrapper .tooltip h2 small { font-family: 'Montserrat', sans-serif; font-size: .7rem; text-transform: none; }
+#tooltipwrapper .tooltip h2 small { font-family: var(--nb-font-testo, 'Montserrat', sans-serif); font-size: .7rem; text-transform: none; }
 #tooltipwrapper .tooltip p { padding: 4px 10px; font-size: .78rem; line-height: 1.35; }
 #tooltipwrapper .tooltip p small { font-size: .68rem; font-weight: 700; }
 #tooltipwrapper .tooltip p.tooltip-section { margin-top: 2px; padding-top: 7px; border-top: 2px dashed var(--inchiostro); }
@@ -1103,43 +1139,43 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 }
 .tt-testa.p1 { background: var(--colore-p1); }
 .tt-testa.p2 { background: var(--colore-p2); }
-.tt-nome { font: 700 1rem 'Josefin Sans', sans-serif; line-height: 1.1; text-transform: uppercase; }
-.tt-nome small { font: 600 .7rem 'Montserrat', sans-serif; text-transform: none; }
+.tt-nome { font: 700 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1.1; text-transform: uppercase; }
+.tt-nome small { font: 600 .7rem var(--nb-font-testo, 'Montserrat', sans-serif); text-transform: none; }
 .tt-tipi { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 6px; }
 .tt-tipo {
     display: inline-block;
     padding: 2px 6px 0;
     background: var(--tipo, #aaa);
     border: 2px solid var(--inchiostro);
-    font: 700 .62rem 'Josefin Sans', sans-serif; text-transform: uppercase; line-height: 1.3;
+    font: 700 .62rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; line-height: 1.3;
 }
 .tt-corpo { padding: 8px 10px 10px; font-size: .78rem; }
 .tt-sezione { margin-top: 8px; padding-top: 7px; border-top: 2px dashed var(--inchiostro); }
 .tt-titolo {
     display: flex; align-items: center; gap: 6px;
     margin-bottom: 5px;
-    font: 800 .68rem 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: .03em;
+    font: 800 .68rem var(--nb-font-testo, 'Montserrat', sans-serif); text-transform: uppercase; letter-spacing: .03em;
 }
 .tt-riga { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 2px 0; }
 .tt-riga.a-capo { flex-direction: column; align-items: flex-start; gap: 4px; }
-.tt-etichetta { flex-shrink: 0; font: 800 .65rem 'Montserrat', sans-serif; text-transform: uppercase; }
+.tt-etichetta { flex-shrink: 0; font: 800 .65rem var(--nb-font-testo, 'Montserrat', sans-serif); text-transform: uppercase; }
 .tt-valore { text-align: right; font-weight: 600; }
 .tt-valore small, .tt-nomi small { font-size: .65rem; }
-.tt-ignoto { color: #666; font-style: italic; }
+.tt-ignoto { color: var(--tenue); font-style: italic; }
 .tt-nomi { font-weight: 700; }
 .tt-nota {
     margin-left: 5px; padding: 1px 4px;
     background: var(--carta); border: 1px solid var(--inchiostro);
-    font: 700 .58rem 'Montserrat', sans-serif; text-transform: uppercase;
+    font: 700 .58rem var(--nb-font-testo, 'Montserrat', sans-serif); text-transform: uppercase;
 }
-.tt-sub { margin-top: 3px; font-size: .68rem; font-weight: 600; color: #333; }
-.tt-grande { font: 800 1.6rem 'Montserrat', sans-serif; line-height: 1; }
+.tt-sub { margin-top: 3px; font-size: .68rem; font-weight: 600; color: var(--tenue-scuro); }
+.tt-grande { font: 800 1.6rem var(--nb-font-testo, 'Montserrat', sans-serif); line-height: 1; }
 .tt-barra-range { display: none; }
 .tt-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
 .tt-chip {
     padding: 2px 6px 1px;
     background: var(--carta); border: 2px solid var(--inchiostro);
-    font: 700 .68rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    font: 700 .68rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
 }
 .tt-chip.su { background: #d4f7df; }
 .tt-chip.giu { background: #ffd9d9; }
@@ -1147,7 +1183,7 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     flex-shrink: 0;
     padding: 2px 6px 1px;
     border: 2px solid var(--inchiostro);
-    font: 700 .65rem 'Josefin Sans', sans-serif; text-transform: uppercase; white-space: nowrap;
+    font: 700 .65rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; white-space: nowrap;
 }
 .tt-badge.super { background: var(--conferma); }
 .tt-badge.poco { background: var(--ambra); }
@@ -1169,15 +1205,15 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     padding: 3px 2px 2px;
     background: var(--carta); border: 2px solid var(--inchiostro);
 }
-.tt-cella span { font: 800 .58rem 'Montserrat', sans-serif; text-transform: uppercase; }
-.tt-cella b { font: 800 .95rem 'Montserrat', sans-serif; line-height: 1.15; }
-.tt-cella small { font-size: .58rem; font-weight: 600; text-decoration: line-through; color: #555; }
+.tt-cella span { font: 800 .58rem var(--nb-font-testo, 'Montserrat', sans-serif); text-transform: uppercase; }
+.tt-cella b { font: 800 .95rem var(--nb-font-testo, 'Montserrat', sans-serif); line-height: 1.15; }
+.tt-cella small { font-size: .58rem; font-weight: 600; text-decoration: line-through; color: var(--tenue-forte); }
 .tt-cella em {
     position: absolute; top: -9px; right: -6px;
     padding: 0 3px;
     background: var(--inchiostro); color: var(--carta);
-    font: 700 .58rem 'Josefin Sans', sans-serif; font-style: normal;
-    transform: rotate(6deg);
+    font: 700 .58rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); font-style: normal;
+    transform: rotate(calc(6 * var(--nb-rot, 1) * 1deg));
 }
 .tt-cella.su { background: #d4f7df; }
 .tt-cella.giu { background: #ffd9d9; }
@@ -1210,7 +1246,7 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     .pagina { padding: 14px 12px 28px; gap: 16px; }
     .tavolo { grid-template-areas: "hub servizi" "cons cons" "p1 p1" "p2 p2" "log log"; }
     .lato.p2, :where(body.vista-p2) .lato.p1 { flex-direction: row; }
-    .console { box-shadow: 8px 8px 0 var(--inchiostro); }
+    .console { box-shadow: var(--sh-8); }
     .cab-insegna { padding: 8px 10px 6px; }
     .ins-formato { font-size: 1.1rem; }
     .cab-schermo { padding: 8px 8px 6px; }
@@ -1225,8 +1261,8 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     .pannello .rivincita { display: grid; }
     .esito-card .rivincita { display: none; }
     /* Il cartello di fine partita deve stare nello schermo stretto */
-    .esito-card { max-width: calc(100% - 16px); padding: 10px 12px 12px; box-shadow: 5px 5px 0 var(--inchiostro); }
-    .esito-card h2 { padding: 4px 10px 2px; font-size: 1.05rem; box-shadow: 3px 3px 0 rgba(0, 0, 0, .3); }
+    .esito-card { max-width: calc(100% - 16px); padding: 10px 12px 12px; box-shadow: var(--sh-5); }
+    .esito-card h2 { padding: 4px 10px 2px; font-size: 1.05rem; box-shadow: var(--shs-3); }
     .esito-card p { margin: 8px 0 0; font-size: .8rem; }
     .esito-card .riga-azioni { margin-top: 10px; gap: 8px; }
     .esito-card .riga-azioni .btn { padding: 6px 10px 4px; font-size: .72rem; }
@@ -1235,6 +1271,22 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     .btn, .btn-pkm, .mossa, .tessera, .scheda-team, .btn-hub, .btn-audio, .membro, .rivincita-scelta { transition: none; }
     .badge-live::before, .esito-card { animation: none; }
 }
+
+/* =====================================================================
+   LA FORMA DEL TEMA — angoli (temi.css: --nb-raggio: 0 nel classico, nello Sticker e nell'Arcade, 16px nel Soft).
+   Colori, ombre, inclinazioni e caratteri sono già variabili nelle regole di sopra; gli angoli li dà il tema qui, su tutto ciò che ha un bordo.
+   ===================================================================== */
+:is(.btn-hub, .btn-audio, .badge-live, .lato-nome, .lato-team, .lato-scheda, .scheda-titolo, .scheda-elo, .scheda-posizione, .membro, .ins-formato, .ins-match, .ins-tabellone,
+    .campo-voce, .btn, .mossa, .btn-pkm, .tessera, .scheda-team, .errore, .avviso, .rivincita, .rivincita-scelta, .esito-card, .esito-card h2, .lobby-titolo, .stato-avversario,
+    .cronaca h2.battle-history, .cronaca.battle-log, .eff, .console, .membro .fiocco-t-tip, #tooltipwrapper .tooltip, .tt-tipo, .tt-chip, .tt-badge, .tt-cella, .tt-nota, .pal-annuncio, .ins-vantaggio, .ins-palestra) {
+    border-radius: var(--raggio);
+}
+.btn-audio { --raggio: min(var(--nb-raggio, 0px), 12px); }
+.membro, .btn-pkm, .mossa, .tt-cella { --raggio: min(var(--nb-raggio, 0px), 10px); }
+.ins-match, .ins-tabellone, .campo-voce, .eff, .tt-tipo, .tt-chip, .tt-badge, .tt-nota, .scheda-titolo, .scheda-elo, .scheda-posizione { --raggio: min(var(--nb-raggio, 0px), 8px); }
+/* nel tema con gli angoli la console ritaglia ciò che ha dentro (insegna, schermo, comandi) alla sua curva */
+html[data-tema="morbido"] .console { overflow: hidden; }
+html[data-tema="morbido"] .palco-box::before { border-radius: 6px; }
 
 /* =====================================================================
    EDITOR DEL TEAM (a fine partita contro la CPU)
@@ -1257,7 +1309,7 @@ body.con-editor { overflow: hidden; }
 }
 .editor-team-titolo {
     margin: 0; min-width: 0;
-    font: 700 .9rem 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+    font: 700 .9rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .editor-team-corpo { position: relative; flex: 1 1 auto; min-height: 0; }
@@ -1266,7 +1318,7 @@ body.con-editor { overflow: hidden; }
 .editor-team-attesa {
     position: absolute; inset: 0; margin: 0;
     display: grid; place-items: center;
-    font: 700 1rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    font: 700 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
 }
 @media (max-width: 699px) {
     .editor-team-barra { padding: 6px 10px; gap: 8px; }

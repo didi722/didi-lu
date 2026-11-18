@@ -34,6 +34,18 @@
 
     var inFit = () => radice.getAttribute('data-modo') === 'fit';
 
+    // Lo schermo di Showdown è 640 × 360. Nel browser se ne vede solo il campo, 440 × 360 (le bande laterali con il nome e l'avatar dell'allenatore non servono: style-battle.css),
+    // ingrandito fino a riempire il contenitore (--scala-campo su .palco-box). Nell'app (telefono) lo schermo resta intero e la scala è quella di sempre.
+    var LARGHEZZA_SCENA = 640, LARGHEZZA_CAMPO = 440;
+    var inApp = () => radice.classList.contains('app');
+    function scalaCampo() {
+        if (!palcoBox) return;
+        var f = inApp()
+            ? (inFit() ? 1 : Math.min(daTelefono() ? 2 : 1, palcoBox.clientWidth / LARGHEZZA_SCENA))
+            : palcoBox.clientWidth / LARGHEZZA_CAMPO;
+        palcoBox.style.setProperty('--scala-campo', f.toFixed(4));
+    }
+
     // Schermo intero: quello chiesto dal bottone (Fullscreen API) o dal browser con F11
     var schermoInteroApi = () => document.fullscreenElement || document.webkitFullscreenElement || null;
     var aSchermoIntero = () => !!schermoInteroApi() ||
@@ -49,6 +61,7 @@
             // Prova del layout "fit": se poi non va bene la pagina torna dov'era (anche lo scorrimento)
             var scorrimento = window.pageYOffset;
             radice.setAttribute('data-modo', 'fit');
+            scalaCampo();                   // lo schermo ha la sua misura prima di misurare il tavolo
             var w = scala.offsetWidth;      // misure a scala 1: offsetWidth/Height ignorano le transform
             var h = scala.offsetHeight;
             var s = Math.min(aSchermoIntero() ? SCALA_MAX_INTERO : 1, W / w, H / h);
@@ -68,10 +81,7 @@
         }
 
         // Layout a colonna: lo schermo di Showdown segue la larghezza del contenitore
-        if (palcoBox) {
-            var f = inFit() ? 1 : Math.min(daTelefono() ? 2 : 1, palcoBox.clientWidth / 640);
-            palcoBox.style.setProperty('--scala-campo', f.toFixed(4));
-        }
+        scalaCampo();
         radice.setAttribute('data-pronto', '');
         statoBottone();
     }

@@ -1,0 +1,65 @@
+/* =====================================================================
+   VISTA DEL SIMULATORE (battle-vista.js)
+   ---------------------------------------------------------------------
+   Due scelte che si fanno dentro la battaglia: la cronaca di Showdown mostrata o nascosta (html[data-cronaca="nascosta"]) e il colore dei neutri (il pannello che si apre
+   dal tasto con la tavolozza). Nell'app (html.app) non ci sono: lo stile è quello dell'app.
+   ===================================================================== */
+
+/* ---------- Cronaca nascosta: il tavolo perde una colonna e il resto si riaccentra ----------
+   .scala è larga quanto il tavolo e centrata (style-battle.css): con una colonna in meno è più stretta e sta di nuovo al centro; battle-layout.js la misura di nuovo. */
+html[data-cronaca="nascosta"] .colonna-log { display: none; }
+html[data-cronaca="nascosta"] .tavolo { grid-template-areas: "hub servizi" "cons cons" "p1 p2"; }
+html[data-modo="fit"][data-cronaca="nascosta"] .tavolo {
+    grid-template-columns: var(--w-lato) var(--w-console) var(--w-lato);
+    grid-template-areas: "hub cons servizi" "p1 cons p2";
+}
+@media (max-width: 699px) {
+    html[data-cronaca="nascosta"] .tavolo { grid-template-areas: "hub servizi" "cons cons" "p1 p1" "p2 p2"; }
+}
+
+/* ---------- I tasti nei servizi ---------- */
+.servizi { position: relative; gap: 10px 6px; }
+/* I tasti stanno nella colonna di un player (176px) su una riga sola: quattro (cronaca, colori, suono, schermo intero) a 38px, cinque (con le note del team, nella prova
+   contro la CPU) si stringono fino a ~30px. Il tasto parte da 30px e cresce fino a 38 se c'è posto; resta quadrato. */
+.servizi .btn-audio { flex: 1 1 30px; width: auto; height: auto; min-width: 28px; max-width: 38px; aspect-ratio: 1; padding: 4px; }
+.btn-audio svg { stroke: var(--inchiostro); }
+.btn-audio:hover svg { stroke: var(--carta); }
+.btn-vista svg { fill: none; }
+.btn-cronaca[aria-pressed="false"] svg { opacity: .35; }                  /* spento: la cronaca è nascosta */
+.btn-colori.aperto { background: var(--ambra); }
+html.app :is(.btn-vista, .pannello-colori) { display: none !important; }
+
+/* ---------- Il pannello del colore dei neutri ---------- */
+.pannello-colori {
+    position: absolute; top: calc(100% + 12px); right: 0; z-index: 70;
+    box-sizing: border-box; width: 244px;
+    padding: 12px 12px 12px;
+    background: var(--crema); color: var(--inchiostro);
+    border: var(--bordo); border-radius: var(--raggio); box-shadow: var(--sh-6);
+    transform: rotate(calc(-1 * var(--nb-rot, 1) * 1deg));
+    font-family: var(--nb-font-testo, 'Montserrat', sans-serif);
+}
+.pannello-colori[hidden] { display: none; }
+.vc-titolo { margin: 0; font: 800 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; text-transform: uppercase; }
+.vc-nota { margin: 4px 0 10px; font-size: .68rem; font-weight: 600; line-height: 1.3; opacity: .8; }
+.vc-lista { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.vc-tinta {
+    display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+    padding: 4px 4px 3px; cursor: pointer;
+    background: var(--carta); color: var(--inchiostro);
+    border: 2px solid var(--inchiostro); border-radius: min(var(--nb-raggio, 0px), 8px);
+    font: 800 .58rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase;
+    transition: transform var(--tempo), box-shadow var(--tempo), background-color var(--tempo);
+}
+.vc-tinta:hover { transform: translate(-1px, -1px); box-shadow: var(--sh-2); }
+.vc-tinta:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 2px; }
+.vc-tinta.scelta { background: var(--ambra); box-shadow: var(--sh-2); }
+/* il campione: a sinistra la carta che si ottiene, a destra la crema, con il bordo dell'inchiostro */
+.vc-campione {
+    display: block; height: 20px;
+    border: 2px solid var(--vc-ink, var(--inchiostro));
+    background: linear-gradient(90deg, var(--vc-carta, var(--carta)) 0 50%, var(--vc-crema, var(--crema)) 50% 100%);
+}
+.vc-nome { text-align: center; }
+.vc-riga-libera { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font: 800 .66rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.vc-libero { box-sizing: border-box; width: 56px; height: 26px; padding: 0; background: none; border: 2px solid var(--inchiostro); border-radius: min(var(--nb-raggio, 0px), 8px); cursor: pointer; }

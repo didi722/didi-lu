@@ -63,7 +63,7 @@
     // -------------------------------------------------
     const barreSalute = radice => `
 ${radice} .statbar strong {
-    font: 700 10px/11px 'Josefin Sans', sans-serif; text-transform: uppercase; letter-spacing: .02em;
+    font: 700 10px/11px var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .02em;
     color: var(--inchiostro);
     margin-bottom: 1px;
 }
@@ -72,7 +72,7 @@ ${radice} .statbar .hpbar {
     width: 148px; height: 6px; padding: 0;
     background: var(--carta);
     border: 2px solid var(--inchiostro); border-radius: 0;
-    box-shadow: 2px 2px 0 var(--inchiostro);
+    box-shadow: var(--sh-2, 2px 2px 0 var(--inchiostro));
 }
 ${radice} .statbar .hpbar .hp,
 ${radice} .statbar .hpbar .prevhp { height: 6px; border: 0; border-radius: 0; }
@@ -86,7 +86,7 @@ ${radice} .statbar .hpbar .hptext {
     top: -2px; height: 10px; width: 30px;
     background: var(--inchiostro); color: var(--carta);
     border-radius: 0; text-shadow: none;
-    font: 700 8px/11px 'Josefin Sans', sans-serif;
+    font: 700 8px/11px var(--nb-font-titoli, 'Josefin Sans', sans-serif);
 }
 ${radice} .rstatbar .hpbar .hptext { right: -32px; border-radius: 0; }
 ${radice} .lstatbar .hpbar .hptext { left: -32px; border-radius: 0; }
@@ -96,7 +96,7 @@ ${radice} .statbar .status { margin-top: 2px; }
 ${radice} .statbar span {
     display: inline-block; margin: 0 2px 2px 0; padding: 0 3px;
     border: 1px solid var(--inchiostro); border-radius: 0;
-    font: 700 8px/11px 'Montserrat', sans-serif;
+    font: 700 8px/11px var(--nb-font-testo, 'Montserrat', sans-serif);
 }
 ${radice} .statbar span.brn { background: #ff4422; color: var(--carta); border: 1px solid var(--inchiostro); border-radius: 0; }
 ${radice} .statbar span.psn,

@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="https://play.pokemonshowdown.com/style/font-awesome.css">
     <link rel="stylesheet" href="https://play.pokemonshowdown.com/style/battle.css">
     <link rel="stylesheet" href="https://play.pokemonshowdown.com/style/utilichart.css">
+    <link rel="stylesheet" href="temi.css">
     <link rel="stylesheet" href="style-battle.css">
     <link rel="stylesheet" href="effetti-pagina.css">
     <link rel="stylesheet" href="style-palestra-battaglia.css">
@@ -30,6 +31,7 @@
     <link rel="stylesheet" href="nome-scorrevole.css">
     <link rel="stylesheet" href="reazioni-live.css">
     <link rel="stylesheet" href="tooltip.css">
+    <link rel="stylesheet" href="battle-vista.css">
 
     <script>window.exports = window;</script>
     <script src="https://play.pokemonshowdown.com/js/lib/ps-polyfill.js"></script>
@@ -85,6 +87,9 @@
     <link rel="apple-touch-icon" href="immagini/app/apple-touch-icon.png">
     <link rel="stylesheet" href="app.css">
     <script src="app.js"></script>
+    <!-- Il tema scelto dal giocatore (Neubrutal, Sticker, Soft, Arcade) e, qui dentro, i colori dei neutri e la cronaca mostrata o nascosta -->
+    <script src="temi.js"></script>
+    <script src="battle-vista.js"></script>
 </head>
 <body>
     <!-- .scala: in "una schermata" (html[data-modo="fit"]) battle-layout.js rimpicciolisce tutto l'insieme
@@ -111,6 +116,18 @@
                     </svg>
                     <span class="btn-note-conto" id="btn-note-conto" hidden>0</span>
                 </button>
+                <!-- Vista (battle-vista.js): la cronaca di Showdown mostrata o nascosta, e il colore dei neutri (la tinta di bianchi e neri). Non nell'app -->
+                <button type="button" class="btn-audio btn-vista btn-cronaca" id="btn-cronaca" aria-label="Hide the battle log" aria-pressed="true" title="Hide the battle log">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                        <path d="M4 5h16M4 10h16M4 15h16M4 20h10"></path>
+                    </svg>
+                </button>
+                <button type="button" class="btn-audio btn-vista btn-colori" id="btn-colori" aria-label="Colour of the neutrals" aria-expanded="false" aria-controls="pannello-colori" title="Colour of the neutrals">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                        <path d="M12 3a9 9 0 1 0 0 18c1.7 0 2.2-1.2 1.6-2.4-.6-1.2 0-2.6 1.4-2.6H18a3 3 0 0 0 3-3c0-5-4-10-9-10z"></path>
+                        <path d="M8 11h.01M12 7.5h.01M16 11h.01"></path>
+                    </svg>
+                </button>
                 <button type="button" class="btn-audio" id="btn-audio" aria-label="Battle sound">
                     <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
                         <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -123,6 +140,7 @@
                         <path class="ico-esci" d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6"></path>
                     </svg>
                 </button>
+                <div class="pannello-colori" id="pannello-colori" role="dialog" aria-label="Colour of the neutrals" hidden></div>
             </div>
 
             <!-- Colonne dei player: le riempie battle-extra.js -->

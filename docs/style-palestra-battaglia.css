@@ -31,7 +31,7 @@ body.palestra.pal-scorre::before {
     overflow: hidden; pointer-events: none;
     display: flex; flex-direction: column; justify-content: center;
     opacity: 0.2;
-    transform: rotate(-9deg) scale(1.35);
+    transform: rotate(calc(-9 * var(--nb-rot, 1) * 1deg)) scale(1.35);
 }
 .pal-scritta-riga {
     font-family: 'Archivo Black', 'Arial Black', Impact, sans-serif;
@@ -57,8 +57,8 @@ html:not(.app) body.palestra .info-turno { gap: 10px 14px; align-items: center; 
     box-sizing: border-box; max-width: 100%; min-width: 0;
     padding: 5px 16px 5px 8px;
     background: var(--pp-sup); color: var(--pp-ink);
-    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
-    transform: rotate(-1.5deg);
+    border: var(--bordo); box-shadow: var(--sh-4);
+    transform: rotate(calc(-1.5 * var(--nb-rot, 1) * 1deg));
     font-family: var(--pp-font);
 }
 .pal-ins-faccia {
@@ -74,7 +74,7 @@ html:not(.app) body.palestra .info-turno { gap: 10px 14px; align-items: center; 
 }
 .pal-ins-testi { display: flex; flex-direction: column; min-width: 0; line-height: 1; }
 .pal-ins-piccolo {
-    font: 700 .62rem 'Josefin Sans', sans-serif; letter-spacing: .12em;
+    font: 700 .62rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em;
     opacity: .75;
 }
 .pal-ins-nome {
@@ -88,27 +88,27 @@ html:not(.app) body.palestra .info-turno { gap: 10px 14px; align-items: center; 
     paint-order: stroke fill;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-html:not(.app) body.palestra .ins-formato { background: var(--pp-ink); color: var(--pp-sup); transform: rotate(1.5deg); }
+html:not(.app) body.palestra .ins-formato { background: var(--pp-ink); color: var(--pp-sup); transform: rotate(calc(1.5 * var(--nb-rot, 1) * 1deg)); }
 
 /* il vantaggio, sempre in vista: tocca per rileggere cosa fa */
 .ins-vantaggio {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 5px 14px 5px 8px;
     background: var(--pal-colore); color: var(--pal-colore-ink);
-    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
-    font-family: 'Josefin Sans', sans-serif; text-align: left;
+    border: var(--bordo); box-shadow: var(--sh-4);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-align: left;
     cursor: pointer;
-    transform: rotate(1.2deg);
+    transform: rotate(calc(1.2 * var(--nb-rot, 1) * 1deg));
     transition: transform .12s ease, box-shadow .12s ease;
     animation: pal-vantaggio-pulsa 1.6s ease-in-out 3;
 }
-.ins-vantaggio:hover { transform: translate(-3px, -3px) rotate(0deg); box-shadow: 7px 7px 0 var(--inchiostro); }
-.ins-vantaggio:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--inchiostro); }
+.ins-vantaggio:hover { transform: translate(-3px, -3px) rotate(0deg); box-shadow: var(--sh-7); }
+.ins-vantaggio:active { transform: translate(3px, 3px); box-shadow: var(--sh-1); }
 .ins-vantaggio-icona { font-size: 1.5rem; line-height: 1; }
 .ins-vantaggio-testi { display: flex; flex-direction: column; line-height: 1.05; text-transform: uppercase; }
 .ins-vantaggio-testi small { font-size: .6rem; font-weight: 700; letter-spacing: .12em; opacity: .8; }
 .ins-vantaggio-testi b { font-size: .95rem; white-space: nowrap; }
-@keyframes pal-vantaggio-pulsa { 0%, 100% { transform: rotate(1.2deg) scale(1); } 50% { transform: rotate(1.2deg) scale(1.08); } }
+@keyframes pal-vantaggio-pulsa { 0%, 100% { transform: rotate(calc(1.2 * var(--nb-rot, 1) * 1deg)) scale(1); } 50% { transform: rotate(calc(1.2 * var(--nb-rot, 1) * 1deg)) scale(1.08); } }
 
 /* Lo schermo di Showdown resta com'è: il suo paesaggio, non quello della palestra. */
 
@@ -129,14 +129,14 @@ html:not(.app) body.palestra .ins-formato { background: var(--pp-ink); color: va
     text-align: center;
     background: var(--pp-sup); color: var(--pp-ink);
     border: var(--bordo-forte); box-shadow: 8px 8px 0 rgba(0, 0, 0, .55);
-    transform: translate(-50%, -50%) rotate(-1.5deg);
+    transform: translate(-50%, -50%) rotate(calc(-1.5 * var(--nb-rot, 1) * 1deg));
     animation: pal-annuncio-entra .28s cubic-bezier(.175, .885, .32, 1.275);
     font-family: var(--pp-font);
 }
 .pal-annuncio[hidden] { display: none; }
 @keyframes pal-annuncio-entra {
-    from { opacity: 0; transform: translate(-50%, -42%) rotate(-1.5deg) scale(.88); }
-    to   { opacity: 1; transform: translate(-50%, -50%) rotate(-1.5deg) scale(1); }
+    from { opacity: 0; transform: translate(-50%, -42%) rotate(calc(-1.5 * var(--nb-rot, 1) * 1deg)) scale(.88); }
+    to   { opacity: 1; transform: translate(-50%, -50%) rotate(calc(-1.5 * var(--nb-rot, 1) * 1deg)) scale(1); }
 }
 .pal-annuncio-nastro {
     position: absolute; top: -14px; left: 50%;
@@ -144,21 +144,21 @@ html:not(.app) body.palestra .ins-formato { background: var(--pp-ink); color: va
     padding: 5px 14px 3px;
     background: var(--pal-colore); color: var(--pal-colore-ink);
     border: var(--bordo);
-    font: 700 .74rem 'Josefin Sans', sans-serif; letter-spacing: .1em; text-transform: uppercase;
+    font: 700 .74rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    transform: translateX(-50%) rotate(1.5deg);
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, .35);
+    transform: translateX(-50%) rotate(calc(1.5 * var(--nb-rot, 1) * 1deg));
+    box-shadow: var(--shs-3);
 }
 .pal-annuncio-icona { font-size: 3rem; line-height: 1; margin-top: 4px; filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, .25)); animation: pal-icona-balza 1.4s ease-in-out infinite; }
-@keyframes pal-icona-balza { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-5px) rotate(4deg); } }
+@keyframes pal-icona-balza { 0%, 100% { transform: translateY(0) rotate(calc(-4 * var(--nb-rot, 1) * 1deg)); } 50% { transform: translateY(-5px) rotate(calc(4 * var(--nb-rot, 1) * 1deg)); } }
 .pal-annuncio-nome { margin: 0; font-size: 1.7rem; font-weight: 700; line-height: 1; text-transform: uppercase; color: var(--pp-nome); -webkit-text-stroke: 1.5px var(--pp-ink); paint-order: stroke fill; }
-.pal-annuncio-testo { margin: 2px 0 6px; font: 600 .86rem/1.35 'Montserrat', sans-serif; }
+.pal-annuncio-testo { margin: 2px 0 6px; font: 600 .86rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); }
 .pal-annuncio .btn { margin-top: 2px; }
 .pal-annuncio.breve { padding: 20px 18px 12px; pointer-events: none; animation: pal-annuncio-entra .28s cubic-bezier(.175, .885, .32, 1.275), pal-annuncio-esce .5s ease-in 4s forwards; }
 .pal-annuncio.breve .pal-annuncio-icona { font-size: 2.2rem; }
 .pal-annuncio.breve .pal-annuncio-nome { font-size: 1.35rem; }
 .pal-annuncio.breve .pal-annuncio-testo { font-size: .78rem; margin-bottom: 2px; }
-@keyframes pal-annuncio-esce { to { opacity: 0; transform: translate(-50%, -58%) rotate(-1.5deg) scale(.95); } }
+@keyframes pal-annuncio-esce { to { opacity: 0; transform: translate(-50%, -58%) rotate(calc(-1.5 * var(--nb-rot, 1) * 1deg)) scale(.95); } }
 
 /* ---------- Fine tappa: il cartello nei colori della palestra ---------- */
 html:not(.app) body.palestra .esito-card { background: var(--pp-sup); color: var(--pp-ink); }
