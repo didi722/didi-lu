@@ -10,6 +10,10 @@
 //   iscrittiInStagioniAperte(stagioni, { giocatore, formato, escludi })
 //                                 -> i team di quel giocatore, in quel formato, iscritti a stagioni con le iscrizioni ancora aperte (non iniziate): sono ancora
 //                                    modificabili, ma lo smettono appena la stagione inizia. Serve alla regola di somiglianza (somiglianza-team.js).
+//   nomeGiaUsato(teams, nome, escludiId)
+//                                 -> il team (con id) di quel giocatore che ha già quel nome (senza badare a maiuscole e spazi ai lati), o null. Il nome è la
+//                                    chiave del blocco: due team omonimi si confonderebbero (uno bloccato, l'altro no). teams = il nodo "teams" del giocatore
+//                                    (oggetto id -> team) o un array; escludiId = il team che si sta modificando.
 //
 // Si guarda il nome del team, come ha sempre fatto il Box. La stagione di prova "sbeta" non blocca nulla.
 // =====================================================
@@ -88,5 +92,17 @@
         return trovati;
     }
 
-    return { nomiBloccati, eBloccato, iscrittiInStagioniAperte, chiave, STAGIONI_CHE_NON_BLOCCANO, STATI_DI_STAGIONE_INIZIATA };
+    function nomeGiaUsato(teams, nome, escludiId) {
+        const k = chiave(nome);
+        if (!k || !teams || typeof teams !== 'object') return null;
+        const voci = Array.isArray(teams) ? teams.map((t, i) => [t && t.id != null ? t.id : String(i), t]) : Object.entries(teams);
+        for (const [id, t] of voci) {
+            if (!t || typeof t !== 'object') continue;
+            if (escludiId != null && String(id) === String(escludiId)) continue;
+            if (chiave(t.nome) === k) return { id, ...t };
+        }
+        return null;
+    }
+
+    return { nomiBloccati, nomeGiaUsato, eBloccato, iscrittiInStagioniAperte, chiave, STAGIONI_CHE_NON_BLOCCANO, STATI_DI_STAGIONE_INIZIATA };
 });
