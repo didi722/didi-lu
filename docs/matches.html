@@ -377,7 +377,7 @@
     </div>
 </div>
 
-    <div id="replayModal" class="replay-modal" onclick="chiudiReplay()">
+    <div id="replayModal" class="replay-modal" onclick="chiediChiudiReplay()">
     
     <!-- il palco: la console e, alla sua destra, i tasti dei set in verticale (sul telefono vanno sotto) -->
     <div class="replay-palco">
@@ -410,7 +410,7 @@
     <!-- I momenti chiave del set (replay-sito.js: momentiChiave, dal log): un tocco porta a quel turno -->
     <div class="replay-momenti" id="replayMomenti" role="group" aria-label="Key moments" onclick="event.stopPropagation()" hidden></div>
 
-    <span class="close-replay" onclick="chiudiReplay()">&times;</span>
+    <span class="close-replay" onclick="event.stopPropagation(); chiudiReplay()">&times;</span>
 </div>
 
     <div id="teamModal" class="replay-modal" onclick="chiudiTeamModal()">
@@ -3123,6 +3123,37 @@ function adattaReplayAlloSchermo() {
 }
 window.addEventListener('resize', () => { if (document.getElementById('replayModal')?.style.display === 'flex') adattaReplayAlloSchermo(); });
 window.addEventListener('resize', adattaReplayAlloSchermo);
+
+/** Un clic fuori dalla partita chiude il replay solo dopo la conferma: un piccolo popup nello stile del sito (non l'avviso del browser). Invio o "Close" chiude, Esc o "Keep watching" resta. */
+window.chiediChiudiReplay = function() {
+    if (document.getElementById('replayConferma')) return;
+    const velo = document.createElement('div');
+    velo.id = 'replayConferma';
+    velo.className = 'rc-conferma-velo';
+    velo.innerHTML = '<div class="rc-conferma" role="alertdialog" aria-modal="true" aria-labelledby="rcConfermaTitolo">'
+        + '<b id="rcConfermaTitolo">Close replay?</b>'
+        + '<div class="rc-conferma-azioni"><button type="button" class="rc-conferma-tasto" data-x="resta">Keep watching</button>'
+        + '<button type="button" class="rc-conferma-tasto rc-conferma-chiudi" data-x="chiudi">Close</button></div></div>';
+    const tasti = velo.querySelectorAll('button');
+    const finisci = chiudi => {
+        document.removeEventListener('keydown', tastiera, true);
+        velo.remove();
+        if (chiudi) window.chiudiReplay();
+    };
+    const tastiera = e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finisci(false); }
+        else if (e.key === 'Enter' && !velo.contains(document.activeElement)) { e.preventDefault(); finisci(true); }
+    };
+    velo.addEventListener('click', e => {
+        e.stopPropagation();
+        const x = e.target.closest && e.target.closest('[data-x]');
+        if (x) finisci(x.dataset.x === 'chiudi');
+        else if (e.target === velo) finisci(false);
+    });
+    document.addEventListener('keydown', tastiera, true);
+    document.body.appendChild(velo);
+    tasti[1].focus();
+};
 
 window.chiudiReplay = function() {
     const modal = document.getElementById('replayModal');
