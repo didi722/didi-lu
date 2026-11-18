@@ -1076,8 +1076,6 @@ async function openTeamPicker(format, nomeUtenteClean) {
                         onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(pkmnName)}')"><figcaption>${escapeHtmlFormato(pkmnName)}</figcaption></figure>`;
             }).join('');
 
-            const pillole = EtichetteTeam.diTeam(data, etichetteDef).map(e =>
-                `<span class="etichetta-pillola" style="background:${e.colore};color:${EtichetteTeam.coloreTesto(e.colore)}">${escEt(e.nome)}</span>`).join('');
             div.innerHTML = `
                 <div class="team-info-wrapper">
                     <strong>${data.nome}</strong>
@@ -1085,7 +1083,6 @@ async function openTeamPicker(format, nomeUtenteClean) {
                         <div class="info-icon">i</div>
                     </div>
                 </div>
-                ${pillole ? `<div class="card-etichette">${pillole}</div>` : ''}
             `;
             
             const infoIcon = div.querySelector('.info-icon');
