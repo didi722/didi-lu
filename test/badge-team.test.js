@@ -131,6 +131,7 @@ test('Statistiche: le serie dei team (match, puliti, showdown di fila) sono quel
     assert.equal(alfa.serie.pulitaMax, 1, 'il 2-1 spezza la serie di match puliti');
     assert.equal(alfa.serie.cleanSweep, 2);
     assert.equal(alfa.serie.showdownMax, 2, 'due showdown vinti di fila, poi uno perso');
+    assert.equal(alfa.serie.showdownMaxData, '2026-01-03', 'il giorno del showdown che ha portato la serie al record (il secondo vinto)');
     assert.equal(alfa.serie.showdownAttuale, 0);
     const beta = r.teams.find(t => t.nome === 'Beta');
     assert.equal(beta.serie.vittorieMax, 1);

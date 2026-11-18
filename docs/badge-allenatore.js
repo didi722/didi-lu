@@ -67,7 +67,8 @@
         { id: 'closecall', nome: 'Against All Odds', icona: '💪', unita: 'sets won on the last Pokémon', soglie: [50, 140, 300, 600],
           descrizione: 'Sets won with only one Pokémon left standing.',
           valore: c => num(c.g.ko && c.g.ko.setAlLimite), immagini: perLivelli('badge-allenatore-closecall-{l}.png') },
-        { id: 'formatmaster', nome: 'Format Master', icona: '🧭', unita: 'formats mastered', soglie: [3, 6, 10, 16],
+        // una League ha da 2 a 4 formati: con 3 bastava una stagione sola. Il bronzo chiede più formati di quanti ne gira una stagione (quindi almeno due), il platino resta tutti
+        { id: 'formatmaster', nome: 'Format Master', icona: '🧭', unita: 'formats mastered', soglie: [5, 8, 12, 16],
           descrizione: `Formats where you won at least ${PERC_FORMATO}% of your matches, with at least ${MIN_MATCH_FORMATO} played.`,
           valore: c => formatiForti(c.g), immagini: perLivelli('badge-allenatore-formatmaster-{l}.png') },
         { id: 'elopeak', nome: 'Elo Peak', icona: '📊', unita: 'peak Elo', soglie: [1140, 1190, 1240, 1280], partenza: 1000,

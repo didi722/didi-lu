@@ -110,12 +110,15 @@ test('percentuale di vittorie: conta solo dopo 120 match', () => {
     assert.equal(tanti.livello, 2, 'il 66,5% è l\'argento (65%)');
 });
 
-test('format master: formati con almeno 12 match (una stagione) e almeno il 65% di vittorie', () => {
+test('format master: formati con almeno 12 match (una stagione) e almeno il 65% di vittorie; il bronzo ne chiede più di quanti ne gira una stagione', () => {
     const formati = { VGC: { n: 14, vinti: 10 }, OU: { n: 12, vinti: 8 }, Monotype: { n: 11, vinti: 11 }, Uber: { n: 20, vinti: 8 }, LC: { n: 12, vinti: 7 } };
     assert.equal(BA.formatiForti(giocatore({ formati })), 2, 'VGC e OU; Monotype ha troppi pochi match, LC il 58%, Uber troppe sconfitte');
-    assert.equal(per(BA.calcola(risultato(giocatore({ formati })), 'didi'), 'formatmaster').livello, 0, 'due formati: ancora sotto il bronzo (soglie 3 / 6 / 10 / 16)');
-    const tre = { ...formati, LC: { n: 12, vinti: 9 } };
-    assert.equal(per(BA.calcola(risultato(giocatore({ formati: tre })), 'didi'), 'formatmaster').livello, 1, 'tre formati: il bronzo');
+    const livello = formatiForti => per(BA.calcola(risultato(giocatore({ formati: Object.fromEntries(Array.from({ length: formatiForti }, (_, i) => [`F${i}`, { n: 12, vinti: 9 }])) })), 'didi'), 'formatmaster').livello;
+    assert.deepEqual(BA.CATALOGO.find(b => b.id === 'formatmaster').soglie, [5, 8, 12, 16]);
+    assert.equal(per(BA.calcola(risultato(giocatore({ formati })), 'didi'), 'formatmaster').livello, 0, 'due formati: ancora sotto il bronzo');
+    // una League ha da 2 a 4 formati: dominarli tutti in una stagione sola (3 o 4) non dà più il bronzo
+    assert.deepEqual([0, 3, 4].map(livello), [0, 0, 0]);
+    assert.deepEqual([5, 7, 8, 11, 12, 15, 16].map(livello), [1, 1, 2, 2, 3, 3, 4]);
 });
 
 test('collezionista: le specie diverse portate in campo (non i team, non le comparse in panchina)', () => {
