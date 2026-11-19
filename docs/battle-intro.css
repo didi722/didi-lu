@@ -22,7 +22,7 @@ html.vs-copre body { overflow: hidden; }
 
 .vi { position: fixed; inset: 0; z-index: 9500; overflow: hidden; pointer-events: auto; cursor: pointer; user-select: none; -webkit-user-select: none; }
 html.app .vi { display: none; }
-.vs-sfondo.vi-in-corso .vs-avatar { visibility: hidden; }      /* durante l'intro gli avatar sono quelli dell'intro */
+.vs-sfondo.vi-in-corso :is(.vs-avatar, .vs-compagno) { visibility: hidden; }      /* durante l'intro gli avatar sono quelli dell'intro */
 
 /* le metà sono copie di .vs-lato (style-versus.css): colore, motivo e nome gigante già ci sono. In più la riga nera sul loro bordo, che si apre con loro */
 .vi .vs-lato { will-change: translate; }
@@ -41,6 +41,10 @@ html.app .vi { display: none; }
     filter: drop-shadow(0 0 5px var(--pal-aura, transparent)) drop-shadow(0 0 16px var(--pal-aura, transparent)) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3));
 }
 .vi-dx .vi-avatar { transform: scaleX(-1); }
+/* palestra: il capopalestra è specchiato (come sullo sfondo vero) e il suo compagno no, qualunque lato abbiano */
+.vi-avatar.vi-specchia { transform: scaleX(-1); }
+.vi-avatar.vi-diritto { transform: none; }
+.vi-avatar.sc-vola { translate: 0 calc(var(--alza, 0px) * -1); }
 
 /* il tag del nome, sopra la testa: nel colore dell'allenatore, come il tag della sua colonna */
 .vi-tag {

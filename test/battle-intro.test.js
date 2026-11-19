@@ -166,10 +166,10 @@ function finestra({ app = false, palestra = false, nascosta = false, ridotto = f
     };
 }
 
-test('puoRiprodurre: sì in una pagina normale; no nell\'app, in palestra, a pagina nascosta, con "riduci movimento", senza Web Animations', () => {
+test('puoRiprodurre: sì in una pagina normale e in palestra; no nell\'app, a pagina nascosta, con "riduci movimento", senza Web Animations', () => {
     assert.equal(B.puoRiprodurre(finestra()), true);
     assert.equal(B.puoRiprodurre(finestra({ app: true })), false);
-    assert.equal(B.puoRiprodurre(finestra({ palestra: true })), false);
+    assert.equal(B.puoRiprodurre(finestra({ palestra: true })), true, 'anche la palestra ha la sua intro');
     assert.equal(B.puoRiprodurre(finestra({ nascosta: true })), false);
     assert.equal(B.puoRiprodurre(finestra({ ridotto: true })), false);
     assert.equal(B.puoRiprodurre(finestra({ animate: false })), false);
@@ -202,16 +202,41 @@ function contestoIntroCon(stato) {
 }
 const nomiDue = { p1: { nome: 'Anna' }, p2: { nome: 'Bruno' } };
 
-test('contestoIntro, CPU: battaglia e serie della sessione; in palestra niente', () => {
+test('contestoIntro, CPU: battaglia e serie della sessione', () => {
     const cfg = { p1: { nome: 'Didi' }, p2: { nome: 'CPU' } };
     let c = contestoIntroCon({ config: cfg, cpu: {} })(1);
     assert.deepEqual(c, { nomi: { sx: 'Didi', dx: 'CPU' }, dati: { tipo: 'cpu', battaglia: 1, serie: { v: 0, p: 0, n: 0 } } });
     c = contestoIntroCon({ config: cfg, cpu: { sessione: { v: 2, p: 1, n: 1 } } })();
     assert.equal(c.dati.battaglia, 5);
     assert.deepEqual(B.testiIntro(c.dati), { etichetta: 'BATTLE 5', punteggio: '2 – 1', righe: ['SERIES SCORE · 1 TIE'] });
-    assert.equal(contestoIntroCon({ config: cfg, cpu: { palestra: { nome: 'Capo' } } })(1), null);
     assert.equal(contestoIntroCon({ config: null, cpu: {} })(1), null);
     assert.equal(contestoIntroCon({ config: cfg })(1), null, 'né CPU né partita online');
+});
+
+test('contestoIntro, palestra: a sinistra il capopalestra, a destra il suo compagno (niente sfidante); tappa, vantaggio e formato nel tabellone', () => {
+    const cfg = { p1: { nome: 'Didi' }, p2: { nome: 'Capo' } };
+    const palestra = { nome: 'Capo', tappa: 1, categoria: 'VGC Gen 9', vantaggio: { nome: 'Rain' }, aspetto: { compagno: { nome: 'umbreon' } } };
+    const S = statoBase({ config: cfg, cpu: { palestra }, self: { BattleIntro: B, Palestra: { TAPPE: 3 } } });
+    const c = funzioniUi(S, 'punteggio', 'contestoIntro').contestoIntro(1);
+    assert.equal(c.palestra, true);
+    assert.deepEqual(c.nomi, { sx: 'Capo', dx: 'umbreon' });
+    assert.deepEqual(B.testiIntro(c.dati), { etichetta: 'STAGE 2/3', punteggio: null, righe: ["CAPO'S GYM", 'EDGE: RAIN', 'VGC GEN 9'] });
+    // senza compagno a destra resta chi sfida
+    const senza = funzioniUi(statoBase({ config: cfg, cpu: { palestra: { ...palestra, aspetto: {} } }, self: { BattleIntro: B, Palestra: { TAPPE: 3 } } }), 'punteggio', 'contestoIntro').contestoIntro(1);
+    assert.deepEqual(senza.nomi, { sx: 'Capo', dx: 'Didi' });
+});
+
+test('testiIntro, palestra: tappa, di chi è la palestra, vantaggio di campo e formato; senza il resto non si rompe', () => {
+    assert.deepEqual(B.testiIntro({ tipo: 'palestra', nome: 'Elderoak', tappa: 3, tappe: 3, vantaggio: 'Rain Dance', formato: 'Monotype Doubles' }), { etichetta: 'STAGE 3/3', punteggio: null, righe: ["ELDEROAK'S GYM", 'EDGE: RAIN DANCE', 'MONOTYPE DOUBLES'] });
+    assert.deepEqual(B.testiIntro({ tipo: 'palestra' }), { etichetta: 'GYM BATTLE', punteggio: null, righe: [] });
+});
+
+test('scurisci: la tinta più scura di un colore #rrggbb (per la metà del compagno in palestra); altro resta com\'è', () => {
+    const { scurisci } = funzioniUi(statoBase(), 'scurisci');
+    assert.equal(scurisci('#ff8800', 0.5), '#804400');
+    assert.equal(scurisci('#FFFFFF', 0), '#ffffff');
+    assert.equal(scurisci('#000000', 0.4), '#000000');
+    for (const no of ['rosso', '#abc', '', null, undefined]) assert.equal(scurisci(no, 0.4), no);
 });
 
 test('contestoIntro, stagioni: chi gioca sta a sinistra; i punti dei set e dello showdown seguono i lati', () => {
@@ -262,24 +287,23 @@ test('battle.html: carica lo stile e lo script dell\'intro, prima di quelli che 
     assert.ok(script > 0 && script < html.indexOf('<script src="battle-layout.js"></script>'), 'lo script prima di battle-layout.js');
 });
 
-test('battle-ui.js: l\'intro parte con ogni battaglia contro la CPU (non in palestra) e con ogni set nuovo', () => {
+test('battle-ui.js: l\'intro parte con ogni battaglia contro la CPU (anche in palestra), con ogni set nuovo e, online, appena si apre la pagina', () => {
     const avvia = funzione(battleUi, 'avviaBattaglia');
-    assert.match(avvia, /nuovoSet\(\);\s*disegnaInfo\(\);\s*if \(cpu && !cpu\.palestra\) \{[^}]*introVersus\(undefined, \{ attendi: true \}\);/);
+    assert.match(avvia, /nuovoSet\(\);\s*disegnaInfo\(\);\s*if \(cpu\) \{[^}]*introVersus\(undefined, \{ attendi: true \}\);/, 'anche in palestra');
     // i set dal secondo in poi: quando il set nuovo entra in scena, con il suo numero
     assert.match(funzione(battleUi, 'avviaProssimaScena'), /^function avviaProssimaScena\(\) \{\s*const conIntro = !!prossimaScena;\s*if \(conIntro && !introSet\) introVersus\(prossimoSet\);/);
-    // il primo set di un match online: all'uscita dalla lobby, non per chi arriva a partita già iniziata
+    // il primo set di un match online: appena si sa chi gioca, prima della lobby (anticipaIntroOnline); non per chi arriva a partita già iniziata
+    assert.match(funzione(battleUi, 'preparaOnline'), /nuovoSet\(\);\s*anticipaIntroOnline\(\);/);
+    assert.match(funzione(battleUi, 'preparaAmichevole'), /nuovoSet\(\);\s*anticipaIntroOnline\(\);/);
     const fase = funzione(battleUi, 'aggiornaFase');
-    assert.ok(fase.indexOf("const daLobby = online.statoPrima === 'lobby';") > 0);
-    assert.ok(fase.indexOf('const daLobby') < fase.indexOf('online.statoPrima = s;'), 'lo stato di prima si legge prima di sovrascriverlo');
-    assert.match(fase, /if \(s === 'in_corso' && daLobby && !introSet\) introVersus\(1, \{ attendi: true \}\);/);
+    assert.doesNotMatch(fase, /daLobby/, 'il primo set non rifà l\'intro all\'uscita dalla lobby');
 });
 
-test('battle-ui.js: l\'intro non c\'è nell\'app né in palestra, e aspetta lo sfondo nuovo (le sfide contro la CPU lo rifanno a ogni partita)', () => {
+test('battle-ui.js: l\'intro non c\'è nell\'app, e aspetta lo sfondo nuovo (le sfide contro la CPU lo rifanno a ogni partita)', () => {
     const intro = funzione(battleUi, 'introVersus');
     assert.match(intro, /!self\.BattleIntro/);
     assert.match(intro, /inApp\(\)/);
-    assert.match(intro, /document\.body\.classList\.contains\('palestra'\)/);
-    assert.match(intro, /cpu && cpu\.palestra/);
+    assert.doesNotMatch(intro, /classList\.contains\('palestra'\)|cpu\.palestra/, 'la palestra ha la sua intro');
     assert.match(intro, /Promise\.race\(\[versusPronto, new Promise\(ok => setTimeout\(ok, 2500\)\)\]\)/, 'attesa dello sfondo, al massimo 2,5 s');
     assert.match(intro, /catch/, 'un errore nell\'intro non ferma la partita');
 
@@ -312,7 +336,11 @@ test('battle-ui.js: la serie contro la CPU si conta in ogni battaglia che non è
 test('battle-intro.css: sta sopra a tutto ma non nell\'app; durante l\'intro gli avatar veri aspettano sotto; la riga nera segue le metà', () => {
     assert.match(css, /\.vi \{[^}]*position: fixed;[^}]*inset: 0;[^}]*z-index: 9500;/);
     assert.match(css, /html\.app \.vi \{ display: none; \}/);
-    assert.match(css, /\.vs-sfondo\.vi-in-corso \.vs-avatar \{ visibility: hidden; \}/);
+    assert.match(css, /\.vs-sfondo\.vi-in-corso :is\(\.vs-avatar, \.vs-compagno\) \{ visibility: hidden; \}/, 'anche il compagno della palestra');
+    // palestra: il capopalestra specchiato e il compagno no, qualunque lato abbiano; chi vola è sollevato come sullo sfondo vero
+    assert.match(css, /\.vi-avatar\.vi-specchia \{ transform: scaleX\(-1\); \}/);
+    assert.match(css, /\.vi-avatar\.vi-diritto \{ transform: none; \}/);
+    assert.match(css, /\.vi-avatar\.sc-vola \{ translate: 0 calc\(var\(--alza, 0px\) \* -1\); \}/);
     // la riga nera in diagonale (60% in alto, 40% in basso, come lo sfondo vero) su entrambe le metà
     assert.match(css, /\.vi \.vs-sx::after \{[^}]*clip-path: polygon\(calc\(60% - 8px\) 0, 60% 0, 40% 100%, calc\(40% - 8px\) 100%\);/);
     assert.match(css, /\.vi \.vs-dx::after \{[^}]*clip-path: polygon\(60% 0, calc\(60% \+ 8px\) 0, calc\(40% \+ 8px\) 100%, 40% 100%\);/);
@@ -441,13 +469,16 @@ test('introVersus: con un contesto parte anche prima che la pagina abbia config 
     assert.equal(vuota.S.introSet, null);
 });
 
-test('introVersus: né nell\'app né in palestra', () => {
-    for (const extra of [{ app: true }, { palestra: true }, { cpu: { palestra: { nome: 'Capo' } } }]) {
-        const { S, f, chiamate } = ambienteIntro({ config: configCpu, cpu: {}, ...extra });
-        f.introVersus(1, { attendi: true });
-        assert.equal(chiamate.length, 0, JSON.stringify(Object.keys(extra)));
-        assert.equal(S.introSet, null);
-    }
+test('introVersus: non nell\'app; in palestra sì (con i lati del capopalestra e del compagno)', () => {
+    const { S, f, chiamate } = ambienteIntro({ config: configCpu, cpu: {}, app: true });
+    f.introVersus(1, { attendi: true });
+    assert.equal(chiamate.length, 0);
+    assert.equal(S.introSet, null);
+    const palestra = ambienteIntro({ config: configCpu, cpu: { palestra: { nome: 'Capo', tappa: 0, aspetto: {} } }, palestra: true });
+    palestra.S.self.Palestra = { TAPPE: 3 };
+    palestra.f.introVersus(1);
+    assert.equal(palestra.chiamate.length, 0, 'senza sfondo della palestra (latiPalestra) niente intro, e niente copertura');
+    assert.equal(palestra.S.copertureTolte, 1);
 });
 
 test('introVersus: se il disegno dell\'intro fallisce la promessa di attesa si scioglie da sola (niente resta ad aspettare)', async () => {
@@ -470,29 +501,24 @@ test('introAbbandona: chiude subito l\'intro, toglie l\'attesa e cambia la gener
     assert.deepEqual(terminate, [true]);
 });
 
-test('introSePronti: quando i due sono pronti e il set non è ancora partito l\'intro parte e aspetta il set', () => {
+test('introSePronti: il primo set non rifà l\'intro (è già partita aprendo la pagina); tra i set delle amichevoli con team cambiabili parte quando i due sono pronti', () => {
     const online = (extra = {}) => ({ info: { categoria: 'Gen9 OU', bestOf: 3, match: 1 }, risultati: {}, pronti: { p1: true, p2: true }, stato: 'lobby', giaSalvato: false, ...extra });
-    // prima lobby
+    // prima lobby: niente (l'intro del primo set è quella dell'apertura)
     let t = ambienteIntro({ config: nomiDue, online: online() });
     t.f.introSePronti();
-    assert.equal(t.chiamate.length, 1);
-    assert.ok(t.chiamate[0].attesa instanceof Promise);
-    assert.ok(t.S.introSet);
-    t.f.introSePronti();                    // altri eventi "pronti" mentre aspetta: niente doppioni
-    assert.equal(t.chiamate.length, 1);
-    // uno solo pronto: niente
-    t = ambienteIntro({ config: nomiDue, online: online({ pronti: { p1: true, p2: false } }) });
+    assert.equal(t.chiamate.length, 0);
+    // tra i set, uno solo pronto: niente
+    t = ambienteIntro({ config: nomiDue, online: online({ amichevole: true, stato: 'tra_set', pronti: { p1: true, p2: false } }) });
     t.f.introSePronti();
     assert.equal(t.chiamate.length, 0);
-    // il set è già partito (gli eventi arrivano in ordine diverso): ci pensa aggiornaFase
-    t = ambienteIntro({ config: nomiDue, online: online({ stato: 'in_corso' }) });
+    // già in attesa: niente doppioni
+    t = ambienteIntro({ config: nomiDue, online: online({ amichevole: true, stato: 'tra_set' }), introSet: { pronta() {} } });
     t.f.introSePronti();
     assert.equal(t.chiamate.length, 0);
-    // una partita già salvata (lobby di un match finito) non rifà l'intro
-    t = ambienteIntro({ config: nomiDue, online: online({ giaSalvato: true }) });
+    // una partita già salvata non rifà l'intro; senza partita online niente
+    t = ambienteIntro({ config: nomiDue, online: online({ amichevole: true, stato: 'tra_set', giaSalvato: true }) });
     t.f.introSePronti();
     assert.equal(t.chiamate.length, 0);
-    // senza partita online
     t = ambienteIntro({ config: nomiDue, online: null });
     t.f.introSePronti();
     assert.equal(t.chiamate.length, 0);
@@ -563,19 +589,57 @@ test('battle-ui.js, contro la CPU: l\'intro si apre alla prima richiesta del sim
     assert.match(eventi, /b\.on\('richiesta', \(lato, richiesta\) => \{\s*if \(cpu\) introPronta\(\);/, 'solo contro la CPU: online la pronta la danno aggiornaFase e avviaProssimaScena');
 });
 
-test('battle-ui.js, online: l\'intro parte quando i due sono pronti, si apre quando il set è in scena', () => {
-    // il primo set: l'evento "pronti" la fa partire (introSePronti); si apre quando il set è in scena (nuovoSet), non allo stato "in corso" (il server pubblica set, log e
-    // richieste dopo, tutti insieme); se non era partita parte allo stato "in corso", sempre in attesa
+test('battle-ui.js, online: l\'intro è la prima cosa (prima della lobby), si apre sulla lobby; tra i set si rifà e si apre al set in scena', () => {
+    // il primo set: parte appena si sa chi gioca e si apre appena la pagina ha il suo stato (la prima aggiornaFase), non a "pronti" né a "in corso"
+    const fase = funzione(battleUi, 'aggiornaFase');
+    assert.match(fase, /if \(!online\.paginaPronta\) \{ online\.paginaPronta = true; introPronta\(\); \}/, 'solo la prima volta');
+    assert.doesNotMatch(fase, /introVersus/);
+    const anticipa = funzione(battleUi, 'anticipaIntroOnline');
+    assert.match(anticipa, /partite\/\$\{mia\.id\}\/stato/);
+    assert.match(anticipa, /if \(stato && stato !== 'lobby'\) return togliCopertura\(\);/, 'chi arriva a set già iniziato non la vede');
+    assert.match(anticipa, /mia\.giaSalvato/);
+    assert.match(anticipa, /Promise\.race\(\[mia\.matchPrecedentiPronti, new Promise\(ok => setTimeout\(ok, 1500\)\)\]\)/, 'il punteggio dei match di prima, al massimo un attimo');
+    assert.match(anticipa, /generazione !== introGenerazione/);
+    assert.match(anticipa, /introVersus\(1, \{ attendi: true \}\);\s*if \(mia\.paginaPronta\) introPronta\(\);/);
+    // tra i set (amichevoli con team cambiabili): "pronti" la fa partire, il set in scena la apre
     assert.equal((battleUi.match(/introSePronti\(\); \}\);/g) || []).length, 2, 'match di stagione e amichevole');
-    assert.match(funzione(battleUi, 'aggiornaFase'), /if \(s === 'in_corso' && daLobby && !introSet\) introVersus\(1, \{ attendi: true \}\);/);
-    assert.doesNotMatch(funzione(battleUi, 'aggiornaFase'), /introPronta/, 'lo stato non apre l\'intro');
     const nuovo = funzione(battleUi, 'nuovoSet');
     assert.match(nuovo, /creaScena\(\{ recupera \}\);\s*if \(numero\) introPronta\(\);/, 'solo con il numero del set (online): contro la CPU si apre alla prima richiesta');
-    // i set dopo una scelta del team: la apre avviaProssimaScena, a scena rifatta; se non era partita parte lì
     const prossima = funzione(battleUi, 'avviaProssimaScena');
     assert.match(prossima, /const conIntro = !!prossimaScena;/);
     assert.match(prossima, /if \(conIntro && !introSet\) introVersus\(prossimoSet\);/);
     assert.ok(prossima.indexOf('creaScena();') < prossima.indexOf('if (conIntro) introPronta();'), 'si apre dopo aver rifatto la scena');
+    assert.match(funzione(battleUi, 'leggiMatchPrecedenti'), /online\.matchPrecedentiPronti = firebase\.database\(\)/);
+});
+
+test('battle-ui.js, palestra: le due metà sono il capopalestra (specchiato) e il suo compagno, costruite come quelle dello sfondo "sfida", e atterrano sullo sfondo della palestra', () => {
+    const lati = funzione(battleUi, 'latiPalestra');
+    assert.match(lati, /document\.querySelector\('\.vs-sfondo\.pal-decor'\)/);
+    assert.match(lati, /creaLatoVersus\(base, g\.nome, 'vs-sx'\)/);
+    assert.match(lati, /colore: scurisci\(base\.colore, 0\.4\)/, 'la metà del compagno più scura');
+    assert.match(lati, /\{ reale: sx, avatar, specchia: true \}, \{ reale: dx, avatar: compagno, specchia: false \}/);
+    assert.match(lati, /pulisci: \(\) => contenitore\.remove\(\)/);
+    // la metà dello sfondo "sfida" è la stessa funzione per le partite tra due allenatori e per la palestra
+    assert.match(funzione(battleUi, 'vestiVersus'), /creaLatoVersus\(a1, nomeP1, 'vs-sx'\), destra = creaLatoVersus\(a2, nomeP2, 'vs-dx'\)/);
+    // l'intro aspetta che il compagno abbia la sua misura (ScalaPkm.scena), e la palestra la salva nella tappa
+    assert.match(funzione(battleUi, 'vestiPalestra'), /scenaPalestra = scala\(\);/);
+    assert.match(funzione(battleUi, 'introVersus'), /Promise\.race\(\[scenaPalestra, new Promise\(ok => setTimeout\(ok, 3500\)\)\]\)/);
+    assert.match(funzione(battleUi, 'preparaPalestra'), /timerAnnuncio: 0, aspetto: gym\.aspetto/);
+});
+
+test('battle-intro.js: l\'intro prende i lati da fuori (palestra) e l\'avatar eredita distanza dal bordo, specchio e volo di quello vero', () => {
+    assert.match(battleIntro, /const sfondo = opz\.sfondo \|\| doc\.querySelector/);
+    assert.match(battleIntro, /const dati = opz\.lati \|\| null;/);
+    assert.match(battleIntro, /s\.specchia === true \? ' vi-specchia' : s\.specchia === false \? ' vi-diritto' : ''/);
+    assert.match(battleIntro, /classList\.contains\('sc-vola'\)/);
+    assert.match(battleIntro, /ancora\.style\.bottom = sotto/);
+});
+
+test('riproduci con lati dati: senza sfondo o con meno di due lati vale false subito', async () => {
+    const win = finestra();
+    assert.equal(await B.riproduci({ win, nomi: {}, testi: {}, lati: [{ reale: {} }, { reale: {} }] }), false, 'senza sfondo');
+    win.document.querySelector = () => ({});
+    assert.equal(await B.riproduci({ win, nomi: {}, testi: {}, sfondo: {}, lati: [{ reale: {} }] }), false, 'un lato solo');
 });
 
 test('battle-intro.css: la riga "in attesa" sta sotto il tabellone, compare solo in attesa e usa il tema', () => {
@@ -587,13 +651,14 @@ test('battle-intro.css: la riga "in attesa" sta sotto il tabellone, compare solo
     assert.match(css, /@keyframes vi-punti/);
 });
 
-test('la copertura di prima dell\'intro: scura con il VS dal primo istante contro la CPU, tolta quando l\'intro è partita o se non ci sarà', () => {
+test('la copertura di prima dell\'intro: scura con il VS dal primo istante nelle partite (CPU, palestre, amichevoli, stagioni), tolta quando l\'intro è partita o se non ci sarà', () => {
     // battle.html: l'elemento è il primo del body; la classe la mette uno script in testa, solo contro la CPU (non in palestra, non nell'app, non con "riduci movimento")
     assert.match(html, /<body>\s*<div class="vs-copertura" id="vs-copertura" aria-hidden="true"><img src="immagini\/app\/seasons-vs\.webp"/);
     assert.match(html, /<link rel="preload" as="image" href="immagini\/app\/seasons-vs\.webp">/);
-    const script = html.match(/<script>\s*\/\/ Contro la CPU[\s\S]*?<\/script>/)[0];
-    assert.match(script, /\[\?&\]cpu=\[\^&\]/);
-    assert.match(script, /\[\?&\]palestra=/);
+    const script = html.match(/<script>\s*\/\/ Nelle partite[\s\S]*?<\/script>/)[0];
+    assert.match(script, /\[\?&\]\(cpu\|amichevole\)=\[\^&\]/);
+    assert.match(script, /\[\?&\]showdown=\[\^&\]\/\.test\(q\) && !\/\[\?&\]locale=/, 'non la modalità locale di prova');
+    assert.doesNotMatch(script, /palestra=/, 'anche le palestre');
     assert.match(script, /classList\.contains\('app'\)/);
     assert.match(script, /prefers-reduced-motion: reduce/);
     assert.match(script, /setTimeout\(togli, 15000\)/, 'si toglie da sola');
