@@ -31,6 +31,31 @@
         tutti: null, avatarAperti: false, shinyPkm: {}, scelta: null, canzoni: null, ricerca: '', anteprime: {}, tab: 'pagina', occupato: false, prova: {}, provando: '', squadra: '', armato: null
     };
     let ascolto = null;          // l'audio dell'anteprima di una canzone
+    let musicaEraAccesa = false; // la musica della pagina suonava quando è partita l'anteprima (a fine anteprima si riaccende)
+
+    // La musica della pagina (#bg-music-home) tace mentre suona l'anteprima di una canzone e riparte quando l'anteprima si ferma (se chi ascolta non l'aveva spenta)
+    function musicaPagina() { return document.getElementById('bg-music-home'); }
+    function fermaAscolto() {
+        const a = ascolto; ascolto = null;
+        if (a) { a.onended = a.onerror = null; try { a.pause(); } catch (e) { /* niente */ } }
+        window.AppMusicaPausa = false;
+        const m = musicaPagina();
+        let spenta = false; try { spenta = localStorage.getItem('userMusicPref') === 'off'; } catch (e) { /* niente */ }
+        if (a && musicaEraAccesa && m && !spenta) { m.muted = false; const p = m.play(); if (p && p.catch) p.catch(() => {}); }
+        musicaEraAccesa = false;
+    }
+    function avviaAscolto(url) {
+        fermaAscolto();
+        const m = musicaPagina();
+        musicaEraAccesa = !!(m && !m.paused);
+        window.AppMusicaPausa = true;           // l'app non deve rimetterla in marcia da sola (app-musica.js)
+        if (m && !m.paused) m.pause();
+        const a = new Audio(url); a.volume = 0.6;
+        ascolto = a;
+        a.onended = a.onerror = () => { if (ascolto === a) fermaAscolto(); };
+        const p = a.play();
+        if (p && p.catch) p.catch(() => { if (ascolto === a) fermaAscolto(); });
+    }
 
     // ---------------------------------------------------------------- i dati
     async function leggi() {
@@ -368,7 +393,7 @@
         S.tab = ['pagina', 'allenatore', 'pokemon', 'monete'].includes(tab) ? tab : 'pagina';
         S.armato = null; S.scelta = null; S.prova = {}; S.provando = ''; msg('');
         aggiornaAnteprima();
-        if (ascolto) { ascolto.pause(); ascolto = null; }
+        fermaAscolto();
         try { const u = new URL(window.location.href); u.searchParams.set('tab', S.tab); window.history.replaceState(null, '', u.toString()); } catch (e) { /* niente */ }
         if (S.tab === 'allenatore') caricaTutti();
         disegna();
@@ -395,7 +420,7 @@
             });
         }
         const dati = () => ({ tipo: b.dataset.tipo, id: b.dataset.id, nome: b.dataset.nome, immagine: b.dataset.img, colore: b.dataset.c, extra: b.dataset.url ? { url: b.dataset.url, nome: b.dataset.nome } : null });
-        if (ng === 'prendi') { if (ascolto) { ascolto.pause(); ascolto = null; } return dati().tipo === 'canzone' ? chiediAcquisto(dati()) : scegli(dati()); }
+        if (ng === 'prendi') { fermaAscolto(); return dati().tipo === 'canzone' ? chiediAcquisto(dati()) : scegli(dati()); }
         if (ng === 'avatar-tutti') { S.avatarAperti = !S.avatarAperti; return disegna(true); }
         if (ng === 'compra-scelta') return S.scelta && chiediAcquisto(S.scelta);
         if (ng === 'annulla-scelta') return azzeraProva();
@@ -404,10 +429,8 @@
         if (ng === 'canzone-nessuna') return indossa('canzone', '', null);
         if (ng === 'ascolta') {
             const gia = ascolto && ascolto.src === b.dataset.url;
-            if (ascolto) { ascolto.pause(); ascolto = null; }
-            if (gia) return;
-            ascolto = new Audio(b.dataset.url); ascolto.volume = 0.4; ascolto.play().catch(() => {});
-            return;
+            if (gia) return fermaAscolto();
+            return avviaAscolto(b.dataset.url);
         }
         if (ng === 'squadra') { S.squadra = b.dataset.id; S.armato = null; return disegna(true); }
         if (ng === 'shiny') return chiediShiny(Number(b.dataset.i));

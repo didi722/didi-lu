@@ -265,7 +265,7 @@ function sbloccaAudioAlPrimoClick() {
         const player = document.getElementById('bg-music-home');
         const musicBtn = document.getElementById('music-control');
 
-        if (savedPref !== 'off' && player && player.paused) {
+        if (savedPref !== 'off' && !window.AppMusicaPausa && player && player.paused) {
             player.play().then(() => {
                 if (musicBtn) musicBtn.classList.remove('muted');
             }).catch(() => {});

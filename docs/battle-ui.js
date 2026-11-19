@@ -355,6 +355,7 @@ async function preparaCpuRandom(idFormato) {
 
 // Due team nuovi e si parte (anche per la rivincita)
 async function iniziaRandom() {
+    copriSubito();
     await assegnaPersonaCpu();
     cpu.avviso = '';
     cpu.ultimoVincitore = null;
@@ -492,6 +493,7 @@ async function iniziaContro(team) {
 async function altroTeamCpu() {
     if (!cpu || cpu.generando) return;
     cpu.generando = true;
+    copriSubito();
     try {
         const r = await nuovoTeamCpu(cpu.giocatore.regolamento, { iniziali: cpu.giocatore.iniziali, db: dbPerLaMeta() });
         if (!r.team) throw new Error(r.avvisi[0] || 'no team available');
@@ -501,6 +503,7 @@ async function altroTeamCpu() {
         console.error(errore);
         cpu.generando = false;
         cpu.avviso = `Couldn't build another CPU team: ${errore.message}`;
+        togliCopertura();
         aggiornaFineCpu();
     }
 }
@@ -1717,6 +1720,11 @@ function introVersus(numeroSet, { attendi = false, contesto = null } = {}) {
 }
 
 /** La copertura scura di prima dell'intro (battle.html): si toglie quando l'intro è partita, o se non ci sarà */
+// Rivincita o "un altro team": la copertura scura torna subito, prima che la partita nuova si prepari (poi la sostituisce l'intro, o la toglie avviaBattaglia se l'intro non c'è)
+function copriSubito() {
+    try { if (self.BattleIntro && self.BattleIntro.mettiCopertura && !inApp()) self.BattleIntro.mettiCopertura(window); } catch (e) { /* senza copertura si vede il simulatore, come prima */ }
+}
+
 function togliCopertura() {
     try { if (self.BattleIntro) self.BattleIntro.togliCopertura(window); else document.documentElement.classList.remove('vs-copre'); } catch (e) { /* niente copertura */ }
 }

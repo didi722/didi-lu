@@ -268,3 +268,13 @@ test('la rete di sicurezza riconosce davvero il nero su nero (e lascia stare il 
     assert.ok(SFONDO_SCURO.test('var(--nb-ink, #000)') && SFONDO_SCURO.test('#000') && SFONDO_SCURO.test('var(--nb-tab-bg)'));
     assert.ok(!SFONDO_SCURO.test('#09ca49') && !SFONDO_SCURO.test('#fff') && !SFONDO_SCURO.test('var(--nb-giallo)'));
 });
+
+test('le GIF animate con un drop-shadow stanno su un livello a parte (will-change: filter): senza, Chrome lascia macchioline nere ai bordi', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const css = f => fs.readFileSync(path.join(__dirname, '../docs', f), 'utf8');
+    const pubblica = css('style-public-card.css');
+    assert.equal((pubblica.match(/filter: var\(--pp-adesivo-sprite\);/g) || []).length, (pubblica.match(/filter: var\(--pp-adesivo-sprite\);\s*will-change: filter;/g) || []).length);
+    const app = css('app-gioco-pagine.css');
+    for (const sel of ['\\.at-pkm', 'body\\.pg-matches \\.ac-pkm', 'body\\.pg-matches \\.mp-pkm', '\\.as-sprite, html\\.app-shell \\.as-mini', 'body\\.pg-practice \\.pr-img'])
+        assert.match(app, new RegExp(sel + ' \\{[^}]*will-change: filter; filter: drop-shadow'), sel);
+});

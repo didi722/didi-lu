@@ -684,3 +684,24 @@ test('togliCopertura: toglie la classe da <html> e non si rompe senza finestra',
     assert.deepEqual(tolte, ['vs-copre']);
     for (const no of [null, undefined, {}, { document: {} }]) assert.doesNotThrow(() => B.togliCopertura(no));
 });
+
+test('rivincita e "un altro team CPU": la copertura scura torna subito, prima che si veda il simulatore', () => {
+    assert.equal(typeof B.mettiCopertura, 'function');
+    const aggiunte = [];
+    const finestra = (extra = {}) => ({
+        document: { body: {}, hidden: false, documentElement: { classList: { contains: () => false, add: c => aggiunte.push(c) } } },
+        matchMedia: () => ({ matches: false }), Element: { prototype: { animate() {} } }, setTimeout: () => 0, ...extra
+    });
+    assert.equal(B.mettiCopertura(finestra()), true);
+    assert.deepEqual(aggiunte, ['vs-copre']);
+    // non nell'app, non con "riduci movimento"
+    const app = finestra(); app.document.documentElement.classList.contains = c => c === 'app';
+    assert.equal(B.mettiCopertura(app), false);
+    assert.equal(B.mettiCopertura(finestra({ matchMedia: () => ({ matches: true }) })), false);
+    assert.doesNotThrow(() => B.mettiCopertura(null));
+    // collegamento: parte appena si preme, e se la squadra nuova non si può fare si toglie
+    assert.match(funzione(battleUi, 'iniziaRandom'), /^[^]*?\{\s*copriSubito\(\);\s*await assegnaPersonaCpu\(\)/);
+    const altro = funzione(battleUi, 'altroTeamCpu');
+    assert.match(altro, /cpu\.generando = true;\s*copriSubito\(\);/);
+    assert.match(altro, /catch \(errore\) \{[^]*togliCopertura\(\);/);
+});
