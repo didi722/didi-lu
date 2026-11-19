@@ -135,6 +135,18 @@
     text-transform: uppercase;
     transform: none !important;
 }
+/* i quattro rettangoli delle mosse nel fumetto del Pokémon: seguono il tema scelto (angoli, ombra, carattere, inclinazione, colore delle superfici) come il resto del fumetto */
+.pkm-hover-card .hover-moves { border-top: 2px dashed var(--nb-ink, #000); }
+.pkm-hover-card .hover-moves span {
+    background: var(--nb-carta, #fff);
+    color: var(--nb-tip-fg, #000);
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: min(var(--nb-raggio, 0px), 10px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    rotate: calc(var(--nb-rot, 1) * -.8deg);
+}
+.pkm-hover-card .hover-moves span:nth-child(even) { rotate: calc(var(--nb-rot, 1) * .7deg); }
 .premio-tip { font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important; }
 .tb-bubble { font-weight: 700; }
 

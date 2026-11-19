@@ -278,3 +278,14 @@ test('le GIF animate con un drop-shadow stanno su un livello a parte (will-chang
     for (const sel of ['\\.at-pkm', 'body\\.pg-matches \\.ac-pkm', 'body\\.pg-matches \\.mp-pkm', '\\.as-sprite, html\\.app-shell \\.as-mini', 'body\\.pg-practice \\.pr-img'])
         assert.match(app, new RegExp(sel + ' \\{[^}]*will-change: filter; filter: drop-shadow'), sel);
 });
+
+test('fumetto del Pokémon nel Box: i rettangoli delle mosse seguono il tema (angoli, ombra, carattere), non sono fissi', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const css = fs.readFileSync(path.join(__dirname, '../docs/tooltip.css'), 'utf8');
+    const regola = /\.pkm-hover-card \.hover-moves span \{[^}]*\}/.exec(css);
+    assert.ok(regola, 'regola dei rettangoli delle mosse');
+    assert.match(regola[0], /border-radius: min\(var\(--nb-raggio, 0px\), 10px\)/);
+    assert.match(regola[0], /box-shadow: var\(--nb-sh-s,/);
+    assert.match(regola[0], /font-family: var\(--nb-font-titoli,/);
+    assert.match(regola[0], /background: var\(--nb-carta,/);
+});
