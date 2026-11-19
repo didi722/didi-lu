@@ -141,6 +141,11 @@ test('htmlScheda: titolo, ELO, posizione e medaglie; senza titolo o medaglie le 
     assert.doesNotMatch(b, /scheda-medaglie/);
     assert.match(b, /ELO <b>1100<\/b>/);
     assert.equal(SB.htmlScheda(null), '');
+    // i badge dell'allenatore: il fumetto con la lista completa (anche oltre le cinque medagliette)
+    assert.match(a, /class="scheda-riga scheda-medaglie badge-elenco fiocco-medaglie" tabindex="0"/);
+    assert.match(a, /<strong>Trainer badges \d+<\/strong>/);
+    assert.equal((a.match(/class="fiocco-t-riga /g) || []).length, r.p1.medaglie.length);
+    assert.doesNotMatch(a, /<span class="bt-mini[^>]* title="/);
 });
 
 test('htmlScheda: il testo che entra nell\'HTML è protetto', () => {
@@ -154,9 +159,13 @@ test('htmlBadgeTeam: le medagliette vinte dal team in campo (senza conto né pro
     const r = await carica({ p1: 'didi', p2: 'lu' });
     const h = SB.htmlBadgeTeam(r.risultato, r.p1, 'Alfa', DIP);
     assert.match(h, /class="scheda-team-badge"/);
-    assert.match(h, /class="bt-barra-mini"/);
+    assert.match(h, /class="bt-barra-mini badge-elenco fiocco-medaglie"/);
     assert.match(h, /class="bt-mini /);
-    assert.match(h, /title="[^"]*\n?[^"]*"/, 'la descrizione al passaggio');
+    // al passaggio il fumetto con la lista (come i fiocchi dei Pokémon): livello, quanto e cosa premia
+    assert.match(h, /<span class="fiocco-t-tip tip-coach" role="tooltip"><strong>Team badges 3<\/strong><ul>/);
+    assert.match(h, /class="fiocco-t-livello">Silver</);
+    assert.match(h, /class="fiocco-t-valore">[^<]+<\/b><small class="fiocco-t-desc">[^<]+</);
+    assert.doesNotMatch(h, /title="/, 'niente tooltip del browser accanto al fumetto');
     assert.doesNotMatch(h, /🏅 \d+\/\d+|bt-conto-chip|bt-apri|bt-pop/, 'niente conto x/10 né progresso: quello è solo nel Box del giocatore');
     assert.equal(SB.htmlBadgeTeam(r.risultato, r.p1, 'alfa', DIP), h, 'maiuscole del nome del team non contano');
     assert.equal(SB.htmlBadgeTeam(r.risultato, r.p1, 'Altro team', DIP), '');

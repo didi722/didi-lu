@@ -230,12 +230,10 @@ html[data-modo="fit"] .lato > * { flex-shrink: 0; }
 }
 html[data-modo="fit"] .lato-nome { max-width: 100%; font-size: 2rem; }
 .lato-team-riquadro {
-    position: relative; box-sizing: border-box;
-    align-self: stretch; min-width: 0;
-    margin: 4px 6px 0 0; padding: 9px 12px 9px;
-    background: var(--inchiostro); color: var(--carta);
-    border-left: 10px solid var(--colore-mio);
-    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--colore-mio);
+    box-sizing: border-box; align-self: stretch; max-width: 100%; min-width: 0;
+    padding: 8px 10px 9px;
+    background: var(--carta); color: var(--inchiostro);
+    border: var(--bordo); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--colore-mio);
 }
 /* i badge del team stanno dentro il riquadro del team, sotto il suo nome: si vede che sono di quel team */
 .lato-team-riquadro .scheda-team-badge { margin-top: 7px; }
@@ -344,7 +342,7 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .membro .fiocco-medaglie .bt-mini .bt-finto { font-size: .6rem; }
 .membro .fiocco-medaglie .bt-mini.bt-altri { min-width: 22px; padding: 0 4px; font-size: .58rem; }
 .membro .fiocco-medaglie:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 2px; }
-.membro .fiocco-t-tip {
+.membro .fiocco-t-tip, .badge-elenco .fiocco-t-tip {
     position: absolute; top: calc(100% + 8px); left: 0; z-index: 60;
     box-sizing: border-box; width: 224px;
     padding: 9px 12px;
@@ -354,7 +352,10 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
     display: none; pointer-events: none; cursor: default;
 }
 /* si apre dove c'è posto (sopra o sotto, mai fuori dallo schermo): battle-extra.js, apriFumettoFiocchi (aggiunge .aperto) */
-.membro .fiocco-medaglie.aperto .fiocco-t-tip { display: block; }
+.membro .fiocco-medaglie.aperto .fiocco-t-tip, .badge-elenco.aperto .fiocco-t-tip { display: block; }
+/* i badge dell'allenatore e del team: stesso fumetto dei fiocchi, aperto sotto o sopra (apriFumettoFiocchi) */
+.badge-elenco { position: relative; cursor: help; }
+.badge-elenco:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
 .fiocco-t-tip strong { display: block; margin-bottom: 5px; padding-bottom: 4px; border-bottom: 2px dashed var(--inchiostro); font-size: .7rem; letter-spacing: .03em; text-transform: uppercase; }
 .fiocco-t-tip ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .fiocco-t-riga { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; column-gap: 7px; }
@@ -372,6 +373,7 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .fiocco-t-riga.fiocco-platinum { --livello: var(--bt-platino); }
 .fiocco-t-valore { grid-column: 2 / -1; grid-row: 2; font-size: .66rem; font-weight: 800; }
 .fiocco-t-valore i { font-style: normal; opacity: .6; }
+.fiocco-t-desc { grid-column: 2 / -1; grid-row: 3; font-size: .62rem; font-weight: 600; line-height: 1.25; opacity: .75; }
 html[data-modo="fit"] .lato-scheda { align-self: stretch; }
 
 /* Bring 6 pick 4: non si sa ancora se è stato portato (avversario),

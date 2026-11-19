@@ -713,7 +713,7 @@ test('lati del simulatore: il nome del team è un riquadro in evidenza sopra i P
     assert.match(extra, /SB\.htmlScheda\(sc\)[^]*?class="lato-team-riquadro"><p class="lato-team nome-scorrevole"[^]*?<\/p>\$\{badgeTeam\}<\/div>[^]*?<ol class="lato-pkm">/);
     assert.ok(!/lato-team-et/.test(extra) && !/lato-team-et/.test(css), 'niente tag "Team" sopra il nome');
     assert.match(css, /\.lato-team \{[^}]*font: 800 1\.3rem/, 'più grande di prima (era .78rem)');
-    assert.match(css, /\.lato-team-riquadro \{[^}]*align-self: stretch;[^}]*border-left: 10px solid var\(--colore-mio\)/);
+    assert.match(css, /\.lato-team-riquadro \{[^}]*align-self: stretch;/);
     // tooltip: tutte le caselle tranne le ignote; chi non ha il set (l'avversario) mostra quello che mostra il simulatore sul suo Pokémon
     assert.match(extra, /<li class="membro\$\{x\.ignoto \? '' : ' con-tooltip'\}/);
     const f = /function tooltipMembro\(e, lato\) \{[^]*?\n\}/.exec(extra)[0];
@@ -754,4 +754,17 @@ test('colonne del simulatore: l\'elenco dei fiocchi non finisce sotto il tooltip
     const extra = fs.readFileSync(path.join(__dirname, '../docs/battle-extra.js'), 'utf8');
     assert.match(funzione(extra, 'apriFumettoFiocchi'), /medaglie\.classList\.add\('aperto'\);\s*nascondiTooltip\(\);/, 'aprendo i fiocchi il tooltip del Pokémon si chiude');
     assert.match(funzione(extra, 'tooltipMembro'), /\|\| e\.target\.closest\?\.\('\.fiocco-medaglie'\)\) return;/, 'sulle medagliette non si riapre');
+});
+
+test('colonne del simulatore: il riquadro del team è bianco come la scheda dell\'allenatore; i badge hanno il fumetto con la lista', () => {
+    const css = fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8');
+    const riquadro = /\.lato-team-riquadro \{[^}]*\}/.exec(css)[0];
+    assert.match(riquadro, /background: var\(--carta\)/);
+    assert.match(riquadro, /border: var\(--bordo\)/);
+    assert.doesNotMatch(riquadro, /var\(--inchiostro\);\s*color: var\(--carta\)/, 'non più il blocco scuro');
+    assert.match(css, /\.membro \.fiocco-t-tip, \.badge-elenco \.fiocco-t-tip \{/);
+    assert.match(css, /\.badge-elenco\.aperto \.fiocco-t-tip \{ display: block; \}/);
+    // lo apre lo stesso codice dei fiocchi dei Pokémon: cerca .fiocco-medaglie dentro la colonna
+    const extra = fs.readFileSync(path.join(__dirname, '../docs/battle-extra.js'), 'utf8');
+    assert.match(extra, /closest\('\.fiocco-medaglie'\)/);
 });

@@ -109,18 +109,27 @@
     // -----------------------------------------------------
     // HTML
     // -----------------------------------------------------
+    // Le medagliette di un blocco (badge dell'allenatore o del team) e, passandoci sopra (o col fuoco della tastiera), un fumetto che li elenca tutti, come per i fiocchi
+    // dei Pokémon (battle-extra.js, apriFumettoFiocchi: lo apre e lo posiziona; style-battle.css, .badge-elenco)
+    const classeLivello = l => (l === 'founder' ? 'gold' : l);
     const medagliaHtml = m =>
-        `<span class="bt-mini bt-${esc(m.livello === 'founder' ? 'gold' : m.livello)}" title="${esc(m.nome)} · ${esc(m.livelloNome)}: ${esc(m.testo)}">` +
+        `<span class="bt-mini bt-${esc(classeLivello(m.livello))}">` +
         `<img class="bt-mini-img" src="${esc(m.img)}" alt="" loading="lazy" onerror="BadgeTeam.immagineMancante(this,'${esc(m.icona)}')"></span>`;
+    const rigaFumetto = m =>
+        `<li class="fiocco-t-riga fiocco-${esc(classeLivello(m.livello))}"><img class="fiocco-t-img" src="${esc(m.img)}" alt="" loading="lazy" onerror="Fiocchi.immagineMancante(this,'${esc(m.icona)}','fiocco-finto')">` +
+        `<span class="fiocco-t-nome">${esc(m.nome)}</span><span class="fiocco-t-livello">${esc(m.livelloNome)}</span>` +
+        `<b class="fiocco-t-valore">${esc(m.testo)}</b>${m.descrizione ? `<small class="fiocco-t-desc">${esc(m.descrizione)}</small>` : ''}</li>`;
+    const fumettoBadge = (titolo, elenco) => `<span class="fiocco-t-tip tip-coach" role="tooltip"><strong>${esc(titolo)} ${elenco.length}</strong><ul>${elenco.map(rigaFumetto).join('')}</ul></span>`;
 
     /** Il blocco sotto il nome: titolo, ELO e posizione, le medaglie da allenatore. Vuoto se non c'è la scheda. */
     function htmlScheda(sc) {
         if (!sc) return '';
         const visibili = sc.medaglie.slice(0, MAX_MEDAGLIE), resto = sc.medaglie.length - visibili.length;
         const medaglie = sc.medaglie.length
-            ? `<div class="scheda-riga scheda-medaglie" aria-label="Trainer badges"><span class="scheda-etichetta">Badges</span>` +
+            ? `<div class="scheda-riga scheda-medaglie badge-elenco fiocco-medaglie" tabindex="0" aria-label="${sc.medaglie.length} trainer badge${sc.medaglie.length > 1 ? 's' : ''}"><span class="scheda-etichetta">Badges</span>` +
               visibili.map(medagliaHtml).join('') +
-              (resto > 0 ? `<span class="bt-mini bt-altri" title="${resto} more trainer badge${resto > 1 ? 's' : ''}">+${resto}</span>` : '') + '</div>'
+              (resto > 0 ? `<span class="bt-mini bt-altri">+${resto}</span>` : '') +
+              fumettoBadge('Trainer badges', sc.medaglie) + '</div>'
             : '';
         return `<div class="lato-scheda">` +
             (sc.titolo ? `<p class="scheda-titolo">${esc(sc.titolo)}</p>` : '') +
@@ -134,8 +143,14 @@
         const { BadgeTeam } = dipendenze(dip);
         if (!BadgeTeam || !risultato || !sc || !nomeTeam) return '';
         const lista = BadgeTeam.calcola(BadgeTeam.trova(risultato, { player: sc.id, team: nomeTeam }));
-        const medaglie = BadgeTeam.htmlMini(lista, MAX_MEDAGLIE);
-        return medaglie ? `<span class="scheda-team-badge"><span class="bt-barra-mini">${medaglie}</span></span>` : '';
+        const presi = BadgeTeam.guadagnati(lista);
+        if (!presi.length) return '';
+        // come per i badge dell'allenatore: le medagliette più alte e il fumetto con l'elenco (livello e cosa premiano) al passaggio
+        const elenco = presi.map(b => ({ id: b.id, nome: b.nome, livello: b.classeLivello, livelloNome: b.livelloNome, img: b.immagine, icona: b.icona, testo: BadgeTeam.testoMedaglia(b).split('\n')[2] || '', descrizione: b.descrizione }));
+        const visibili = elenco.slice(0, MAX_MEDAGLIE), resto = elenco.length - visibili.length;
+        return `<span class="scheda-team-badge"><span class="bt-barra-mini badge-elenco fiocco-medaglie" tabindex="0" aria-label="${elenco.length} team badge${elenco.length > 1 ? 's' : ''}">` +
+            visibili.map(medagliaHtml).join('') + (resto > 0 ? `<span class="bt-mini bt-altri">+${resto}</span>` : '') +
+            fumettoBadge('Team badges', elenco) + '</span></span>';
     }
 
     /**
