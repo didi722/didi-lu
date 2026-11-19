@@ -571,14 +571,15 @@ test('palco: la coppia allenatore + Pokémon sta al centro (--sposta: metà dell
 
 test('party: il Pokémon più alto del team riempie lo slot, gli altri in proporzione alla sua altezza', () => {
     const js = docs('public-card.js'), css = docs('style-public-card.css');
-    const corpo = /const MINIMO_SLOT = [\d.]+, CURVA_SLOT = [\d.]+;[^\n]*\n\s*function quotaSlot\(altezzaM, massimaM, quota\) \{[^]*?\n    \}/.exec(js)[0];
+    const corpo = /const MINIMO_SLOT = [\d.]+, PENDENZA_SLOT = [\d.]+;[^\n]*\n\s*function quotaSlot\(altezzaM, massimaM, quota\) \{[^]*?\n    \}/.exec(js)[0];
     const quotaSlot = new Function(`${corpo}; return quotaSlot;`)();
     assert.equal(quotaSlot(1.0, 1.0, 1), 1, 'il più alto: tutto lo slot');
     assert.equal(quotaSlot(1.7, 1.7, 1), 1);
     const meta = quotaSlot(0.5, 1.0, 1), quarto = quotaSlot(0.25, 1.0, 1);
-    assert.ok(meta > 0.5 && meta < 0.8, 'metà altezza: più di metà slot (curva ammorbidita) ma meno del più alto');
-    assert.ok(quarto < meta && quarto > 0.3, 'più basso, più piccolo, ma ancora visibile');
-    assert.equal(quotaSlot(0.1, 14.5, 1), 0.3, 'il più piccolo accanto a un gigante resta visibile (minimo)');
+    assert.ok(meta > 0.8 && meta < 1, 'metà altezza: poco meno del più alto (scala logaritmica)');
+    assert.ok(quarto < meta && quarto > 0.6, 'più basso, più piccolo, ma ben visibile');
+    assert.equal(quotaSlot(0.1, 5.2, 1), 0.45, 'un Joltik accanto a un Lugia: mai sotto il minimo');
+    assert.ok(quotaSlot(0.4, 5.2, 1) > 0.5 && quotaSlot(0.4, 5.2, 1) < 0.7, 'un Pokémon da 40 cm accanto a un Lugia: più piccolo ma visibile');
     assert.equal(quotaSlot(0, 0, 1), 1, 'senza misure: nessuna riduzione');
     assert.ok(quotaSlot(0.7, 1.4, 0.58) > quotaSlot(0.7, 1.4, 1), 'la GIF con molto vuoto intorno (Spoink) è più alta: il Pokémon che si vede resta della taglia giusta');
     assert.ok(quotaSlot(5, 5, 0.3) <= 1, 'mai più grande dello slot');
