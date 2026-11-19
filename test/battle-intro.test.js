@@ -742,11 +742,12 @@ test('doppi: sul secondo Pokémon si ricorda cosa si è scelto per il primo, e c
     assert.deepEqual(con('move 2 1 terastallize'), ['Abomasnow will use Giga Drain on Zacian (Terastallize)']);
     assert.deepEqual(con('move 2 1 dynamax'), ['Abomasnow will use Max Giga Drain on Zacian (Dynamax)']);
     assert.deepEqual(con('pass'), [], 'nessuno da muovere: niente');
-    // collegamento: solo nei doppi, nella riga della domanda
+    // collegamento: solo nei doppi, sotto le mosse (dopo il piede con cambi e meccaniche)
     const mosse = funzione(battleUi, 'disegnaMosse');
     assert.match(mosse, /const fatte = doppio \? riepilogoScelte\(lato\) : \[\];/);
-    assert.match(mosse, /class: 'scelta-fatta'/);
-    assert.match(fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8'), /\.scelta-fatta \{[^}]*flex: 1 1 12rem;/);
+    assert.match(mosse, /corpo\.append\(piede\);\s*\/\/[^\n]*\n\s*if \(fatte\.length\) corpo\.append\(el\('p', \{ class: 'scelta-fatta' \}/);
+    assert.ok(!/scelta-fatta[^]*testa-scelta/.test(mosse.slice(0, mosse.indexOf("corpo.append(el('div', { class: 'mosse'"))), 'non più nella riga della domanda');
+    assert.match(fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8'), /\.scelta-fatta \{[^}]*margin: 8px 0 0;/);
 });
 
 test('colonne del simulatore: l\'elenco dei fiocchi non finisce sotto il tooltip del Pokémon', () => {
