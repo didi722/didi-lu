@@ -139,7 +139,7 @@
     const trofei = (vinti, giocate) => `<span class="trofei${vinti ? ' ha' : ''}"><img src="immagini/season-winner-color.png" alt="" width="18" height="18"><b>${fmt(vinti)}</b>${giocate != null ? `<small>/ ${fmt(giocate)}</small>` : ''}</span>`;
 
     // i titoli di MVP della stagione: una stella e il numero (mvp.js: il Pokémon votato dai giocatori a fine stagione)
-    const mvp = n => `<span class="mvp-stella${n ? ' ha' : ''}"><b aria-hidden="true">⭐</b>${fmt(n)}</span>`;
+    const mvp = n => `<span class="mvp-stella${n ? ' ha' : ''}"><b aria-hidden="true"><img src="immagini/ribbon-mvp-gold.png" alt="" loading="lazy"></b>${fmt(n)}</span>`;     // l'icona del fiocco MVP (era un'emoji)
 
     const avatar = (p, classe) => `<img class="${classe}" src="${esc(p.avatar || 'immagini/magikarp.png')}" alt="" loading="lazy" onerror="this.onerror=null;this.src='immagini/magikarp.png'">`;
 

@@ -289,3 +289,11 @@ test('fumetto del Pokémon nel Box: i rettangoli delle mosse seguono il tema (an
     assert.match(regola[0], /font-family: var\(--nb-font-titoli,/);
     assert.match(regola[0], /background: var\(--nb-carta,/);
 });
+
+test('Stats: "MVP titles" mostra l\'icona del fiocco MVP, non un\'emoji', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const js = fs.readFileSync(path.join(__dirname, '../docs/stats.js'), 'utf8');
+    assert.match(js, /const mvp = n => `<span class="mvp-stella[^`]*<img src="immagini\/ribbon-mvp-gold\.png"/);
+    assert.ok(!/mvp-stella[^\n]*⭐/.test(js));
+    assert.ok(fs.existsSync(path.join(__dirname, '../docs/immagini/ribbon-mvp-gold.png')));
+});
