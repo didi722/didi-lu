@@ -394,7 +394,8 @@ function ambienteIntro(extra = {}) {
         },
         __introVs: { termina: subito => terminate.push(subito) }
     };
-    const f = funzioniUi(S, 'punteggio', 'contestoIntro', 'introVersus', 'introPronta', 'introAbbandona', 'introSePronti');
+    S.self.BattleIntro.togliCopertura = () => { S.copertureTolte = (S.copertureTolte || 0) + 1; };
+    const f = funzioniUi(S, 'punteggio', 'contestoIntro', 'introVersus', 'togliCopertura', 'introPronta', 'introAbbandona', 'introSePronti');
     return { S, f, chiamate, terminate };
 }
 const configCpu = { p1: { nome: 'Didi' }, p2: { nome: 'CPU' } };
@@ -584,4 +585,37 @@ test('battle-intro.css: la riga "in attesa" sta sotto il tabellone, compare solo
     assert.match(regola, /background: var\(--inchiostro/);
     assert.match(regola, /box-shadow: var\(--shs-3/, 'adesivo scuro: ombra trasparente');
     assert.match(css, /@keyframes vi-punti/);
+});
+
+test('la copertura di prima dell\'intro: scura con il VS dal primo istante contro la CPU, tolta quando l\'intro è partita o se non ci sarà', () => {
+    // battle.html: l'elemento è il primo del body; la classe la mette uno script in testa, solo contro la CPU (non in palestra, non nell'app, non con "riduci movimento")
+    assert.match(html, /<body>\s*<div class="vs-copertura" id="vs-copertura" aria-hidden="true"><img src="immagini\/app\/seasons-vs\.webp"/);
+    assert.match(html, /<link rel="preload" as="image" href="immagini\/app\/seasons-vs\.webp">/);
+    const script = html.match(/<script>\s*\/\/ Contro la CPU[\s\S]*?<\/script>/)[0];
+    assert.match(script, /\[\?&\]cpu=\[\^&\]/);
+    assert.match(script, /\[\?&\]palestra=/);
+    assert.match(script, /classList\.contains\('app'\)/);
+    assert.match(script, /prefers-reduced-motion: reduce/);
+    assert.match(script, /setTimeout\(togli, 15000\)/, 'si toglie da sola');
+    assert.match(script, /addEventListener\('error', togli, true\)/, 'e se uno script non si carica');
+    assert.ok(html.indexOf('vs-copre') < html.indexOf('<body>'), 'lo script sta in testa: la copertura c\'è al primo disegno');
+    // css: nascosta di norma, sotto l'intro (9500) ma sopra a tutto il resto
+    assert.match(css, /\.vs-copertura \{ display: none; \}/);
+    assert.match(css, /html\.vs-copre \.vs-copertura \{[^}]*position: fixed;[^}]*z-index: 9400;[^}]*background: var\(--inchiostro/);
+    // la toglie l'intro quando le due metà si sono incontrate; e battle-ui se l'intro non c'è o fallisce, e a ogni errore
+    assert.match(battleIntro, /win\.setTimeout\(\(\) => togliCopertura\(win\), T\.entraMeta \+ 40\)/);
+    assert.equal(typeof B.togliCopertura, 'function');
+    assert.match(funzione(battleUi, 'introAbbandona'), /togliCopertura\(\);/);
+    assert.match(funzione(battleUi, 'avviaBattaglia'), /if \(!introSet\) togliCopertura\(\);/);
+    const intro = funzione(battleUi, 'introVersus');
+    assert.match(intro, /\.then\(partita => \{ if \(!partita\) togliCopertura\(\); \}\)/);
+    const anticipa = funzione(battleUi, 'anticipaIntroCpu');
+    assert.ok((anticipa.match(/togliCopertura\(\)/g) || []).length >= 3, 'tutte le uscite senza intro');
+});
+
+test('togliCopertura: toglie la classe da <html> e non si rompe senza finestra', () => {
+    const tolte = [];
+    B.togliCopertura({ document: { documentElement: { classList: { remove: c => tolte.push(c) } } } });
+    assert.deepEqual(tolte, ['vs-copre']);
+    for (const no of [null, undefined, {}, { document: {} }]) assert.doesNotThrow(() => B.togliCopertura(no));
 });
