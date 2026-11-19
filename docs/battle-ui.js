@@ -456,12 +456,12 @@ function leggiNomeUtente(utente) {
  * `nomeGiocatore`: il nome o una promessa del nome. Non lancia mai e non si aspetta: il caricamento va avanti da solo.
  */
 function anticipaIntroCpu(nomeGiocatore) {
-    if (!self.BattleIntro || !self.CpuPersona || inApp() || document.body.classList.contains('palestra')) return;
+    if (!self.BattleIntro || !self.CpuPersona || inApp() || document.body.classList.contains('palestra')) { togliCopertura(); return; }
     const generazione = introGenerazione;
     personaAnticipata = (async () => {
         try {
             const nome = await nomeGiocatore;
-            if (!nome) return null;
+            if (!nome) { togliCopertura(); return null; }
             const p = await scegliPersonaCpu();
             await vestiVersus(nome, p.nome, aspettoPersona(p));
             const sfondo = !!document.querySelector('.vs-sfondo');
@@ -470,6 +470,7 @@ function anticipaIntroCpu(nomeGiocatore) {
             return { p, sfondo };
         } catch (errore) {
             console.warn('Versus intro not started early', errore);
+            togliCopertura();
             return null;
         }
     })();
@@ -1645,23 +1646,32 @@ function contestoIntro(numeroSet) {
  */
 function introVersus(numeroSet, { attendi = false, contesto = null } = {}) {
     try {
-        if (!self.BattleIntro || (!config && !contesto) || inApp() || document.body.classList.contains('palestra') || (cpu && cpu.palestra)) return;
+        if (!self.BattleIntro || (!config && !contesto) || inApp() || document.body.classList.contains('palestra') || (cpu && cpu.palestra)) { togliCopertura(); return; }
         let pronta = null;
         const attesa = attendi ? new Promise(ok => { pronta = ok; }) : null;
         if (attendi) introSet = { pronta };
         const parti = () => {
             try {
                 const c = contesto || contestoIntro(numeroSet);
-                if (c) self.BattleIntro.riproduci({ win: window, nomi: c.nomi, testi: self.BattleIntro.testiIntro(c.dati), attesa, stato: ultimoProgresso }).catch(errore => console.warn('Versus intro failed', errore));
-                else if (pronta) pronta();
+                if (c) {
+                    self.BattleIntro.riproduci({ win: window, nomi: c.nomi, testi: self.BattleIntro.testiIntro(c.dati), attesa, stato: ultimoProgresso })
+                        .then(partita => { if (!partita) togliCopertura(); })
+                        .catch(errore => { togliCopertura(); console.warn('Versus intro failed', errore); });
+                } else { togliCopertura(); if (pronta) pronta(); }
             } catch (errore) {
                 console.warn('Versus intro skipped', errore);
+                togliCopertura();
                 if (pronta) pronta();
             }
         };
         if (versusInCorso) Promise.race([versusPronto, new Promise(ok => setTimeout(ok, 2500))]).then(parti);
         else parti();
     } catch (errore) { console.warn('Versus intro skipped', errore); }
+}
+
+/** La copertura scura di prima dell'intro (battle.html): si toglie quando l'intro è partita, o se non ci sarà */
+function togliCopertura() {
+    try { if (self.BattleIntro) self.BattleIntro.togliCopertura(window); else document.documentElement.classList.remove('vs-copre'); } catch (e) { /* niente copertura */ }
 }
 
 /** La partita è pronta: l'intro che aspettava può aprirsi (non prima del suo tempo fisso). Senza intro in attesa non fa niente. */
@@ -1675,6 +1685,7 @@ function introPronta() {
 
 /** Un messaggio sul campo (un errore) va letto: l'intro in attesa si chiude subito */
 function introAbbandona() {
+    togliCopertura();
     introGenerazione++;
     clearTimeout(timerProntaCpu);
     timerProntaCpu = null;
@@ -1789,6 +1800,7 @@ function avviaBattaglia() {
         if (!introSet) introVersus(undefined, { attendi: true });
         clearTimeout(timerProntaCpu);
         timerProntaCpu = setTimeout(introPronta, 5000);
+        if (!introSet) togliCopertura();        // l'intro non c'è (app, palestra...): si vede la partita
     }
     // il cervello conosce la strategia del team che sta giocando (non si vede da nessuna parte: il team si chiama "Team N")
     // ...e quali meccaniche di generazione ammette il formato (Dynamax, Mosse Z, Mega, Teracristal): se è spento, la CPU non ci pensa nemmeno

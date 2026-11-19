@@ -157,6 +157,11 @@
         return typeof (win.Element && win.Element.prototype.animate) === 'function';
     }
 
+    /** Toglie la copertura scura di prima dell'intro (battle.html, classe vs-copre su <html>): l'intro la sostituisce, o non ci sarà e si deve vedere la pagina */
+    function togliCopertura(win) {
+        try { (win || (typeof window !== 'undefined' ? window : null)).document.documentElement.classList.remove('vs-copre'); } catch (e) { /* niente copertura */ }
+    }
+
     function elemento(doc, tag, classe, testo) {
         const e = doc.createElement(tag);
         if (classe) e.className = classe;
@@ -288,6 +293,7 @@
         const lampo = elemento(doc, 'div', 'vi-lampo');
         radice.appendChild(lampo);
         doc.body.appendChild(radice);
+        win.setTimeout(() => togliCopertura(win), T.entraMeta + 40);       // le due metà si sono incontrate e coprono tutto: sotto la copertura non serve più
         sfondo.classList.add('vi-in-corso');        // gli avatar veri aspettano sotto: ricompaiono, al loro posto, quando l'intro finisce (altrimenti si vedrebbero doppi)
 
         // la riga che dice che si sta aspettando (appare solo se la partita non è pronta quando il tabellone è stato letto)
@@ -437,5 +443,5 @@
         return promessa;
     }
 
-    return { T, CURVE, INGRANDIMENTO, VISIBILE, testiIntro, punteggioShowdown, disposizione, ritardoApertura, testoSu, puoRiprodurre, riproduci };
+    return { T, CURVE, INGRANDIMENTO, VISIBILE, testiIntro, punteggioShowdown, disposizione, ritardoApertura, testoSu, puoRiprodurre, togliCopertura, riproduci };
 });
