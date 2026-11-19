@@ -307,3 +307,17 @@ test('fumetto della mossa (Pow/Acc): segue il tema, anche sopra le regole per ti
         assert.match(regola[0], r);
     for (const pagina of ['box', 'hub', 'matches']) assert.match(fs.readFileSync(path.join(__dirname, `../docs/${pagina}.html`), 'utf8'), /tooltip\.css/, `${pagina} carica tooltip.css`);
 });
+
+test('fumetto della mossa: il colore del tipo è una striscia sul bordo sinistro, per tutti i 18 tipi', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const css = fs.readFileSync(path.join(__dirname, '../docs/tooltip.css'), 'utf8');
+    assert.match(/\.move-tooltip\.move-tooltip \{[^}]*\}/.exec(css)[0], /border-left: 14px solid var\(--tipo, var\(--nb-ink, #000\)\) !important;/);
+    const tipi = ['fire', 'water', 'grass', 'electric', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy', 'normal'];
+    const box = fs.readFileSync(path.join(__dirname, '../docs/style-box.css'), 'utf8');
+    for (const t of tipi) {
+        const vecchio = new RegExp(`\\.move-tooltip\\.${t} \\{ background-color: (#[0-9a-f]{6})`, 'i').exec(box);
+        const nuovo = new RegExp(`\\.move-tooltip\\.${t} \\{ --tipo: (#[0-9a-f]{6}); \\}`, 'i').exec(css);
+        assert.ok(vecchio && nuovo, t);
+        assert.equal(nuovo[1].toLowerCase(), vecchio[1].toLowerCase(), `${t}: lo stesso colore di prima`);
+    }
+});
