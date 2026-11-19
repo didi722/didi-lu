@@ -297,3 +297,13 @@ test('Stats: "MVP titles" mostra l\'icona del fiocco MVP, non un\'emoji', () => 
     assert.ok(!/mvp-stella[^\n]*⭐/.test(js));
     assert.ok(fs.existsSync(path.join(__dirname, '../docs/immagini/ribbon-mvp-gold.png')));
 });
+
+test('fumetto della mossa (Pow/Acc): segue il tema, anche sopra le regole per tipo', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const css = fs.readFileSync(path.join(__dirname, '../docs/tooltip.css'), 'utf8');
+    const regola = /\.move-tooltip\.move-tooltip \{[^}]*\}/.exec(css);
+    assert.ok(regola, 'regola con specificità doppia, più forte di .move-tooltip.fire');
+    for (const r of [/background: var\(--nb-tip-bg,[^;]*\) !important/, /border-radius: var\(--nb-raggio, 0\) !important/, /box-shadow: var\(--nb-sh-m,[^;]*\) !important/, /font-family: var\(--nb-font-titoli,[^;]*\) !important/])
+        assert.match(regola[0], r);
+    for (const pagina of ['box', 'hub', 'matches']) assert.match(fs.readFileSync(path.join(__dirname, `../docs/${pagina}.html`), 'utf8'), /tooltip\.css/, `${pagina} carica tooltip.css`);
+});
