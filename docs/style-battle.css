@@ -365,6 +365,10 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .fiocco-t-livello {
     grid-column: 3; grid-row: 1; padding: 0 6px;
     background: var(--livello, #999); border: 2px solid var(--inchiostro);
+    border-radius: min(var(--nb-raggio, 0px), 10px);          /* il tag Bronze / Silver / Gold / Platinum segue il tema: angoli, carattere, ombra, inclinazione */
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    box-shadow: var(--sh-2);
+    rotate: calc(var(--nb-rot, 1) * -1.5deg);
     font-size: .6rem; font-weight: 900; line-height: 1.5; letter-spacing: .03em; text-transform: uppercase;
 }
 .fiocco-t-riga.fiocco-bronze { --livello: var(--bt-bronzo); }
