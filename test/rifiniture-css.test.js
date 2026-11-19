@@ -353,3 +353,14 @@ test('menu delle notifiche (campanella): angoli, ombra, carattere e inclinazione
     const sezione = css.slice(css.indexOf('/* ---------- Menu delle notifiche'), css.indexOf('/* ---------- Bottone VS'));
     assert.ok(!/font[^;]*'Josefin Sans', sans-serif\)?;/.test(sezione.replace(/var\(--nb-font-titoli, 'Josefin Sans', sans-serif\)/g, '')), 'nessun carattere fisso rimasto nel menu');
 });
+
+test('Shop: i tag dei prezzi degli shiny per fascia seguono il tema (angoli, bordo, carattere, ombra), con i colori delle fasce', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const css = fs.readFileSync(path.join(__dirname, '../docs/style-shop.css'), 'utf8');
+    const regola = /\.shop-pagina \.ng-fascia, \.shop-conferma \.ng-fascia \{[^}]*\}/.exec(css);
+    assert.ok(regola);
+    assert.match(regola[0], /border-radius: min\(var\(--nb-raggio, 0px\), 10px\)/);
+    assert.match(regola[0], /font-family: var\(--nb-font-titoli,/);
+    assert.match(regola[0], /box-shadow: calc\(2px \* var\(--nb-kx, 1\)\)/);
+    assert.doesNotMatch(regola[0], /background/, 'i colori delle fasce restano quelli di negozio.js');
+});

@@ -74,6 +74,13 @@ body.pg-shop .shop-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); max
 .shop-pagina .ng-edizione h3, .shop-pagina .ng-edizione > p { color: #000; }
 .shop-pagina .ng-bottone { color: #000; border-radius: var(--nb-raggio, 0); }
 .shop-pagina .ng-guida { background: var(--nb-carta, #fff); border-radius: var(--nb-raggio, 0); }
+/* i tag delle fasce degli shiny (Standard, Strong, Rare…): angoli, bordo, carattere e inclinazione del tema (i colori delle fasce restano) */
+.shop-pagina .ng-fascia, .shop-conferma .ng-fascia {
+    border: 2px solid var(--nb-ink, #000); border-radius: min(var(--nb-raggio, 0px), 10px);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); rotate: calc(var(--nb-rot, 1) * -1.2deg);
+}
+.shop-pagina .ng-fasce .ng-fascia:nth-child(even) { rotate: calc(var(--nb-rot, 1) * 1deg); }
 .shop-pagina .ng-movimenti { color: var(--shop-testo, var(--nb-ink, #000)); }
 /* nell'app lo sfondo è scuro: il testo fuori dalle carte è chiaro */
 html.app-shell { --shop-testo: #fff; }
