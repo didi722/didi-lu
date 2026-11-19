@@ -745,9 +745,8 @@ test('doppi: sul secondo Pokémon si ricorda cosa si è scelto per il primo, e c
     // collegamento: solo nei doppi, sotto le mosse (dopo il piede con cambi e meccaniche)
     const mosse = funzione(battleUi, 'disegnaMosse');
     assert.match(mosse, /const fatte = doppio \? riepilogoScelte\(lato\) : \[\];/);
-    assert.match(mosse, /corpo\.append\(piede\);\s*\/\/[^\n]*\n\s*if \(fatte\.length\) corpo\.append\(el\('p', \{ class: 'scelta-fatta' \}/);
-    assert.ok(!/scelta-fatta[^]*testa-scelta/.test(mosse.slice(0, mosse.indexOf("corpo.append(el('div', { class: 'mosse'"))), 'non più nella riga della domanda');
-    assert.match(fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8'), /\.scelta-fatta \{[^}]*margin: 8px 0 0;/);
+    assert.match(mosse, /if \(fatte\.length\) piede\.append\(el\('p', \{ class: 'scelta-fatta' \}[^\n]*\n\s*if \(piede\.childNodes\.length\) corpo\.append\(piede\);/, 'nel piede, a destra dei cambi');
+    assert.match(fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8'), /\.scelta-fatta \{[^}]*flex: 1 1 13rem;[^}]*margin: 0 0 0 auto;/);
 });
 
 test('colonne del simulatore: l\'elenco dei fiocchi non finisce sotto il tooltip del Pokémon', () => {
@@ -767,4 +766,12 @@ test('colonne del simulatore: il riquadro del team è bianco come la scheda dell
     // lo apre lo stesso codice dei fiocchi dei Pokémon: cerca .fiocco-medaglie dentro la colonna
     const extra = fs.readFileSync(path.join(__dirname, '../docs/battle-extra.js'), 'utf8');
     assert.match(extra, /closest\('\.fiocco-medaglie'\)/);
+});
+
+test('fumetto dei fiocchi/badge: il tag del livello ha davvero il colore (bronzo, argento, oro, platino)', () => {
+    const css = fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8');
+    // le variabili dei colori devono valere dentro il fumetto, non solo sulle medagliette (.bt-mini): senza, il tag resta grigio
+    assert.match(css, /\.bt-mini, \.fiocco-t-tip \{ --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; --bt-platino: #9ad9f5; \}/);
+    for (const [classe, v] of [['bronze', 'bronzo'], ['silver', 'argento'], ['gold', 'oro'], ['platinum', 'platino']])
+        assert.match(css, new RegExp(`\\.fiocco-t-riga\\.fiocco-${classe} \\{ --livello: var\\(--bt-${v}\\); \\}`));
 });

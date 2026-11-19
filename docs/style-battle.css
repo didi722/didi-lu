@@ -315,7 +315,7 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .bt-barra-mini { display: inline-flex; align-items: center; gap: 5px; }
 
 /* le medagliette (badge dei team e dei fiocchi): le stesse del resto del sito, con i colori di questa pagina */
-.bt-mini { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; --bt-platino: #9ad9f5; }
+.bt-mini, .fiocco-t-tip { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; --bt-platino: #9ad9f5; }
 .bt-mini {
     --livello: #999;
     display: inline-flex; align-items: center; justify-content: center;
@@ -859,8 +859,8 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 .testa-scelta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .domanda { margin: 0; font: 700 .95rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 .domanda small { font-size: .75rem; }
-/* nei doppi: cosa si è già scelto per il Pokémon di prima, nello spazio libero sotto le mosse */
-.scelta-fatta { margin: 8px 0 0; display: flex; flex-direction: column; gap: 2px; font: 700 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1.25; color: color-mix(in srgb, var(--inchiostro) 80%, transparent); }
+/* nei doppi: cosa si è già scelto per il Pokémon di prima. Sta nel piede delle mosse, a destra, sulla riga dei Pokémon da cambiare; se lì non c'è posto (quattro o sei da cambiare) va a capo, mai sopra */
+.scelta-fatta { flex: 1 1 13rem; min-width: 0; margin: 0 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; font: 700 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1.25; color: color-mix(in srgb, var(--inchiostro) 80%, transparent); }
 .scelta-fatta span { overflow-wrap: anywhere; }
 .scelta-fatta span::before { content: '✓ '; color: var(--colore-mio, currentColor); }
 .etichetta { margin: 0; font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
