@@ -229,21 +229,25 @@ html[data-modo="fit"] .lato > * { flex-shrink: 0; }
     transform: rotate(calc(var(--verso) * 4deg * var(--nb-rot, 1)));
 }
 html[data-modo="fit"] .lato-nome { max-width: 100%; font-size: 2rem; }
-.lato-team {
-    align-self: center;
-    max-width: calc(100% - 10px);
-    margin: 0;
-    padding: 6px 10px 4px;
+.lato-team-riquadro {
+    position: relative; box-sizing: border-box;
+    align-self: stretch; min-width: 0;
+    margin: 4px 6px 0 0; padding: 14px 12px 6px;
     background: var(--inchiostro); color: var(--carta);
-    font: 700 .78rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase;
-    white-space: nowrap; overflow: hidden;      /* il nome lungo scorre (nome-scorrevole.css), niente puntini */
+    border-left: 10px solid var(--colore-mio);
     box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--colore-mio);
-    transform: rotate(calc(var(--verso) * -2deg * var(--nb-rot, 1)));
 }
-html[data-modo="fit"] .lato-team { align-self: flex-start; }
-html[data-modo="fit"] .lato.p2 .lato-team { align-self: flex-end; }
-html[data-modo="fit"] body.vista-p2 .lato.p1 .lato-team { align-self: flex-end; }
-html[data-modo="fit"] body.vista-p2 .lato.p2 .lato-team { align-self: flex-start; }
+.lato-team-et {
+    position: absolute; top: -9px; left: 8px; padding: 3px 7px 1px;
+    background: var(--ambra); color: var(--inchiostro); border: 2px solid var(--inchiostro);
+    font: 800 .62rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; line-height: 1;
+    transform: rotate(calc(var(--verso) * -3deg * var(--nb-rot, 1)));
+}
+.lato-team {
+    margin: 0;
+    font: 800 1.3rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1.1; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden;      /* il nome lungo scorre (nome-scorrevole.css), niente puntini */
+}
 
 .lato-pkm {
     flex: 0 0 100%;
@@ -1276,7 +1280,7 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
    LA FORMA DEL TEMA — angoli (temi.css: --nb-raggio: 0 nel classico, nello Sticker e nell'Arcade, 16px nel Soft).
    Colori, ombre, inclinazioni e caratteri sono già variabili nelle regole di sopra; gli angoli li dà il tema qui, su tutto ciò che ha un bordo.
    ===================================================================== */
-:is(.btn-hub, .btn-audio, .badge-live, .lato-nome, .lato-team, .lato-scheda, .scheda-titolo, .scheda-elo, .scheda-posizione, .membro, .ins-formato, .ins-match, .ins-tabellone,
+:is(.btn-hub, .btn-audio, .badge-live, .lato-nome, .lato-team-riquadro, .lato-team-et, .lato-scheda, .scheda-titolo, .scheda-elo, .scheda-posizione, .membro, .ins-formato, .ins-match, .ins-tabellone,
     .campo-voce, .btn, .mossa, .btn-pkm, .tessera, .scheda-team, .errore, .avviso, .rivincita, .rivincita-scelta, .esito-card, .esito-card h2, .lobby-titolo, .stato-avversario,
     .cronaca h2.battle-history, .cronaca.battle-log, .eff, .console, .membro .fiocco-t-tip, #tooltipwrapper .tooltip, .tt-tipo, .tt-chip, .tt-badge, .tt-cella, .tt-nota, .pal-annuncio, .ins-vantaggio, .ins-palestra) {
     border-radius: var(--raggio);

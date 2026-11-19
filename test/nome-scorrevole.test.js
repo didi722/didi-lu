@@ -84,7 +84,7 @@ test('simulatore e card showdown: il nome lungo scorre, niente puntini', () => {
     assert.doesNotMatch(nome, /text-overflow: ellipsis/);
     assert.doesNotMatch(team, /text-overflow: ellipsis/);
     assert.match(leggi('docs/battle-extra.js'), /<h2 class="lato-nome nome-scorrevole"/);
-    assert.match(leggi('docs/battle-extra.js'), /<p class="lato-team nome-scorrevole">/);
+    assert.match(leggi('docs/battle-extra.js'), /<p class="lato-team nome-scorrevole"/);
     const html = leggi('docs/battle.html');
     assert.match(html, /nome-scorrevole\.css/);
     assert.match(html, /<script src="nome-scorrevole\.js"><\/script>/);
