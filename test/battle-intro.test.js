@@ -719,3 +719,31 @@ test('lati del simulatore: il nome del team è un riquadro in evidenza sopra i P
     assert.match(f, /if \(puoVedereSet\(lato\) && setCompleto\(set\)\) \{/);
     assert.match(f, /const cliente = sceso \|\| trovato;\s*if \(!cliente\) return;\s*html = htmlPokemon\(tt, cliente, null, \{ attivo: false, daSheet: false, lato \}\);/);
 });
+
+test('doppi: sul secondo Pokémon si ricorda cosa si è scelto per il primo, e contro chi', () => {
+    const attivo = (nome, mosse) => ({ pokemon: { nome }, mosse: mosse.map(([numero, n]) => ({ numero, nome: n, target: 'normal', max: { nome: `Max ${n}`, target: 'adjacentFoe' } })) });
+    const S = {
+        ETICHETTA_POTENZIAMENTO: { terastallize: 'Terastallize', zmove: 'Z-Move', dynamax: 'Dynamax' },
+        mossaEffettiva: (a, m, pot) => (pot === 'dynamax' && m.max ? { ...m.max } : { nome: m.nome, target: m.target }),
+        avversarioDi: l => (l === 'p1' ? 'p2' : 'p1'),
+        stato: { campo: { p1: [{ nome: 'Abomasnow' }, { nome: 'Rillaboom' }], p2: [{ nome: 'Zacian' }, { nome: 'Koraidon' }] } },
+        pannelli: { p1: { bozza: [], r: { attivi: [attivo('Abomasnow', [[1, 'Blizzard'], [2, 'Giga Drain']]), attivo('Rillaboom', [[1, 'Fake Out']])], squadra: [{ indice: 3, nome: 'Garchomp' }] } } }
+    };
+    const { riepilogoScelte } = funzioniUi(S, 'riepilogoScelte');
+    const con = (...bozza) => { S.pannelli.p1.bozza = bozza; return riepilogoScelte('p1'); };
+    assert.deepEqual(con(), [], 'sul primo Pokémon non c\'è niente da ricordare');
+    assert.deepEqual(con('move 2 2'), ['Abomasnow will use Giga Drain on Koraidon']);
+    assert.deepEqual(con('move 2 1'), ['Abomasnow will use Giga Drain on Zacian']);
+    assert.deepEqual(con('move 1 -2'), ['Abomasnow will use Blizzard on Rillaboom'], 'l\'alleato ha il valore negativo');
+    assert.deepEqual(con('move 1 -1'), ['Abomasnow will use Blizzard on itself']);
+    assert.deepEqual(con('move 1'), ['Abomasnow will use Blizzard'], 'una mossa senza bersaglio');
+    assert.deepEqual(con('switch 3'), ['Abomasnow will switch to Garchomp']);
+    assert.deepEqual(con('move 2 1 terastallize'), ['Abomasnow will use Giga Drain on Zacian (Terastallize)']);
+    assert.deepEqual(con('move 2 1 dynamax'), ['Abomasnow will use Max Giga Drain on Zacian (Dynamax)']);
+    assert.deepEqual(con('pass'), [], 'nessuno da muovere: niente');
+    // collegamento: solo nei doppi, nella riga della domanda
+    const mosse = funzione(battleUi, 'disegnaMosse');
+    assert.match(mosse, /const fatte = doppio \? riepilogoScelte\(lato\) : \[\];/);
+    assert.match(mosse, /class: 'scelta-fatta'/);
+    assert.match(fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8'), /\.scelta-fatta \{[^}]*flex: 1 1 12rem;/);
+});

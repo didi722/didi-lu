@@ -2300,15 +2300,48 @@ function disegnaAnteprima(lato, corpo) {
     })));
 }
 
+// Cosa si è già scelto per i Pokémon che vengono prima (nei doppi), a parole: "Kyogre will use Origin Pulse on Zacian" (come fa Showdown)
+const ETICHETTA_POTENZIAMENTO = { terastallize: 'Terastallize', mega: 'Mega Evolve', megax: 'Mega Evolve X', megay: 'Mega Evolve Y', zmove: 'Z-Move', dynamax: 'Dynamax' };
+function riepilogoScelte(lato) {
+    const p = pannelli[lato];
+    const frasi = [];
+    p.bozza.forEach((scelta, i) => {
+        const attivo = p.r.attivi[i];
+        const chi = attivo && attivo.pokemon ? attivo.pokemon.nome : `Pokémon ${i + 1}`;
+        const cambio = /^switch (\d+)$/.exec(scelta);
+        if (cambio) {
+            const entra = p.r.squadra.find(x => x.indice === Number(cambio[1]));
+            return frasi.push({ chi, testo: `${chi} will switch to ${entra ? entra.nome : 'another Pokémon'}` });
+        }
+        const m = /^move (\d+)(?: (-?\d+))?(?: ([a-z]+))?$/.exec(scelta);
+        if (!m || !attivo) return;       // "pass" (nessuno da muovere) o scelte che non sono mosse: niente da ricordare
+        const mossa = attivo.mosse.find(x => x.numero === Number(m[1]));
+        const eff = mossa ? mossaEffettiva(attivo, mossa, m[3] === 'zmove' || m[3] === 'dynamax' ? m[3] : null) : null;
+        let testo = `${chi} will use ${eff ? eff.nome : mossa ? mossa.nome : 'a move'}`;
+        if (m[2] !== undefined) {
+            const valore = Number(m[2]);
+            const bersaglio = valore > 0 ? stato.campo[avversarioDi(lato)][valore - 1] : stato.campo[lato][-valore - 1];
+            const stesso = valore < 0 && -valore - 1 === i;
+            testo += stesso ? ' on itself' : ` on ${bersaglio ? bersaglio.nome : valore > 0 ? `foe ${valore}` : 'its ally'}`;
+        }
+        if (m[3] && ETICHETTA_POTENZIAMENTO[m[3]]) testo += ` (${ETICHETTA_POTENZIAMENTO[m[3]]})`;
+        frasi.push({ chi, testo });
+    });
+    return frasi.map(f => f.testo);
+}
+
 function disegnaMosse(lato, corpo) {
     const p = pannelli[lato];
     const attivo = p.r.attivi[p.bozza.length];
     const doppio = p.r.attivi.length > 1;
+    const fatte = doppio ? riepilogoScelte(lato) : [];
 
     corpo.append(el('div', { class: 'testa-scelta' },
         el('p', { class: 'domanda' },
             `What will ${attivo.pokemon.nome} do?`,
             doppio ? el('small', { testo: ` ${p.bozza.length + 1} of ${p.r.attivi.length}` }) : null),
+        // nei doppi, nello spazio libero della riga: cosa si è già scelto per il Pokémon di prima (e contro chi)
+        fatte.length ? el('p', { class: 'scelta-fatta', title: fatte.join('. ') }, fatte.map(t => el('span', { testo: t }))) : null,
         // Sempre nel layout, anche quando non c'è nulla da annullare: se comparisse solo dopo
         // la prima mossa di un doppio, la riga si alzerebbe e il testo "What will … do?" scenderebbe un poco
         el('button', {
