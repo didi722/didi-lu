@@ -353,6 +353,7 @@ test('CPU come allenatore: nome, avatar e colore a caso tra i liberi; sfondo sfi
     const C = require('../docs/cpu-persona.js'), Co = require('../docs/cosmetici.js');
     assert.ok(C.NOMI.length >= 200 && new Set(C.NOMI).size === C.NOMI.length, 'una lista lunga, senza doppi');
     assert.ok(!C.NOMI.some(n => /^cpu$/i.test(n)));
+    assert.ok(C.NOMI.every(n => n.length <= 8), 'nomi corti: stanno nel tag del simulatore senza scorrere');
     // solo avatar e colori liberi: se tutti tranne uno sono presi, esce quello
     const presi = {};
     for (const n of C.NUMERI_AVATAR) if (n !== 77) presi[`avatar-${n}`] = 'dodo';
