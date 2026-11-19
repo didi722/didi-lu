@@ -91,7 +91,22 @@
         };
         const cercaElemento = nodo => (nodo && nodo.closest ? nodo.closest('[title]') : null);
 
+        // il fumetto del Pokémon nelle card: sotto, se sopra rischierebbe di uscire dallo schermo (class pkm-hover-giu, tooltip.css)
+        const apriPokemonSotto = e => {
+            const box = e.target && e.target.closest ? e.target.closest('.pkm-box') : null;
+            if (!box || (e.relatedTarget && box.contains(e.relatedTarget))) return;
+            const carta = box.querySelector('.pkm-hover-card');
+            if (!carta) return;
+            carta.classList.remove('pkm-hover-giu');
+            // il fumetto compare con :hover, dopo questo evento: si misura al fotogramma dopo (se per qualche motivo non c'è ancora, una misura media)
+            win.requestAnimationFrame(() => {
+                const vista = win.innerHeight || doc.documentElement.clientHeight;
+                const altezza = carta.getBoundingClientRect().height || 270;
+                carta.classList.toggle('pkm-hover-giu', latoFumettoPokemon(box.getBoundingClientRect(), altezza, vista) === 'giu');
+            });
+        };
         doc.addEventListener('mouseover', e => {
+            apriPokemonSotto(e);
             if (corrente && corrente.contains(e.target)) return;      // ancora dentro lo stesso elemento
             const el = cercaElemento(e.target);
             if (corrente) nascondi();
@@ -111,5 +126,15 @@
         return { nascondi, mostra };
     }
 
-    return { posiziona, avvia, MARGINE, DISTANZA };
+    /**
+     * Il fumetto del Pokémon nelle card (.pkm-hover-card) si apre sopra; se sopra non c'è posto (la card è vicina al bordo alto dello schermo)
+     * e sotto ce n'è di più, si apre sotto. `ancora` è il riquadro del Pokémon, `altezza` quella del fumetto, `vista` l'altezza dello schermo.
+     * @returns {'su'|'giu'}
+     */
+    function latoFumettoPokemon(ancora, altezza, vista) {
+        const sopra = ancora.top - MARGINE, sotto = vista - ancora.bottom - MARGINE;
+        return altezza > sopra && sotto > sopra ? 'giu' : 'su';
+    }
+
+    return { posiziona, latoFumettoPokemon, avvia, MARGINE, DISTANZA };
 });

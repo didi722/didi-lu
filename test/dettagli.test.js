@@ -198,6 +198,20 @@ test('posiziona: resta sempre dentro lo schermo (bordi, fumetto più grande dell
     assert.ok(alto.top >= T.MARGINE && alto.top + 290 <= 300 - 0);
 });
 
+test('fumetto del Pokémon nelle card: sotto se sopra non c\'è posto e sotto ce n\'è di più', () => {
+    const box = top => ({ top, bottom: top + 90, left: 100, right: 220 });
+    assert.equal(T.latoFumettoPokemon(box(400), 260, 800), 'su', 'sopra c\'è posto');
+    assert.equal(T.latoFumettoPokemon(box(20), 260, 800), 'giu', 'vicino al bordo alto: sotto');
+    assert.equal(T.latoFumettoPokemon(box(300), 260, 500), 'su', 'né sopra né sotto basta: resta sopra, dove c\'è più spazio');
+    assert.equal(T.latoFumettoPokemon(box(150), 260, 700), 'giu', 'sopra 140 px, sotto 450: sotto');
+    const src = fs.readFileSync(path.join(__dirname, '../docs/tooltip.js'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '../docs/tooltip.css'), 'utf8');
+    assert.match(src, /closest\('\.pkm-box'\)/);
+    assert.match(src, /carta\.classList\.toggle\('pkm-hover-giu'/);
+    assert.match(src, /doc\.addEventListener\('mouseover', e => \{\s*apriPokemonSotto\(e\);/, 'dentro l\'unico ascoltatore del mouse');
+    assert.match(css, /\.pkm-box \.pkm-hover-card\.pkm-hover-giu \{ bottom: auto !important; top: 115% !important;/);
+});
+
 test('avvia: senza "passaggio del mouse" (touch) o senza matchMedia non registra nulla', () => {
     let registrati = 0;
     const doc = { addEventListener: () => registrati++ };
