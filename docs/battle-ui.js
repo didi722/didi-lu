@@ -2398,9 +2398,9 @@ function disegnaMosse(lato, corpo) {
                 onclick: () => scegliSlot(lato, `switch ${pkm.indice}`)
             }))));
     }
+    // nei doppi, nel piede a destra (sulla riga dei cambi, che se sono tanti la manda a capo): cosa si è già scelto per il Pokémon di prima (e contro chi)
+    if (fatte.length) piede.append(el('p', { class: 'scelta-fatta' }, fatte.map(t => el('span', { testo: t }))));
     if (piede.childNodes.length) corpo.append(piede);
-    // nei doppi, nello spazio libero sotto le mosse: cosa si è già scelto per il Pokémon di prima (e contro chi)
-    if (fatte.length) corpo.append(el('p', { class: 'scelta-fatta' }, fatte.map(t => el('span', { testo: t }))));
 }
 
 function disegnaBersagli(lato, corpo) {
