@@ -851,7 +851,6 @@ function disegnaLati() {
         box.dataset.firma = firma;
         box.dataset.elenco = elenco.map(x => `${x.specie}|${x.nome}`).join(',');
 
-        const conTooltip = puoVedereSet(lato);
         risolviSquadre();
         // i fiocchi di ogni Pokémon e i badge del team (di chi ha un profilo): chi lo ha guadagnato lo mostra
         const SB = window.SchedaBattaglia;
@@ -860,12 +859,12 @@ function disegnaLati() {
         const badgeTeam = SB && sc ? SB.htmlBadgeTeam(S.schede.risultato, sc, nomeTeam) : '';
         box.innerHTML = `
             <h2 class="lato-nome nome-scorrevole" title="${esc(nome)}">${esc(nome)}</h2>
-            ${nomeTeam ? `<p class="lato-team nome-scorrevole">${esc(nomeTeam)}</p>` : ''}
             ${SB && sc ? SB.htmlScheda(sc) : ''}
+            ${nomeTeam ? `<div class="lato-team-riquadro"><span class="lato-team-et">Team</span><p class="lato-team nome-scorrevole" title="${esc(nomeTeam)}">${esc(nomeTeam)}</p></div>` : ''}
             ${badgeTeam}
             <ol class="lato-pkm">${elenco.map((x, i) => `
-                <li class="membro${conTooltip && setCompleto(x.set) ? ' con-tooltip' : ''}${x.ignoto ? ' ignoto' : ''}" data-indice="${i}" data-specie="${esc(x.specie)}"
-                    ${conTooltip && setCompleto(x.set) ? 'tabindex="0"' : ''} aria-label="${esc(x.nome)}">
+                <li class="membro${x.ignoto ? '' : ' con-tooltip'}${x.ignoto ? ' ignoto' : ''}" data-indice="${i}" data-specie="${esc(x.specie)}"
+                    ${x.ignoto ? '' : 'tabindex="0"'} aria-label="${esc(x.nome)}">
                     <img src="${esc(x.ignoto ? POKEBALL : sprite(x.specie))}" data-slug="${esc(x.ignoto ? '' : slugSprite(x.specie))}" data-fase="${x.ignoto ? 2 : 0}" alt="" loading="lazy" width="64" height="64">
                     <span class="membro-hp" aria-hidden="true"><span></span></span>
                     ${SB && sc ? SB.htmlFiocchiPokemon(S.schede.risultato, sc, nomeTeam, nomiTeam, i) : ''}
@@ -1043,15 +1042,25 @@ function tooltipMembro(e, lato) {
     const li = e.target.closest?.('.membro.con-tooltip');
     if (!li || li === tooltipAperto) return;
     const tt = S.battle?.scene?.tooltips;
-    const set = elencoLato(lato)[+li.dataset.indice]?.set;
+    const elenco = elencoLato(lato);
+    const set = elenco[+li.dataset.indice]?.set;
     const BT = S.BT || window.BattleTooltips;
-    if (!tt || !setCompleto(set) || !BT || BT.isLocked) return;
+    if (!tt || !BT || BT.isLocked) return;
 
+    // Il Pokémon di Showdown che corrisponde alla casella (anche se non è ancora sceso in campo: viene dal team preview)
+    const trovato = abbinaLato(lato, elenco)[+li.dataset.indice];
     // Se il Pokémon è già sceso in campo uso i suoi dati veri (boost, HP, mosse usate)
-    const trovato = abbinaLato(lato, elencoLato(lato))[+li.dataset.indice];
-    const clientPokemon = trovato && (visti.has(trovato) || trovato.ident) ? trovato : null;
-    const server = serverDaSet(S.battle, set, clientPokemon);
-    const html = htmlPokemon(tt, clientPokemon, server, { attivo: false, daSheet: true, lato });
+    const sceso = trovato && (visti.has(trovato) || trovato.ident) ? trovato : null;
+    let html;
+    if (puoVedereSet(lato) && setCompleto(set)) {
+        // il set si può vedere (il mio team, o open sheet): tutto quello che si sa
+        html = htmlPokemon(tt, sceso, serverDaSet(S.battle, set, sceso), { attivo: false, daSheet: true, lato });
+    } else {
+        // l'avversario: le stesse informazioni che si vedono passando sopra al suo Pokémon nello schermo di gioco (HP in %, abilità possibili, velocità possibile, mosse viste)
+        const cliente = sceso || trovato;
+        if (!cliente) return;
+        html = htmlPokemon(tt, cliente, null, { attivo: false, daSheet: false, lato });
+    }
     tooltipAperto = li;
     BT.prototype.placeTooltip.call(tt, html, li, true, 'membro');
     tooltipAccanto(li);
