@@ -125,6 +125,7 @@ function apriFumettoFiocchi(medaglie) {
     tip.style.bottom = inAlto ? 'calc(100% + 8px)' : 'auto';
     tip.style.display = ''; tip.style.visibility = '';
     medaglie.classList.add('aperto');
+    nascondiTooltip();      // il tooltip del Pokémon (si apre insieme, sta sopra a tutto) coprirebbe l'elenco dei fiocchi: finché si guardano i fiocchi non c'è
 }
 function chiudiFumettoFiocchi(medaglie) { if (medaglie) medaglie.classList.remove('aperto'); }
 const medaglieDi = e => { const m = e.target && e.target.closest && e.target.closest('.fiocco-medaglie'); return m && m.closest('.lato') ? m : null; };
@@ -1039,7 +1040,7 @@ function aggiornaLati() {
 let tooltipAperto = null;
 function tooltipMembro(e, lato) {
     const li = e.target.closest?.('.membro.con-tooltip');
-    if (!li || li === tooltipAperto) return;
+    if (!li || li === tooltipAperto || e.target.closest?.('.fiocco-medaglie')) return;     // sulle medagliette dei fiocchi c'è il loro elenco, non il tooltip del Pokémon
     const tt = S.battle?.scene?.tooltips;
     const elenco = elencoLato(lato);
     const set = elenco[+li.dataset.indice]?.set;

@@ -748,3 +748,9 @@ test('doppi: sul secondo Pokémon si ricorda cosa si è scelto per il primo, e c
     assert.match(mosse, /class: 'scelta-fatta'/);
     assert.match(fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8'), /\.scelta-fatta \{[^}]*flex: 1 1 12rem;/);
 });
+
+test('colonne del simulatore: l\'elenco dei fiocchi non finisce sotto il tooltip del Pokémon', () => {
+    const extra = fs.readFileSync(path.join(__dirname, '../docs/battle-extra.js'), 'utf8');
+    assert.match(funzione(extra, 'apriFumettoFiocchi'), /medaglie\.classList\.add\('aperto'\);\s*nascondiTooltip\(\);/, 'aprendo i fiocchi il tooltip del Pokémon si chiude');
+    assert.match(funzione(extra, 'tooltipMembro'), /\|\| e\.target\.closest\?\.\('\.fiocco-medaglie'\)\) return;/, 'sulle medagliette non si riapre');
+});
