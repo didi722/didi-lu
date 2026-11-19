@@ -709,8 +709,9 @@ test('rivincita e "un altro team CPU": la copertura scura torna subito, prima ch
 test('lati del simulatore: il nome del team è un riquadro in evidenza sopra i Pokémon; ogni casella ha il tooltip, anche quelle dell\'avversario', () => {
     const extra = fs.readFileSync(path.join(__dirname, '../docs/battle-extra.js'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8');
-    // il riquadro del team sta dopo la scheda e prima dei Pokémon, con l'etichetta "Team"
-    assert.match(extra, /SB\.htmlScheda\(sc\)[^]*?class="lato-team-riquadro"><span class="lato-team-et">Team<\/span><p class="lato-team nome-scorrevole"[^]*?<ol class="lato-pkm">/);
+    // il riquadro del team sta dopo la scheda e prima dei Pokémon, senza etichette; i badge del team sono DENTRO il riquadro, sotto il nome
+    assert.match(extra, /SB\.htmlScheda\(sc\)[^]*?class="lato-team-riquadro"><p class="lato-team nome-scorrevole"[^]*?<\/p>\$\{badgeTeam\}<\/div>[^]*?<ol class="lato-pkm">/);
+    assert.ok(!/lato-team-et/.test(extra) && !/lato-team-et/.test(css), 'niente tag "Team" sopra il nome');
     assert.match(css, /\.lato-team \{[^}]*font: 800 1\.3rem/, 'più grande di prima (era .78rem)');
     assert.match(css, /\.lato-team-riquadro \{[^}]*align-self: stretch;[^}]*border-left: 10px solid var\(--colore-mio\)/);
     // tooltip: tutte le caselle tranne le ignote; chi non ha il set (l'avversario) mostra quello che mostra il simulatore sul suo Pokémon
