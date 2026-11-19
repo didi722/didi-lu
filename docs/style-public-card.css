@@ -860,14 +860,16 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 .pp-slot-img {
     position: absolute;
     left: 4px;
-    top: 6px;
+    bottom: 16px;
     width: calc(100% - 8px);
-    height: calc(100% - 22px);
+    height: calc((100% - 22px) * var(--q, 1));      /* --q: la taglia vera della specie (public-card.js, quotaSlot) */
     object-fit: contain;
+    object-position: center bottom;
     filter: var(--pp-adesivo-sprite);
     will-change: filter;   /* le GIF animate con drop-shadow lasciano macchioline nere su Chrome: il filtro va su un suo livello */
 }
 
+.pp-slot:not([data-q]) .pp-slot-img { opacity: 0; }
 .pp-slot:hover, .pp-slot:focus-visible { transform: translate(-2px, -3px) rotate(-1.5deg); box-shadow: 7px 7px 0 #000; outline: none; z-index: 2; }
 .pp-slot:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
 

@@ -568,3 +568,23 @@ test('palco: la coppia allenatore + Pokémon sta al centro (--sposta: metà dell
     assert.match(js, /Math\.max\(0, Math\.round\(\(400 - gruppo - 36\) \/ 2 \* 10\) \/ 10\)/);
     assert.match(css, /\.pp-allenatore \{\s*position: absolute;\s*left: calc\(\(36 \+ var\(--sposta, 0\)\) \* var\(--d\)\);/);
 });
+
+test('party: ogni Pokémon ha la sua taglia (altezza vera, curva logaritmica), non tutti alti uguale', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const js = fs.readFileSync(path.join(__dirname, '../docs/public-card.js'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '../docs/style-public-card.css'), 'utf8');
+    // la funzione vera, estratta dal sorgente
+    const corpo = /function quotaSlot\(altezzaM, quota\) \{[^]*?\n    \}/.exec(js)[0];
+    const quotaSlot = new Function(`${corpo}; return quotaSlot;`)();
+    const joltik = quotaSlot(0.1, 1), venonat = quotaSlot(1.0, 1), wailord = quotaSlot(14.5, 1), rayquaza = quotaSlot(70, 1);
+    assert.ok(joltik < venonat && venonat < wailord, 'più è alto, più riempie lo slot');
+    assert.ok(joltik >= 0.3 && joltik < 0.4, 'il più piccolo resta visibile');
+    assert.ok(wailord > 0.9 && rayquaza <= 1);
+    assert.equal(quotaSlot(0, 1), quotaSlot(1.2, 1), 'senza misura: taglia media');
+    assert.ok(quotaSlot(0.7, 0.58) > quotaSlot(0.7, 1), 'la GIF con molto vuoto intorno (Spoink) è più alta: il Pokémon che si vede resta della taglia giusta');
+    assert.ok(quotaSlot(5, 0.3) <= 1, 'mai più grande dello slot');
+    assert.match(js, /slot\.style\.setProperty\('--q'/);
+    assert.match(js, /slot\.dataset\.q = '1'/);
+    assert.match(css, /\.pp-slot-img \{[^}]*height: calc\(\(100% - 22px\) \* var\(--q, 1\)\);[^}]*object-position: center bottom;/);
+    assert.match(css, /\.pp-slot:not\(\[data-q\]\) \.pp-slot-img \{ opacity: 0; \}/, 'finché non si sa la taglia l\'immagine non si vede: niente salto');
+});

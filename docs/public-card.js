@@ -85,15 +85,28 @@
 
     // I tipi di un Pokémon (PokeAPI), una sola richiesta per specie
     const cacheTipi = new Map();
-    function tipiDi(nome) {
+    // tipi e altezza vera di una specie (una sola richiesta a PokeAPI): i tipi colorano il fondo dello slot, l'altezza ne fissa la taglia
+    function datiDi(nome) {
         const k = pulisci(nome);
         if (!cacheTipi.has(k)) {
             cacheTipi.set(k, fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(k)}`)
                 .then(r => (r.ok ? r.json() : null))
-                .then(j => (j ? j.types.map(t => t.type.name) : []))
-                .catch(() => []));
+                .then(j => (j ? { tipi: j.types.map(t => t.type.name), altezzaM: Number(j.height) / 10 || 0 } : { tipi: [], altezzaM: 0 }))
+                .catch(() => ({ tipi: [], altezzaM: 0 })));
         }
         return cacheTipi.get(k);
+    }
+    const tipiDi = nome => datiDi(nome).then(d => d.tipi);
+
+    /**
+     * Quanta parte dell'altezza dello slot riempie il Pokémon: in scala tra loro con la stessa curva logaritmica delle Stats (scala-pkm.js, altezzaDaSolo) ma più compressa, perché lo slot
+     * è piccolo: da 0,25 m (un Joltik) a 20 m si va dal 36% al 100%. `quota` è la parte di immagine che occupa il Pokémon (visibile-pkm.js): la GIF di chi salta o vola ha vuoto intorno.
+     */
+    function quotaSlot(altezzaM, quota) {
+        const MIN = 0.25, MAX = 20;
+        const m = Math.min(Math.max(Number(altezzaM) > 0 ? Number(altezzaM) : 1.2, MIN), MAX);
+        const t = (Math.log(m) - Math.log(MIN)) / (Math.log(MAX) - Math.log(MIN));
+        return Math.min(1, (0.36 + 0.64 * t) / (quota > 0 ? quota : 1));
     }
 
     const blocco = (id, classe, ...figli) => h('section', { class: `pp-blocco ${classe}`, 'data-blocco': id },
@@ -424,9 +437,12 @@
                             if (window.SpritePkm) return window.SpritePkm.riserva(e.target, window.SpritePkm.id(nomePkm));
                             e.target.onerror = null; e.target.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
                         } }));
-                tipiDi(nomePkm).then(tipi => {
-                    const c = tipi.map(t => COLORI_TIPO[t]).filter(Boolean);
+                datiDi(nomePkm).then(d => {
+                    const c = d.tipi.map(t => COLORI_TIPO[t]).filter(Boolean);
                     if (c.length) { slot.style.setProperty('--t1', c[0]); slot.style.setProperty('--t2', c[1] || c[0]); }
+                    // l'altezza vera di ogni specie: un Joltik non deve sembrare grande come un Venonat (finché non si sa l'immagine non si vede: niente salto di misura)
+                    if (d.altezzaM > 0) slot.style.setProperty('--q', String(Math.round(quotaSlot(d.altezzaM, quotaVisibile(gifShowdown(nomePkm, p.shiny))) * 1000) / 1000));
+                    slot.dataset.q = '1';
                 });
                 return slot;
             }))));
