@@ -332,3 +332,11 @@ test('altri fumetti del Box e di Matches seguono il tema (angoli, ombra, caratte
     assert.match(css, /:is\(\.neubrutalist-tooltip, \.tb-dropdown-content\) \{ background: var\(--nb-tip-bg,/);
     assert.match(css, /\.modal-team-hover-tooltip \{ border-radius: var\(--nb-raggio, 0\) !important; \}/);
 });
+
+test('replay: l\'intestazione sta in alto, il resto è centrato nello spazio che avanza (spaziatori elastici)', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const css = fs.readFileSync(path.join(__dirname, '../docs/finestre.css'), 'utf8');
+    assert.match(css, /#replayModal\.replay-modal::before,\s*#replayModal\.replay-modal::after \{ content: ""; flex: 1 1 0; min-height: 0; \}/);
+    assert.match(css, /#replayModal\.replay-modal::before \{ order: 2; \}/, 'tra l\'intestazione (1) e il palco (3)');
+    assert.match(css, /#replayModal\.replay-modal::after \{ order: 9; \}/, 'dopo i momenti (5)');
+});

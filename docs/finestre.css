@@ -438,6 +438,12 @@
     overflow-x: hidden;
     overflow-y: auto;
 }
+/* l'intestazione sta in alto, vicina al bordo dello schermo; console, comandi e momenti stanno al centro dello spazio che resta (due spaziatori elastici, prima e dopo).
+   Prima tutta la colonna era centrata: l'intestazione galleggiava staccata dall'alto e attaccata alla console. */
+#replayModal.replay-modal::before,
+#replayModal.replay-modal::after { content: ""; flex: 1 1 0; min-height: 0; }
+#replayModal.replay-modal::before { order: 2; }
+#replayModal.replay-modal::after { order: 9; }
 /* il palco: la console e, alla sua destra, i tasti dei set in verticale */
 #replayModal .replay-palco { order: 3; flex: 0 0 auto; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 16px; max-width: 100%; min-width: 0; }
 #replayModal .gba-container { margin: 0; }
