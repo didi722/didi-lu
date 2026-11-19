@@ -775,3 +775,13 @@ test('fumetto dei fiocchi/badge: il tag del livello ha davvero il colore (bronzo
     for (const [classe, v] of [['bronze', 'bronzo'], ['silver', 'argento'], ['gold', 'oro'], ['platinum', 'platino']])
         assert.match(css, new RegExp(`\\.fiocco-t-riga\\.fiocco-${classe} \\{ --livello: var\\(--bt-${v}\\); \\}`));
 });
+
+test('fumetto di badge e fiocchi nel simulatore: il tag del livello segue il tema (angoli, carattere, ombra, inclinazione)', () => {
+    const css = fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8');
+    const tag = /\.fiocco-t-livello \{[^}]*\}/.exec(css)[0];
+    assert.match(tag, /border-radius: min\(var\(--nb-raggio, 0px\), 10px\)/);
+    assert.match(tag, /font-family: var\(--nb-font-titoli,/);
+    assert.match(tag, /box-shadow: var\(--sh-2\)/);
+    assert.match(tag, /rotate: calc\(var\(--nb-rot, 1\) \* -1\.5deg\)/);
+    assert.match(tag, /background: var\(--livello, #999\)/, 'il colore del livello resta');
+});
