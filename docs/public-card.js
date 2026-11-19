@@ -100,14 +100,14 @@
 
     /**
      * Quanta parte dell'altezza dello slot riempie un Pokémon: il più alto del team riempie lo slot (100%), gli altri in proporzione alla loro altezza vera rispetto a lui
-     * (con un minimo, perché un Joltik accanto a un Wailord non sparisca). `quota` è la parte di immagine che occupa il Pokémon (visibile-pkm.js): la GIF di chi salta o vola ha
+     * (la proporzione è ammorbidita e c'è un minimo, perché un Joltik accanto a un Wailord non sparisca). `quota` è la parte di immagine che occupa il Pokémon (visibile-pkm.js): la GIF di chi salta o vola ha
      * vuoto intorno, quindi l'immagine si fa più alta di tanto (mai più dello slot).
      */
-    const MINIMO_SLOT = 0.2;
+    const MINIMO_SLOT = 0.3, CURVA_SLOT = 0.6;     // in proporzione ma ammorbidita (ratio^0,6): in Little Cup lo scarto tra il più alto e i piccoli è enorme e a misura vera i piccoli sparirebbero
     function quotaSlot(altezzaM, massimaM, quota) {
         const m = Number(altezzaM) > 0 ? Number(altezzaM) : 1.2;
         const max = Math.max(Number(massimaM) > 0 ? Number(massimaM) : m, m);
-        return Math.min(1, Math.max(MINIMO_SLOT, m / max) / (quota > 0 ? quota : 1));
+        return Math.min(1, Math.max(MINIMO_SLOT, Math.pow(m / max, CURVA_SLOT)) / (quota > 0 ? quota : 1));
     }
 
     const blocco = (id, classe, ...figli) => h('section', { class: `pp-blocco ${classe}`, 'data-blocco': id },
