@@ -99,14 +99,15 @@
     const tipiDi = nome => datiDi(nome).then(d => d.tipi);
 
     /**
-     * Quanta parte dell'altezza dello slot riempie il Pokémon: in scala tra loro con la stessa curva logaritmica delle Stats (scala-pkm.js, altezzaDaSolo) ma più compressa, perché lo slot
-     * è piccolo: da 0,25 m (un Joltik) a 20 m si va dal 36% al 100%. `quota` è la parte di immagine che occupa il Pokémon (visibile-pkm.js): la GIF di chi salta o vola ha vuoto intorno.
+     * Quanta parte dell'altezza dello slot riempie un Pokémon: il più alto del team riempie lo slot (100%), gli altri in proporzione alla loro altezza vera rispetto a lui
+     * (con un minimo, perché un Joltik accanto a un Wailord non sparisca). `quota` è la parte di immagine che occupa il Pokémon (visibile-pkm.js): la GIF di chi salta o vola ha
+     * vuoto intorno, quindi l'immagine si fa più alta di tanto (mai più dello slot).
      */
-    function quotaSlot(altezzaM, quota) {
-        const MIN = 0.25, MAX = 20;
-        const m = Math.min(Math.max(Number(altezzaM) > 0 ? Number(altezzaM) : 1.2, MIN), MAX);
-        const t = (Math.log(m) - Math.log(MIN)) / (Math.log(MAX) - Math.log(MIN));
-        return Math.min(1, (0.36 + 0.64 * t) / (quota > 0 ? quota : 1));
+    const MINIMO_SLOT = 0.2;
+    function quotaSlot(altezzaM, massimaM, quota) {
+        const m = Number(altezzaM) > 0 ? Number(altezzaM) : 1.2;
+        const max = Math.max(Number(massimaM) > 0 ? Number(massimaM) : m, m);
+        return Math.min(1, Math.max(MINIMO_SLOT, m / max) / (quota > 0 ? quota : 1));
     }
 
     const blocco = (id, classe, ...figli) => h('section', { class: `pp-blocco ${classe}`, 'data-blocco': id },
@@ -440,12 +441,20 @@
                 datiDi(nomePkm).then(d => {
                     const c = d.tipi.map(t => COLORI_TIPO[t]).filter(Boolean);
                     if (c.length) { slot.style.setProperty('--t1', c[0]); slot.style.setProperty('--t2', c[1] || c[0]); }
-                    // l'altezza vera di ogni specie: un Joltik non deve sembrare grande come un Venonat (finché non si sa l'immagine non si vede: niente salto di misura)
-                    if (d.altezzaM > 0) slot.style.setProperty('--q', String(Math.round(quotaSlot(d.altezzaM, quotaVisibile(gifShowdown(nomePkm, p.shiny))) * 1000) / 1000));
-                    slot.dataset.q = '1';
                 });
+                slot._gif = gifShowdown(nomePkm, p.shiny);
                 return slot;
             }))));
+
+        // la taglia di ognuno è relativa al più alto del team (che riempie lo slot): serve l'altezza di tutti, poi si mostrano insieme (finché non si sa l'immagine non si vede: niente salto di misura)
+        const slots = [...el.querySelectorAll('.pp-slot')];
+        Promise.all(pokemon.map(p => datiDi(p.nome || p.name))).then(dati => {
+            const massima = Math.max(0, ...dati.map(d => d.altezzaM));
+            slots.forEach((slot, i) => {
+                if (dati[i] && dati[i].altezzaM > 0) slot.style.setProperty('--q', String(Math.round(quotaSlot(dati[i].altezzaM, massima, quotaVisibile(slot._gif)) * 1000) / 1000));
+                slot.dataset.q = '1';
+            });
+        });
 
         // i badge del team e i fiocchi dei suoi Pokémon si vedono subito, senza aprire il team (arrivano appena sono pronte le statistiche)
         const dbPagina = typeof db !== 'undefined' ? db : (window.firebase && window.firebase.database ? window.firebase.database() : null);
