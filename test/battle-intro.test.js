@@ -785,3 +785,8 @@ test('fumetto di badge e fiocchi nel simulatore: il tag del livello segue il tem
     assert.match(tag, /rotate: calc\(var\(--nb-rot, 1\) \* -1\.5deg\)/);
     assert.match(tag, /background: var\(--livello, #999\)/, 'il colore del livello resta');
 });
+
+test('tag del livello nel fumetto: il testo è centrato in verticale (più margine sopra, il carattere ha più vuoto sotto)', () => {
+    const css = fs.readFileSync(path.join(__dirname, '../docs/style-battle.css'), 'utf8');
+    assert.match(/\.fiocco-t-livello \{[^}]*\}/.exec(css)[0], /padding: 3px 6px 0;/);
+});

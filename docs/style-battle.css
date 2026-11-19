@@ -363,13 +363,13 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .fiocco-t-tip .fiocco-finto { display: flex; align-items: center; justify-content: center; border: 2px solid var(--inchiostro); border-radius: 50%; font-size: .8rem; }
 .fiocco-t-nome { grid-column: 2; grid-row: 1; font-size: .7rem; font-weight: 900; letter-spacing: .03em; text-transform: uppercase; }
 .fiocco-t-livello {
-    grid-column: 3; grid-row: 1; padding: 0 6px;
+    grid-column: 3; grid-row: 1; padding: 3px 6px 0;          /* il carattere dei titoli ha più vuoto sotto che sopra: un po' più di margine sopra lo centra */
     background: var(--livello, #999); border: 2px solid var(--inchiostro);
     border-radius: min(var(--nb-raggio, 0px), 10px);          /* il tag Bronze / Silver / Gold / Platinum segue il tema: angoli, carattere, ombra, inclinazione */
     font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     box-shadow: var(--sh-2);
     rotate: calc(var(--nb-rot, 1) * -1.5deg);
-    font-size: .6rem; font-weight: 900; line-height: 1.5; letter-spacing: .03em; text-transform: uppercase;
+    font-size: .6rem; font-weight: 900; line-height: 1.35; letter-spacing: .03em; text-transform: uppercase;
 }
 .fiocco-t-riga.fiocco-bronze { --livello: var(--bt-bronzo); }
 .fiocco-t-riga.fiocco-silver { --livello: var(--bt-argento); }
