@@ -105,13 +105,25 @@
         let stato = null;      // { lista, corrente, pista }
 
         // il compagno in scala con l'allenatore (le formule della pagina pubblica, scala-pkm.js) e a terra o fluttuante; si rifà quando le immagini arrivano e lo schermo cambia
-        const scala = carta => {
+        const scala = async carta => {
             const S = win.ScalaPkm;
             const a = carta.querySelector('.at-allenatore'), p = carta.querySelector('.at-pkm');
-            const palco = carta.querySelector('.at-palco');
+            const palco = carta.querySelector('.at-palco'), pedana = carta.querySelector('.pal-pedana');
             if (!S || !a || !p || !palco) return;
             const sotto = parseFloat(win.getComputedStyle(p).bottom) || 0;
-            S.scena({ allenatore: a, pokemon: p, spazioPx: Math.max(40, palco.clientHeight - sotto - 6), larghezzaMax: Math.max(60, palco.clientWidth - 24) });
+            // i due insieme stanno dentro il cerchio (la pedana), non nel palco intero che è più largo
+            const cerchio = pedana ? pedana.offsetWidth : 0;
+            const larghezzaMax = cerchio ? Math.max(60, cerchio * 0.94) : Math.max(60, palco.clientWidth - 24);
+            const r = await S.scena({ allenatore: a, pokemon: p, spazioPx: Math.max(40, palco.clientHeight - sotto - 6), larghezzaMax });
+            if (!r) return;
+            // e centrati sul cerchio: l'allenatore parte dove comincia il gruppo, il Pokémon gli sta accanto (sovrapposto come ha deciso la scala)
+            const sovrapposto = -(parseFloat(p.style.marginLeft) || 0);
+            const larghezzaGruppo = a.offsetWidth + p.offsetWidth - sovrapposto;
+            const inizio = Math.round((palco.clientWidth - larghezzaGruppo) / 2);
+            p.style.marginLeft = '';
+            a.style.left = inizio + 'px';
+            p.style.right = 'auto';
+            p.style.left = Math.round(inizio + a.offsetWidth - sovrapposto) + 'px';
         };
         const scalaTutti = () => { if (stato) stato.pista.querySelectorAll('.at-carta').forEach(c => { c.querySelectorAll('.at-pkm[data-sc]').forEach(p => p.removeAttribute('data-sc')); scala(c); }); };
         win.addEventListener('resize', scalaTutti);

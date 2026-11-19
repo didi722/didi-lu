@@ -120,6 +120,14 @@ test('il compagno è in scala con l\'allenatore (scala-pkm.js) e a terra o flutt
     assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'app.js'), 'utf8'), /'players\.html': \[[^\]]*'scala-pkm\.js'/);
 });
 
+test('l\'allenatore e il compagno stanno dentro il cerchio (la pedana) e centrati su di lui, non sul palco intero', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'docs', 'app-trainers.js'), 'utf8');
+    assert.match(src, /const cerchio = pedana \? pedana\.offsetWidth : 0;/);
+    assert.match(src, /larghezzaMax = cerchio \? Math\.max\(60, cerchio \* 0\.94\)/, 'il limite è il cerchio');
+    assert.match(src, /const inizio = Math\.round\(\(palco\.clientWidth - larghezzaGruppo\) \/ 2\);/, 'il gruppo è centrato');
+    assert.match(src, /p\.style\.left = Math\.round\(inizio \+ a\.offsetWidth - sovrapposto\) \+ 'px';/);
+});
+
 // ---------- la palestra ----------
 
 test('htmlPalestra: sulla propria scheda "My gym" (per impostarla), su quella di chi ha una palestra pronta "Challenge gym"; sulle altre niente', () => {
