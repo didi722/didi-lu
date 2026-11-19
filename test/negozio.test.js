@@ -332,3 +332,15 @@ test('frasiAcquisto: la prima volta è gratis; poi il prezzo e le monete; a quot
     assert.deepEqual(r, { righe: ['Route 1 goes back to the pool: anyone can take it. Releasing is free, but to get this song back you would have to buy it again, if nobody takes it first.'], conferma: 'Release it' });
     assert.match(N.frasiRilascio({ tipo: 'colore', nome: '#FF8800' }).righe[0], /get this colour back/);
 });
+
+test('Shop: l\'anteprima di una canzone ferma la musica della pagina e, finita o fermata, la fa ripartire', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const js = fs.readFileSync(path.join(__dirname, '../docs/shop.js'), 'utf8');
+    const html = fs.readFileSync(path.join(__dirname, '../docs/shop.html'), 'utf8');
+    assert.match(js, /function avviaAscolto\(url\) \{[^]*?musicaEraAccesa = !!\(m && !m\.paused\);[^]*?window\.AppMusicaPausa = true;[^]*?m\.pause\(\);/);
+    assert.match(js, /function fermaAscolto\(\) \{[^]*?AppMusicaPausa = false;[^]*?userMusicPref[^]*?m\.play\(\)/, 'riparte solo se non l\'aveva spenta chi ascolta');
+    assert.match(js, /a\.onended = a\.onerror = /, 'finita (o errore) l\'anteprima la musica torna');
+    assert.match(js, /if \(gia\) return fermaAscolto\(\);\s*return avviaAscolto\(b\.dataset\.url\);/);
+    assert.ok(!/ascolto\.pause\(\); ascolto = null;/.test(js), 'ogni stop passa da fermaAscolto');
+    assert.match(html, /!window\.AppMusicaPausa && player && player\.paused/, 'il primo tocco non riaccende la musica sopra l\'anteprima');
+});

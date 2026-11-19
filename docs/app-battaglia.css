@@ -284,7 +284,7 @@
         background: radial-gradient(85% 60% at 50% 46%, rgba(255, 255, 255, .22), transparent 72%), linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, .5) 100%), linear-gradient(155deg, var(--t1) 0 50%, var(--t2) 50% 100%);
     }
     html.app .sc-livello { position: absolute; top: .6em; left: .6em; padding: .25em .6em .1em; background: #000; color: var(--bt-giallo); border-radius: .5em; font: 800 .95em/1.2 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
-    html.app .sc-img { flex: none; width: auto; height: 7.8em; max-width: 100%; margin: .4em 0 .2em; object-fit: contain; filter: drop-shadow(0 .4em 0 rgba(0, 0, 0, .35)); user-select: none; -webkit-user-drag: none; }
+    html.app .sc-img { flex: none; width: auto; height: 7.8em; max-width: 100%; margin: .4em 0 .2em; object-fit: contain; will-change: filter; filter: drop-shadow(0 .4em 0 rgba(0, 0, 0, .35)); user-select: none; -webkit-user-drag: none; }
     html.app .sc-nome { text-align: center; }
     html.app .sc-specie { color: rgba(255, 255, 255, .85); font: 700 .95em/1 'Montserrat', sans-serif; text-shadow: 0 .1em 0 #000; }
     html.app .sc-note { display: flex; flex-wrap: wrap; justify-content: center; gap: .3em; }

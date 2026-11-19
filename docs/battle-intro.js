@@ -172,6 +172,17 @@
         try { (win || (typeof window !== 'undefined' ? window : null)).document.documentElement.classList.remove('vs-copre'); } catch (e) { /* niente copertura */ }
     }
 
+    /** Rimette la copertura scura (rivincita, "un altro team"): da subito, prima che la partita nuova si prepari e il simulatore si veda. Come quella di battle.html: mai nell'app né con "riduci movimento"; si toglie da sola dopo 15 secondi */
+    function mettiCopertura(win) {
+        try {
+            const w = win || (typeof window !== 'undefined' ? window : null);
+            if (!puoRiprodurre(w)) return false;
+            w.document.documentElement.classList.add('vs-copre');
+            w.setTimeout(() => togliCopertura(w), 15000);
+            return true;
+        } catch (e) { return false; }
+    }
+
     function elemento(doc, tag, classe, testo) {
         const e = doc.createElement(tag);
         if (classe) e.className = classe;
@@ -459,5 +470,5 @@
         return promessa;
     }
 
-    return { T, CURVE, INGRANDIMENTO, VISIBILE, testiIntro, punteggioShowdown, disposizione, ritardoApertura, testoSu, puoRiprodurre, togliCopertura, riproduci };
+    return { T, CURVE, INGRANDIMENTO, VISIBILE, testiIntro, punteggioShowdown, disposizione, ritardoApertura, testoSu, puoRiprodurre, togliCopertura, mettiCopertura, riproduci };
 });

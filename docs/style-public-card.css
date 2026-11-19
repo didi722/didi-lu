@@ -476,6 +476,7 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
     width: auto;
     image-rendering: pixelated;
     filter: var(--pp-adesivo-sprite);
+    will-change: filter;   /* le GIF animate con drop-shadow lasciano macchioline nere su Chrome: il filtro va su un suo livello */
     animation: pp-respira 1.3s steps(1, end) infinite;
 }
 
@@ -545,6 +546,7 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
     object-fit: contain;
     object-position: center bottom;      /* rimpicciolito dal max-width resta appoggiato a terra, non a mezz'aria */
     filter: var(--pp-adesivo-sprite);
+    will-change: filter;   /* le GIF animate con drop-shadow lasciano macchioline nere su Chrome: il filtro va su un suo livello */
 }
 
 /* i giganti (Kyogre, Wailord): grandi com'è giusto, senza il limite di larghezza, e spostati a destra: il palco ne taglia il bordo */
@@ -863,6 +865,7 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
     height: calc(100% - 22px);
     object-fit: contain;
     filter: var(--pp-adesivo-sprite);
+    will-change: filter;   /* le GIF animate con drop-shadow lasciano macchioline nere su Chrome: il filtro va su un suo livello */
 }
 
 .pp-slot:hover, .pp-slot:focus-visible { transform: translate(-2px, -3px) rotate(-1.5deg); box-shadow: 7px 7px 0 #000; outline: none; z-index: 2; }

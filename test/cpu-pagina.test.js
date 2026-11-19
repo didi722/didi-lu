@@ -330,7 +330,7 @@ test('battle-ui.js: la CPU compone un team a caso quando inizia la sfida; a fine
     assert.match(ui, /ev\.currentTarget\.disabled = true; altroTeamCpu\(\); \} \}, 'Another random CPU team'/);
     assert.match(ui, /async function altroTeamCpu\(\) \{[\s\S]*nuovoTeamCpu\(cpu\.giocatore\.regolamento, \{ iniziali: cpu\.giocatore\.iniziali, db: dbPerLaMeta\(\) \}\)[\s\S]*iniziaContro\(r\.team\)/);
     // se non si riesce, resta il cartello con un avviso (e i pulsanti tornano attivi)
-    assert.match(ui, /cpu\.avviso = `Couldn't build another CPU team: \$\{errore\.message\}`;\s*aggiornaFineCpu\(\);/);
+    assert.match(ui, /cpu\.avviso = `Couldn't build another CPU team: \$\{errore\.message\}`;\s*togliCopertura\(\);\s*aggiornaFineCpu\(\);/);
     assert.ok(!/sceglieTeam|squadreCpu/.test(ui), 'i team in anticipo non ci sono più');
     assert.match(ui, /href: inApp\(\) \? 'practice\.html' : 'box\.html' \}, inApp\(\) \? 'Back to Play' : 'Back to Box'/, 'nell\'app si torna a Practice, sul sito al Box');
     assert.match(ui, /'You win!'/);
