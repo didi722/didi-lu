@@ -144,7 +144,26 @@
     border-radius: var(--nb-raggio, 0) !important;
     box-shadow: var(--nb-sh-m, 6px 6px 0 #000) !important;
     font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important;
+    border-left: 14px solid var(--tipo, var(--nb-ink, #000)) !important;      /* il colore del tipo, come striscia sul bordo */
 }
+.move-tooltip.fire { --tipo: #de3a1d; }
+.move-tooltip.water { --tipo: #3399ff; }
+.move-tooltip.grass { --tipo: #77cc55; }
+.move-tooltip.electric { --tipo: #ffcc33; }
+.move-tooltip.ice { --tipo: #66ccff; }
+.move-tooltip.fighting { --tipo: #bb5544; }
+.move-tooltip.poison { --tipo: #aa5599; }
+.move-tooltip.ground { --tipo: #ddbb55; }
+.move-tooltip.flying { --tipo: #8899ff; }
+.move-tooltip.psychic { --tipo: #ff5599; }
+.move-tooltip.bug { --tipo: #aabb22; }
+.move-tooltip.rock { --tipo: #bbaa66; }
+.move-tooltip.ghost { --tipo: #6666bb; }
+.move-tooltip.dragon { --tipo: #7766ee; }
+.move-tooltip.dark { --tipo: #775544; }
+.move-tooltip.steel { --tipo: #aaaabb; }
+.move-tooltip.fairy { --tipo: #ee99ee; }
+.move-tooltip.normal { --tipo: #aaaa99; }
 .move-tooltip > div:first-child { border-bottom: 2px dashed var(--nb-ink, #000) !important; padding-bottom: 4px; letter-spacing: .03em; }
 /* i quattro rettangoli delle mosse nel fumetto del Pokémon: seguono il tema scelto (angoli, ombra, carattere, inclinazione, colore delle superfici) come il resto del fumetto */
 .pkm-hover-card .hover-moves { border-top: 2px dashed var(--nb-ink, #000); }
