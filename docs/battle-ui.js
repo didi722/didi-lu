@@ -93,6 +93,7 @@ let versusInCorso = 0, versusPronto = Promise.resolve();     // lo sfondo "sfida
 // L'intro "VS" che aspetta che la partita sia pronta (introVersus con attendi): { pronta() }. Resta finché introPronta() non la libera.
 let introSet = null, timerProntaCpu = null, introGenerazione = 0;     // (introGenerazione cambia a ogni introAbbandona: una partenza anticipata in ritardo lo vede e non parte)
 let personaAnticipata = null;   // contro la CPU: la promessa dell'avversario scelto in anticipo e dello sfondo già costruito (anticipaIntroCpu)
+let scenaPalestra = Promise.resolve();      // la palestra: il compagno ha la sua misura (vestiPalestra)
 let ultimoProgresso = '';       // l'ultimo passo del caricamento scritto sul campo ("Loading your team…"): l'intro lo ripete finché aspetta
 let prossimaScena = null;   // righe di un nuovo set arrivato mentre il set precedente si sta ancora animando
 const attesaScena = [];     // cose da fare quando le animazioni arrivano in fondo
@@ -711,6 +712,7 @@ async function preparaOnline(chiavi) {
     vestiVersus(info.p1.nome, info.p2.nome);
     impostaPannelli();
     nuovoSet();
+    anticipaIntroOnline();          // l'intro è la prima cosa: prima della lobby e della scelta del team
 
     // Colori dei giocatori e team per la lobby (letti da Firebase come nel resto del sito)
     try {
@@ -780,6 +782,7 @@ async function preparaAmichevole(idSfida) {
     vestiVersus(info.p1.nome, info.p2.nome);
     impostaPannelli();
     nuovoSet();
+    anticipaIntroOnline();          // l'intro è la prima cosa: prima della lobby e della scelta del team
 
     // Colori, avatar e team del Box (per la lobby e per riconoscere i team dall'anteprima)
     try {
@@ -856,7 +859,6 @@ const nomeDi = lato => (config && config[lato] ? config[lato].nome : lato.toUppe
 // Cosa mostrare a seconda della fase del match
 function aggiornaFase() {
     const s = online.stato;
-    const daLobby = online.statoPrima === 'lobby';       // il primo set comincia adesso (chi arriva a partita già in corso non vede l'intro)
     const eraInGioco = ['in_corso', 'da_salvare', 'salvataggio'].includes(online.statoPrima);
     online.statoPrima = s;
     disegnaInfo();
@@ -871,7 +873,6 @@ function aggiornaFase() {
     } else {
         if (s !== 'tra_set') nascondiLobby();
         nascondiMessaggio();
-        if (s === 'in_corso' && daLobby && !introSet) introVersus(1, { attendi: true });      // (di solito è già partita quando i due si sono detti pronti: introSePronti) si apre quando il set è in scena (nuovoSet)
         // a match finito il conto alla rovescia verso un nuovo set non ha più senso (e non deve coprire l'esito)
         if (s !== 'in_corso') fermaPausaSet();
         if (s === 'da_salvare' || s === 'salvataggio') {
@@ -899,6 +900,8 @@ function aggiornaFase() {
     }
     aggiornaStati();
     ridisegnaComandi();
+    // la pagina ha il suo stato (la lobby, o la partita com'è): l'intro che copriva il caricamento può aprirsi
+    if (!online.paginaPronta) { online.paginaPronta = true; introPronta(); }      // (solo la prima volta: i set dopo li apre nuovoSet / avviaProssimaScena)
 }
 
 // La lobby giusta per lo stato in cui è la partita: prima del primo set, o tra un set e l'altro (solo amichevoli con team cambiabili)
@@ -1459,7 +1462,7 @@ async function preparaPalestra(idGym, numeroTappa, chiaveTeam) {
     cpu = {
         cerebro: null, team: { testo: gym.team.testo, specie, piano: null, numero: 1 }, giocatore: dati, errori: 0, rqid: null,
         chiaveTeam, modificabile: false, avviso: '', problemi: [], ultimoVincitore: null, generando: false,
-        palestra: { id: gym.id, nome: gym.nome, tappa: numeroTappa, categoria: gym.categoria, vantaggio: gym.vantaggio, generazione: self.Palestra.generazioneDi(gym.regolamento), tema: null, timerAnnuncio: 0 }
+        palestra: { id: gym.id, nome: gym.nome, tappa: numeroTappa, categoria: gym.categoria, vantaggio: gym.vantaggio, generazione: self.Palestra.generazioneDi(gym.regolamento), tema: null, timerAnnuncio: 0, aspetto: gym.aspetto }
     };
     config = {
         formato: dati.formato,
@@ -1512,8 +1515,8 @@ function vestiPalestra(gym) {
     setInterval(posiziona, 700);
     // il compagno è in scala con l'avatar del capopalestra (altezza vera del Pokémon, allenatore alto 1,70 m: ScalaPkm.scena); chi vola sta un po' sollevato
     const avatarImg = decor.querySelector('.pal-avatar'), compImg = decor.querySelector('.vs-compagno');
-    const scala = () => { if (avatarImg && compImg && self.ScalaPkm) self.ScalaPkm.scena({ allenatore: avatarImg, pokemon: compImg, spazioPx: Math.round(window.innerHeight * 0.9) }).catch(() => {}); };
-    scala();
+    const scala = () => (avatarImg && compImg && self.ScalaPkm) ? self.ScalaPkm.scena({ allenatore: avatarImg, pokemon: compImg, spazioPx: Math.round(window.innerHeight * 0.9) }).catch(() => {}) : Promise.resolve();
+    scenaPalestra = scala();        // l'intro aspetta che il compagno abbia la sua misura (introVersus)
     for (const img of [avatarImg, compImg]) if (img) img.addEventListener('load', scala);
     setTimeout(scala, 1500);
     window.addEventListener('resize', scala);
@@ -1543,6 +1546,19 @@ function centroAvatar(colonna, lato, img) {
 /** Gli avatar scivolano (invece di scattare) quando il tavolo si sposta: la transizione parte dopo il primo posizionamento */
 function avatarScivolano() { requestAnimationFrame(() => document.body.classList.add('vs-scivola')); }
 
+/** Una metà dello sfondo "sfida": il colore principale dell'allenatore con il motivo della sua pagina, il suo nome gigante in contorno e (se ce l'ha) il suo avatar grande */
+function creaLatoVersus(a, nome, classe) {
+    // lo sfondo è il colore principale dell'allenatore con il motivo che ha scelto per la sua pagina (non il colore di sfondo della pagina)
+    const t = self.Palestra.temaPalestra({ ...a, pagina: { sfondo: { ...((a.pagina && typeof a.pagina.sfondo === 'object' && a.pagina.sfondo) || {}), colore: 'giocatore' } } }, self.PaginaPubblica, self.Cosmetici);
+    const box = el('div', { class: `vs-lato ${classe}` });
+    for (const [k, v] of Object.entries(t.variabili)) box.style.setProperty(k, v);
+    const testo = String(nome || a.nome || '').toUpperCase();
+    const righe = Array.from({ length: 6 }, (_, k) => el('div', { class: 'vs-scritta-riga', style: `--k:${k}`, testo: `${testo} ${testo} ${testo}` }));
+    box.append(el('div', { class: 'vs-scritta', 'aria-hidden': 'true' }, righe));
+    if (t.avatar) box.append(el('img', { class: 'vs-avatar', src: t.avatar, alt: '', draggable: 'false', style: t.aura ? `--pal-aura:${t.aura.colore}` : null, onerror: ev => ev.target.remove() }));
+    return box;
+}
+
 // Partite tra due allenatori (ufficiali, amichevoli, prove dal sito): lo sfondo è la "carta di sfida" dei due. La pagina è divisa in diagonale: a sinistra lo sfondo della pagina pubblica
 // del primo (colore, motivo, nome gigante) con il suo avatar grande, a destra lo stesso per il secondo (stile in style-versus.css).
 async function vestiVersus(nomeP1, nomeP2, aspetto2 = null) {
@@ -1554,18 +1570,7 @@ async function vestiVersus(nomeP1, nomeP2, aspetto2 = null) {
         if (document.body.classList.contains('palestra') || !window.firebase || !self.Palestra) return;
         const db = firebase.database();
         const [a1, a2] = await Promise.all([caricaAspetto(db, nomeP1), aspetto2 ? Promise.resolve(aspetto2) : caricaAspetto(db, nomeP2)]);
-        const lato = (a, nome, classe) => {
-            // lo sfondo è il colore principale dell'allenatore con il motivo che ha scelto per la sua pagina (non il colore di sfondo della pagina)
-            const t = self.Palestra.temaPalestra({ ...a, pagina: { sfondo: { ...((a.pagina && typeof a.pagina.sfondo === 'object' && a.pagina.sfondo) || {}), colore: 'giocatore' } } }, self.PaginaPubblica, self.Cosmetici);
-            const box = el('div', { class: `vs-lato ${classe}` });
-            for (const [k, v] of Object.entries(t.variabili)) box.style.setProperty(k, v);
-            const testo = String(nome || a.nome || '').toUpperCase();
-            const righe = Array.from({ length: 6 }, (_, k) => el('div', { class: 'vs-scritta-riga', style: `--k:${k}`, testo: `${testo} ${testo} ${testo}` }));
-            box.append(el('div', { class: 'vs-scritta', 'aria-hidden': 'true' }, righe));
-            if (t.avatar) box.append(el('img', { class: 'vs-avatar', src: t.avatar, alt: '', draggable: 'false', style: t.aura ? `--pal-aura:${t.aura.colore}` : null, onerror: ev => ev.target.remove() }));
-            return box;
-        };
-        const sinistra = lato(a1, nomeP1, 'vs-sx'), destra = lato(a2, nomeP2, 'vs-dx');
+        const sinistra = creaLatoVersus(a1, nomeP1, 'vs-sx'), destra = creaLatoVersus(a2, nomeP2, 'vs-dx');
         // chi gioca sta sempre a sinistra (come nelle colonne dei player): se è il secondo, i due lati si scambiano
         const fondo = el('div', { class: 'vs-sfondo', 'aria-hidden': 'true' }, ...(mioLato === 'p2' ? [destra, sinistra] : [sinistra, destra]), el('div', { class: 'vs-taglio' }));
         if (mioLato === 'p2') { sinistra.className = sinistra.className.replace('vs-sx', 'vs-dx'); destra.className = destra.className.replace('vs-dx', 'vs-sx'); }
@@ -1614,9 +1619,9 @@ function leggiMatchPrecedenti() {
     if (!online || online.amichevole || Number(online.info.match) <= 1 || online.matchPrecedenti !== undefined) return;
     online.matchPrecedenti = null;
     try {
-        firebase.database().ref(`seasons/${online.info.stagione}/showdowns/${online.info.showdown}/matches`).once('value')
+        online.matchPrecedentiPronti = firebase.database().ref(`seasons/${online.info.stagione}/showdowns/${online.info.showdown}/matches`).once('value')
             .then(snap => { if (online) online.matchPrecedenti = snap.val() || {}; })
-            .catch(errore => console.warn("Earlier matches' score not read", errore));
+            .catch(errore => console.warn("Earlier matches' score not read", errore));      // l'intro del match lo aspetta (anticipaIntroOnline)
     } catch (errore) { console.warn("Earlier matches' score not read", errore); }
 }
 
@@ -1625,7 +1630,15 @@ function contestoIntro(numeroSet) {
     if (!config) return null;
     const sx = mioLato === 'p2' ? 'p2' : 'p1', dx = sx === 'p1' ? 'p2' : 'p1';
     const nomi = { sx: nomeDi(sx), dx: nomeDi(dx) };
-    if (cpu && !cpu.palestra) {
+    if (cpu && cpu.palestra) {
+        // niente sfidante: a sinistra il capopalestra, a destra il suo Pokémon compagno (che poi sta sullo sfondo al suo posto)
+        const g = cpu.palestra, comp = g.aspetto && g.aspetto.compagno;
+        return {
+            palestra: true, nomi: { sx: g.nome, dx: comp && comp.nome ? comp.nome : nomeDi('p1') },
+            dati: { tipo: 'palestra', nome: g.nome, tappa: g.tappa + 1, tappe: self.Palestra.TAPPE, vantaggio: g.vantaggio && g.vantaggio.nome, formato: g.categoria }
+        };
+    }
+    if (cpu) {
         const q = cpu.sessione || { v: 0, p: 0, n: 0 };
         return { nomi, dati: { tipo: 'cpu', battaglia: q.v + q.p + q.n + 1, serie: q } };
     }
@@ -1640,24 +1653,58 @@ function contestoIntro(numeroSet) {
     return null;
 }
 
+/** Una tinta più scura di un colore "#rrggbb" (f = quanto: 0,4 = il 40% più scuro); se non è un colore così, lo stesso */
+function scurisci(colore, f) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(colore || '').trim());
+    if (!m) return colore;
+    const n = parseInt(m[1], 16);
+    return '#' + [16, 8, 0].map(sh => Math.round(((n >> sh) & 255) * (1 - f)).toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * I lati dell'intro in palestra: a sinistra il capopalestra (specchiato come sullo sfondo vero), a destra il suo compagno, nessuno sfidante. Le due metà sono costruite come
+ * quelle dello sfondo "sfida" (la seconda in una tinta più scura della prima) in un contenitore nascosto, che l'intro copia; gli avatar sono quelli veri dello sfondo della
+ * palestra, dove poi atterrano. Ritorna { sfondo, lati, pulisci } o null se manca qualcosa.
+ */
+function latiPalestra() {
+    const g = cpu && cpu.palestra, decor = document.querySelector('.vs-sfondo.pal-decor');
+    if (!g || !g.aspetto || !decor || !self.Palestra) return null;
+    const avatar = decor.querySelector('.pal-avatar'), compagno = decor.querySelector('.vs-compagno');
+    const comp = g.aspetto.compagno;
+    const base = { ...g.aspetto, nome: g.nome, avatar: '' };
+    const sx = creaLatoVersus(base, g.nome, 'vs-sx');
+    const dx = creaLatoVersus({ ...base, colore: scurisci(base.colore, 0.4) }, comp && comp.nome ? comp.nome : (config && config.p1 ? config.p1.nome : ''), 'vs-dx');
+    const contenitore = el('div', { class: 'vs-sfondo vi-prova', 'aria-hidden': 'true', style: 'visibility: hidden' }, sx, dx);
+    document.body.append(contenitore);
+    return { sfondo: decor, lati: [{ reale: sx, avatar, specchia: true }, { reale: dx, avatar: compagno, specchia: false }], pulisci: () => contenitore.remove() };
+}
+
 /**
  * Fa partire l'intro. Con `attendi` resta aperta finché la partita non è pronta (introPronta): così copre i caricamenti invece di arrivare dopo. `contesto` (nomi e dati
  * del tabellone) serve quando la pagina non ha ancora config e cpu (la partenza anticipata contro la CPU).
  */
 function introVersus(numeroSet, { attendi = false, contesto = null } = {}) {
     try {
-        if (!self.BattleIntro || (!config && !contesto) || inApp() || document.body.classList.contains('palestra') || (cpu && cpu.palestra)) { togliCopertura(); return; }
+        if (!self.BattleIntro || (!config && !contesto) || inApp()) { togliCopertura(); return; }
         let pronta = null;
         const attesa = attendi ? new Promise(ok => { pronta = ok; }) : null;
         if (attendi) introSet = { pronta };
         const parti = () => {
             try {
                 const c = contesto || contestoIntro(numeroSet);
-                if (c) {
-                    self.BattleIntro.riproduci({ win: window, nomi: c.nomi, testi: self.BattleIntro.testiIntro(c.dati), attesa, stato: ultimoProgresso })
+                if (!c) { togliCopertura(); if (pronta) pronta(); return; }
+                const avvia = () => {
+                    // palestra: le due metà sono il capopalestra e il suo compagno, e atterrano sullo sfondo della palestra
+                    const g = c.palestra ? latiPalestra() : null;
+                    if (c.palestra && !g) { togliCopertura(); if (pronta) pronta(); return; }
+                    const extra = g ? { sfondo: g.sfondo, lati: g.lati } : {};
+                    self.BattleIntro.riproduci({ win: window, nomi: c.nomi, testi: self.BattleIntro.testiIntro(c.dati), attesa, stato: ultimoProgresso, ...extra })
                         .then(partita => { if (!partita) togliCopertura(); })
-                        .catch(errore => { togliCopertura(); console.warn('Versus intro failed', errore); });
-                } else { togliCopertura(); if (pronta) pronta(); }
+                        .catch(errore => { togliCopertura(); console.warn('Versus intro failed', errore); })
+                        .then(() => { if (g) g.pulisci(); });
+                };
+                if (c.palestra) Promise.race([scenaPalestra, new Promise(ok => setTimeout(ok, 3500))]).then(avvia);
+                else avvia();
             } catch (errore) {
                 console.warn('Versus intro skipped', errore);
                 togliCopertura();
@@ -1694,16 +1741,34 @@ function introAbbandona() {
 }
 
 /**
- * Nei match online l'intro parte quando i due giocatori si sono detti pronti, non quando il server ha già avviato il set: copre l'attesa (il server che parte,
- * la scena che si prepara) e si apre appena il set è in scena (nuovoSet per il primo set, avviaProssimaScena per quelli dopo una scelta del team). Il server pubblica set,
- * log e richieste insieme, dopo aver segnato lo stato "in corso": per questo non si apre allo stato ma al set.
+ * Nei match online (stagioni e amichevoli) l'intro è la prima cosa: parte appena si sa chi gioca (dopo apriPartita), prima della lobby e della scelta del team, e copre il
+ * caricamento (anticipaIntroOnline); si apre sulla lobby appena la pagina ha il suo stato (aggiornaFase la prima volta). I set dopo il primo la rifanno: quando i due si sono
+ * detti pronti tra un set e l'altro (amichevoli con team cambiabili, qui sotto: introSePronti, e si apre quando il set è in scena, in avviaProssimaScena) o dopo la pausa
+ * (stagioni e amichevoli a team fissi: avviaProssimaScena). Il server pubblica set, log e richieste insieme, dopo aver segnato lo stato "in corso".
  */
+async function anticipaIntroOnline() {
+    const mia = online, generazione = introGenerazione;
+    try {
+        if (!self.BattleIntro || inApp() || !mia || mia.giaSalvato) return togliCopertura();
+        const stato = (await firebase.database().ref(`partite/${mia.id}/stato`).once('value')).val();
+        if (stato && stato !== 'lobby') return togliCopertura();         // il set è già iniziato (o la partita è finita): niente intro
+        // nelle stagioni dice anche il punteggio dei match di prima (si legge in sottofondo): al massimo un attimo
+        if (mia.matchPrecedentiPronti) await Promise.race([mia.matchPrecedentiPronti, new Promise(ok => setTimeout(ok, 1500))]);
+        if (generazione !== introGenerazione || online !== mia) return;      // nel frattempo è comparso un errore
+        introVersus(1, { attendi: true });
+        if (mia.paginaPronta) introPronta();                             // la pagina era già pronta: si apre al tempo fisso
+    } catch (errore) {
+        console.warn('Versus intro not started', errore);
+        togliCopertura();
+    }
+}
+
+/** Tra un set e l'altro (amichevoli con team cambiabili) l'intro parte quando i due si sono detti pronti, mentre il server prepara il set: li copre e si apre al set in scena */
 function introSePronti() {
     if (!online || introSet || online.giaSalvato) return;
     const { p1, p2 } = online.pronti || {};
     if (!p1 || !p2) return;
-    if (online.stato === 'lobby') introVersus(1, { attendi: true });
-    else if (online.stato === 'tra_set' && online.amichevole) introVersus(Object.keys(online.risultati || {}).length + 1, { attendi: true });
+    if (online.stato === 'tra_set' && online.amichevole) introVersus(Object.keys(online.risultati || {}).length + 1, { attendi: true });
 }
 
 /** L'insegna in alto nel simulatore, in palestra: chi la tiene (faccia, aura, nome con il suo font e il suo effetto), la tappa e il vantaggio, sempre in vista */
@@ -1794,8 +1859,8 @@ function avviaBattaglia() {
     nascondiMessaggio();
     nuovoSet();
     disegnaInfo();
-    if (cpu && !cpu.palestra) {
-        // ogni battaglia contro la CPU comincia con l'intro: numero della battaglia e serie. La prima di una pagina è già partita (anticipaIntroCpu).
+    if (cpu) {
+        // ogni battaglia contro la CPU (e ogni tappa di una palestra) comincia con l'intro: numero della battaglia e serie. La prima di una pagina è già partita (anticipaIntroCpu).
         // Si apre alla prima richiesta del simulatore (collegaEventi) o, se tarda, dopo 5 s.
         if (!introSet) introVersus(undefined, { attendi: true });
         clearTimeout(timerProntaCpu);

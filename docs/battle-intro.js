@@ -9,7 +9,7 @@
 //   4. la diagonale si apre: le due metà escono ai lati e gli avatar scivolano al loro posto sullo sfondo, esattamente dove stanno ora.
 // Parte prima che la partita sia pronta e ne copre i caricamenti: la diagonale si apre solo quando la pagina lo dice (`attesa`), non prima del tempo fisso e non oltre
 // T.attesaMax. Nel frattempo il VS pulsa piano, gli avatar ondeggiano e una riga dice cosa si sta aspettando.
-// Un clic, un tocco o Invio / Spazio / Esc la saltano (non nei primi istanti). Non c'è nell'app, in palestra, o con "riduci movimento".
+// Un clic, un tocco o Invio / Spazio / Esc la saltano (non nei primi istanti). Non c'è nell'app o con "riduci movimento".
 //
 // Le parti pure (testi del tabellone, punteggio dello showdown, colore del testo) si provano in Node (test/battle-intro.test.js); il resto disegna con
 // il Web Animations API: tutte le animazioni nascono insieme (così si possono fermare e guardare a un istante preciso) e il disegno finale coincide
@@ -50,7 +50,7 @@
     // ---------------------------------------------------------------- parti pure
     /**
      * Quello che scrive il tabellone sotto il VS.
-     * c: { tipo: 'cpu' | 'amichevole' | 'ufficiale', formato?, match?, matchTotali?, set?, setTotali?, punti?: { sx, dx }, showdown?: { sx, dx } | null,
+     * c: { tipo: 'cpu' | 'amichevole' | 'ufficiale' | 'palestra', formato?, nome?, tappa?, tappe?, vantaggio?, match?, matchTotali?, set?, setTotali?, punti?: { sx, dx }, showdown?: { sx, dx } | null,
      *      battaglia?, serie?: { v, p, n } }
      * Ritorna { etichetta, punteggio (o null), righe: [testo] }. sx / dx sono i lati dello schermo (chi gioca sta a sinistra).
      */
@@ -66,6 +66,16 @@
                 etichetta: `BATTLE ${battaglia}`,
                 punteggio: trat(v, p),
                 righe: con([n ? `SERIES SCORE · ${n} ${n === 1 ? 'TIE' : 'TIES'}` : 'SERIES SCORE'], formato)
+            };
+        }
+        if (c.tipo === 'palestra') {
+            // una palestra: capopalestra e compagno, niente sfidante; si dice la tappa, di chi è, il vantaggio di campo e il formato
+            const gym = c.nome ? `${String(c.nome).toUpperCase()}'S GYM` : '';
+            const tappe = num(c.tappe) || 0;
+            return {
+                etichetta: tappe > 1 ? `STAGE ${num(c.tappa) || 1}/${tappe}` : 'GYM BATTLE',
+                punteggio: null,
+                righe: con([gym, c.vantaggio ? `EDGE: ${String(c.vantaggio).toUpperCase()}` : ''], formato)
             };
         }
         const punti = c.punti || { sx: 0, dx: 0 };
@@ -147,11 +157,11 @@
         return (immagineVs = { img, pronta });
     }
 
-    /** Si può fare? Non nell'app (lì lo sfondo non c'è), non in palestra, non a pagina nascosta, non con "riduci movimento", non senza Web Animations */
+    /** Si può fare? Non nell'app (lì lo sfondo non c'è), non a pagina nascosta, non con "riduci movimento", non senza Web Animations */
     function puoRiprodurre(win) {
         const doc = win && win.document;
         if (!doc || !doc.body || !doc.documentElement) return false;
-        if (doc.documentElement.classList.contains('app') || doc.body.classList.contains('palestra')) return false;
+        if (doc.documentElement.classList.contains('app')) return false;
         if (doc.hidden) return false;
         if (typeof win.matchMedia === 'function' && win.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
         return typeof (win.Element && win.Element.prototype.animate) === 'function';
@@ -180,11 +190,14 @@
         const win = (opz && opz.win) || (typeof window !== 'undefined' ? window : null);
         if (!puoRiprodurre(win)) return Promise.resolve(false);
         const doc = win.document;
-        const sfondo = doc.querySelector('.vs-sfondo:not(.pal-decor)');
-        if (!sfondo || !sfondo.querySelector('.vs-lato.vs-sx') || !sfondo.querySelector('.vs-lato.vs-dx')) return Promise.resolve(false);
+        // lo sfondo "sfida" (due metà con i loro avatar) o, in palestra, i lati dati da fuori: { sfondo, lati: [{ reale, avatar, specchia }, ...] }
+        const sfondo = opz.sfondo || doc.querySelector('.vs-sfondo:not(.pal-decor)');
+        const dati = opz.lati || null;
+        if (dati) { if (!sfondo || dati.length < 2 || !dati[0].reale || !dati[1].reale) return Promise.resolve(false); }
+        else if (!sfondo || !sfondo.querySelector('.vs-lato.vs-sx') || !sfondo.querySelector('.vs-lato.vs-dx')) return Promise.resolve(false);
         if (win.__introVs) win.__introVs.termina(true);
         // gli avatar devono essere già caricati: servono le loro misure (di solito lo sono da un pezzo; al primo set ci può voler un attimo)
-        const immagini = Array.from(sfondo.querySelectorAll('.vs-avatar'));
+        const immagini = dati ? dati.map(l => l.avatar).filter(Boolean) : Array.from(sfondo.querySelectorAll('.vs-avatar'));
         // (e il VS in immagine: se manca o tarda, resta la scritta)
         const vs = typeof win.Image === 'function' ? caricaImmagineVs(win) : null;
         const pronte = immagini.every(i => i.complete) && (!vs || vs.img.complete);
@@ -197,9 +210,11 @@
     function costruisci(win, opz, sfondo) {
         const doc = win.document;
         // si può essere finiti in un'altra intro nel frattempo, o la pagina può aver cambiato sfondo
-        if (!doc.body.contains(sfondo)) sfondo = doc.querySelector('.vs-sfondo:not(.pal-decor)');
-        const realeSx = sfondo && sfondo.querySelector('.vs-lato.vs-sx'), realeDx = sfondo && sfondo.querySelector('.vs-lato.vs-dx');
-        if (!realeSx || !realeDx) return Promise.resolve(false);
+        const dati = opz.lati || null;
+        if (!dati && !doc.body.contains(sfondo)) sfondo = doc.querySelector('.vs-sfondo:not(.pal-decor)');
+        const realeSx = dati ? dati[0].reale : sfondo && sfondo.querySelector('.vs-lato.vs-sx');
+        const realeDx = dati ? dati[1].reale : sfondo && sfondo.querySelector('.vs-lato.vs-dx');
+        if (!sfondo || !realeSx || !realeDx) return Promise.resolve(false);
         if (win.__introVs) win.__introVs.termina(true);
 
         const L = win.innerWidth || doc.documentElement.clientWidth || 1280;
@@ -209,10 +224,10 @@
         radice.setAttribute('aria-hidden', 'true');
 
         const lati = [
-            { dir: -1, classe: 'vi-sx', reale: realeSx, nome: nomi.sx },
-            { dir: 1, classe: 'vi-dx', reale: realeDx, nome: nomi.dx }
+            { dir: -1, classe: 'vi-sx', reale: realeSx, nome: nomi.sx, specchia: dati ? dati[0].specchia : undefined, avatarDato: dati ? dati[0].avatar : undefined },
+            { dir: 1, classe: 'vi-dx', reale: realeDx, nome: nomi.dx, specchia: dati ? dati[1].specchia : undefined, avatarDato: dati ? dati[1].avatar : undefined }
         ].map(s => {
-            const avatar = s.reale.querySelector('.vs-avatar');
+            const avatar = dati ? (s.avatarDato || null) : s.reale.querySelector('.vs-avatar');
             const r = avatar ? avatar.getBoundingClientRect() : null;
             const altezza = r ? r.height : 0, larghezza = r ? r.width : 0;
             const finale = () => {
@@ -245,6 +260,7 @@
             const ancora = elemento(doc, 'div', `vi-pg ${s.classe}`);
             ancora.setAttribute('style', s.reale.getAttribute('style') || '');
             ancora.style.left = `${s.riposo}px`;
+            if (s.avatar) { const sotto = win.getComputedStyle(s.avatar).bottom; if (sotto && sotto !== 'auto') ancora.style.bottom = sotto; }      // il compagno in palestra sta un po' sopra il bordo
             const corpo = elemento(doc, 'div', 'vi-corpo');
             corpo.style.scale = String(ingr);
             const tag = elemento(doc, 'div', 'vi-tag', String(s.nome == null ? '' : s.nome).toUpperCase());
@@ -253,7 +269,7 @@
             corpo.appendChild(tag);
             if (s.avatar) {
                 const img = doc.createElement('img');
-                img.className = 'vi-avatar';
+                img.className = 'vi-avatar' + (s.specchia === true ? ' vi-specchia' : s.specchia === false ? ' vi-diritto' : '') + (s.avatar.classList && s.avatar.classList.contains('sc-vola') ? ' sc-vola' : '');
                 img.alt = '';
                 img.draggable = false;
                 img.src = s.avatar.currentSrc || s.avatar.src;

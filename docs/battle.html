@@ -93,12 +93,14 @@
     <script src="battle-vista.js"></script>
     <link rel="preload" as="image" href="immagini/app/seasons-vs.webp">
     <script>
-        // Contro la CPU (non in palestra, non nell'app, non con "riduci movimento") l'intro VS parte appena si sa chi gioca. Fino ad allora una copertura scura con il VS
+        // Nelle partite (contro la CPU, in palestra, amichevoli, stagioni; non nell'app, non con "riduci movimento") l'intro VS è la prima cosa e parte appena si sa chi gioca. Fino ad allora una copertura scura con il VS
         // (vs-copertura, qui sotto) tiene nascosta la schermata di caricamento del simulatore; la toglie battle-intro.js. Se qualcosa va storto si toglie da sola.
         (function () {
             try {
                 var q = location.search, d = document.documentElement;
-                if (!/[?&]cpu=[^&]/.test(q) || /[?&]palestra=/.test(q) || d.classList.contains('app')) return;
+                // le partite col simulatore vero: contro la CPU (anche le palestre), amichevoli e match di stagione (non la modalità locale di prova)
+                var partita = /[?&](cpu|amichevole)=[^&]/.test(q) || (/[?&]showdown=[^&]/.test(q) && !/[?&]locale=/.test(q));
+                if (!partita || d.classList.contains('app')) return;
                 if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
                 d.classList.add('vs-copre');
                 var togli = function () { d.classList.remove('vs-copre'); };
