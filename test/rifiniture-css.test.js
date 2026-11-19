@@ -340,3 +340,16 @@ test('replay: l\'intestazione sta in alto, il resto è centrato nello spazio che
     assert.match(css, /#replayModal\.replay-modal::before \{ order: 2; \}/, 'tra l\'intestazione (1) e il palco (3)');
     assert.match(css, /#replayModal\.replay-modal::after \{ order: 9; \}/, 'dopo i momenti (5)');
 });
+
+test('menu delle notifiche (campanella): angoli, ombra, carattere e inclinazione seguono il tema', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const css = fs.readFileSync(path.join(__dirname, '../docs/style-sfide.css'), 'utf8');
+    const menu = /\.sfide-dropdown \{[^}]*\}/.exec(css)[0];
+    assert.match(menu, /border-radius: var\(--nb-raggio, 0\)/);
+    assert.match(menu, /box-shadow: var\(--nb-sh-l,/);
+    assert.match(menu, /font-family: var\(--nb-font-testo,/);
+    for (const sel of ['\\.sfide-voce', '\\.sfide-tag', '\\.sfide-nuova', '\\.sfide-azione'])
+        assert.match(/[^]*/.exec(css)[0], new RegExp(`${sel} \\{[^}]*border-radius: min\\(var\\(--nb-raggio, 0px\\), \\d+px\\)`), sel);
+    const sezione = css.slice(css.indexOf('/* ---------- Menu delle notifiche'), css.indexOf('/* ---------- Bottone VS'));
+    assert.ok(!/font[^;]*'Josefin Sans', sans-serif\)?;/.test(sezione.replace(/var\(--nb-font-titoli, 'Josefin Sans', sans-serif\)/g, '')), 'nessun carattere fisso rimasto nel menu');
+});
