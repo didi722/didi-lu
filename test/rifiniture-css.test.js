@@ -364,3 +364,11 @@ test('Shop: i tag dei prezzi degli shiny per fascia seguono il tema (angoli, bor
     assert.match(regola[0], /box-shadow: calc\(2px \* var\(--nb-kx, 1\)\)/);
     assert.doesNotMatch(regola[0], /background/, 'i colori delle fasce restano quelli di negozio.js');
 });
+
+test('Profile: la barra in alto non ha un margine laterale proprio (il tasto utente e la colonna compatta dei tasti restano allineati a destra)', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const html = fs.readFileSync(path.join(__dirname, '../docs/profile.html'), 'utf8');
+    const barra = /<div class="top-auth-bar"[^>]*>/.exec(html)[0];
+    assert.doesNotMatch(barra, /padding/, 'senza padding: il bordo destro è quello delle altre pagine (20px)');
+    assert.match(barra, /gap: 15px;/);
+});
