@@ -857,9 +857,9 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 .testa-scelta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .domanda { margin: 0; font: 700 .95rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 .domanda small { font-size: .75rem; }
-/* nei doppi: cosa si è già scelto per il Pokémon di prima, nello spazio libero tra la domanda e "Undo this turn" */
-.scelta-fatta { flex: 1 1 12rem; min-width: 0; margin: 0; display: flex; flex-direction: column; align-items: flex-end; text-align: right; font: 700 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1.25; color: color-mix(in srgb, var(--inchiostro) 75%, transparent); }
-.scelta-fatta span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* nei doppi: cosa si è già scelto per il Pokémon di prima, nello spazio libero sotto le mosse */
+.scelta-fatta { margin: 8px 0 0; display: flex; flex-direction: column; gap: 2px; font: 700 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1.25; color: color-mix(in srgb, var(--inchiostro) 80%, transparent); }
+.scelta-fatta span { overflow-wrap: anywhere; }
 .scelta-fatta span::before { content: '✓ '; color: var(--colore-mio, currentColor); }
 .etichetta { margin: 0; font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 .messaggio {

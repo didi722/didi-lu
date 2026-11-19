@@ -2340,8 +2340,6 @@ function disegnaMosse(lato, corpo) {
         el('p', { class: 'domanda' },
             `What will ${attivo.pokemon.nome} do?`,
             doppio ? el('small', { testo: ` ${p.bozza.length + 1} of ${p.r.attivi.length}` }) : null),
-        // nei doppi, nello spazio libero della riga: cosa si è già scelto per il Pokémon di prima (e contro chi)
-        fatte.length ? el('p', { class: 'scelta-fatta', title: fatte.join('. ') }, fatte.map(t => el('span', { testo: t }))) : null,
         // Sempre nel layout, anche quando non c'è nulla da annullare: se comparisse solo dopo
         // la prima mossa di un doppio, la riga si alzerebbe e il testo "What will … do?" scenderebbe un poco
         el('button', {
@@ -2401,6 +2399,8 @@ function disegnaMosse(lato, corpo) {
             }))));
     }
     if (piede.childNodes.length) corpo.append(piede);
+    // nei doppi, nello spazio libero sotto le mosse: cosa si è già scelto per il Pokémon di prima (e contro chi)
+    if (fatte.length) corpo.append(el('p', { class: 'scelta-fatta' }, fatte.map(t => el('span', { testo: t }))));
 }
 
 function disegnaBersagli(lato, corpo) {
