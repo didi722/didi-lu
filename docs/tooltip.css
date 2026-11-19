@@ -135,6 +135,15 @@
     text-transform: uppercase;
     transform: none !important;
 }
+/* altri fumetti del Box con la carta, il bordo e l'ombra a metà: angoli, ombra, carattere e carta del tema (l'aiutante dei Pokémon, il menù dei filtri del Team Builder, la copertura dei tipi) */
+:is(.neubrutalist-tooltip, .tb-dropdown-content, .tb-cov-box) {
+    border-radius: var(--nb-raggio, 0) !important;
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000) !important;
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important;
+}
+:is(.neubrutalist-tooltip, .tb-dropdown-content) { background: var(--nb-tip-bg, #fffdf6) !important; }
+/* la finestrella con la squadra compatta (Matches): il bordo prende gli angoli del tema */
+.modal-team-hover-tooltip { border-radius: var(--nb-raggio, 0) !important; }
 /* il fumetto di una mossa (Pow/Acc ed effetto, Box, Hub, Matches): prima era colorato col tipo e con il suo carattere, ora segue il tema come gli altri fumetti.
    `.move-tooltip.move-tooltip` vince sulle regole per tipo (.move-tooltip.fire ecc., che hanno già !important) */
 .move-tooltip.move-tooltip {

@@ -354,6 +354,24 @@ test('CPU come allenatore: nome, avatar e colore a caso tra i liberi; sfondo sfi
     assert.ok(C.NOMI.length >= 200 && new Set(C.NOMI).size === C.NOMI.length, 'una lista lunga, senza doppi');
     assert.ok(!C.NOMI.some(n => /^cpu$/i.test(n)));
     assert.ok(C.NOMI.every(n => n.length <= 8), 'nomi corti: stanno nel tag del simulatore senza scorrere');
+    // genere: un avatar femminile non prende mai un nome maschile e viceversa
+    assert.ok(C.NOMI_F.size > 60 && C.NOMI_M.size > 60 && C.AVATAR_F.size > 60 && C.AVATAR_M.size > 60);
+    assert.ok([...C.NOMI_F, ...C.NOMI_M].every(n => C.NOMI.includes(n)), 'solo nomi della lista');
+    assert.ok(![...C.NOMI_F].some(n => C.NOMI_M.has(n)) && ![...C.AVATAR_F].some(n => C.AVATAR_M.has(n)));
+    for (const n of C.NUMERI_AVATAR) {
+        const g = C.genereAvatar(n);
+        const nomi = C.nomiPer(n);
+        assert.ok(nomi.length > 100);
+        if (g === 'F') assert.ok(!nomi.some(x => C.NOMI_M.has(x)), `avatar ${n}`);
+        if (g === 'M') assert.ok(!nomi.some(x => C.NOMI_F.has(x)), `avatar ${n}`);
+        if (!g) assert.equal(nomi.length, C.NOMI.length, `avatar ${n} neutro: tutti i nomi`);
+    }
+    for (let i = 0; i < 400; i++) {
+        const r = C.scegli({});
+        const n = Number(/(\d+)\.png/.exec(r.avatar)[1]);
+        const g = C.genereAvatar(n);
+        assert.ok(!(g === 'F' && C.NOMI_M.has(r.nome)) && !(g === 'M' && C.NOMI_F.has(r.nome)), `${r.nome} con l'avatar ${n}`);
+    }
     // solo avatar e colori liberi: se tutti tranne uno sono presi, esce quello
     const presi = {};
     for (const n of C.NUMERI_AVATAR) if (n !== 77) presi[`avatar-${n}`] = 'dodo';

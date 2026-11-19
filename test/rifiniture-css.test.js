@@ -321,3 +321,14 @@ test('fumetto della mossa: il colore del tipo è una striscia sul bordo sinistro
         assert.equal(nuovo[1].toLowerCase(), vecchio[1].toLowerCase(), `${t}: lo stesso colore di prima`);
     }
 });
+
+test('altri fumetti del Box e di Matches seguono il tema (angoli, ombra, carattere, carta)', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const css = fs.readFileSync(path.join(__dirname, '../docs/tooltip.css'), 'utf8');
+    const blocco = /:is\(\.neubrutalist-tooltip, \.tb-dropdown-content, \.tb-cov-box\) \{[^}]*\}/.exec(css);
+    assert.ok(blocco);
+    assert.match(blocco[0], /border-radius: var\(--nb-raggio, 0\) !important/);
+    assert.match(blocco[0], /box-shadow: var\(--nb-sh-m,/);
+    assert.match(css, /:is\(\.neubrutalist-tooltip, \.tb-dropdown-content\) \{ background: var\(--nb-tip-bg,/);
+    assert.match(css, /\.modal-team-hover-tooltip \{ border-radius: var\(--nb-raggio, 0\) !important; \}/);
+});
