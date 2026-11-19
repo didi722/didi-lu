@@ -135,6 +135,17 @@
     text-transform: uppercase;
     transform: none !important;
 }
+/* il fumetto di una mossa (Pow/Acc ed effetto, Box, Hub, Matches): prima era colorato col tipo e con il suo carattere, ora segue il tema come gli altri fumetti.
+   `.move-tooltip.move-tooltip` vince sulle regole per tipo (.move-tooltip.fire ecc., che hanno già !important) */
+.move-tooltip.move-tooltip {
+    background: var(--nb-tip-bg, #fffdf6) !important;
+    color: var(--nb-tip-fg, #000) !important;
+    border: 3px solid var(--nb-ink, #000) !important;
+    border-radius: var(--nb-raggio, 0) !important;
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000) !important;
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important;
+}
+.move-tooltip > div:first-child { border-bottom: 2px dashed var(--nb-ink, #000) !important; padding-bottom: 4px; letter-spacing: .03em; }
 /* i quattro rettangoli delle mosse nel fumetto del Pokémon: seguono il tema scelto (angoli, ombra, carattere, inclinazione, colore delle superfici) come il resto del fumetto */
 .pkm-hover-card .hover-moves { border-top: 2px dashed var(--nb-ink, #000); }
 .pkm-hover-card .hover-moves span {
