@@ -860,8 +860,7 @@ function disegnaLati() {
         box.innerHTML = `
             <h2 class="lato-nome nome-scorrevole" title="${esc(nome)}">${esc(nome)}</h2>
             ${SB && sc ? SB.htmlScheda(sc) : ''}
-            ${nomeTeam ? `<div class="lato-team-riquadro"><span class="lato-team-et">Team</span><p class="lato-team nome-scorrevole" title="${esc(nomeTeam)}">${esc(nomeTeam)}</p></div>` : ''}
-            ${badgeTeam}
+            ${nomeTeam ? `<div class="lato-team-riquadro"><p class="lato-team nome-scorrevole" title="${esc(nomeTeam)}">${esc(nomeTeam)}</p>${badgeTeam}</div>` : ''}
             <ol class="lato-pkm">${elenco.map((x, i) => `
                 <li class="membro${x.ignoto ? '' : ' con-tooltip'}${x.ignoto ? ' ignoto' : ''}" data-indice="${i}" data-specie="${esc(x.specie)}"
                     ${x.ignoto ? '' : 'tabindex="0"'} aria-label="${esc(x.nome)}">

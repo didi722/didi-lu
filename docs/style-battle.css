@@ -232,17 +232,13 @@ html[data-modo="fit"] .lato-nome { max-width: 100%; font-size: 2rem; }
 .lato-team-riquadro {
     position: relative; box-sizing: border-box;
     align-self: stretch; min-width: 0;
-    margin: 4px 6px 0 0; padding: 14px 12px 6px;
+    margin: 4px 6px 0 0; padding: 9px 12px 9px;
     background: var(--inchiostro); color: var(--carta);
     border-left: 10px solid var(--colore-mio);
     box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--colore-mio);
 }
-.lato-team-et {
-    position: absolute; top: -9px; left: 8px; padding: 3px 7px 1px;
-    background: var(--ambra); color: var(--inchiostro); border: 2px solid var(--inchiostro);
-    font: 800 .62rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; line-height: 1;
-    transform: rotate(calc(var(--verso) * -3deg * var(--nb-rot, 1)));
-}
+/* i badge del team stanno dentro il riquadro del team, sotto il suo nome: si vede che sono di quel team */
+.lato-team-riquadro .scheda-team-badge { margin-top: 7px; }
 .lato-team {
     margin: 0;
     font: 800 1.3rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1.1; text-transform: uppercase;
@@ -377,10 +373,6 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .fiocco-t-valore { grid-column: 2 / -1; grid-row: 2; font-size: .66rem; font-weight: 800; }
 .fiocco-t-valore i { font-style: normal; opacity: .6; }
 html[data-modo="fit"] .lato-scheda { align-self: stretch; }
-html[data-modo="fit"] .scheda-team-badge { align-self: flex-start; }
-html[data-modo="fit"] .lato.p2 .scheda-team-badge { align-self: flex-end; }
-html[data-modo="fit"] body.vista-p2 .lato.p1 .scheda-team-badge { align-self: flex-end; }
-html[data-modo="fit"] body.vista-p2 .lato.p2 .scheda-team-badge { align-self: flex-start; }
 
 /* Bring 6 pick 4: non si sa ancora se è stato portato (avversario),
    oppure si sa che è rimasto fuori (il tuo team). Torna pieno quando scende in campo. */
@@ -1284,7 +1276,7 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
    LA FORMA DEL TEMA — angoli (temi.css: --nb-raggio: 0 nel classico, nello Sticker e nell'Arcade, 16px nel Soft).
    Colori, ombre, inclinazioni e caratteri sono già variabili nelle regole di sopra; gli angoli li dà il tema qui, su tutto ciò che ha un bordo.
    ===================================================================== */
-:is(.btn-hub, .btn-audio, .badge-live, .lato-nome, .lato-team-riquadro, .lato-team-et, .lato-scheda, .scheda-titolo, .scheda-elo, .scheda-posizione, .membro, .ins-formato, .ins-match, .ins-tabellone,
+:is(.btn-hub, .btn-audio, .badge-live, .lato-nome, .lato-team-riquadro, .lato-scheda, .scheda-titolo, .scheda-elo, .scheda-posizione, .membro, .ins-formato, .ins-match, .ins-tabellone,
     .campo-voce, .btn, .mossa, .btn-pkm, .tessera, .scheda-team, .errore, .avviso, .rivincita, .rivincita-scelta, .esito-card, .esito-card h2, .lobby-titolo, .stato-avversario,
     .cronaca h2.battle-history, .cronaca.battle-log, .eff, .console, .membro .fiocco-t-tip, #tooltipwrapper .tooltip, .tt-tipo, .tt-chip, .tt-badge, .tt-cella, .tt-nota, .pal-annuncio, .ins-vantaggio, .ins-palestra) {
     border-radius: var(--raggio);
