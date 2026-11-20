@@ -24,8 +24,12 @@
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const coloreSicuro = c => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : '#b388eb');
 
-    /** Cosa distingue una vista dall'altra: cambiando una di queste cose si riparte dal primo */
-    const firma = m => [m.tab, m.stagione, m.formato, m.ordine && m.ordine.id, m.ordine && m.ordine.dir].join('|');
+    /** Cosa distingue una vista dall'altra: cambiando una di queste cose si riparte dal primo (nel Pokédex, dall'inizio dell'elenco) */
+    const firma = m => {
+        const base = [m.tab, m.stagione, m.formato, m.ordine && m.ordine.id, m.ordine && m.ordine.dir].join('|');
+        return m.pokedex ? `${base}|${m.pokedex.chi}|${m.pokedex.filtro}` : base;
+    };
+    const fmt = n => Number(n || 0).toLocaleString('en-US');
 
     /** La carta di un elemento: niente sfondo. Sul palco tondo lui (l'allenatore, i Pokémon del team o il Pokémon); di fianco il nome, il posto e SOLO il numero scelto */
     function htmlCarta(r, m, indice) {
@@ -54,6 +58,27 @@
             <select class="as-sel" id="as-formato" aria-label="Format">${opz(m.formati, m.formato)}</select></div>`;
     }
 
+    /**
+     * Il Pokédex (pokedex-lega.js): di chi è (lega o un allenatore), cosa mostrare, quanti ne sono usati, un salto a ogni regione e le caselle (l'HTML lo scrive la pagina:
+     * `m.pokedex.html`, già con l'escape; il resto sono dati che passano da qui)
+     */
+    function htmlPokedex(m) {
+        const p = m.pokedex || {};
+        const opz = (p.giocatori || []).map(o => `<option value="${esc(o.valore)}"${String(o.valore) === String(p.chi) ? ' selected' : ''}>${esc(o.testo)}</option>`).join('');
+        const filtri = [['tutti', 'All'], ['usati', 'Used'], ['mai', 'Never used']].map(([id, t]) =>
+            `<button type="button" class="as-p${p.filtro === id ? ' attivo' : ''}" data-pdx-filtro="${id}" aria-pressed="${p.filtro === id}" data-suono="scegli">${t}</button>`).join('');
+        const regioni = (p.regioni || []).map(r => `<button type="button" class="as-pdx-vai" data-pdx-vai="${esc(r.id)}" data-suono="scegli">${esc(r.nome)}<b>${esc(r.usati)}/${esc(r.totale)}</b></button>`).join('');
+        return `<div class="as-pdx">
+            <div class="as-pdx-testa">
+                <select class="as-sel" id="as-pdx-chi" aria-label="Pokédex of">${opz}</select>
+                <div class="as-pdx-filtri" role="group" aria-label="Show">${filtri}</div>
+                <div class="as-pdx-totale" aria-label="${esc(`${p.usati || 0} of ${p.totale || 0} used`)}"><b>${fmt(p.usati)}</b><span>/ ${fmt(p.totale)}</span><i>${esc(p.perc || 0)}%</i></div>
+            </div>
+            <div class="as-pdx-regioni">${regioni}</div>
+            <div class="as-pdx-corpo">${p.html || ''}</div>
+        </div>`;
+    }
+
     /** Le chip dei numeri con cui ordinare; quella attiva porta il verso (▼ dal più alto, ▲ dal più basso) */
     function htmlParametri(m) {
         return (m.parametri || []).map(p => {
@@ -73,6 +98,7 @@
         const posiziona = (frac = 0) => {
             if (!stato) return;
             const n = stato.m.righe.length;
+            if (!stato.pista) return;
             stato.pista.querySelectorAll('.as-carta').forEach(el => {
                 const i = Number(el.dataset.i);
                 const d = Car.distanza(i, stato.corrente, n, true);
@@ -112,7 +138,7 @@
         // Pokémon in scala (e a terra o fluttuanti): quelli della carta al centro e delle vicine, appena servono
         const scala = () => {
             const S = win.ScalaPkm;
-            if (!stato || !S) return;
+            if (!stato || !S || !stato.pista) return;
             const n = stato.m.righe.length;
             stato.pista.querySelectorAll('.as-carta').forEach(el => {
                 if (Math.abs(Car.distanza(Number(el.dataset.i), stato.corrente, n, true)) > 2) return;
@@ -121,14 +147,27 @@
                 el.querySelectorAll('img[data-pkm]:not([data-sc])').forEach(img => { if (H > 0) S.dimensiona(img, H); });
             });
         };
-        const vai = i => { if (!stato || !stato.m.righe.length) return; const n = Car.dentro(i, stato.m.righe.length); if (n !== stato.corrente) { stato.corrente = n; posiziona(); avviaGiroTeam(); scala(); } };
-        const passo = verso => { if (stato) vai(Car.passo(stato.corrente, stato.m.righe.length, verso, true)); };
+        const vai = i => { if (!stato || !stato.pista || !stato.m.righe.length) return; const n = Car.dentro(i, stato.m.righe.length); if (n !== stato.corrente) { stato.corrente = n; posiziona(); avviaGiroTeam(); scala(); } };
+        const passo = verso => { if (stato && stato.pista) vai(Car.passo(stato.corrente, stato.m.righe.length, verso, true)); };
 
         // i controlli della pagina (nascosti) che la schermata dell'app fa scattare
         const scatta = {
             tab: id => { const b = doc.querySelector('.stats-tag .tag[data-tab="' + id + '"]'); if (b) b.click(); },
             ordina: id => { const b = doc.querySelector('#stats-ordina [data-ordina="' + id + '"]'); if (b) b.click(); },
-            seleziona: (idSel, valore) => { const s = doc.getElementById(idSel); if (!s) return; s.value = valore; s.dispatchEvent(new win.Event('change', { bubbles: true })); }
+            seleziona: (idSel, valore) => { const s = doc.getElementById(idSel); if (!s) return; s.value = valore; s.dispatchEvent(new win.Event('change', { bubbles: true })); },
+            filtroPokedex: id => { const b = doc.querySelector('#pdx-filtri [data-pdx-filtro="' + id + '"]'); if (b) b.click(); }
+        };
+
+        // il nome e i numeri di una casella del Pokédex: una nota in basso per qualche secondo (come la spiegazione dei badge in Trainers)
+        let timerNota = null;
+        const nota = testo => {
+            let el = doc.getElementById('as-nota');
+            if (!testo) { if (el) el.hidden = true; return; }
+            if (!el) { el = doc.createElement('div'); el.id = 'as-nota'; el.className = 'as-nota'; el.setAttribute('role', 'status'); doc.body.appendChild(el); }
+            el.textContent = testo;
+            el.hidden = false;
+            win.clearTimeout(timerNota);
+            timerNota = win.setTimeout(() => { el.hidden = true; }, 3200);
         };
 
         const monta = m => {
@@ -142,6 +181,17 @@
                 radice.addEventListener('click', e => {
                     const t = e.target.closest ? e.target.closest('[data-tab]') : null;
                     if (t) return scatta.tab(t.dataset.tab);
+                    const fp = e.target.closest ? e.target.closest('[data-pdx-filtro]') : null;
+                    if (fp) return scatta.filtroPokedex(fp.dataset.pdxFiltro);
+                    const salto = e.target.closest ? e.target.closest('[data-pdx-vai]') : null;
+                    if (salto) {
+                        const regione = radice.querySelector('.as-pdx-corpo [data-regione="' + salto.dataset.pdxVai + '"]');
+                        const corpo = radice.querySelector('.as-pdx-corpo');
+                        if (regione && corpo) corpo.scrollTo ? corpo.scrollTo({ top: regione.offsetTop - corpo.offsetTop, behavior: 'smooth' }) : (corpo.scrollTop = regione.offsetTop - corpo.offsetTop);
+                        return;
+                    }
+                    const cella = e.target.closest ? e.target.closest('.pdx-cella') : null;
+                    if (cella) return nota(cella.getAttribute('title'));
                     const p = e.target.closest ? e.target.closest('[data-ordina]') : null;
                     if (p) return scatta.ordina(p.dataset.ordina);
                     const c = e.target.closest ? e.target.closest('.as-vicino') : null;
@@ -150,6 +200,7 @@
                 radice.addEventListener('change', e => {
                     if (e.target.id === 'as-stagione') scatta.seleziona('sel-stagione', e.target.value);
                     else if (e.target.id === 'as-formato') scatta.seleziona('sel-formato', e.target.value);
+                    else if (e.target.id === 'as-pdx-chi') scatta.seleziona('pdx-chi', e.target.value);
                 });
                 Car.collegaGesti(radice, { avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => 500 * Car.unitaPx(win), trascina: (f, fine) => { radice.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); } });
                 doc.addEventListener('keydown', e => { if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
@@ -157,12 +208,18 @@
             doc.documentElement.classList.add('app-stats');
             const f = firma(m);
             const corrente = stato && stato.firma === f ? Car.dentro(stato.corrente, m.righe.length || 1) : 0;
-            const n = m.righe.length;
-            radice.innerHTML = `<div class="as-barra">${htmlBarra(m)}</div>
+            const n = (m.righe || []).length;
+            // il Pokédex scorre in verticale dentro il suo riquadro: se si ridisegna per lo stesso Pokédex (un cambio di stagione fa lo stesso), si resta dov'si era
+            const scorrimento = stato && stato.firma === f && radice.querySelector('.as-pdx-corpo') ? radice.querySelector('.as-pdx-corpo').scrollTop : 0;
+            radice.innerHTML = m.tab === 'pokedex'
+                ? `<div class="as-barra">${htmlBarra(m)}</div>${htmlPokedex(m)}`
+                : `<div class="as-barra">${htmlBarra(m)}</div>
                 <div class="as-param" role="group" aria-label="Sort by">${htmlParametri(m)}</div>
                 ${n ? `<div class="as-pista">${m.righe.map((r, i) => htmlCarta(r, m, i)).join('')}</div>`
         : `<div class="as-vuoto">${m.vuoto || 'Nothing to show here yet.'}</div>`}`;
             stato = { m, corrente, firma: f, pista: radice.querySelector('.as-pista') };
+            const corpoPdx = radice.querySelector('.as-pdx-corpo');
+            if (corpoPdx && scorrimento) corpoPdx.scrollTop = scorrimento;
             // la chip attiva resta in vista (l'elenco dei numeri scorre di lato)
             const attiva = radice.querySelector('.as-p.attivo');
             if (attiva && attiva.scrollIntoView) { try { attiva.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* senza: resta dov'è */ } }
@@ -193,5 +250,5 @@
         return { monta, vai, passo };
     }
 
-    return { firma, htmlCarta, htmlBarra, htmlParametri, prossimoMini, PASSO_TEAM, avvia };
+    return { firma, htmlCarta, htmlBarra, htmlParametri, htmlPokedex, prossimoMini, PASSO_TEAM, avvia };
 });

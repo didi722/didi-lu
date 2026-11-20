@@ -23,7 +23,7 @@
     const numero = (n, f = fmt) => (n == null ? ND : f(n));
 
     const PASSO = 36;                       // card mostrate per volta
-    const COLORE_BASE = { players: '#31c489', teams: '#ffbd44', pokemon: '#6fa8ff', usage: '#ff93c8' };
+    const COLORE_BASE = { players: '#31c489', teams: '#ffbd44', pokemon: '#6fa8ff', usage: '#ff93c8', pokedex: '#a3e635' };
 
     const STATO = {
         tab: 'players',
@@ -35,6 +35,9 @@
         dati: null,          // { seasons, players }
         r: null,             // ultimo risultato di Statistiche.calcola (con r.usage: la lista di UsoGlobale)
         uso: null,           // ultimo risultato di UsoGlobale.calcola
+        pokedexChi: '',      // l'allenatore di cui si guarda il Pokédex ('' = tutta la lega)
+        pokedexFiltro: 'tutti',   // cosa si vede del Pokédex: 'tutti', 'usati' o 'mai' usati
+        io: '',              // l'id di chi è collegato (nel Pokédex compare "(you)")
         ultimoUid: undefined,
         aperta: null         // scheda di dettaglio aperta { tipo, chiave }
     };
@@ -256,7 +259,7 @@
     };
 
     const CHIAVE = { players: 'id', teams: 'chiave', pokemon: 'chiave', usage: 'specieId' };
-    const TITOLO_TAB = { players: 'Players', teams: 'Teams', pokemon: 'Pokémon', usage: 'Usage' };
+    const TITOLO_TAB = { players: 'Players', teams: 'Teams', pokemon: 'Pokémon', usage: 'Usage', pokedex: 'Pokédex' };
 
     // Ordine di partenza: Elo (globali) o punti (stagione) per i giocatori; KO per i Pokémon...
     function ordinePredefinito(tab) {
@@ -373,8 +376,75 @@
             </section>`).join('') + '</div>';
     }
 
+    // -----------------------------------------------------
+    // Pokédex (pokedex-lega.js): tutti i Pokémon, a colori gli usati e in grigio i mai usati; della lega o di un allenatore
+    // -----------------------------------------------------
+    const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
+    const elencoGiocatori = () => Object.entries((STATO.dati && STATO.dati.players) || {})
+        .map(([id, p]) => ({ id: idDi(id), nome: (p && p.info && p.info.name) || id })).sort((a, b) => a.nome.localeCompare(b.nome));
+    const nomeGiocatore = id => (elencoGiocatori().find(g => g.id === id) || { nome: id }).nome;
+    const modelloPokedex = () => PokedexLega.calcola(STATO.uso, { chi: STATO.pokedexChi });
+
+    function disegnaPokedex() {
+        // un allenatore che non c'è più (indirizzo vecchio) torna alla lega
+        if (STATO.pokedexChi && !elencoGiocatori().some(g => g.id === STATO.pokedexChi)) STATO.pokedexChi = '';
+        const m = modelloPokedex();
+        const nomeChi = m.chi ? nomeGiocatore(m.chi) : '';
+        const giocatori = elencoGiocatori();
+
+        const sel = $('pdx-chi');
+        sel.innerHTML = '<option value="">The whole league</option>' + giocatori.map(g => `<option value="${esc(g.id)}">${esc(g.nome)}${g.id === STATO.io ? ' (you)' : ''}</option>`).join('');
+        sel.value = STATO.pokedexChi;
+        $('pdx-filtri').querySelectorAll('[data-pdx-filtro]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pdxFiltro === STATO.pokedexFiltro ? 'true' : 'false'));
+
+        $('pdx-totale').innerHTML = `<span class="pdx-totale-numero">${fmt(m.usati)} <small>/ ${fmt(m.totale)}</small></span>
+            <span class="pdx-barra" role="img" aria-label="${esc(`${m.usati} of ${m.totale} Pokémon used`)}"><i style="width:${m.perc}%"></i></span>
+            <span class="pdx-totale-testo">${m.perc}% of the Pokédex ${nomeChi ? `used by <b>${esc(nomeChi)}</b>` : 'used in the league'}</span>`;
+        $('pdx-indice').innerHTML = m.regioni.map(r => `<button type="button" class="pdx-vai" data-pdx-vai="${esc(r.id)}">${esc(r.nome)}<b>${r.usati}/${r.totale}</b></button>`).join('');
+        // nell'app le caselle le disegna app-stats.js (l'HTML parte nel modello); nel browser stanno qui
+        const html = PokedexLega.htmlPokedex(m, { nomeChi, filtro: STATO.pokedexFiltro, cerca: STATO.cerca });
+        const nellApp = document.documentElement.classList.contains('app-shell');
+        if (!nellApp) $('pdx-corpo').innerHTML = html;
+
+        const note = [];
+        if (!m.team) note.push(nomeChi ? `${esc(nomeChi)} has no team that has played an official set here yet.` : 'No team has played an official set here yet.');
+        if (m.sconosciute.length) note.push(`${m.sconosciute.length} used Pokémon ${m.sconosciute.length === 1 ? 'is' : 'are'} not in the national Pokédex: ${m.sconosciute.map(esc).join(', ')}.`);
+        $('pdx-nota').innerHTML = note.join(' ');
+        if (nellApp) pubblicaAppPokedex(m, nomeChi, giocatori, html);
+    }
+
+    // L'app (app-stats.js) disegna il Pokédex a modo suo: la pagina pubblica i numeri e l'HTML delle caselle, i controlli dell'app fanno scattare quelli della pagina
+    function pubblicaAppPokedex(m, nomeChi, giocatori, html) {
+        if (!window.AppSito) return;
+        const opzioni = el => (el ? [...el.options].map(o => ({ valore: o.value, testo: o.textContent })) : []);
+        AppSito.pubblica('stats', {
+            tab: 'pokedex', tabs: Object.keys(TITOLO_TAB).map(id => ({ id, titolo: TITOLO_TAB[id] })),
+            stagione: STATO.stagione, stagioni: opzioni($('sel-stagione')), formato: STATO.formato, formati: opzioni($('sel-formato')),
+            titolo: nomeStagione(), righe: [], vuoto: '', totale: 0,       // niente carosello: l'app disegna il Pokédex
+            pokedex: {
+                chi: m.chi, nomeChi, filtro: STATO.pokedexFiltro, usati: m.usati, totale: m.totale, perc: m.perc, team: m.team,
+                giocatori: [{ valore: '', testo: 'The whole league' }, ...giocatori.map(g => ({ valore: g.id, testo: `${g.nome}${g.id === STATO.io ? ' (you)' : ''}` }))],
+                regioni: m.regioni.map(r => ({ id: r.id, nome: r.nome, usati: r.usati, totale: r.totale })),
+                html
+            }
+        });
+    }
+
+    // Chi è collegato (per il "(you)" nel Pokédex): il suo nome sta in users/{uid}/name
+    async function scopriChiSono() {
+        STATO.io = '';
+        const utente = auth.currentUser;
+        if (!utente) return;
+        try { STATO.io = idDi((await db.ref(`users/${utente.uid}/name`).once('value')).val()); } catch (e) { /* senza: niente "(you)" */ }
+    }
+
     function disegnaGriglia() {
         disegnaUsoFormati();
+        // il Pokédex ha la sua sezione: niente griglia di card né chip dell'ordinamento
+        const inPokedex = STATO.tab === 'pokedex';
+        $('stats-pokedex').hidden = !inPokedex;
+        for (const id of ['stats-griglia', 'stats-ordina', 'stats-altri']) { const el = $(id); if (el) el.hidden = inPokedex; }
+        if (inPokedex) { disegnaPokedex(); return; }
         const tab = STATO.tab;
         const stats = STAT[tab]();
         const ord = ordineAttuale(tab);
@@ -457,6 +527,16 @@
     };
 
     function disegnaRiepilogo() {
+        if (STATO.tab === 'pokedex' && STATO.uso) {
+            const m = modelloPokedex();
+            $('stats-riepilogo').innerHTML = [
+                `<span class="chip chip-nero">${esc(nomeStagione())}${STATO.formato !== 'all' ? ` · ${esc(STATO.formato)}` : ''}</span>`,
+                `<span class="chip">${m.chi ? esc(nomeGiocatore(m.chi)) : 'The whole league'}</span>`,
+                `<span class="chip chip-oro">${fmt(m.usati)} of ${fmt(m.totale)} used</span>`,
+                `<span class="chip">${fmt(m.team)} team${m.team === 1 ? '' : 's'} played</span>`
+            ].join('');
+            return;
+        }
         if (STATO.tab === 'usage' && STATO.uso) {
             const u = STATO.uso.totali;
             $('stats-riepilogo').innerHTML = [
@@ -519,6 +599,7 @@
     function aggiornaUrl() {
         const p = new URLSearchParams();
         if (STATO.tab !== 'players') p.set('tab', STATO.tab);
+        if (STATO.tab === 'pokedex' && STATO.pokedexChi) p.set('trainer', STATO.pokedexChi);
         if (STATO.stagione !== 'all') p.set('season', STATO.stagione);
         if (STATO.formato !== 'all') p.set('format', STATO.formato);
         try { history.replaceState(null, '', p.toString() ? `?${p}` : location.pathname); } catch (e) { /* file:// o iframe */ }
@@ -838,6 +919,24 @@
             }
         });
 
+        // Pokédex: di chi è, cosa mostrare, salti da una regione all'altra, e un clic su un Pokémon usato apre la sua scheda d'uso
+        $('pdx-chi').addEventListener('change', e => { STATO.pokedexChi = e.target.value; disegnaRiepilogo(); disegnaPokedex(); aggiornaUrl(); });
+        $('pdx-filtri').addEventListener('click', e => {
+            const b = e.target.closest('[data-pdx-filtro]');
+            if (!b || STATO.pokedexFiltro === b.dataset.pdxFiltro) return;
+            STATO.pokedexFiltro = b.dataset.pdxFiltro;
+            disegnaPokedex();
+        });
+        $('pdx-indice').addEventListener('click', e => {
+            const v = e.target.closest('[data-pdx-vai]');
+            const regione = v && $('pdx-corpo').querySelector(`[data-regione="${v.dataset.pdxVai}"]`);
+            if (regione && regione.scrollIntoView) regione.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        $('pdx-corpo').addEventListener('click', e => {
+            const v = e.target.closest('[data-apri]');
+            if (v) apriScheda(v.dataset.apri, v.dataset.chiave);
+        });
+
         // "Most used by format": un clic sul Pokémon apre la sua scheda
         const usoFormati = $('stats-uso-formati');
         if (usoFormati) usoFormati.addEventListener('click', e => {
@@ -897,6 +996,7 @@
                 } catch (e) { console.warn('MVP: stagioni scadute non contate', e); }
             }
             STATO.globale = null;
+            await scopriChiSono();
             disegna();
         } catch (errore) {
             console.error('Statistics not loaded', errore);
@@ -911,7 +1011,8 @@
 
     function leggiUrl() {
         const p = new URLSearchParams(location.search);
-        if (['players', 'teams', 'pokemon', 'usage'].includes(p.get('tab'))) STATO.tab = p.get('tab');
+        if (['players', 'teams', 'pokemon', 'usage', 'pokedex'].includes(p.get('tab'))) STATO.tab = p.get('tab');
+        if (p.get('trainer')) STATO.pokedexChi = idDi(p.get('trainer'));
         if (p.get('season')) STATO.stagione = p.get('season');
         if (p.get('format')) STATO.formato = p.get('format');
     }

@@ -1,0 +1,146 @@
+/* =====================================================
+   POKÉDEX — la scheda "Pokédex" di Stats (pokedex-lega.js, stats.js)
+   Tutti i Pokémon in ordine di Pokédex nazionale: a colori quelli usati, in grigio e tratteggiati quelli mai usati. Segue il tema (le variabili --nb-*).
+   Le icone sono quelle di Showdown: un'unica immagine con tutte le icone da 40x30, in 12 colonne; --x e --y (scritte da pokedex-lega.js) dicono quale.
+   Nell'app lo stile sta in app-gioco-pagine.css.
+   ===================================================== */
+
+.tag-pokedex.attivo { background: #a3e635; }
+.pdx[hidden] { display: none; }
+.pdx { display: grid; gap: 16px; margin: 0 0 28px; color: var(--nb-ink, #000); }
+
+/* ---------- i controlli: di chi è il Pokédex, cosa mostrare ---------- */
+.pdx-controlli { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.pdx-chi { display: inline-flex; align-items: center; gap: 8px; font: 800 .74rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
+.pdx-chi select {
+    min-width: 180px;
+    padding: 8px 32px 6px 12px;
+    background-color: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    font: 800 .86rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.pdx-filtri { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.pdx-filtro, .pdx-vai {
+    padding: 6px 14px 4px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    font: 900 .78rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform .1s ease, background-color .1s;
+}
+.pdx-filtro:hover, .pdx-vai:hover { background: var(--nb-giallo, #ffbd44); transform: translate(-1px, -1px); }
+.pdx-filtro[aria-pressed="true"] { background: var(--nb-ink, #000); color: #fff; }
+.pdx-filtro:focus-visible, .pdx-vai:focus-visible, .pdx-cella:focus-visible { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 2px; }
+
+/* ---------- il totale ---------- */
+.pdx-totale { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 16px; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); background: var(--nb-carta, #fff); box-shadow: var(--nb-sh-s, 4px 4px 0 #000); }
+.pdx-totale-numero { font: 900 1.9rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.pdx-totale-numero small { font-size: 1rem; opacity: .65; }
+.pdx-totale-testo { font: 700 .88rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.pdx-totale .pdx-barra { flex: 1 1 200px; max-width: none; height: 16px; }
+
+/* l'indice delle regioni: un salto a ognuna */
+.pdx-indice { display: flex; flex-wrap: wrap; gap: 6px; }
+.pdx-vai b { margin-left: 6px; font-weight: 800; opacity: .7; }
+
+/* ---------- le regioni ---------- */
+.pdx-corpo { display: grid; gap: 22px; }
+.pdx-regione { scroll-margin-top: 14px; }
+.pdx-testa { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 10px; }
+.pdx-testa h3 {
+    margin: 0;
+    padding: 4px 14px 2px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border-radius: var(--nb-raggio, 0px);
+    font: 900 1.05rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.2deg));
+}
+.pdx-intervallo { font: 700 .78rem/1 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .65; }
+.pdx-conto { font: 700 .86rem/1 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.pdx-conto b { font: 900 1.2rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.pdx-barra { flex: 1 1 120px; max-width: 260px; height: 10px; box-sizing: border-box; border: 3px solid var(--nb-ink, #000); border-radius: min(var(--nb-raggio, 0px), 8px); background: color-mix(in srgb, var(--nb-carta, #fff) 85%, var(--nb-ink, #000)); overflow: hidden; }
+.pdx-barra i { display: block; height: 100%; background: #4ade80; }
+
+.pdx-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(66px, 1fr)); gap: 9px; }
+
+/* ---------- la casella ---------- */
+.pdx-cella {
+    position: relative;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    justify-items: center;
+    align-items: center;
+    box-sizing: border-box;
+    height: 66px;
+    padding: 4px 2px 3px;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    font: inherit;
+}
+.pdx-icona {
+    --z: 1.35;
+    display: block;
+    width: calc(40px * var(--z));
+    height: calc(30px * var(--z));
+    background: url('https://play.pokemonshowdown.com/sprites/pokemonicons-sheet.png?v22') no-repeat;
+    background-size: calc(480px * var(--z)) auto;
+    background-position: calc(var(--x, 0) * -40px * var(--z)) calc(var(--y, 0) * -30px * var(--z));
+    image-rendering: pixelated;
+}
+.pdx-num { font: 800 .62rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; opacity: .7; }
+
+/* usata: a colori, con l'ombra, si può aprire */
+.pdx-usato {
+    cursor: pointer;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    transition: transform .1s ease, box-shadow .1s ease, background-color .1s;
+}
+.pdx-usato:hover { background: color-mix(in srgb, var(--nb-giallo, #ffbd44) 45%, var(--nb-carta, #fff)); transform: translate(-2px, -2px); }
+.pdx-usato:active { transform: translate(2px, 2px); box-shadow: none; }
+/* il numero di team, da due in su */
+.pdx-n {
+    position: absolute;
+    top: -9px;
+    right: -9px;
+    min-width: 20px;
+    height: 20px;
+    box-sizing: border-box;
+    padding: 0 4px;
+    border: 2px solid var(--nb-carta, #fff);
+    border-radius: 999px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    font: 900 .66rem/16px var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    text-align: center;
+}
+
+/* mai usata: in grigio e tratteggiata, senza ombra */
+.pdx-mai { border-style: dashed; border-color: color-mix(in srgb, var(--nb-ink, #000) 38%, transparent); background: transparent; box-shadow: none; }
+.pdx-mai .pdx-icona { filter: grayscale(1) brightness(.85); opacity: .36; }
+.pdx-mai .pdx-num { opacity: .45; }
+
+.pdx-nota { margin: 0; font: 600 .82rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .8; }
+
+@media (max-width: 560px) {
+    .pdx-griglia { grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 7px; }
+    .pdx-cella { height: 60px; }
+    .pdx-icona { --z: 1.2; }
+    .pdx-chi select { min-width: 150px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pdx-usato, .pdx-filtro, .pdx-vai { transition: none; }
+}

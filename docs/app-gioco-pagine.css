@@ -880,14 +880,14 @@
     html.app-shell.app-stats, html.app-shell.app-stats body { overflow: hidden !important; }
     html.app-shell .as { position: fixed; left: 0; right: 0; top: var(--gx-barra); bottom: 0; display: flex; flex-direction: column; overflow: hidden; user-select: none; -webkit-user-select: none; }
     html.app-shell .as-barra { flex: none; display: flex; align-items: center; justify-content: space-between; gap: calc(8 * var(--u)); padding: calc(6 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)) calc(4 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-left, 0px)); }
-    html.app-shell .as-tab { display: flex; gap: calc(6 * var(--u)); }
+    html.app-shell .as-tab { display: flex; flex: none; gap: calc(5 * var(--u)); }
     /* i tag della categoria: targhette storte da cabinato (come SHOWDOWNS e RANKINGS di Matches); quello acceso si riempie col colore di Stats */
-    html.app-shell .as-t { position: relative; padding: calc(6 * var(--u)) calc(16 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: rgba(0, 0, 0, .5); color: rgba(255, 255, 255, .8); border: calc(3 * var(--u)) solid rgba(255, 255, 255, .3); border-radius: calc(6 * var(--u)); transform: skewX(-9deg); transition: background .15s ease, color .15s ease, translate .1s ease; -webkit-tap-highlight-color: transparent; }
+    html.app-shell .as-t { position: relative; padding: calc(6 * var(--u)) calc(9.5 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: rgba(0, 0, 0, .5); color: rgba(255, 255, 255, .8); border: calc(3 * var(--u)) solid rgba(255, 255, 255, .3); border-radius: calc(6 * var(--u)); transform: skewX(-9deg); transition: background .15s ease, color .15s ease, translate .1s ease; -webkit-tap-highlight-color: transparent; }
     html.app-shell .as-t span { display: block; transform: skewX(9deg); font: 900 calc(13 * var(--u))/1.15 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
     html.app-shell .as-t.attivo { background: var(--gx-voce, #b388eb); color: #000; border-color: var(--nb-ink, #000); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); }
     html.app-shell .as-t:active { translate: 0 calc(3 * var(--u)); }
     html.app-shell .as-filtri { display: flex; gap: calc(6 * var(--u)); min-width: 0; }
-    html.app-shell .as-sel { max-width: calc(150 * var(--u)); height: calc(28 * var(--u)); padding: 0 calc(8 * var(--u)); color-scheme: dark; background: rgba(0, 0, 0, .55); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .35); border-radius: calc(7 * var(--u)); font: 800 calc(11 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .03em; }
+    html.app-shell .as-sel { max-width: calc(134 * var(--u)); height: calc(28 * var(--u)); padding: 0 calc(8 * var(--u)); color-scheme: dark; background: rgba(0, 0, 0, .55); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .35); border-radius: calc(7 * var(--u)); font: 800 calc(11 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .03em; }
     html.app-shell .as-sel:focus { border-color: var(--gx-giallo); outline: none; }
     html.app-shell .as-param { flex: none; display: flex; gap: calc(6 * var(--u)); padding: calc(3 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)) calc(6 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-left, 0px)); overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
     html.app-shell .as-param::-webkit-scrollbar { display: none; }
@@ -896,6 +896,41 @@
     html.app-shell .as-p i { font-style: normal; font-size: calc(8 * var(--u)); }
     html.app-shell .as-pista { position: relative; flex: 1 1 auto; min-height: 0; touch-action: pan-y; }
     html.app-shell .as-vuoto { margin: auto; padding: calc(10 * var(--u)); text-align: center; color: rgba(255, 255, 255, .85); font: 700 calc(14 * var(--u))/1.4 var(--nb-font-testo); }
+    /* ---------- 5c. Il Pokédex di Stats nell'app (pokedex-lega.js, app-stats.js): in cima di chi è, cosa mostrare e quanti ne sono usati; sotto un salto a ogni regione e le caselle, che scorrono ---------- */
+    html.app-shell .as-pdx { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)) 0 max(calc(10 * var(--u)), env(safe-area-inset-left, 0px)); color: #fff; }
+    html.app-shell .as-pdx-testa { flex: none; display: flex; align-items: center; gap: calc(8 * var(--u)); min-width: 0; padding: calc(3 * var(--u)) 0 calc(6 * var(--u)); }
+    html.app-shell .as-pdx-filtri { display: flex; gap: calc(6 * var(--u)); }
+    html.app-shell .as-pdx-totale { margin-left: auto; display: flex; align-items: baseline; gap: calc(4 * var(--u)); white-space: nowrap; font: 900 calc(11 * var(--u))/1 var(--nb-font-titoli); }
+    html.app-shell .as-pdx-totale b { font-size: calc(22 * var(--u)); }
+    html.app-shell .as-pdx-totale span { opacity: .7; }
+    html.app-shell .as-pdx-totale i { margin-left: calc(4 * var(--u)); padding: calc(3 * var(--u)) calc(7 * var(--u)) calc(1 * var(--u)); font-style: normal; background: var(--gx-giallo); color: #000; border-radius: calc(7 * var(--u)); }
+    html.app-shell .as-pdx-regioni { flex: none; display: flex; gap: calc(6 * var(--u)); padding: 0 0 calc(6 * var(--u)); overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
+    html.app-shell .as-pdx-regioni::-webkit-scrollbar { display: none; }
+    html.app-shell .as-pdx-vai { flex: none; padding: calc(3 * var(--u)) calc(10 * var(--u)) calc(2 * var(--u)); cursor: pointer; background: rgba(0, 0, 0, .5); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(9 * var(--u)); font: 800 calc(10 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+    html.app-shell .as-pdx-vai b { margin-left: calc(5 * var(--u)); font-weight: 800; opacity: .7; }
+    html.app-shell .as-pdx-vai:active { background: var(--gx-giallo); color: #000; }
+    html.app-shell .as-pdx-corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; touch-action: pan-y; padding: calc(4 * var(--u)) 0 calc(14 * var(--u)); display: grid; gap: calc(14 * var(--u)); align-content: start; }
+    html.app-shell .as-pdx-corpo::-webkit-scrollbar { display: none; }
+    html.app-shell .as-pdx-corpo .pdx-testa { margin: 0 0 calc(7 * var(--u)); gap: calc(3 * var(--u)) calc(10 * var(--u)); }
+    html.app-shell .as-pdx-corpo .pdx-testa h3 { padding: calc(3 * var(--u)) calc(12 * var(--u)) calc(1 * var(--u)); background: var(--gx-giallo); color: #000; border-radius: calc(7 * var(--u)); font-size: calc(13 * var(--u)); transform: none; }
+    html.app-shell .as-pdx-corpo .pdx-intervallo { font-size: calc(9.5 * var(--u)); }
+    html.app-shell .as-pdx-corpo .pdx-conto { font-size: calc(10.5 * var(--u)); }
+    html.app-shell .as-pdx-corpo .pdx-conto b { font-size: calc(15 * var(--u)); }
+    html.app-shell .as-pdx-corpo .pdx-barra { max-width: calc(180 * var(--u)); height: calc(9 * var(--u)); border-width: calc(2.5 * var(--u)); border-color: rgba(255, 255, 255, .5); border-radius: calc(5 * var(--u)); background: rgba(0, 0, 0, .45); }
+    html.app-shell .as-pdx-corpo .pdx-griglia { grid-template-columns: repeat(auto-fill, minmax(calc(46 * var(--u)), 1fr)); gap: calc(7 * var(--u)); }
+    html.app-shell .as-pdx-corpo .pdx-cella { height: calc(46 * var(--u)); padding: calc(2 * var(--u)) calc(1 * var(--u)) calc(2 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(8 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); -webkit-tap-highlight-color: transparent; transition: none; }
+    html.app-shell .as-pdx-corpo .pdx-cella:hover { transform: none; }
+    html.app-shell .as-pdx-corpo .pdx-usato { background: #fff; color: #000; }
+    html.app-shell .as-pdx-corpo .pdx-usato:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .as-pdx-corpo .pdx-mai { color: #fff; border-color: rgba(255, 255, 255, .3); background: rgba(0, 0, 0, .25); box-shadow: none; }
+    html.app-shell .as-pdx-corpo .pdx-icona { --z: 1; width: calc(40 * var(--z) * var(--u)); height: calc(30 * var(--z) * var(--u)); background-size: calc(480 * var(--z) * var(--u)) auto; background-position: calc(var(--x, 0) * -40 * var(--z) * var(--u)) calc(var(--y, 0) * -30 * var(--z) * var(--u)); }
+    html.app-shell .as-pdx-corpo .pdx-mai .pdx-icona { opacity: .4; }
+    html.app-shell .as-pdx-corpo .pdx-num { font-size: calc(7.5 * var(--u)); }
+    html.app-shell .as-pdx-corpo .pdx-n { top: calc(-7 * var(--u)); right: calc(-6 * var(--u)); min-width: calc(16 * var(--u)); height: calc(16 * var(--u)); border-width: calc(2 * var(--u)); font-size: calc(8.5 * var(--u)); line-height: calc(12 * var(--u)); background: var(--gx-giallo); color: #000; border-color: var(--nb-ink, #000); }
+    html.app-shell .as-pdx-corpo .vuoto { margin: calc(24 * var(--u)) 0; text-align: center; font: 700 calc(13 * var(--u))/1.4 var(--nb-font-testo); }
+    /* il nome e i numeri di una casella: una nota in basso per qualche secondo */
+    html.app-shell .as-nota { position: fixed; left: 50%; bottom: calc(8 * var(--u)); z-index: 50; translate: -50% 0; box-sizing: border-box; max-width: min(calc(420 * var(--u)), 92vw); padding: calc(7 * var(--u)) calc(14 * var(--u)) calc(7 * var(--u)); pointer-events: none; text-align: center; background: #fff; color: #000; border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(13 * var(--u)); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); font: 800 calc(12 * var(--u))/1.35 var(--nb-font-testo); animation: gx-pop .22s cubic-bezier(.2, 1.4, .4, 1) backwards; }
+    html.app-shell .as-nota[hidden] { display: none; }
     /* una carta: niente sfondo, il palco tondo con lui sopra e di fianco il nome e il numero scelto (come Trainers); i vicini mostrano solo il palco */
     html.app-shell .as-carta {
         position: absolute; left: 50%; top: 0; bottom: 0; box-sizing: border-box; width: calc(560 * var(--u)); margin-left: calc(-280 * var(--u)); display: grid; grid-template-columns: calc(260 * var(--u)) minmax(0, 1fr); align-items: stretch; column-gap: calc(8 * var(--u)); color: #fff;
