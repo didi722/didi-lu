@@ -27,12 +27,32 @@
 
     // ---- Dati che vengono da fuori ------------------------------------------------------------
 
+    /** Le forme Mega (venusaur-mega, charizard-mega-x…): PokeAPI le ha tra le forme alternative (id da 10001 in poi), fuori dai primi 1025. Ognuna va subito dopo il suo Pokémon di base; se la base non si trova, in fondo */
+    function conMega(specie, forme) {
+        const mega = (forme || []).filter(p => /-mega(-[xyz])?$/.test(p.name));
+        if (!mega.length) return specie;
+        const risultato = specie.slice();
+        for (const m of mega.sort((a, b) => a.id - b.id).reverse()) {
+            const base = m.name.replace(/-mega(-[xyz])?$/, '');
+            let i = risultato.findIndex(p => p.name === base);
+            if (i < 0) i = risultato.findIndex(p => p.name.startsWith(base + '-'));
+            risultato.splice(i < 0 ? risultato.length : i + 1, 0, m);
+        }
+        return risultato;
+    }
+
     function caricaPokemon(ridisegna) {
         if (pokemon) return;
         pokemon = 'carico';
+        const leggi = j => j.results.map(p => ({ name: p.name, id: Number(String(p.url).split('/').filter(Boolean).pop()) }));
         fetch('https://pokeapi.co/api/v2/pokemon?limit=1025')
             .then(r => r.json())
-            .then(j => { pokemon = j.results.map(p => ({ name: p.name, id: Number(String(p.url).split('/').filter(Boolean).pop()) })); })
+            .then(async j => {
+                const specie = leggi(j);
+                let forme = [];
+                try { forme = leggi(await (await fetch('https://pokeapi.co/api/v2/pokemon?limit=1000&offset=1025')).json()); } catch (e) { /* senza le forme alternative resta la lista normale */ }
+                pokemon = conMega(specie, forme);
+            })
             .catch(() => { pokemon = 'errore'; })
             .finally(ridisegna);
     }

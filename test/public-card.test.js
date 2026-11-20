@@ -589,3 +589,16 @@ test('party: il Pokémon più alto del team riempie lo slot, gli altri in propor
     assert.match(css, /\.pp-slot-img \{[^}]*height: calc\(\(100% - 22px\) \* var\(--q, 1\)\);[^}]*object-position: center bottom;/);
     assert.match(css, /\.pp-slot:not\(\[data-q\]\) \.pp-slot-img \{ opacity: 0; \}/, 'finché non si sa la taglia l\'immagine non si vede: niente salto');
 });
+
+test('lista dei compagni: le forme Mega si aggiungono dopo il loro Pokémon di base (e la card usa la GIF di Showdown)', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'docs', 'public-editor-trainer.js'), 'utf8');
+    const m = /function conMega\(specie, forme\) \{[\s\S]*?\n    \}\n/.exec(src);
+    assert.ok(m, 'conMega esiste');
+    const conMega = new Function(`${m[0]}; return conMega;`)();
+    const specie = [{ name: 'venusaur', id: 3 }, { name: 'charizard', id: 6 }, { name: 'blastoise', id: 9 }];
+    const forme = [{ name: 'charizard-mega-y', id: 10035 }, { name: 'venusaur-mega', id: 10033 }, { name: 'charizard-mega-x', id: 10034 }, { name: 'pikachu-cosplay', id: 10080 }, { name: 'floette-mega', id: 10300 }];
+    assert.deepEqual(conMega(specie, forme).map(p => p.name), ['venusaur', 'venusaur-mega', 'charizard', 'charizard-mega-x', 'charizard-mega-y', 'blastoise', 'floette-mega']);
+    assert.deepEqual(conMega(specie, []), specie);
+    assert.match(src, /offset=1025/);
+    assert.match(card, /-mega\(-\[xyz\]\)\?\$\/\.test\(nome\)\) gif = gifShowdown/);
+});
