@@ -334,6 +334,23 @@
 [data-ef-canvas]::before,
 [data-ef-canvas]::after { content: none !important; display: none !important; animation: none !important; }
 
+/* lanterne (ripiego CSS): lanterne calde che salgono piano e fumo d'incenso che si alza */
+[data-effetto-palco="palco-lanterne"]::before {
+    background-image:
+        radial-gradient(circle at 18% 30%, #ffe7a8 0 calc(0.8 * var(--ef-u)), #ff9a3a calc(1.6 * var(--ef-u)), transparent calc(3.2 * var(--ef-u))),
+        radial-gradient(circle at 62% 70%, #ffe7a8 0 calc(0.7 * var(--ef-u)), #ff7a3a calc(1.4 * var(--ef-u)), transparent calc(2.8 * var(--ef-u))),
+        radial-gradient(circle at 85% 20%, #ffe7a8 0 calc(0.9 * var(--ef-u)), #ffb43a calc(1.8 * var(--ef-u)), transparent calc(3.6 * var(--ef-u)));
+    background-size: 47cqw 50cqh;
+    animation: ef-sale 26s linear infinite;
+}
+[data-effetto-palco="palco-lanterne"]::after {
+    background-image:
+        radial-gradient(circle at 30% 60%, rgba(235, 230, 240, 0.22), transparent calc(5 * var(--ef-u))),
+        radial-gradient(circle at 72% 25%, rgba(235, 230, 240, 0.18), transparent calc(6 * var(--ef-u)));
+    background-size: 33cqw 25cqh;
+    animation: ef-sale 14s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
     [data-effetto-nome],
     [data-effetto-nome]::after,

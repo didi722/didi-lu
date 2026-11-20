@@ -63,6 +63,21 @@ test('le particelle non si accumulano all\'infinito (coriandoli, fuochi, schizzi
     }
 });
 
+test('lanterne: fumo e lucciole sono limitati, il lavoro per fotogramma non cresce nel tempo', () => {
+    const ctx = finto();
+    const eff = EP.EFFETTI['palco-lanterne']({ w: 600, h: 400, u: 4, tela });
+    const totale = () => Object.values(ctx.chiamate).reduce((a, n) => a + n, 0);
+    for (let i = 0; i < 600; i++) eff.frame(ctx, 0.016, i * 0.016);
+    const a0 = totale();
+    for (let i = 600; i < 1200; i++) eff.frame(ctx, 0.016, i * 0.016);
+    const primo = totale() - a0;
+    for (let i = 1200; i < 6000; i++) eff.frame(ctx, 0.016, i * 0.016);
+    const b0 = totale();
+    for (let i = 6000; i < 6600; i++) eff.frame(ctx, 0.016, i * 0.016);
+    const ultimo = totale() - b0;
+    assert.ok(primo > 0 && ultimo < primo * 2, `lanterne: ${ultimo} chiamate in 600 fotogrammi alla fine contro ${primo} all'inizio`);
+});
+
 test('effetti-palco.js: canvas davanti alla scena, un solo ciclo, solo quelli visibili, fermo con "riduci animazioni"', () => {
     const js = docs('effetti-palco.js');
     assert.match(js, /canvas\.className = 'ef-canvas'/);

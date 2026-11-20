@@ -114,6 +114,7 @@
         { id: 'palco-fuochi', tipo: 'palco', nome: 'Fireworks', prezzo: 700, campo: 'effettoPalco', descr: 'Bursts of light across the stage.' },
         { id: 'palco-bolle', tipo: 'palco', nome: 'Bubbles', prezzo: 700, campo: 'effettoPalco', descr: 'Bubbles drifting up.' },
         { id: 'palco-synthwave', tipo: 'palco', nome: 'Synthwave', prezzo: 700, campo: 'effettoPalco', descr: 'A neon grid and a scanning light.' },
+        { id: 'palco-lanterne', tipo: 'palco', nome: 'Lanterns', prezzo: 700, campo: 'effettoPalco', descr: 'Paper lanterns drifting up through incense smoke.' },
         { id: 'sfondo-righe', tipo: 'sfondo', nome: 'Stripes', prezzo: 250, motivo: 'righe', descr: 'Diagonal stripes.' },
         { id: 'sfondo-griglia', tipo: 'sfondo', nome: 'Grid', prezzo: 250, motivo: 'griglia', descr: 'A neat grid.' },
         { id: 'sfondo-zigzag', tipo: 'sfondo', nome: 'Zigzag', prezzo: 250, motivo: 'zigzag', descr: 'Sharp zigzags.' },
