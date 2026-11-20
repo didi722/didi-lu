@@ -28,6 +28,8 @@ html.app-shell [data-stile-card] .pal-pedana {
 
 /* ---------- i riflessi e gli aloni animati (condivisi) ---------- */
 @keyframes sc-luccica { 0%, 45% { background-position: 140% 0, 0 0; } 100% { background-position: -40% 0, 0 0; } }
+/* l'olografica: il riflesso passa più spesso (ogni 3 secondi circa, con una breve pausa) */
+@keyframes sc-olo { 0%, 12% { background-position: 140% 0, 0 0; } 100% { background-position: -40% 0, 0 0; } }
 @keyframes sc-pulsa { from { box-shadow: var(--sc-glow); } to { box-shadow: var(--sc-glow2, var(--sc-glow)); } }
 @keyframes sc-deriva { from { background-position: 0 0, 0 0, 0 0; } to { background-position: -53px 0, -71px 0, -37px 0; } }
 @keyframes sc-arcobaleno {
@@ -119,7 +121,7 @@ html.app-shell [data-stile-card] .pal-pedana {
         linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
     --sc-dim: 300% 100%, 100% 100%;
     --sc-rep: no-repeat;
-    --sc-anim: sc-luccica 5s ease-in-out infinite;
+    --sc-anim: sc-olo 3s ease-in-out infinite;
 }
 [data-stile-card="card-arcobaleno"] {
     --sc-bordo: #000;

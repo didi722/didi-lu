@@ -49,6 +49,63 @@
     /** Un blocco centrato in (x, y) (y verso l'alto dal piede), largo l e alto a */
     const centrato = (doc, padre, x, y, l, a, css) => blocco(doc, padre, { left: px(x - l / 2), bottom: px(y - a / 2), width: px(l), height: px(a), ...css });
 
+    let contatoreSvg = 0;
+    /**
+     * Un ensō tracciato a pennello (il cerchio zen): non una linea di spessore fisso ma la sagoma di un tratto vero. Parte spesso, con il peso del pennello che si posa, si assottiglia
+     * girando e non si chiude (il cerchio resta aperto, com'è giusto), con le setole che si staccano in fondo; i bordi sono irregolari come inchiostro su carta (feTurbulence). Si traccia
+     * con una maschera a tratteggio che avanza lungo il cerchio.
+     * Ritorna { disegno (da animare in opacità), maschera (il cerchio della maschera: si anima strokeDashoffset da `lunghezza` a 0), lunghezza }. Il disegno sta in `padre` ed è centrato a metà altezza.
+     */
+    function ensoPennello(doc, padre, h, t0) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const el = (tag, attr) => { const e = doc.createElementNS(NS, tag); for (const k of Object.keys(attr || {})) e.setAttribute(k, String(attr[k])); return e; };
+        const id = `ev-enso-${++contatoreSvg}`;
+        const d = h * 1.5, raggio = h * 0.6, spessore = h * 0.085, a0 = -2.25, arco = TAU * 0.93;
+        const svg = el('svg', { class: 'vi-fx', viewBox: `${-d / 2} ${-d / 2} ${d} ${d}` });
+        Object.assign(svg.style, { position: 'absolute', pointerEvents: 'none', left: px(-d / 2), bottom: px(h * 0.52 - d / 2), width: px(d), height: px(d), overflow: 'visible' });
+        const defs = el('defs');
+        // i bordi irregolari
+        const filtro = el('filter', { id: `${id}-f`, x: '-10%', y: '-10%', width: '120%', height: '120%' });
+        filtro.appendChild(el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.05', numOctaves: '3', seed: String(1 + (contatoreSvg % 9)), result: 'n' }));
+        filtro.appendChild(el('feDisplacementMap', { in: 'SourceGraphic', in2: 'n', scale: String(Math.max(1.5, h * 0.018)), xChannelSelector: 'R', yChannelSelector: 'G' }));
+        defs.appendChild(filtro);
+        // la maschera: un cerchio spesso che si "riempie" nel verso del tratto
+        const circ = TAU * raggio;
+        const maschera = el('mask', { id: `${id}-m`, maskUnits: 'userSpaceOnUse', x: -d / 2, y: -d / 2, width: d, height: d });
+        const cerchioM = el('circle', { r: raggio, cx: 0, cy: 0, fill: 'none', stroke: '#fff', 'stroke-width': spessore * 4, 'stroke-dasharray': `${circ} ${circ}`, 'stroke-dashoffset': circ, transform: `rotate(${(a0 * 180) / Math.PI})` });
+        maschera.appendChild(cerchioM);
+        defs.appendChild(maschera);
+        svg.appendChild(defs);
+        // il corpo del tratto: due bordi (fuori e dentro) con lo spessore che cala e un lieve ondeggiare
+        const N = 96, fuori = [], dentro = [];
+        for (let i = 0; i <= N; i++) {
+            const f = i / N, a = a0 + f * arco;
+            const peso = f < 0.05 ? 0.78 + f * 4.4 : 1 - 0.8 * Math.pow((f - 0.05) / 0.95, 1.25);      // la pressione iniziale, poi sempre più leggero
+            const t = spessore * Math.max(0.08, peso) * (1 + 0.1 * Math.sin(f * 21 + 0.7));
+            const r = raggio * (1 + 0.035 * Math.sin(f * 7.3 + 1.2) + 0.05 * f);                       // il cerchio non si chiude esatto: finisce un po' più largo
+            fuori.push([Math.cos(a) * (r + t / 2), Math.sin(a) * (r + t / 2)]);
+            dentro.push([Math.cos(a) * (r - t / 2), Math.sin(a) * (r - t / 2)]);
+        }
+        const punti = fuori.concat(dentro.reverse()).map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`);
+        const gruppo = el('g', { filter: `url(#${id}-f)` });
+        gruppo.appendChild(el('path', { d: `M${punti.join(' L')} Z`, fill: '#16122b', 'fill-opacity': '0.92' }));
+        // le setole: strisce sottili lungo il tratto che si staccano e finiscono più in là del corpo, dove il pennello si è asciugato
+        for (let i = 0; i < 9; i++) {
+            const f0 = rnd(0.02, 0.5), f1 = Math.min(1.03, rnd(0.78, 1.08)), scost = rnd(-0.38, 0.38) * spessore * 0.9;
+            const pts = [];
+            for (let k = 0; k <= 28; k++) {
+                const f = f0 + ((f1 - f0) * k) / 28, a = a0 + f * arco, r = raggio * (1 + 0.035 * Math.sin(f * 7.3 + 1.2) + 0.05 * f) + scost * (1 - 0.7 * f);
+                pts.push(`${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`);
+            }
+            gruppo.appendChild(el('path', { d: `M${pts.join(' L')}`, fill: 'none', stroke: '#16122b', 'stroke-opacity': String(rnd(0.35, 0.75).toFixed(2)), 'stroke-width': String(Math.max(0.7, spessore * rnd(0.05, 0.12))), 'stroke-linecap': 'round' }));
+        }
+        const involucro = el('g', { mask: `url(#${id}-m)` });
+        involucro.appendChild(gruppo);
+        svg.appendChild(involucro);
+        padre.appendChild(svg);
+        return { disegno: svg, maschera: cerchioM, lunghezza: circ };
+    }
+
     const EFFETTI = {
         // una raffica di stelline dorate dal petto, un alone caldo e un lampo dorato sulla sagoma
         'entrata-scintille'(c) {
@@ -216,7 +273,7 @@
 
         // un cerchio ensō tracciato con il pennello, un loto che sboccia dietro di lui e un'aureola dorata; lui compare nella luce
         'entrata-zen'(c) {
-            const { doc, h, t0, A } = c, L = c.strato(), D = c.strato(true);
+            const { doc, h, t0, A } = c, D = c.strato(true);
             const totale = t0 + 420;
             A(c.img, { opacity: [0, 0, 1], offset: [0, t0 / totale, 1] }, { duration: totale, easing: 'linear' });
             // l'aureola dietro
@@ -229,23 +286,10 @@
                 const p = blocco(doc, D, { left: px(-l / 2), bottom: px(h * 0.04), width: px(l), height: px(a), borderRadius: '50% 50% 50% 50% / 80% 80% 20% 20%', background: i % 2 ? 'linear-gradient(0deg, #ffe3ef, #ff9fc6)' : 'linear-gradient(0deg, #fff5fa, #ffb7d6)', transformOrigin: '50% 100%', border: `${px(Math.max(1, h * 0.008))} solid rgba(255,255,255,.7)`, boxSizing: 'border-box' });
                 A(p, { rotate: [`${ang * 0.3}deg`, `${ang}deg`], scale: ['0.1 0.1', '1 1'], opacity: [0, 1, 1, 0], offset: [0, 0.35, 0.8, 1] }, { duration: 1300, delay: Math.max(0, t0 - 340 + Math.abs(i - (N - 1) / 2) * 50), easing: 'cubic-bezier(.2,.9,.3,1.15)' });
             }
-            // l'ensō: un arco di pennello che si traccia attorno a lui e poi svanisce
-            const d = h * 1.35, raggio = d * 0.42, circ = 2 * Math.PI * raggio;
-            const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('class', 'vi-fx');
-            svg.setAttribute('viewBox', `${-d / 2} ${-d / 2} ${d} ${d}`);
-            Object.assign(svg.style, { position: 'absolute', pointerEvents: 'none', left: px(-d / 2), bottom: px(h * 0.52 - d / 2), width: px(d), height: px(d), overflow: 'visible' });
-            for (const [colore, spessore, alfa] of [['rgba(255,214,90,.5)', 0.07, 1], ['#fff4c2', 0.028, 1]]) {
-                const cerchio = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                cerchio.setAttribute('r', String(raggio)); cerchio.setAttribute('cx', '0'); cerchio.setAttribute('cy', '0'); cerchio.setAttribute('fill', 'none');
-                cerchio.setAttribute('stroke', colore); cerchio.setAttribute('stroke-width', String(Math.max(2, h * spessore))); cerchio.setAttribute('stroke-linecap', 'round');
-                cerchio.setAttribute('stroke-dasharray', `${circ * 0.93} ${circ}`);
-                cerchio.setAttribute('transform', 'rotate(-110)');
-                svg.appendChild(cerchio);
-                A(cerchio, { strokeDashoffset: [`${circ * 0.93}`, '0'] }, { duration: 700, delay: Math.max(0, t0 - 420), easing: 'cubic-bezier(.3,.7,.3,1)' });
-            }
-            L.appendChild(svg);
-            A(svg, { opacity: [0, 1, 1, 0], offset: [0, 0.08, 0.7, 1] }, { duration: 1500, delay: Math.max(0, t0 - 420), easing: 'linear' });
+            // l'ensō dietro di lui: un vero tratto di pennello (vedi ensoPennello), che si traccia e poi svanisce
+            const enso = ensoPennello(doc, D, h, c.t0);
+            A(enso.disegno, { opacity: [0, 1, 1, 0], offset: [0, 0.05, 0.72, 1] }, { duration: 1700, delay: Math.max(0, t0 - 460), easing: 'linear' });
+            A(enso.maschera, { strokeDashoffset: [`${enso.lunghezza}`, '0'] }, { duration: 820, delay: Math.max(0, t0 - 440), easing: 'cubic-bezier(.45,.15,.3,1)' });
             A(c.sagoma(FILTRO.oro), { opacity: [0, 0.85, 0] }, { duration: 560, delay: t0 - 20, easing: 'ease-out' });
         }
     };
