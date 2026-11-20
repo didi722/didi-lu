@@ -279,7 +279,7 @@ test('dataBreve: "22 Oct 2026" in UTC, vuota senza data', () => {
     assert.equal(SD.dataBreve(NaN), '');
 });
 
-test('coppiaIniziale: chi guarda contro l\'avversario del tasto; senza login (o sul proprio tasto) il primo della classifica che non sia lui', () => {
+test('coppiaIniziale: chi guarda a sinistra; a destra l\'avversario indicato o, senza, il primo degli altri; senza login il primo della classifica', () => {
     const giocatori = [{ id: 'lukiani' }, { id: 'didi' }, { id: 'Ilaria' }];
     assert.deepEqual(SD.coppiaIniziale('didi', 'ilaria', giocatori), { a: 'didi', b: 'ilaria' }, 'io contro lui');
     assert.deepEqual(SD.coppiaIniziale('Didi', 'Lukiani', giocatori), { a: 'didi', b: 'lukiani' }, 'le maiuscole non contano');
@@ -289,5 +289,11 @@ test('coppiaIniziale: chi guarda contro l\'avversario del tasto; senza login (o 
     assert.deepEqual(SD.coppiaIniziale('sconosciuto', 'didi', giocatori), { a: 'lukiani', b: 'didi' }, 'chi non è tra gli allenatori non fa da punto di vista');
     assert.deepEqual(SD.coppiaIniziale('didi', 'didi', [{ id: 'didi' }]), { a: '', b: 'didi' }, 'nessun altro allenatore');
     assert.deepEqual(SD.coppiaIniziale('didi', 'lu', null), { a: '', b: 'lu' });
-    assert.deepEqual(SD.coppiaIniziale('didi', '', giocatori).b, '');
+    // dal tasto unico (nessun avversario): io a sinistra, a destra il primo della classifica che non sia io
+    assert.deepEqual(SD.coppiaIniziale('didi', '', giocatori), { a: 'didi', b: 'lukiani' });
+    assert.deepEqual(SD.coppiaIniziale('Lukiani', '', giocatori), { a: 'lukiani', b: 'didi' }, 'se il primo sono io: il secondo');
+    assert.deepEqual(SD.coppiaIniziale('', '', giocatori), { a: 'lukiani', b: 'didi' }, 'senza login: i primi due');
+    assert.deepEqual(SD.coppiaIniziale('sconosciuto', '', giocatori), { a: 'lukiani', b: 'didi' }, 'chi non è tra gli allenatori non fa da punto di vista');
+    assert.deepEqual(SD.coppiaIniziale('didi', '', [{ id: 'didi' }]), { a: 'didi', b: '' }, 'un solo allenatore: niente confronto');
+    assert.deepEqual(SD.coppiaIniziale('didi', '', null), { a: '', b: '' });
 });

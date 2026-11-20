@@ -1,5 +1,5 @@
 'use strict';
-// Il testa a testa nella pagina Trainers e nell'app: il tasto VS accanto a ogni allenatore, la finestra (scontri-diretti-ui.js) e il tasto sulla scheda dell'app.
+// Il testa a testa nella pagina Trainers e nell'app: un solo tasto "Head to head" in alto (come "Team builder" nel Box) e la finestra (scontri-diretti-ui.js).
 // Sono controlli sul markup e sul codice (il conto e l'HTML si provano in scontri-diretti.test.js; l'aspetto, nel browser).
 //
 //   npm test        (dalla cartella principale)
@@ -26,88 +26,67 @@ test('players.html carica stile e script del testa a testa, nell\'ordine giusto 
     assert.match(docs('scontri-diretti.js'), /radice\.ScontriDiretti = fabbrica\(radice\.ProfiloPersonale\)/);
 });
 
-test('players.html: un tasto VS per riga, accanto alla card (non dentro) e prima delle spade; gli allenatori e il database vanno alla finestra', () => {
+test('players.html: un solo tasto "Head to head", raccolto in alto con gli altri come il Team builder del Box; niente VS per riga', () => {
+    const tasto = players.match(/<button type="button" class="btn-floating-h2h"[^>]*>[^]*?<\/button>/);
+    assert.ok(tasto, 'il tasto c\'è');
+    assert.match(tasto[0], /onclick="if \(window\.ScontriDirettiUI\) ScontriDirettiUI\.apri\(\)"/, 'apre la finestra senza avversario: chi è collegato a sinistra, a destra si sceglie');
+    assert.match(tasto[0], /<i class="fas fa-people-arrows tasto-icona"><\/i><span class="tasto-testo">Head to head<\/span>/, 'icona e testo come il Team builder: scorrendo resta la sola icona');
+    assert.equal((players.match(/btn-floating-h2h/g) || []).length, 1, 'uno solo');
+    assert.match(docs('controlli.js'), /SELETTORE_TASTI = '[^']*\.btn-floating-h2h'/, 'controlli.js lo porta in #tasti-alto');
+    assert.ok(players.indexOf('class="btn-floating-h2h"') < players.indexOf('<script src="controlli.js">'));
+    // niente tasti VS per riga
     const riga = players.slice(players.indexOf('class="trainer-riga"'));
-    const finecard = riga.indexOf('</a>');
-    const vs = riga.indexOf('ScontriDirettiUI.htmlTasto(player.id, player.name)');
-    const spade = riga.indexOf('Amichevoli.htmlTasto(player.name)');
-    assert.ok(finecard > 0 && vs > finecard, 'il VS dopo la chiusura del collegamento della card');
-    assert.ok(spade > vs, 'e prima delle spade');
-    assert.match(riga, /<div class="trainer-azioni">[^]*ScontriDirettiUI\.htmlTasto[^]*Amichevoli\.htmlTasto[^]*<\/div>/, 'i due tasti stanno insieme, così sul telefono si mettono uno sopra l\'altro');
+    assert.doesNotMatch(riga, /ScontriDirettiUI\.htmlTasto|tasto-scontro|trainer-azioni/);
+    assert.match(riga, /<\/a>\s*\$\{window\.Amichevoli \? Amichevoli\.htmlTasto\(player\.name\) : ''\}/, 'le spade restano subito dopo la card');
     assert.match(players, /ScontriDirettiUI\.imposta\(\{ db, giocatori: playersList\.map\(p => \(\{ id: p\.id, nome: p\.name, avatar: p\.avatar, colore: p\.color \}\)\) \}\)/);
     // la lista è già in ordine di classifica quando la si passa
     assert.ok(players.indexOf('playersList.sort(') < players.indexOf('ScontriDirettiUI.imposta('));
-    assert.match(players, /ScontriDirettiUI\.aggiornaTasti\(gridContainer\)/, 'il proprio VS si nasconde');
 });
 
 test('la finestra: legge le stagioni dalla stessa cache dei badge, si chiude con la X, fuori ed Esc, e la coppia di partenza la sceglie il modulo puro', () => {
     assert.match(ui, /window\.DbLeggero\.stagioniConStats\(db\)/, 'la stessa lettura (con la cache tra le pagine) che usano i badge: niente scaricamenti in più');
     assert.match(ui, /SD\.coppiaIniziale\(io\(\), idAvversario, stato\.giocatori\)/);
+    assert.match(ui, /if \(!a \|\| !b\) return;/, 'servono almeno due allenatori');
     assert.match(ui, /window\.__nomeUtente/, 'chi è collegato lo dice la pagina');
     assert.match(ui, /if \(t\.closest\('\[data-h2h-chiudi\]'\)\) return chiudi\(\);/);
     assert.match(ui, /if \(t === velo\) \{ if \(stato\.premutoSulVelo\) chiudi\(\); return; \}/, 'fuori chiude, ma non se la pressione è cominciata dentro la finestra');
     assert.match(ui, /e\.key === 'Escape'[^]*document\.querySelector\('\.ts-lista'\)\) return;/, 'con un menu a tendina aperto Esc chiude quello');
     assert.match(ui, /role', 'dialog'/);
     assert.match(ui, /aria-modal/);
-    assert.match(ui, /document\.addEventListener\('app-utente'/, 'quando arriva il nome di chi è collegato i tasti si rifanno');
-    assert.match(ui, /window\.ScontriDirettiUI = \{ imposta, apri, chiudi, clic, htmlTasto, aggiornaTasti \}/);
+    assert.match(ui, /window\.ScontriDirettiUI = \{ imposta, apri, chiudi \}/);
     // l'errore di lettura non lascia la finestra vuota
     assert.match(ui, /try again/);
 });
 
-test('htmlTasto: un vero pulsante col nome dell\'allenatore (e il suo id in minuscolo), senza HTML dal database', () => {
-    // il tasto è scritto dalla pagina dentro una stringa: si prova con un finto "window" (il file si carica da solo)
-    const finestra = { ScontriDiretti: require('../docs/scontri-diretti.js'), addEventListener() {} };
-    const finto = { addEventListener() {} };
+test('apri(): chi è collegato a sinistra e un altro a destra; chiunque si può scegliere nei due selettori', () => {
+    const finestra = { ScontriDiretti: require('../docs/scontri-diretti.js'), addEventListener() {}, __nomeUtente: 'Didi' };
+    const finto = { addEventListener() {}, activeElement: null, body: { appendChild() {} }, documentElement: { classList: { add() {}, remove() {} } }, createElement: () => ({ querySelector: () => null, addEventListener() {}, setAttribute() {} }) };
     new Function('window', 'document', ui)(finestra, finto);
-    const t = finestra.ScontriDirettiUI.htmlTasto('El Burraco', 'El <b>Burraco</b>');
-    assert.match(t, /<button type="button" class="tasto-scontro" data-id="el burraco"/);
-    assert.match(t, /aria-label="Head to head with El &lt;b&gt;Burraco&lt;\/b&gt;"/);
-    assert.match(t, /onclick="ScontriDirettiUI\.clic\(event, this\)"/);
-    assert.doesNotMatch(t, /<b>Burraco/);
-    // aggiornaTasti: nasconde solo il proprio
-    const tasti = ['didi', 'lu'].map(id => ({ dataset: { id }, hidden: false }));
-    finestra.__nomeUtente = 'Didi';
-    finestra.ScontriDirettiUI.aggiornaTasti({ querySelectorAll: () => tasti });
-    assert.deepEqual(tasti.map(x => x.hidden), [true, false]);
-    finestra.__nomeUtente = '';
-    finestra.ScontriDirettiUI.aggiornaTasti({ querySelectorAll: () => tasti });
-    assert.deepEqual(tasti.map(x => x.hidden), [false, false], 'senza login si vedono tutti');
+    assert.deepEqual(Object.keys(finestra.ScontriDirettiUI).sort(), ['apri', 'chiudi', 'imposta']);
+    // senza allenatori non succede niente (e non si rompe)
+    finestra.ScontriDirettiUI.apri();
+    // la scelta di chi sta a sinistra e a destra è del modulo puro
+    const giocatori = [{ id: 'lukiani' }, { id: 'didi' }, { id: 'ilaria' }];
+    assert.deepEqual(finestra.ScontriDiretti.coppiaIniziale('Didi', '', giocatori), { a: 'didi', b: 'lukiani' });
 });
 
-test('stile: il tasto, la finestra e i colori dei due lati seguono il tema; nell\'app la finestra è a due colonne', () => {
-    assert.match(css, /\.tasto-scontro \{/);
-    assert.match(css, /\.trainer-riga \.tasto-scontro\[hidden\][^}]*visibility: hidden/, 'il proprio tasto lascia il posto');
-    assert.match(css, /@media \(max-width: 600px\) \{ \.trainer-azioni \{ flex-direction: column;/, 'sul telefono i due tasti uno sopra l\'altro');
+test('stile: la finestra e i colori dei due lati seguono il tema; nell\'app la finestra è a due colonne', () => {
     assert.match(css, /\.h2h-lato \{[^}]*background: var\(--c, #31c489\)/, 'ogni lato nel colore del suo allenatore');
     assert.match(css, /\.h2h-barra-a \{ background: var\(--ca/);
     assert.match(css, /html\.h2h-aperto, html\.h2h-aperto body \{ overflow: hidden; \}/, 'dietro la finestra la pagina non scorre');
     assert.match(css, /z-index: 5000/, 'sotto i menu a tendina del tema (100000)');
     assert.match(cssApp, /html\.app-shell \.h2h-contenuto \{[^}]*grid-template-columns: calc\(290 \* var\(--u\)\) minmax\(0, 1fr\)/, 'nell\'app due colonne: sintesi e dettagli');
-    assert.match(cssApp, /html\.app-shell \.at-scontro \{/);
-    assert.match(cssApp, /html\.app-shell \.trainer-riga \.tasto-scontro \{ display: none !important; \}/, 'le righe che l\'app non usa non mostrano il VS');
+    assert.doesNotMatch(css + cssApp, /tasto-scontro|trainer-azioni|at-scontro/, 'niente più tasti VS per riga o per scheda');
 });
 
 // ---------- l'app ----------
-test('app: il tasto "Head to head" sta su ogni scheda tranne la propria (anche senza login), accanto al tasto della palestra', () => {
-    const lukiani = { id: 'lukiani', nome: 'Lukiani', palestra: true };
-    assert.match(T.htmlScontro(lukiani, 'Didi'), /<button type="button" class="at-scontro" data-scontro="lukiani"/);
-    assert.match(T.htmlScontro(lukiani, ''), /data-scontro="lukiani"/, 'senza login lo si vede lo stesso');
-    assert.equal(T.htmlScontro({ id: 'didi', nome: 'Didi' }, 'Didi'), '', 'non sulla propria scheda');
-    assert.equal(T.htmlScontro({ id: 'didi', nome: 'Didi' }, 'DIDI'), '', 'le maiuscole non contano');
-    assert.match(T.htmlScontro({ id: 'a"b', nome: 'x' }, ''), /data-scontro="a&quot;b"/, 'l\'id passa dall\'escape');
-    const carta = T.htmlCarta(lukiani, 0, { io: 'Didi' });
-    assert.match(carta, /<div class="at-azioni"><a class="at-palestra"[^]*<\/a><button type="button" class="at-scontro"/, 'palestra e testa a testa in fila');
-    assert.ok(carta.indexOf('at-palestra') < carta.indexOf('at-scontro'));
-    // sulla propria scheda resta "My gym" e basta
-    const mia = T.htmlCarta({ id: 'didi', nome: 'Didi' }, 0, { io: 'Didi' });
-    assert.match(mia, /at-palestra-mia/);
-    assert.doesNotMatch(mia, /at-scontro/);
-});
-
-test('app: toccare il tasto sulla scheda al centro apre la finestra; sulle schede di lato porta la scheda al centro e basta', () => {
-    const app = docs('app-trainers.js');
-    assert.match(app, /return; \}\s*\/\/ il testa a testa dell'allenatore al centro/, 'il tasto di una scheda di lato non apre niente');
-    assert.match(app, /const scontro = e\.target\.closest \? e\.target\.closest\('\[data-scontro\]'\) : null;\s*if \(scontro && win\.ScontriDirettiUI\) win\.ScontriDirettiUI\.apri\(scontro\.dataset\.scontro\);/);
-    assert.match(players, /<script src="scontri-diretti-ui\.js"><\/script>/, 'l\'app usa la stessa pagina: la finestra c\'è');
+test('app: le schede dei trainer non hanno più il tasto del testa a testa (c\'è quello unico in basso a destra, come il Team builder); la palestra resta', () => {
+    assert.equal(T.htmlScontro, undefined);
+    const carta = T.htmlCarta({ id: 'lukiani', nome: 'Lukiani', palestra: true }, 0, { io: 'Didi' });
+    assert.match(carta, /<a class="at-palestra"/);
+    assert.doesNotMatch(carta, /at-scontro|data-scontro|Head to head/);
+    assert.doesNotMatch(docs('app-trainers.js'), /ScontriDirettiUI/);
+    assert.match(players, /<script src="scontri-diretti-ui\.js"><\/script>/, 'l\'app usa la stessa pagina: la finestra e il tasto ci sono');
+    // nell'app i tasti d'azione di #tasti-alto sono tondi in basso a destra, solo icona: vale anche per questo
+    assert.match(cssApp, /html\.app-shell body\.nb #tasti-alto > :not\(\.sfide-btn\) \{/);
 });

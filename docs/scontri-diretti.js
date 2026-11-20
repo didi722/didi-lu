@@ -12,7 +12,7 @@
 // match; un match è al meglio di N set (p1score / p2score sono i set vinti da ciascuno). Gli id degli allenatori sono in minuscolo (come in `players`).
 //
 //   ScontriDiretti.confronta(a, b, stagioni, { beta, nomi })     il testa a testa di `a` contro `b`: `a` è il punto di vista (i suoi match vinti sono "a")
-//   ScontriDiretti.coppiaIniziale(io, avversario, giocatori)     { a, b }: chi si confronta quando si apre la finestra dal tasto di `avversario`
+//   ScontriDiretti.coppiaIniziale(io, avversario, giocatori)     { a, b }: chi si confronta quando si apre la finestra: a = chi è collegato (o il primo della classifica), b = `avversario` o, senza, il primo degli altri
 //   ScontriDiretti.verdetto(confronto, { io })                   { id, etichetta, testo, chi }: nemesi, preda, alla pari, rivali storici...
 //   ScontriDiretti.htmlTesta(confronto, { giocatori, io, esc })  i due allenatori, ognuno con avatar e selettore
 //   ScontriDiretti.htmlScheda(confronto, opzioni)                verdetto, numeri, forma, formati e ultimi incontri
@@ -161,10 +161,13 @@
      * è proprio l'avversario, il primo della classifica che non sia lui. `giocatori`: [{ id, ... }] in ordine di classifica. Dà { a, b } (id in minuscolo; a vuoto se non c'è nessun altro).
      */
     function coppiaIniziale(io, avversario, giocatori) {
-        const b = idDi(avversario);
         const ids = (Array.isArray(giocatori) ? giocatori : []).map(g => idDi(g && g.id)).filter(Boolean);
         const mio = idDi(io);
-        return { a: mio && mio !== b && ids.includes(mio) ? mio : (ids.find(id => id !== b) || ''), b };
+        const scelto = idDi(avversario);
+        const a = scelto ? (mio && mio !== scelto && ids.includes(mio) ? mio : (ids.find(id => id !== scelto) || ''))
+                         : (mio && ids.includes(mio) ? mio : (ids[0] || ''));
+        const b = scelto || ids.find(id => id !== a) || '';
+        return { a, b };
     }
 
     // =================================================

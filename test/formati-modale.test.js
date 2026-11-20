@@ -77,5 +77,5 @@ test('compatti (pagina scorsa): i tasti in alto hanno la misura del tasto utente
     // New format (Formats) è nella stessa fila e ha il testo che sparisce
     const formats = fs.readFileSync(path.join(__dirname, '..', 'docs', 'formats.html'), 'utf8');
     assert.match(formats, /class="btn-floating-admin"[^>]*>\s*<span class="plus-icon">\+<\/span><span class="tasto-testo">New format<\/span>/);
-    assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'controlli.js'), 'utf8'), /'\.sfide-btn, \.btn-floating-admin, \.btn-floating-helper'/);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'controlli.js'), 'utf8'), /'\.sfide-btn, \.btn-floating-admin, \.btn-floating-helper, \.btn-floating-h2h'/);
 });

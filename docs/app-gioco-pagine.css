@@ -801,15 +801,6 @@
     html.app-shell .at-palestra { align-self: flex-start; display: inline-flex; align-items: center; gap: calc(6 * var(--u)); margin-top: calc(2 * var(--u)); padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); text-decoration: none; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; -webkit-tap-highlight-color: transparent; }
     html.app-shell .at-palestra:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
     html.app-shell .at-palestra-mia { background: rgba(0, 0, 0, .55); color: #fff; border-color: rgba(255, 255, 255, .5); box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .6); }
-    /* i tasti della scheda, in fila: la palestra e il testa a testa */
-    html.app-shell .at-azioni { align-self: flex-start; display: flex; flex-wrap: wrap; align-items: center; gap: calc(8 * var(--u)); margin-top: calc(2 * var(--u)); }
-    html.app-shell .at-azioni .at-palestra { margin-top: 0; }
-    html.app-shell .at-scontro { display: inline-flex; align-items: center; gap: calc(7 * var(--u)); padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)) calc(7 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; -webkit-tap-highlight-color: transparent; }
-    html.app-shell .at-scontro:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell .at-scontro .at-vs { padding: calc(2 * var(--u)) calc(6 * var(--u)) calc(1 * var(--u)); background: #000; color: var(--gx-giallo); border-radius: calc(5 * var(--u)); font-size: calc(10 * var(--u)); letter-spacing: .06em; }
-    /* le righe di Trainers che l'app non usa più (la griglia è nascosta): niente tasti VS che sporgono se il carosello non parte */
-    html.app-shell .trainer-azioni { display: contents; }
-    html.app-shell .trainer-riga .tasto-scontro { display: none !important; }
 
     /* ---------- 4c. Scontri diretti (scontri-diretti-ui.js): il testa a testa, scuro come le altre finestre. A sinistra i due allenatori, il verdetto e i numeri; a destra la forma, i formati e gli incontri (che scorrono da soli) ---------- */
     html.app-shell .h2h-velo { z-index: 3000; padding: calc(6 * var(--u)); background: rgba(5, 4, 15, .72); }
