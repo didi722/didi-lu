@@ -1,0 +1,33 @@
+name: Sonda sprite (temporanea)
+
+# Prova una tantum, da togliere subito: scrive nel log se play.pokemonshowdown.com permette al browser di LEGGERE le GIF (CORS) e quanto è grande la GIF di Mega Froslass.
+on:
+  push:
+    branches: [claude/affectionate-brown-t474uz]
+    paths: [.github/workflows/sonda-sprite.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  sonda:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Intestazioni e misure delle GIF
+        run: |
+          for f in ani/froslass-mega.gif ani/froslass.gif ani-shiny/froslass-mega.gif gen5ani/froslass-mega.gif dex/froslass-mega.png; do
+            echo "=== sprites/$f"
+            curl -s -D /tmp/h.txt -o "/tmp/$(echo $f | tr / _)" -H "Origin: https://didi722.github.io" "https://play.pokemonshowdown.com/sprites/$f"
+            tr -d '\r' < /tmp/h.txt | grep -iE "^(HTTP|content-type|content-length|access-control|vary|server)" || true
+          done
+          ls -l /tmp/*.gif /tmp/*.png 2>/dev/null || true
+          python3 - <<'EOF'
+          import glob, struct
+          for f in sorted(glob.glob('/tmp/*.gif')):
+              b = open(f, 'rb').read(10)
+              print(f, 'GIF' if b[:3] == b'GIF' else 'non e una GIF', struct.unpack('<HH', b[6:10]) if b[:3] == b'GIF' else '')
+          EOF
+          echo "=== PokeAPI froslass-mega"
+          curl -s -D /tmp/h2.txt -o /tmp/p.json -H "Origin: https://didi722.github.io" "https://pokeapi.co/api/v2/pokemon/froslass-mega"
+          tr -d '\r' < /tmp/h2.txt | grep -iE "^(HTTP|access-control)" || true
+          python3 -c "import json; j=json.load(open('/tmp/p.json')); print('height', j.get('height'), j['sprites']['other']['showdown'])" || head -c 200 /tmp/p.json
