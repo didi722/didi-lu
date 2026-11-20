@@ -135,6 +135,9 @@
         return `<span class="ng-anteprima" style="--ng-c:${colore}"></span>`;
     }
 
+    /** Le voci in ordine di prezzo crescente (a parità di prezzo resta l'ordine del catalogo) */
+    const perPrezzo = voci => voci.map((c, i) => [c, i]).sort((a, b) => (a[0].prezzo - b[0].prezzo) || (a[1] - b[1])).map(x => x[0]);
+
     /** Le voci che hanno una prova disegnata a parte sotto la pagina (il pannello "shop-extra"): lo stile delle card, lo sfondo del Box e l'entrata */
     const TIPI_PROVA_GRANDE = ['card', 'boxsfondo', 'entrata'];
     /**
@@ -183,7 +186,7 @@
      */
     function edizioniHtml(s, contesto) {
         return Cosmetici.stagioniEdizioni().map(stagione => {
-            const voci = Cosmetici.CATALOGO.filter(c => c.edizione && c.edizione.stagione === stagione && (Cosmetici.possiede(c.id, contesto) || Cosmetici.disponibilita(c, s.stagioni) !== 'finita'));
+            const voci = perPrezzo(Cosmetici.CATALOGO.filter(c => c.edizione && c.edizione.stagione === stagione && (Cosmetici.possiede(c.id, contesto) || Cosmetici.disponibilita(c, s.stagioni) !== 'finita')));
             if (!voci.length) return '';
             const nomeStagione = (s.nomiStagioni || {})[stagione];
             const disp = Cosmetici.disponibilita(voci[0], s.stagioni);
@@ -199,7 +202,7 @@
         const s = stato || {};
         const contesto = { wallet: { posseduti: s.posseduti || {} }, info: s.info || {}, pagina: s.pagina || {} };
         const gruppi = Object.keys(Cosmetici.TIPI).map(tipo => {
-            const voci = Cosmetici.CATALOGO.filter(c => c.tipo === tipo && !c.edizione).map(c => voceHtml(c, s, contesto)).join('');
+            const voci = perPrezzo(Cosmetici.CATALOGO.filter(c => c.tipo === tipo && !c.edizione)).map(c => voceHtml(c, s, contesto)).join('');
             return `<section class="ng-gruppo"><h3>${esc(Cosmetici.TIPI[tipo].nome)}</h3><p>${esc(Cosmetici.TIPI[tipo].frase)}</p><ul class="ng-lista">${voci}</ul></section>`;
         }).join('');
         return edizioniHtml(s, contesto) + gruppi;

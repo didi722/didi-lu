@@ -227,3 +227,31 @@ test('server: le Functions conoscono le voci nuove (acquista le cerca nel loro c
     }
     assert.equal(FC.perId('entrata-fulmine').campo, 'effettoEntrata');
 });
+
+test('Shop: dentro ogni categoria le voci sono in ordine di prezzo crescente (a parità, l\'ordine del catalogo)', () => {
+    const N = require('../docs/negozio.js');
+    const html = N.catalogoHtml({ saldo: 0, posseduti: {}, info: {}, pagina: {}, anteprime: {}, stagioni: {}, nomiStagioni: {} });
+    const gruppi = [...html.matchAll(/<section class="ng-gruppo">[^]*?<\/section>/g)].map(m => m[0]);
+    assert.ok(gruppi.length >= 7, 'tutte le categorie');
+    for (const g of gruppi) {
+        const ids = [...g.matchAll(/<li class="ng-voce[^"]*" data-tipo="[^"]*" data-id="([^"]+)"/g)].map(m => m[1]);
+        const prezzi = ids.map(id => C.perId(id).prezzo);
+        assert.deepEqual(prezzi, prezzi.slice().sort((a, b) => a - b), `${g.slice(0, 80)}: ${ids.join(', ')} ${prezzi.join(',')}`);
+        // a parità di prezzo, l'ordine del catalogo
+        const ordine = C.CATALOGO.map(c => c.id);
+        for (let i = 1; i < ids.length; i++) if (prezzi[i] === prezzi[i - 1]) assert.ok(ordine.indexOf(ids[i - 1]) < ordine.indexOf(ids[i]), `${ids[i - 1]} prima di ${ids[i]}`);
+    }
+});
+
+test('Zen: l\'ensō è un tratto di pennello (sagoma con spessore che cala, setole, bordi irregolari, maschera che lo traccia), non una linea', () => {
+    const js = docs('entrate-vs.js');
+    assert.match(js, /function ensoPennello\(doc, padre, h, t0\)/);
+    assert.match(js, /feTurbulence/);
+    assert.match(js, /feDisplacementMap/);
+    assert.match(js, /el\('mask', \{ id: `\$\{id\}-m`/, 'la maschera che lo traccia');
+    assert.match(js, /strokeDashoffset: \[`\$\{enso\.lunghezza\}`, '0'\]/);
+    assert.match(js, /const enso = ensoPennello\(doc, D, h, c\.t0\);/, 'sta dietro l\'avatar');
+    // la sagoma: spessore che cala lungo il tratto
+    assert.match(js, /1 - 0\.8 \* Math\.pow\(\(f - 0\.05\) \/ 0\.95, 1\.25\)/);
+    assert.match(docs('stile-card.css'), /--sc-anim: sc-olo 3s ease-in-out infinite;/, 'il foil olografico passa ogni 3 secondi');
+});
