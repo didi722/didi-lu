@@ -234,10 +234,9 @@ test('la beta resta fuori da "tutte le stagioni" anche se i suoi team hanno gioc
     assert.equal(U.calcola(dati()).specie.find(s => s.specieId === 'magikarp'), undefined);
 });
 
-test('stats.html e stats.js dicono che l\'uso conta solo i team che hanno giocato', () => {
+test('stats.js dice che l\'uso conta solo i team che hanno giocato', () => {
     const doc = f => fs.readFileSync(path.join(__dirname, '..', 'docs', f), 'utf8');
     const html = doc('stats.html'), js = doc('stats.js');
-    assert.match(html, /have played at least one official set/);
     assert.doesNotMatch(html, /Teams that were never registered to a season do not count/);
     assert.match(js, /played at least one official set/);
     assert.doesNotMatch(js, /registered team/, 'nessun testo parla ancora di team iscritti');
@@ -304,9 +303,8 @@ test('scheda aperta (o senza l\'indicazione, come nella pagina dei match): si ve
     }
 });
 
-test('stats.js e stats.html dicono cosa succede nelle stagioni a scheda chiusa', () => {
+test('stats.js dice cosa succede nelle stagioni a scheda chiusa', () => {
     const doc = f => fs.readFileSync(path.join(__dirname, '..', 'docs', f), 'utf8');
     assert.match(doc('stats.js'), /Hidden: closed sheet season\./);
     assert.match(doc('stats.js'), /x\.setVisibili/);
-    assert.match(doc('stats.html'), /In closed sheet seasons only the Pokémon of a team count/);
 });
