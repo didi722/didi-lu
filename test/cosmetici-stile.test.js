@@ -41,7 +41,7 @@ test('Cosmetici.valido: solo gli id del catalogo di quel tipo (un valore scritto
     assert.equal(C.possiede('card-oro', { wallet: { posseduti: { 'card-oro': 1 } } }), true);
     assert.equal(C.possiede('card-oro', {}), false);
     // il server mette e toglie con lo stesso comando delle aure
-    for (const c of [...per('card'), ...per('boxsfondo'), ...per('entrata')]) assert.ok(c.prezzo >= 400 && c.prezzo <= 900, `${c.id} ${c.prezzo}`);
+    for (const c of [...per('card'), ...per('boxsfondo'), ...per('entrata')]) assert.ok(c.prezzo >= 300 && c.prezzo <= 900, `${c.id} ${c.prezzo}`);
 });
 
 test('le due copie di cosmetici.js (sito e server) sono uguali', () => {

@@ -124,6 +124,9 @@
         { id: 'sfondo-stelle', tipo: 'sfondo', nome: 'Stars', prezzo: 250, motivo: 'stelle', descr: 'A sky of little stars.' },
         { id: 'sfondo-onde', tipo: 'sfondo', nome: 'Waves', prezzo: 250, motivo: 'onde', descr: 'Soft rolling waves.' },
         // Stile delle card: come si vede la card dell'allenatore (Trainers, classifica di stagione, Stats). L'aspetto sta in stile-card.css (data-stile-card="<id>")
+        { id: 'card-righe', tipo: 'card', nome: 'Stripes', prezzo: 300, campo: 'stileCard', descr: 'Diagonal stripes across your card.' },
+        { id: 'card-scacchi', tipo: 'card', nome: 'Checkers', prezzo: 300, campo: 'stileCard', descr: 'A checkerboard under your name.' },
+        { id: 'card-pokeball', tipo: 'card', nome: 'Pokéballs', prezzo: 400, campo: 'stileCard', descr: 'A field of tiny Poké Balls.' },
         { id: 'card-puntini', tipo: 'card', nome: 'Polka dots', prezzo: 400, campo: 'stileCard', descr: 'A field of tiny white dots on your card.' },
         { id: 'card-argento', tipo: 'card', nome: 'Silver frame', prezzo: 500, campo: 'stileCard', descr: 'A polished silver frame with a passing shine.' },
         { id: 'card-carbonio', tipo: 'card', nome: 'Carbon', prezzo: 500, campo: 'stileCard', descr: 'Carbon-fibre weave with a steel frame.' },
@@ -152,6 +155,10 @@
         { id: 'entrata-fulmine', tipo: 'entrata', nome: 'Lightning strike', prezzo: 600, campo: 'effettoEntrata', descr: 'A bolt from the sky, and there you are.' },
         { id: 'entrata-pokeball', tipo: 'entrata', nome: 'Poké Ball', prezzo: 700, campo: 'effettoEntrata', descr: 'You are sent out of a Poké Ball.' },
         { id: 'entrata-fiamma', tipo: 'entrata', nome: 'Blaze', prezzo: 700, campo: 'effettoEntrata', descr: 'Flames burst around you.' },
+        { id: 'entrata-spotlight', tipo: 'entrata', nome: 'Spotlight', prezzo: 500, campo: 'effettoEntrata', descr: 'A beam of light finds you on stage.' },
+        { id: 'entrata-immagini', tipo: 'entrata', nome: 'Afterimages', prezzo: 600, campo: 'effettoEntrata', descr: 'You arrive so fast you leave echoes behind.' },
+        { id: 'entrata-sakura', tipo: 'entrata', nome: 'Petal storm', prezzo: 700, campo: 'effettoEntrata', descr: 'A whirl of cherry petals, and you step out of it.' },
+        { id: 'entrata-zen', tipo: 'entrata', nome: 'Zen', prezzo: 700, campo: 'effettoEntrata', descr: 'A brushed circle, a blooming lotus and a golden halo.' },
         { id: 'entrata-glitch', tipo: 'entrata', nome: 'Glitch', prezzo: 800, campo: 'effettoEntrata', descr: 'You flicker into the screen like a broken signal.' }
     ];
 

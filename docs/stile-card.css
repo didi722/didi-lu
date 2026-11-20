@@ -47,6 +47,27 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-img: radial-gradient(circle, rgba(255, 255, 255, 0.75) 2px, transparent 2.7px);
     --sc-dim: 14px 14px;
 }
+[data-stile-card="card-righe"] {
+    --sc-bordo: #000;
+    --sc-glow: 0 0 0 3px #fff, 0 0 0 5px #000;
+    --sc-img: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.4) 0 6px, transparent 6px 14px);
+    --sc-dim: auto;
+}
+[data-stile-card="card-scacchi"] {
+    --sc-bordo: #000;
+    --sc-glow: 0 0 0 3px #fff, 0 0 0 5px #000;
+    --sc-img: conic-gradient(rgba(0, 0, 0, 0.16) 25%, transparent 0 50%, rgba(0, 0, 0, 0.16) 0 75%, transparent 0);
+    --sc-dim: 30px 30px;
+}
+[data-stile-card="card-pokeball"] {
+    --sc-bordo: #000;
+    --sc-glow: 0 0 0 3px #e8231f, 0 0 0 5px #000;
+    --sc-img:
+        radial-gradient(circle at 50% 50%, #fff 0 2px, rgba(0, 0, 0, 0.6) 2.4px 3.4px, transparent 3.8px),
+        radial-gradient(circle at 50% 50%, transparent 0 9px, rgba(0, 0, 0, 0.42) 9.4px 11px, transparent 11.4px),
+        radial-gradient(circle at 50% 36%, rgba(232, 35, 31, 0.3) 0 9px, transparent 9.4px);
+    --sc-dim: 44px 36px;
+}
 [data-stile-card="card-carbonio"] {
     --sc-bordo: #1c1f24;
     --sc-glow: 0 0 0 3px #1c1f24, 0 0 0 5px #9aa3ad;
