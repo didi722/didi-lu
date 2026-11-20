@@ -281,3 +281,40 @@
     font: 700 .78rem/1.35 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
 }
 .team-simile-avviso b { font-size: .86rem; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
+
+/* ---------- Le bozze: team in lavorazione messi da parte dal Team Builder (bozze-team.js) ----------
+   Stessa finestrella dei team, ma con il bordo tratteggiato, l'adesivo DRAFT e il conto dei Pokémon; le caselle ancora vuote sono tratteggiate.
+   Cliccando una bozza (o il pulsante con la matita) si riapre nel Team Builder. */
+.card.card-bozza { border-style: dashed !important; cursor: pointer; }
+.card-bozza .bozza-info { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 12px; font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.card-bozza .bozza-tag {
+    padding: 1px 9px 0;
+    background: var(--nb-carta, #fff); color: var(--nb-ink, #000);
+    border: 2px dashed var(--nb-ink, #000); border-radius: min(var(--nb-raggio, 0px), 10px);
+    font: 800 .62rem/1.7 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .14em; text-transform: uppercase;
+    rotate: calc(var(--nb-rot, 1) * -2deg);
+}
+.card-bozza .bozza-conta { font: 800 .72rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; }
+.card-bozza .bozza-quando { margin-left: auto; font: 600 .68rem/1 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .7; }
+.card .pkm-box.pkm-vuoto { background: transparent; border-style: dashed; box-shadow: none; opacity: .5; cursor: inherit; }
+.card .pkm-box.pkm-vuoto:hover { translate: none; rotate: calc(var(--nb-rot, 1) * var(--r)); box-shadow: none; }
+.card-bozza .pkm-box { cursor: inherit; }
+
+/* il promemoria in fondo alla pagina: un team in lavorazione era rimasto aperto quando la pagina si è chiusa */
+.bozza-ripresa {
+    position: fixed; left: 50%; bottom: 18px; z-index: 9000; translate: -50% 0;
+    box-sizing: border-box; width: min(560px, calc(100vw - 24px)); padding: 12px 16px 14px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
+    background: var(--nb-tip-bg, #fffdf6); color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+    font: 600 .85rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif);
+}
+.bozza-ripresa p { flex: 1 1 260px; margin: 0; }
+.bozza-ripresa-azioni { display: flex; gap: 10px; }
+.bozza-ripresa-azioni .tb-btn { width: auto; flex: 0 0 auto; padding: 8px 16px; }
+
+/* nel fumetto del salvataggio bloccato: l'alternativa */
+.tb-bubble .tb-bubble-bozza { margin: 8px 0 0; padding-top: 6px; border-top: 2px dashed currentColor; font-weight: 700; }
+
+/* "Save draft" accanto a Import ed Export: nella riga della scelta dei Pokémon i tre tasti hanno la larghezza del loro testo (e la riga va a capo, se manca posto) */
+.tb-actions-row.tb-con-bozza .tb-actions-io .tb-btn { flex: 0 0 auto; white-space: nowrap; }

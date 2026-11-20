@@ -990,6 +990,7 @@
     }
     html.app-shell .tb-overlay[data-tb-step="team"] .tb-actions-io { display: contents !important; }
     html.app-shell .tb-overlay[data-tb-step="team"] .tb-actions-io .tb-btn { grid-column: span 3; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-actions.tb-con-bozza .tb-actions-io .tb-btn { grid-column: span 2; }     /* con "Save draft": tre tasti nella stessa riga */
     html.app-shell .tb-overlay[data-tb-step="team"] .tb-actions .tb-btn { height: calc(34 * var(--u)); font-size: calc(12 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(10 * var(--u)); }
     html.app-shell .tb-overlay[data-tb-step="team"] .tb-save-wrap { grid-column: 1 / -1; position: relative; }
     html.app-shell .tb-overlay[data-tb-step="team"] .tb-cov-wrap { grid-column: span 2; }
