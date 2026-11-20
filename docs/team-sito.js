@@ -333,16 +333,16 @@ export async function caricaTappaPalestra(db, idGym, numeroTappa) {
 // -----------------------------------------------------
 // 7. L'ASPETTO DI UN ALLENATORE (lo sfondo "sfida" delle partite)
 // -----------------------------------------------------
-// Dalla sua pagina pubblica: colore, avatar, sfondo, aura ed effetti. Ritorna { nome, colore, avatar, pagina, aura, effettoNome, effettoPalco }.
+// Dalla sua pagina pubblica: colore, avatar, sfondo, aura ed effetti (e l'entrata nella schermata VS). Ritorna { nome, colore, avatar, pagina, aura, effettoNome, effettoPalco, effettoEntrata }.
 // Non lancia mai: se qualcosa manca si usano i valori di partenza (Palestra.temaPalestra li gestisce).
 export async function caricaAspetto(db, nomeAllenatore) {
     const id = String(nomeAllenatore || '').toLowerCase().trim();
-    const vuoto = { nome: String(nomeAllenatore || ''), colore: '', avatar: '', pagina: null, aura: '', effettoNome: '', effettoPalco: '', };
+    const vuoto = { nome: String(nomeAllenatore || ''), colore: '', avatar: '', pagina: null, aura: '', effettoNome: '', effettoPalco: '', effettoEntrata: '' };
     if (!id) return vuoto;
     try {
         const info = (await db.ref(`players/${id}/info`).once('value')).val() || {};
         return {
-            nome: String(info.name || nomeAllenatore), colore: info.color, avatar: info.avatar, pagina: info.pagina, aura: info.aura, effettoNome: info.effettoNome, effettoPalco: info.effettoPalco
+            nome: String(info.name || nomeAllenatore), colore: info.color, avatar: info.avatar, pagina: info.pagina, aura: info.aura, effettoNome: info.effettoNome, effettoPalco: info.effettoPalco, effettoEntrata: info.effettoEntrata
         };
     } catch (e) {
         return vuoto;

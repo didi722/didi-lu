@@ -1,0 +1,96 @@
+/* =====================================================================
+   SFONDI DEL BOX — cosmetici del negozio (cosmetici.js, tipo "boxsfondo"): lo sfondo della pagina Box, solo per il suo proprietario
+   ---------------------------------------------------------------------
+   Il valore (players/<id>/info/sfondoBox, es. "box-notte") va nell'attributo data-sfondo-box del <body> (box.html) o di un riquadro di prova (il negozio).
+   Ogni sfondo è un gruppo di variabili: --sb-img (gli strati disegnati), --sb-dim (la misura di ognuno), --sb-col (il colore sotto) e, se è scuro, --nb-testo chiaro per il testo
+   scritto direttamente sulla pagina. Poi una regola sola li applica. Uno sfondo nuovo = una voce nel catalogo + il suo gruppo qui. Va caricato dopo temi.css.
+   ===================================================================== */
+
+body.nb[data-sfondo-box] {
+    background-image: var(--sb-img) !important;
+    background-size: var(--sb-dim) !important;
+    background-color: var(--sb-col) !important;
+    background-position: 0 0 !important;
+    background-repeat: repeat !important;
+    background-attachment: fixed !important;
+}
+/* il riquadro di prova del negozio: stessa cosa, più piccolo (zoom) e senza attaccarsi alla finestra */
+.sb-campione[data-sfondo-box] {
+    background-image: var(--sb-img); background-size: var(--sb-dim); background-color: var(--sb-col);
+    background-position: 0 0; background-repeat: repeat; background-attachment: scroll;
+    width: 190px; height: 110px; zoom: 0.5; box-sizing: border-box;
+}
+
+[data-sfondo-box="box-nuvole"] {
+    --sb-col: #8ec9ff;
+    --sb-img:
+        radial-gradient(ellipse 90px 26px at 22% 28%, #fff 0 62%, transparent 66%),
+        radial-gradient(ellipse 58px 21px at 30% 23%, #fff 0 62%, transparent 66%),
+        radial-gradient(ellipse 110px 30px at 72% 62%, rgba(255, 255, 255, 0.92) 0 62%, transparent 66%),
+        radial-gradient(ellipse 70px 22px at 80% 56%, rgba(255, 255, 255, 0.92) 0 62%, transparent 66%),
+        linear-gradient(180deg, #5aaeff, #d3ecff);
+    --sb-dim: 480px 320px, 480px 320px, 480px 320px, 480px 320px, 100% 100%;
+}
+[data-sfondo-box="box-blueprint"] {
+    --sb-col: #1b4f9c;
+    --nb-testo: #f1f6ff;
+    --sb-img:
+        linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+        linear-gradient(135deg, #2a66bd, #123c7c);
+    --sb-dim: 80px 80px, 80px 80px, 16px 16px, 16px 16px, 100% 100%;
+}
+[data-sfondo-box="box-foresta"] {
+    --sb-col: #5fbf8a;
+    --sb-img:
+        radial-gradient(circle at 50% 130%, rgba(10, 70, 40, 0.5) 0 50%, transparent 51%),
+        radial-gradient(circle at 50% 120%, rgba(20, 100, 55, 0.45) 0 55%, transparent 56%),
+        linear-gradient(180deg, #b6ecc8 0, #6fcb97 55%, #3fa56b 100%);
+    --sb-dim: 140px 90px, 220px 120px, 100% 100%;
+}
+[data-sfondo-box="box-oceano"] {
+    --sb-col: #07204a;
+    --nb-testo: #e6f4ff;
+    --sb-img:
+        radial-gradient(circle, rgba(190, 235, 255, 0.5) 2px, transparent 3px),
+        radial-gradient(circle, rgba(190, 235, 255, 0.3) 1.5px, transparent 2.5px),
+        repeating-linear-gradient(100deg, rgba(120, 200, 255, 0.1) 0 40px, transparent 40px 130px),
+        linear-gradient(180deg, #0e3a7a, #04122e);
+    --sb-dim: 140px 170px, 90px 110px, auto, 100% 100%;
+}
+[data-sfondo-box="box-tramonto"] {
+    --sb-col: #c98bd9;
+    --sb-img:
+        radial-gradient(circle at 50% 84%, #fff6c2 0 5%, rgba(255, 200, 100, 0.85) 6%, transparent 24%),
+        linear-gradient(180deg, #7f7fd5 0, #c98bd9 35%, #ff9a8b 70%, #ffd6a5 100%);
+    --sb-dim: 100% 100%, 100% 100%;
+}
+[data-sfondo-box="box-notte"] {
+    --sb-col: #070d2e;
+    --nb-testo: #eef1ff;
+    --sb-img:
+        radial-gradient(circle at 86% 13%, #fffbe0 0 22px, rgba(255, 250, 200, 0.22) 24px 62px, transparent 64px),
+        radial-gradient(circle at 20% 30%, #fff 0 1px, transparent 1.7px),
+        radial-gradient(circle at 70% 65%, #fff 0 1.2px, transparent 1.9px),
+        radial-gradient(circle at 45% 12%, #ffe9a8 0 1.3px, transparent 2px),
+        linear-gradient(180deg, #050a24, #17235f);
+    --sb-dim: 100% 100%, 101px 97px, 61px 73px, 137px 89px, 100% 100%;
+}
+[data-sfondo-box="box-vulcano"] {
+    --sb-col: #1a0c08;
+    --nb-testo: #ffe9dc;
+    --sb-img:
+        radial-gradient(ellipse 80% 32% at 50% 112%, rgba(255, 120, 20, 0.75), transparent),
+        repeating-linear-gradient(115deg, transparent 0 60px, rgba(255, 110, 20, 0.2) 60px 63px),
+        linear-gradient(180deg, #120a0a, #2a0f0a 60%, #6a1a05 100%);
+    --sb-dim: 100% 100%, auto, 100% 100%;
+}
+[data-sfondo-box="box-neon"] {
+    --sb-col: #0a0620;
+    --nb-testo: #f3ecff;
+    --sb-img:
+        radial-gradient(ellipse 70% 40% at 50% 0, rgba(180, 60, 255, 0.42), transparent),
+        linear-gradient(rgba(255, 60, 200, 0.36) 1.5px, transparent 1.5px),
+        linear-gradient(90deg, rgba(60, 230, 255, 0.32) 1.5px, transparent 1.5px);
+    --sb-dim: 100% 100%, 64px 64px, 64px 64px;
+}

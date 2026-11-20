@@ -334,6 +334,7 @@
                 await leggi(); mostraSaldo(); aggiornaAnteprima();
             });
         });
+        animaEntrate(document, '.shop-grande .ev-palco[data-entrata]');      // l'entrata in grande, nella finestra della conferma
     }
 
     /** Lasciare andare uno di quelli che si hanno */
@@ -375,11 +376,17 @@
     const htmlMonete = () => `<section class="ng-gruppo"><h3>Earning coins</h3>${N.premiHtml()}</section>${N.movimentiHtml(S.movimenti)}`;
 
     // ---------------------------------------------------------------- disegno
+    // le entrate nella schermata VS: una scenetta che si ripete in ogni riquadro (entrate-vs.js); le vecchie si fermano da sole quando il riquadro esce dalla pagina
+    function animaEntrate(radice, selettore = '.ev-palco[data-entrata]') {
+        if (!window.EntrateVs) return;
+        radice.querySelectorAll(selettore).forEach(b => window.EntrateVs.anteprima(b, b.dataset.entrata, S.info.avatar));
+    }
     function disegna(tieniScorrimento) {
         const el = $('shop-contenuto');
         const y = window.scrollY;
         const interni = [...el.querySelectorAll('.shop-avatar-griglia, .shop-colori, .shop-canzoni')].map(x => x.scrollTop);
         el.innerHTML = conMoneta(S.tab === 'pagina' ? htmlPagina() : S.tab === 'allenatore' ? htmlAllenatore() : S.tab === 'pokemon' ? htmlPokemon() : htmlMonete());
+        animaEntrate(el);
         $('shop-corpo').classList.toggle('senza-anteprima', !TAB_CON_ANTEPRIMA.includes(S.tab));
         adattaAnteprima();
         if (S.tab === 'pokemon' && window.MedaglionePkm) window.MedaglionePkm.coloraMedaglioni(window, el);       // il colore del tipo dietro a ogni Pokémon

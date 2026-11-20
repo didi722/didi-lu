@@ -20,6 +20,8 @@
     'use strict';
 
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // lo stile della card comprato nello Shop (stile-card.css): solo un id fatto come si deve
+    const stileCard = id => (/^card-[a-z-]{2,30}$/.test(String(id || '')) ? ` data-stile-card="${id}"` : '');
     const coloreSicuro = c => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : '#31c489');
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
     const AVATAR_VUOTO = 'immagini/magikarp.png';
@@ -79,7 +81,7 @@
         const prio = centro === undefined ? '' : ` fetchpriority="${indice === centro ? 'high' : 'low'}" decoding="async"`;
         const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm, g.pkmShiny))}"${prio} data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="SpritePkm.ritenta(this)">` : '';
         const trofei = htmlTrofei(g), badge = htmlBadge(g), palestra = htmlPalestra(g, io);
-        return `<article class="at-carta" data-i="${indice}" style="--c:${c}">
+        return `<article class="at-carta" data-i="${indice}"${stileCard(g.stileCard)} style="--c:${c}">
             <div class="at-palco">
                 <span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span>
                 <img class="at-allenatore" draggable="false" src="${esc(g.avatar || AVATAR_VUOTO)}" alt="" onerror="this.onerror=null;this.src='${AVATAR_VUOTO}'">${pkm}

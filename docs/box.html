@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="note-team.css">
 <link rel="stylesheet" href="etichette-team.css">
 <link rel="stylesheet" href="box-vista.css">
+<link rel="stylesheet" href="sfondo-box.css">
 <link rel="stylesheet" href="box-incorporato.css">
 <script src="dettagli.js" defer></script>
 <script src="team-bloccati.js"></script>
@@ -677,6 +678,7 @@ async function inizializzaPaginaBox() {
 
         if (typeof ascoltaMusicaFirebase === "function" && !INCORPORATO) {     // nell'editor del simulatore la musica non serve
             ascoltaMusicaFirebase();
+            ascoltaSfondoBox();
         }
 
         // 4. Impostiamo l'ordinamento e mostriamo i team A SCHERMO
@@ -717,6 +719,15 @@ async function inizializzaPaginaBox() {
 }
 
 // 5. Funzione Musica Dinamica
+// Lo sfondo del Box comprato nello Shop (sfondo-box.css): info/sfondoBox va nell'attributo del <body>; solo chi ce l'ha lo vede (è il suo Box)
+function ascoltaSfondoBox() {
+    if (!playerID) return;
+    db.ref(`players/${playerID}/info/sfondoBox`).on('value', snapshot => {
+        const id = window.Cosmetici ? Cosmetici.valido(snapshot.val(), 'boxsfondo') : '';
+        if (id) document.body.setAttribute('data-sfondo-box', id); else document.body.removeAttribute('data-sfondo-box');
+    });
+}
+
 function ascoltaMusicaFirebase() {
     const player = document.getElementById('bg-music');
     const musicBtn = document.getElementById('music-control');

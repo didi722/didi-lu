@@ -22,6 +22,8 @@
     'use strict';
 
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // lo stile della card comprato nello Shop (stile-card.css): solo un id fatto come si deve
+    const stileCard = id => (/^card-[a-z-]{2,30}$/.test(String(id || '')) ? ` data-stile-card="${id}"` : '');
     const coloreSicuro = c => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : '#b388eb');
 
     /** Cosa distingue una vista dall'altra: cambiando una di queste cose si riparte dal primo (nel Pokédex, dall'inizio dell'elenco) */
@@ -34,7 +36,7 @@
     /** La carta di un elemento: niente sfondo. Sul palco tondo lui (l'allenatore, i Pokémon del team o il Pokémon); di fianco il nome, il posto e SOLO il numero scelto */
     function htmlCarta(r, m, indice) {
         const grande = (r.valori || {})[m.grande] || { titolo: '', html: '', sotto: '' };
-        return `<article class="as-carta" data-i="${indice}" style="--c:${coloreSicuro(r.colore)}">
+        return `<article class="as-carta" data-i="${indice}"${stileCard(r.stileCard)} style="--c:${coloreSicuro(r.colore)}">
             <div class="as-palco as-v-${esc(m.tab)}"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span><div class="as-testa">${r.testa || ''}</div></div>
             <div class="as-info">
                 <div class="as-riga"><span class="as-pos">#${Number(r.posizione) || indice + 1}</span><b class="as-nome nome-scorrevole">${esc(r.nome)}</b></div>

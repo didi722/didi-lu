@@ -21,6 +21,8 @@
     'use strict';
 
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // lo stile della card comprato nello Shop (stile-card.css): solo un id fatto come si deve
+    const stileCard = id => (/^card-[a-z-]{2,30}$/.test(String(id || '')) ? ` data-stile-card="${id}"` : '');
     const coloreSicuro = c => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : '#31c489');
     const numero = n => Number(n) || 0;
     const AVATAR_VUOTO = 'immagini/magikarp.png';
@@ -42,7 +44,7 @@
     function htmlCarta(p, indice, vs, gif) {
         const d = righeDati(p);
         const pkm = p.pkm && gif ? `<img class="ac-pkm" draggable="false" src="${esc(gif(p.pkm, p.pkmShiny))}" data-pkm="${esc(p.pkm)}" alt="${esc(p.pkm)}" onerror="SpritePkm.ritenta(this)">` : '';
-        return `<article class="ac-carta" data-i="${indice}" style="--c:${coloreSicuro(p.colore)}">
+        return `<article class="ac-carta" data-i="${indice}"${stileCard(p.stileCard)} style="--c:${coloreSicuro(p.colore)}">
             <a class="ac-link" draggable="false" href="${esc(indirizzo(p.nome))}" aria-label="${esc(p.nome)}: open the trainer card" data-suono="apri">
                 <span class="ac-palco"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span><span class="ac-scena">${avatar(p, 'ac-avatar')}${pkm}</span></span>
                 <span class="ac-testi">

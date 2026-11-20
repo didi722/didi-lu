@@ -1558,7 +1558,9 @@ function creaLatoVersus(a, nome, classe) {
     const testo = String(nome || a.nome || '').toUpperCase();
     const righe = Array.from({ length: 6 }, (_, k) => el('div', { class: 'vs-scritta-riga', style: `--k:${k}`, testo: `${testo} ${testo} ${testo}` }));
     box.append(el('div', { class: 'vs-scritta', 'aria-hidden': 'true' }, righe));
-    if (t.avatar) box.append(el('img', { class: 'vs-avatar', src: t.avatar, alt: '', draggable: 'false', style: t.aura ? `--pal-aura:${t.aura.colore}` : null, onerror: ev => ev.target.remove() }));
+    // l'entrata comprata nello Shop (entrate-vs.js): la legge l'intro VS quando l'avatar arriva
+    const entrata = self.Cosmetici ? self.Cosmetici.valido(a.effettoEntrata, 'entrata') : '';
+    if (t.avatar) box.append(el('img', { class: 'vs-avatar', src: t.avatar, alt: '', draggable: 'false', style: t.aura ? `--pal-aura:${t.aura.colore}` : null, 'data-entrata': entrata || null, onerror: ev => ev.target.remove() }));
     return box;
 }
 

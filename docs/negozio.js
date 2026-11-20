@@ -60,6 +60,11 @@
 .ng-tag{position:relative;z-index:1;margin:-16px 0 10px;max-width:100%;box-sizing:border-box;padding:4px 12px 2px;background:#000;color:#fff;border:3px solid #000;box-shadow:3px 3px 0 rgba(0,0,0,.35);font:700 14px/1.15 'Josefin Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;text-align:center;overflow-wrap:anywhere;rotate:-1.5deg}
 .ng-fatto{font:900 .8rem 'Josefin Sans',sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#8a6500;white-space:nowrap}
 .ng-voce[data-tipo=nome] .ng-anteprima,.ng-voce[data-tipo=palco] .ng-anteprima{border-radius:0;width:64px;height:52px}
+.ng-voce:is([data-tipo=card],[data-tipo=boxsfondo],[data-tipo=entrata]){grid-template-columns:116px minmax(0,1fr) auto}
+.ng-voce:is([data-tipo=card],[data-tipo=boxsfondo],[data-tipo=entrata]) .ng-anteprima{width:116px;height:56px;border-radius:0;overflow:visible}
+.ng-voce[data-tipo=card] .ng-anteprima b{font:900 .78rem 'Josefin Sans',sans-serif;letter-spacing:.08em;color:#000}
+.ng-voce[data-tipo=boxsfondo] .ng-anteprima{overflow:hidden}
+.ng-voce[data-tipo=entrata] .ng-anteprima{overflow:hidden;background:linear-gradient(135deg,#6b93b0 50%,#d96b6b 50%)}
 .ng-voce[data-tipo=nome] .ng-anteprima{display:flex;align-items:center;justify-content:center;background:#f3f4f8}
 .ng-nome-prova{font:900 1.2rem/1 'Josefin Sans',sans-serif;letter-spacing:-.01em;text-transform:uppercase;color:var(--pp-nome,#31c489);-webkit-text-stroke:.075em #000;paint-order:stroke fill;text-shadow:.07em .07em 0 #000}
 .ng-voce[data-tipo=palco] .ng-anteprima{position:relative;overflow:hidden;container-type:size;--ef-u:3cqh}
@@ -99,6 +104,10 @@
         const suo = esc(/^#[0-9a-f]{6}$/i.test(String(colorePersona || '')) ? colorePersona : '#6b93b0');
         if (c.tipo === 'nome') return `<span class="ng-anteprima" style="--pp-nome:${suo}"><span class="ng-nome-prova" data-effetto-nome="${esc(c.id)}" data-testo="NAME">NAME</span></span>`;
         if (c.tipo === 'palco') return `<span class="ng-anteprima" data-effetto-palco="${esc(c.id)}" style="--ng-c:${suo}"></span>`;
+        // lo stile della card: un riquadro col suo colore e il suo nome (stile-card.css); lo sfondo del Box: un pezzetto dello sfondo (sfondo-box.css); l'entrata: una scenetta che si ripete (entrate-vs.js)
+        if (c.tipo === 'card') return `<span class="ng-anteprima sc-campione" data-stile-card="${esc(c.id)}" style="--sc-fondo:${suo}"><b>TRAINER</b></span>`;
+        if (c.tipo === 'boxsfondo') return `<span class="ng-anteprima sb-campione" data-sfondo-box="${esc(c.id)}"></span>`;
+        if (c.tipo === 'entrata') return `<span class="ng-anteprima ev-palco" data-entrata="${esc(c.id)}"></span>`;
         if (c.tipo === 'sfondo' && a && a.immagine) {
             const stile = `background-color:${a.colore};background-image:${a.immagine};background-size:${a.dimensione};background-position:${a.posizione}`;
             return `<span class="ng-anteprima" style="${esc(stile)}"></span>`;
@@ -116,7 +125,7 @@
             ? (c.campo ? `<button type="button" class="ng-bottone" data-ng="equipa" data-id="${esc(c.id)}" data-attivo="${attivo ? '0' : '1'}"${s.occupato ? ' disabled' : ''}>${attivo ? 'Take off' : 'Put on'}</button>` : '<span class="ng-bottone" style="opacity:.6;box-shadow:none">Owned</span>')
             : `<button type="button" class="ng-bottone ng-compra" data-ng="compra" data-id="${esc(c.id)}"${s.occupato || saldo < c.prezzo || disp !== 'si' ? ' disabled' : ''}>${disp === 'si' ? `${c.prezzo} 🪙` : disp === 'presto' ? 'Soon' : 'Ended'}</button>`;
         const nota = mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : c.tipo === 'shiny' ? esc(c.descr) : '';
-        return `<li class="ng-voce${mio ? ' ng-mio' : ''}${s.provando === c.id ? ' ng-prova' : ''}" data-tipo="${esc(c.tipo)}" data-id="${esc(c.id)}" data-ng="prova" title="Tap to see it on your page">${anteprima(c, (s.anteprime || {})[c.id], info.color)}<span><b>${esc(c.nome)}</b>${nota ? `<small>${nota}</small>` : ''}</span>${bottone}</li>`;
+        return `<li class="ng-voce${mio ? ' ng-mio' : ''}${s.provando === c.id ? ' ng-prova' : ''}" data-tipo="${esc(c.tipo)}" data-id="${esc(c.id)}" data-ng="prova" title="${['card', 'boxsfondo', 'entrata'].includes(c.tipo) ? 'Preview' : 'Tap to see it on your page'}">${anteprima(c, (s.anteprime || {})[c.id], info.color)}<span><b>${esc(c.nome)}</b>${nota ? `<small>${nota}</small>` : ''}</span>${bottone}</li>`;
     }
 
     /**

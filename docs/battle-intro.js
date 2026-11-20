@@ -9,6 +9,7 @@
 //   4. la diagonale si apre: le due metà escono ai lati e gli avatar scivolano al loro posto sullo sfondo, esattamente dove stanno ora.
 // Parte prima che la partita sia pronta e ne copre i caricamenti: la diagonale si apre solo quando la pagina lo dice (`attesa`), non prima del tempo fisso e non oltre
 // T.attesaMax. Nel frattempo il VS pulsa piano, gli avatar ondeggiano e una riga dice cosa si sta aspettando.
+// Chi ha comprato un'entrata nello Shop ha un effetto in più quando il suo avatar arriva (entrate-vs.js).
 // Un clic, un tocco o Invio / Spazio / Esc la saltano (non nei primi istanti). Non c'è nell'app o con "riduci movimento".
 //
 // Le parti pure (testi del tabellone, punteggio dello showdown, colore del testo) si provano in Node (test/battle-intro.test.js); il resto disegna con
@@ -273,6 +274,7 @@
             ancora.style.left = `${s.riposo}px`;
             if (s.avatar) { const sotto = win.getComputedStyle(s.avatar).bottom; if (sotto && sotto !== 'auto') ancora.style.bottom = sotto; }      // il compagno in palestra sta un po' sopra il bordo
             const corpo = elemento(doc, 'div', 'vi-corpo');
+            let imgAvatar = null;
             corpo.style.scale = String(ingr);
             const tag = elemento(doc, 'div', 'vi-tag', String(s.nome == null ? '' : s.nome).toUpperCase());
             tag.style.background = colore;
@@ -288,12 +290,13 @@
                 if (stile) img.setAttribute('style', stile);
                 img.style.height = `${s.altezza}px`;
                 corpo.appendChild(img);
+                imgAvatar = img;
             } else {
                 corpo.style.bottom = '36vh';
             }
             ancora.appendChild(corpo);
             radice.appendChild(ancora);
-            return { ancora, corpo, tag };
+            return { ancora, corpo, tag, img: imgAvatar };
         });
 
         // il VS sulla riga nera e il tabellone sotto
@@ -356,6 +359,9 @@
         personaggi.forEach((p, i) => {
             A(p.ancora, { translate: [`${lati[i].dir * 80}vw 0`, '0px 0'] }, { duration: T.entraAvatar, delay: T.ritardoAvatar, easing: CURVE.rimbalzo });
             A(p.corpo, { scale: [ingr, ingr * 1.06] }, { duration: T.apertura - T.ritardoAvatar - T.entraAvatar, delay: T.ritardoAvatar + T.entraAvatar, easing: 'ease-out' });
+            // l'entrata comprata nello Shop (entrate-vs.js): parte quando l'avatar arriva al suo posto
+            const entrata = lati[i].avatar && lati[i].avatar.dataset ? lati[i].avatar.dataset.entrata : '';
+            if (entrata && p.img && win.EntrateVs) win.EntrateVs.suona(entrata, { doc, ancora: p.ancora, corpo: p.corpo, img: p.img, dir: lati[i].dir, h: lati[i].altezza * ingr, A, t0: T.ritardoAvatar + T.entraAvatar });
         });
         // 3. il VS e il tabellone
         A(vs, { scale: [3.2, 0.9, 1], rotate: ['-16deg', '-3deg', '-4deg'], opacity: [0, 1, 1], offset: [0, 0.62, 1] }, { duration: T.vs, delay: T.ritardoVs, easing: CURVE.pop });
