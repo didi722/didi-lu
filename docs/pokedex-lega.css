@@ -9,7 +9,7 @@
 .pdx[hidden] { display: none; }
 .pdx { display: grid; gap: 16px; margin: 0 0 28px; color: var(--nb-ink, #000); }
 
-/* ---------- i controlli: di chi è il Pokédex, cosa mostrare ---------- */
+/* ---------- i controlli: di chi è il Pokédex (e la ricerca, quella di Stats) ---------- */
 .pdx-controlli { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .pdx-chi { display: inline-flex; align-items: center; gap: 8px; font: 800 .74rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
 .pdx-chi select {
@@ -23,8 +23,7 @@
     text-transform: uppercase;
     cursor: pointer;
 }
-.pdx-filtri { display: inline-flex; flex-wrap: wrap; gap: 6px; }
-.pdx-filtro, .pdx-vai {
+.pdx-vai {
     padding: 6px 14px 4px;
     background: var(--nb-carta, #fff);
     color: var(--nb-ink, #000);
@@ -36,9 +35,8 @@
     cursor: pointer;
     transition: transform .1s ease, background-color .1s;
 }
-.pdx-filtro:hover, .pdx-vai:hover { background: var(--nb-giallo, #ffbd44); transform: translate(-1px, -1px); }
-.pdx-filtro[aria-pressed="true"] { background: var(--nb-ink, #000); color: #fff; }
-.pdx-filtro:focus-visible, .pdx-vai:focus-visible, .pdx-cella:focus-visible { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 2px; }
+.pdx-vai:hover { background: var(--nb-giallo, #ffbd44); transform: translate(-1px, -1px); }
+.pdx-vai:focus-visible, .pdx-cella:focus-visible { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 2px; }
 
 /* ---------- il totale ---------- */
 .pdx-totale { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 16px; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); background: var(--nb-carta, #fff); box-shadow: var(--nb-sh-s, 4px 4px 0 #000); }
@@ -142,5 +140,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .pdx-usato, .pdx-filtro, .pdx-vai { transition: none; }
+    .pdx-usato, .pdx-vai { transition: none; }
 }
