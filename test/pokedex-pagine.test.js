@@ -170,3 +170,10 @@ test('Stats: nessuna inclinazione fissa (tag, chip, card, titoli): tutte seguono
     assert.match(stile, /--tilt: calc\(var\(--nb-rot, 1\) \* -2deg\)/);
     assert.match(stats, /--tilt:calc\(var\(--nb-rot, 1\) \* \$\{inclinazione\(chiave\)\}deg\)/, 'anche l\'inclinazione di ogni card');
 });
+
+test('Stats: i tag Usage e Pokédex non hanno nessun fumetto (title)', () => {
+    for (const t of ['usage', 'pokedex']) {
+        const tag = html.match(new RegExp(`<button[^>]*data-tab="${t}"[^>]*>`))[0];
+        assert.doesNotMatch(tag, /title=/, t);
+    }
+});

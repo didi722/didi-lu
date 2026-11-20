@@ -16,7 +16,7 @@
 //   PokedexLega.numeroDi(id)                  il numero nel Pokédex nazionale di una specie o forma ("urshifurapidstrike" → 892); 0 se non la conosce
 //   PokedexLega.giocatori(uso)                gli id degli allenatori che hanno team nel perimetro, in ordine alfabetico
 //   PokedexLega.calcola(uso, { chi })         il modello: { chi, totale, usati, perc, regioni: [{ id, nome, da, a, totale, usati, celle: [...] }], sconosciute }
-//   PokedexLega.htmlPokedex(modello, opz)     l'HTML della scheda (regioni e caselle); opz: cerca (nome, forma o numero), nomeChi, esc
+//   PokedexLega.htmlPokedex(modello, opz)     l'HTML della scheda (regioni e caselle); opz: cerca (nome, forma o numero), esc
 //
 // Funziona nel browser (window.PokedexLega) e in Node (require).
 // =====================================================
@@ -119,16 +119,11 @@
     // =================================================
     const quanti = (n, uno, molti) => `${n} ${n === 1 ? uno : molti}`;
 
-    function titoloCella(c, nomeChi) {
-        const base = `#${tre(c.num)} ${c.nome}`;
-        if (!c.usato) return `${base} — never used${nomeChi ? ` by ${nomeChi}` : ' in the league'}`;
-        const forme = c.forme.filter(f => idSpecie(f.nome) !== idSpecie(c.nome));
-        const dove = nomeChi ? `in ${quanti(c.team, 'team', 'teams')}` : `in ${quanti(c.team, 'team', 'teams')} · ${quanti(c.giocatori, 'trainer', 'trainers')}`;
-        return `${base} — ${dove}${forme.length ? ` (also as ${forme.map(f => f.nome).join(', ')})` : ''}`;
-    }
+    // il fumetto: solo il numero e il nome (quanto è usato lo dicono il colore, il numero di team e la scheda che si apre col clic)
+    const titoloCella = c => `#${tre(c.num)} ${c.nome}`;
 
-    function htmlCella(c, { esc, nomeChi }) {
-        const titolo = titoloCella(c, nomeChi);
+    function htmlCella(c, { esc }) {
+        const titolo = titoloCella(c);
         const x = c.num % COLONNE_ICONE, y = Math.floor(c.num / COLONNE_ICONE);
         const dentro = `<span class="pdx-icona" aria-hidden="true" style="--x:${x};--y:${y}"></span><span class="pdx-num" aria-hidden="true">${tre(c.num)}</span>${c.usato && c.team > 1 ? `<span class="pdx-n" aria-hidden="true">${esc(c.team)}</span>` : ''}`;
         // una casella usata si apre sulla scheda di uso della sua forma più usata; una mai usata non fa niente
@@ -138,10 +133,10 @@
     }
 
     /**
-     * Le regioni con le loro caselle. opzioni: esc, nomeChi (il nome dell'allenatore, vuoto per la lega), cerca (nome o numero).
+     * Le regioni con le loro caselle. opzioni: esc, cerca (nome o numero).
      * Una regione senza caselle da mostrare non compare; senza niente da mostrare dice perché.
      */
-    function htmlPokedex(m, { esc = esc0, nomeChi = '', cerca = '' } = {}) {
+    function htmlPokedex(m, { esc = esc0, cerca = '' } = {}) {
         const q = String(cerca || '').trim().toLowerCase().replace(/^#/, '');
         const passa = c => {
             if (!q) return true;
@@ -158,7 +153,7 @@
             parti.push(`<section class="pdx-regione" data-regione="${esc(r.id)}" aria-label="${esc(r.nome)}">
                 <header class="pdx-testa"><h3>${esc(r.nome)}</h3><span class="pdx-intervallo">#${tre(r.da)}–#${tre(r.a)}</span><span class="pdx-conto"><b>${r.usati}</b>/${r.totale}</span>
                     <span class="pdx-barra" role="img" aria-label="${esc(`${r.usati} of ${r.totale} used`)}"><i style="width:${p}%"></i></span></header>
-                <div class="pdx-griglia">${celle.map(c => htmlCella(c, { esc, nomeChi })).join('')}</div>
+                <div class="pdx-griglia">${celle.map(c => htmlCella(c, { esc })).join('')}</div>
             </section>`);
         }
         if (!mostrate) {
