@@ -124,26 +124,23 @@ test('htmlPokedex, un allenatore: i fumetti parlano di lui', () => {
     assert.doesNotMatch(html, /trainers/);
 });
 
-test('htmlPokedex: filtri (usati, mai usati) e ricerca (nome, numero, forma)', () => {
+test('htmlPokedex: ricerca (nome, numero, forma); tutti i Pokémon, usati e mai usati', () => {
     const m = PL.calcola(uso);
-    const usati = PL.htmlPokedex(m, { filtro: 'usati' });
-    assert.equal((usati.match(/pdx-cella/g) || []).length, 4);
-    assert.equal((usati.match(/<section class="pdx-regione"/g) || []).length, 3, 'Kanto, Sinnoh e Galar: le regioni senza caselle non compaiono');
-    const mai = PL.htmlPokedex(m, { filtro: 'mai' });
-    assert.equal((mai.match(/pdx-cella/g) || []).length, 1021);
-    assert.doesNotMatch(mai, /pdx-usato/);
+    const tutti = PL.htmlPokedex(m);
+    assert.equal((tutti.match(/pdx-cella/g) || []).length, 1025, 'sempre tutti: gli usati a colori, gli altri in grigio');
+    assert.equal((tutti.match(/pdx-usato/g) || []).length, 4);
     assert.equal((PL.htmlPokedex(m, { cerca: 'mime' }).match(/pdx-cella/g) || []).length, 2, 'Mr. Mime e Mime Jr.');
     assert.match(PL.htmlPokedex(m, { cerca: '#038' }), /data-num="38"/);
     assert.match(PL.htmlPokedex(m, { cerca: '038' }), /data-num="38"/, 'anche il numero scritto con gli zeri');
     assert.equal((PL.htmlPokedex(m, { cerca: '38' }).match(/pdx-cella/g) || []).length, 1, 'il numero esatto, non tutti quelli che lo contengono');
     assert.match(PL.htmlPokedex(m, { cerca: 'alola' }), /data-num="38"/, 'si trova anche dalla forma usata');
     assert.match(PL.htmlPokedex(m, { cerca: 'xyzxyz' }), /Nothing matches “xyzxyz”/);
-    assert.match(PL.htmlPokedex(PL.calcola(null), { filtro: 'usati' }), /No Pokémon used yet/);
+    assert.doesNotMatch(PL.htmlPokedex(PL.calcola(null)), /Nothing to show/, 'anche senza dati si vedono i 1025 in grigio');
 });
 
 test('htmlPokedex: il testo che viene dai dati non entra come HTML', () => {
     const m = PL.calcola({ specie: [{ specieId: 'garchomp', nome: 'Garchomp' }], squadre: [{ giocatore: 'x', specieId: ['garchomp'] }] }, { chi: 'x' });
-    const html = PL.htmlPokedex(m, { nomeChi: '<img src=x onerror=1>', filtro: 'mai', cerca: '' });
+    const html = PL.htmlPokedex(m, { nomeChi: '<img src=x onerror=1>', cerca: '' });
     assert.doesNotMatch(html, /<img src=x/);
     assert.match(html, /never used by &lt;img src=x onerror=1&gt;/);
     const ricerca = PL.htmlPokedex(m, { cerca: '<script>' });

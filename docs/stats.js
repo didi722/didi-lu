@@ -36,7 +36,7 @@
         r: null,             // ultimo risultato di Statistiche.calcola (con r.usage: la lista di UsoGlobale)
         uso: null,           // ultimo risultato di UsoGlobale.calcola
         pokedexChi: '',      // l'allenatore di cui si guarda il Pokédex ('' = tutta la lega)
-        pokedexFiltro: 'tutti',   // cosa si vede del Pokédex: 'tutti', 'usati' o 'mai' usati
+        prima: null,         // stagione e formato scelti prima di entrare nel Pokédex (che è sempre di tutta la lega, tutte le stagioni): tornano all'uscita
         io: '',              // l'id di chi è collegato (nel Pokédex compare "(you)")
         ultimoUid: undefined,
         aperta: null         // scheda di dettaglio aperta { tipo, chiave }
@@ -395,14 +395,13 @@
         const sel = $('pdx-chi');
         sel.innerHTML = '<option value="">The whole league</option>' + giocatori.map(g => `<option value="${esc(g.id)}">${esc(g.nome)}${g.id === STATO.io ? ' (you)' : ''}</option>`).join('');
         sel.value = STATO.pokedexChi;
-        $('pdx-filtri').querySelectorAll('[data-pdx-filtro]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pdxFiltro === STATO.pokedexFiltro ? 'true' : 'false'));
 
         $('pdx-totale').innerHTML = `<span class="pdx-totale-numero">${fmt(m.usati)} <small>/ ${fmt(m.totale)}</small></span>
             <span class="pdx-barra" role="img" aria-label="${esc(`${m.usati} of ${m.totale} Pokémon used`)}"><i style="width:${m.perc}%"></i></span>
             <span class="pdx-totale-testo">${m.perc}% of the Pokédex ${nomeChi ? `used by <b>${esc(nomeChi)}</b>` : 'used in the league'}</span>`;
         $('pdx-indice').innerHTML = m.regioni.map(r => `<button type="button" class="pdx-vai" data-pdx-vai="${esc(r.id)}">${esc(r.nome)}<b>${r.usati}/${r.totale}</b></button>`).join('');
         // nell'app le caselle le disegna app-stats.js (l'HTML parte nel modello); nel browser stanno qui
-        const html = PokedexLega.htmlPokedex(m, { nomeChi, filtro: STATO.pokedexFiltro, cerca: STATO.cerca });
+        const html = PokedexLega.htmlPokedex(m, { nomeChi, cerca: STATO.cerca });
         const nellApp = document.documentElement.classList.contains('app-shell');
         if (!nellApp) $('pdx-corpo').innerHTML = html;
 
@@ -422,7 +421,7 @@
             stagione: STATO.stagione, stagioni: opzioni($('sel-stagione')), formato: STATO.formato, formati: opzioni($('sel-formato')),
             titolo: nomeStagione(), righe: [], vuoto: '', totale: 0,       // niente carosello: l'app disegna il Pokédex
             pokedex: {
-                chi: m.chi, nomeChi, filtro: STATO.pokedexFiltro, usati: m.usati, totale: m.totale, perc: m.perc, team: m.team,
+                chi: m.chi, nomeChi, usati: m.usati, totale: m.totale, perc: m.perc, team: m.team,
                 giocatori: [{ valore: '', testo: 'The whole league' }, ...giocatori.map(g => ({ valore: g.id, testo: `${g.nome}${g.id === STATO.io ? ' (you)' : ''}` }))],
                 regioni: m.regioni.map(r => ({ id: r.id, nome: r.nome, usati: r.usati, totale: r.totale })),
                 html
@@ -443,7 +442,7 @@
         // il Pokédex ha la sua sezione: niente griglia di card né chip dell'ordinamento
         const inPokedex = STATO.tab === 'pokedex';
         $('stats-pokedex').hidden = !inPokedex;
-        for (const id of ['stats-griglia', 'stats-ordina', 'stats-altri']) { const el = $(id); if (el) el.hidden = inPokedex; }
+        for (const id of ['stats-griglia', 'stats-ordina', 'stats-altri', 'filtro-stagione', 'filtro-formato']) { const el = $(id); if (el) el.hidden = inPokedex; }      // il Pokédex: solo la scelta dell'allenatore e la ricerca
         if (inPokedex) { disegnaPokedex(); return; }
         const tab = STATO.tab;
         const stats = STAT[tab]();
@@ -878,8 +877,12 @@
     function collega() {
         document.querySelectorAll('.stats-tag .tag').forEach(b => b.addEventListener('click', () => {
             if (STATO.tab === b.dataset.tab) return;
+            const eraPokedex = STATO.tab === 'pokedex';
             STATO.tab = b.dataset.tab;
             STATO.limite = PASSO;
+            // il Pokédex è sempre di tutta la storia (tutte le stagioni, tutti i formati): entrando si mette "tutto", uscendo si rimette la scelta di prima
+            if (!eraPokedex && STATO.tab === 'pokedex') { STATO.prima = { stagione: STATO.stagione, formato: STATO.formato }; STATO.stagione = 'all'; STATO.formato = 'all'; return disegna(); }
+            if (eraPokedex && STATO.prima) { STATO.stagione = STATO.prima.stagione; STATO.formato = STATO.prima.formato; STATO.prima = null; return disegna(); }
             disegnaTag();
             disegnaRiepilogo();
             disegnaGriglia();
@@ -919,14 +922,8 @@
             }
         });
 
-        // Pokédex: di chi è, cosa mostrare, salti da una regione all'altra, e un clic su un Pokémon usato apre la sua scheda d'uso
+        // Pokédex: di chi è, salti da una regione all'altra, e un clic su un Pokémon usato apre la sua scheda d'uso
         $('pdx-chi').addEventListener('change', e => { STATO.pokedexChi = e.target.value; disegnaRiepilogo(); disegnaPokedex(); aggiornaUrl(); });
-        $('pdx-filtri').addEventListener('click', e => {
-            const b = e.target.closest('[data-pdx-filtro]');
-            if (!b || STATO.pokedexFiltro === b.dataset.pdxFiltro) return;
-            STATO.pokedexFiltro = b.dataset.pdxFiltro;
-            disegnaPokedex();
-        });
         $('pdx-indice').addEventListener('click', e => {
             const v = e.target.closest('[data-pdx-vai]');
             const regione = v && $('pdx-corpo').querySelector(`[data-regione="${v.dataset.pdxVai}"]`);
@@ -1013,8 +1010,10 @@
         const p = new URLSearchParams(location.search);
         if (['players', 'teams', 'pokemon', 'usage', 'pokedex'].includes(p.get('tab'))) STATO.tab = p.get('tab');
         if (p.get('trainer')) STATO.pokedexChi = idDi(p.get('trainer'));
-        if (p.get('season')) STATO.stagione = p.get('season');
-        if (p.get('format')) STATO.formato = p.get('format');
+        if (STATO.tab !== 'pokedex') {          // il Pokédex è sempre di tutta la lega: stagione e formato dell'indirizzo non contano
+            if (p.get('season')) STATO.stagione = p.get('season');
+            if (p.get('format')) STATO.formato = p.get('format');
+        }
     }
 
     leggiUrl();

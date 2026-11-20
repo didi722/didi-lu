@@ -16,7 +16,7 @@
 //   PokedexLega.numeroDi(id)                  il numero nel Pokédex nazionale di una specie o forma ("urshifurapidstrike" → 892); 0 se non la conosce
 //   PokedexLega.giocatori(uso)                gli id degli allenatori che hanno team nel perimetro, in ordine alfabetico
 //   PokedexLega.calcola(uso, { chi })         il modello: { chi, totale, usati, perc, regioni: [{ id, nome, da, a, totale, usati, celle: [...] }], sconosciute }
-//   PokedexLega.htmlPokedex(modello, opz)     l'HTML della scheda (regioni e caselle); opz: filtro ('tutti' | 'usati' | 'mai'), cerca (nome, forma o numero), nomeChi, esc
+//   PokedexLega.htmlPokedex(modello, opz)     l'HTML della scheda (regioni e caselle); opz: cerca (nome, forma o numero), nomeChi, esc
 //
 // Funziona nel browser (window.PokedexLega) e in Node (require).
 // =====================================================
@@ -138,14 +138,12 @@
     }
 
     /**
-     * Le regioni con le loro caselle. opzioni: esc, nomeChi (il nome dell'allenatore, vuoto per la lega), filtro ('tutti' | 'usati' | 'mai'), cerca (nome o numero).
+     * Le regioni con le loro caselle. opzioni: esc, nomeChi (il nome dell'allenatore, vuoto per la lega), cerca (nome o numero).
      * Una regione senza caselle da mostrare non compare; senza niente da mostrare dice perché.
      */
-    function htmlPokedex(m, { esc = esc0, nomeChi = '', filtro = 'tutti', cerca = '' } = {}) {
+    function htmlPokedex(m, { esc = esc0, nomeChi = '', cerca = '' } = {}) {
         const q = String(cerca || '').trim().toLowerCase().replace(/^#/, '');
         const passa = c => {
-            if (filtro === 'usati' && !c.usato) return false;
-            if (filtro === 'mai' && c.usato) return false;
             if (!q) return true;
             if (/^\d+$/.test(q)) return Number(q) === c.num;        // un numero (anche "#038"): quella casella e basta
             return c.nome.toLowerCase().includes(q) || c.forme.some(f => f.nome.toLowerCase().includes(q));
@@ -164,7 +162,7 @@
             </section>`);
         }
         if (!mostrate) {
-            const motivo = q ? `Nothing matches “${esc(cerca)}”.` : filtro === 'usati' ? 'No Pokémon used yet.' : filtro === 'mai' ? 'Every Pokémon has been used. Wow!' : 'Nothing to show.';
+            const motivo = q ? `Nothing matches “${esc(cerca)}”.` : 'Nothing to show.';
             return `<p class="vuoto">${motivo}</p>`;
         }
         return parti.join('');

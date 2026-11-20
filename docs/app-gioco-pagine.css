@@ -890,7 +890,6 @@
     /* ---------- 5c. Il Pokédex di Stats nell'app (pokedex-lega.js, app-stats.js): in cima di chi è, cosa mostrare e quanti ne sono usati; sotto un salto a ogni regione e le caselle, che scorrono ---------- */
     html.app-shell .as-pdx { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)) 0 max(calc(10 * var(--u)), env(safe-area-inset-left, 0px)); color: #fff; }
     html.app-shell .as-pdx-testa { flex: none; display: flex; align-items: center; gap: calc(8 * var(--u)); min-width: 0; padding: calc(3 * var(--u)) 0 calc(6 * var(--u)); }
-    html.app-shell .as-pdx-filtri { display: flex; gap: calc(6 * var(--u)); }
     html.app-shell .as-pdx-totale { margin-left: auto; display: flex; align-items: baseline; gap: calc(4 * var(--u)); white-space: nowrap; font: 900 calc(11 * var(--u))/1 var(--nb-font-titoli); }
     html.app-shell .as-pdx-totale b { font-size: calc(22 * var(--u)); }
     html.app-shell .as-pdx-totale span { opacity: .7; }

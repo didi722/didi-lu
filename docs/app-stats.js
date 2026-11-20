@@ -27,7 +27,7 @@
     /** Cosa distingue una vista dall'altra: cambiando una di queste cose si riparte dal primo (nel Pokédex, dall'inizio dell'elenco) */
     const firma = m => {
         const base = [m.tab, m.stagione, m.formato, m.ordine && m.ordine.id, m.ordine && m.ordine.dir].join('|');
-        return m.pokedex ? `${base}|${m.pokedex.chi}|${m.pokedex.filtro}` : base;
+        return m.pokedex ? `${base}|${m.pokedex.chi}` : base;
     };
     const fmt = n => Number(n || 0).toLocaleString('en-US');
 
@@ -49,13 +49,13 @@
     const PASSO_TEAM = 1500;      // quanto resta a schermo un Pokémon del team prima che scorra il successivo (ms)
     const DURATA_SCORRE = 450;    // quanto dura lo scorrimento (ms)
 
-    /** I controlli in alto: la categoria, la stagione e il formato */
+    /** I controlli in alto: la categoria, la stagione e il formato (il Pokédex è sempre di tutta la lega: senza stagione né formato) */
     function htmlBarra(m) {
         const opz = (lista, scelto) => (lista || []).map(o => `<option value="${esc(o.valore)}"${String(o.valore) === String(scelto) ? ' selected' : ''}>${esc(o.testo)}</option>`).join('');
         return `<div class="as-tab" role="tablist" aria-label="Statistics category">${(m.tabs || []).map(t =>
             `<button type="button" role="tab" class="as-t${t.id === m.tab ? ' attivo' : ''}" aria-selected="${t.id === m.tab}" data-tab="${esc(t.id)}" data-suono="scegli"><span>${esc(t.titolo)}</span></button>`).join('')}</div>
-            <div class="as-filtri"><select class="as-sel" id="as-stagione" aria-label="Season">${opz(m.stagioni, m.stagione)}</select>
-            <select class="as-sel" id="as-formato" aria-label="Format">${opz(m.formati, m.formato)}</select></div>`;
+            ${m.tab === 'pokedex' ? '' : `<div class="as-filtri"><select class="as-sel" id="as-stagione" aria-label="Season">${opz(m.stagioni, m.stagione)}</select>
+            <select class="as-sel" id="as-formato" aria-label="Format">${opz(m.formati, m.formato)}</select></div>`}`;
     }
 
     /**
@@ -65,13 +65,10 @@
     function htmlPokedex(m) {
         const p = m.pokedex || {};
         const opz = (p.giocatori || []).map(o => `<option value="${esc(o.valore)}"${String(o.valore) === String(p.chi) ? ' selected' : ''}>${esc(o.testo)}</option>`).join('');
-        const filtri = [['tutti', 'All'], ['usati', 'Used'], ['mai', 'Never used']].map(([id, t]) =>
-            `<button type="button" class="as-p${p.filtro === id ? ' attivo' : ''}" data-pdx-filtro="${id}" aria-pressed="${p.filtro === id}" data-suono="scegli">${t}</button>`).join('');
         const regioni = (p.regioni || []).map(r => `<button type="button" class="as-pdx-vai" data-pdx-vai="${esc(r.id)}" data-suono="scegli">${esc(r.nome)}<b>${esc(r.usati)}/${esc(r.totale)}</b></button>`).join('');
         return `<div class="as-pdx">
             <div class="as-pdx-testa">
                 <select class="as-sel" id="as-pdx-chi" aria-label="Pokédex of">${opz}</select>
-                <div class="as-pdx-filtri" role="group" aria-label="Show">${filtri}</div>
                 <div class="as-pdx-totale" aria-label="${esc(`${p.usati || 0} of ${p.totale || 0} used`)}"><b>${fmt(p.usati)}</b><span>/ ${fmt(p.totale)}</span><i>${esc(p.perc || 0)}%</i></div>
             </div>
             <div class="as-pdx-regioni">${regioni}</div>
@@ -154,8 +151,7 @@
         const scatta = {
             tab: id => { const b = doc.querySelector('.stats-tag .tag[data-tab="' + id + '"]'); if (b) b.click(); },
             ordina: id => { const b = doc.querySelector('#stats-ordina [data-ordina="' + id + '"]'); if (b) b.click(); },
-            seleziona: (idSel, valore) => { const s = doc.getElementById(idSel); if (!s) return; s.value = valore; s.dispatchEvent(new win.Event('change', { bubbles: true })); },
-            filtroPokedex: id => { const b = doc.querySelector('#pdx-filtri [data-pdx-filtro="' + id + '"]'); if (b) b.click(); }
+            seleziona: (idSel, valore) => { const s = doc.getElementById(idSel); if (!s) return; s.value = valore; s.dispatchEvent(new win.Event('change', { bubbles: true })); }
         };
 
         // il nome e i numeri di una casella del Pokédex: una nota in basso per qualche secondo (come la spiegazione dei badge in Trainers)
@@ -181,8 +177,6 @@
                 radice.addEventListener('click', e => {
                     const t = e.target.closest ? e.target.closest('[data-tab]') : null;
                     if (t) return scatta.tab(t.dataset.tab);
-                    const fp = e.target.closest ? e.target.closest('[data-pdx-filtro]') : null;
-                    if (fp) return scatta.filtroPokedex(fp.dataset.pdxFiltro);
                     const salto = e.target.closest ? e.target.closest('[data-pdx-vai]') : null;
                     if (salto) {
                         const regione = radice.querySelector('.as-pdx-corpo [data-regione="' + salto.dataset.pdxVai + '"]');

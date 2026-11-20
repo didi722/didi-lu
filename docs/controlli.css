@@ -89,6 +89,8 @@ body.nb select.ts-aperto { outline: 3px solid var(--nb-giallo, #ffbd44); outline
 body.nb :is(
     /* Stats */
     .tag, .chip, .ordina-chip, .carta, .carta-punteggio, .dato, .carta-pos, .stats-note, .voce, .btn-altri, .stats-modal-chiudi,
+    /* la scheda di un giocatore, team o Pokémon (Stats, Usage e Pokédex) */
+    .stats-modal-card, .scheda-nome, .scheda-titolo, .stats-modal .tessera, .stats-modal .vuoto, .premio-titolo-testo, .premio-tip, .uso-formato,
     /* Rules */
     .rule-card, .toc-link,
     /* Formats */
