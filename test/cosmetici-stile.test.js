@@ -214,3 +214,16 @@ test('Shop: sotto la tua pagina c\'è sempre quello che si prova: un ritaglio de
     assert.match(shop, /const indirizzoAnteprima = \(\) => `public\.html\?player=\$\{encodeURIComponent\(S\.giocatore\)\}&anteprima=1&_=\$\{Date\.now\(\)\.toString\(36\)\}`;/);
     assert.match(shop, /\$\('shop-iframe'\)\.src = indirizzoAnteprima\(\);/);
 });
+
+test('server: le Functions conoscono le voci nuove (acquista le cerca nel loro catalogo: senza, lo Shop dice "That item doesn\'t exist")', () => {
+    const M = require('../functions/monete.js');
+    const FC = require('../functions/cosmetici.js');
+    assert.equal(typeof M.acquista, 'function');
+    assert.equal(typeof M.equipa, 'function');
+    for (const id of ['card-oro', 'box-notte', 'entrata-fulmine']) {
+        const c = FC.perId(id);
+        assert.ok(c && c.campo, `${id}: nel catalogo delle Functions, con il campo dove si scrive`);
+        assert.ok(!FC.FAMIGLIE.includes(c.tipo), `${id}: non è una famiglia unica (avatar, colore, canzone): si compra come le aure`);
+    }
+    assert.equal(FC.perId('entrata-fulmine').campo, 'effettoEntrata');
+});
