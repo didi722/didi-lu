@@ -115,10 +115,30 @@
     window.addEventListener('resize', adattaAnteprima);
     function aggiornaAnteprima() {
         const f = $('shop-iframe');
-        const prova = Object.keys(S.prova).length > 0;
+        const prova = Object.keys(S.prova).length > 0 || !!voceGrande();
         $('shop-reset').hidden = !prova;
         $('shop-anteprima-nota').textContent = prova ? 'Trying it on' : 'Tap anything to try it on';
         if (f && f.contentWindow && f.dataset.pronta) f.contentWindow.postMessage({ tipo: 'shop-prova', valori: { ...base(), ...S.prova } }, window.location.origin);
+        aggiornaGrande();
+    }
+
+    // La prova grande sotto la tua pagina (negozio.js, provaGrandeHtml): il palco, le card, lo sfondo del Box o l'entrata di quello che si sta guardando.
+    // Si ridisegna solo quando cambia la voce (altrimenti l'entrata ripartirebbe a ogni messaggio).
+    let grandeId = '', fermaGrande = null;
+    const voceGrande = () => { const c = S.provando ? C.perId(S.provando) : null; return c && N.TIPI_PROVA_GRANDE.includes(c.tipo) ? c : null; };
+    function aggiornaGrande() {
+        const box = $('shop-extra');
+        if (!box) return;
+        const c = voceGrande();
+        const id = c ? c.id : '';
+        if (id === grandeId) return;
+        grandeId = id;
+        if (fermaGrande) { fermaGrande(); fermaGrande = null; }
+        if (!c) { box.hidden = true; box.textContent = ''; return; }
+        box.innerHTML = N.provaGrandeHtml(c, { colore: S.info.color, avatar: S.info.avatar, nome: S.info.name || S.giocatore });
+        box.hidden = false;
+        const entrata = box.querySelector('.ev-palco[data-entrata]');
+        if (entrata && window.EntrateVs) fermaGrande = window.EntrateVs.anteprima(entrata, entrata.dataset.entrata, S.info.avatar);
     }
     window.addEventListener('message', e => {
         if (e.origin !== window.location.origin || !e.data || e.data.tipo !== 'shop-pronta') return;
@@ -129,11 +149,11 @@
         const c = C.perId(id);
         if (!c) return;
         const campo = c.tipo === 'aura' ? 'aura' : c.tipo === 'nome' ? 'effettoNome' : c.tipo === 'palco' ? 'effettoPalco' : c.tipo === 'sfondo' ? 'sfondoMotivo' : '';
-        if (!campo) return;
+        if (!campo && !N.TIPI_PROVA_GRANDE.includes(c.tipo)) return;      // card, sfondo del Box ed entrata non stanno sulla pagina pubblica: hanno solo la prova grande
         const valore = c.tipo === 'sfondo' ? c.motivo : c.id;
         // una prova alla volta: sceglierne un'altra toglie la precedente
         S.scelta = null;
-        if (S.provando === id) { S.prova = {}; S.provando = ''; } else { S.prova = { [campo]: valore }; S.provando = id; }
+        if (S.provando === id) { S.prova = {}; S.provando = ''; } else { S.prova = campo ? { [campo]: valore } : {}; S.provando = id; }
         aggiornaAnteprima(); disegna(true);
     }
     function azzeraProva() { S.prova = {}; S.provando = ''; S.scelta = null; aggiornaAnteprima(); disegna(true); }

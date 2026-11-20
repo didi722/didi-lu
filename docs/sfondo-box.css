@@ -15,6 +15,7 @@ body.nb[data-sfondo-box] {
     background-attachment: fixed !important;
 }
 /* il riquadro di prova del negozio: stessa cosa, più piccolo (zoom) e senza attaccarsi alla finestra */
+/* (la prova grande, ng-gp-box, usa le stesse variabili: sta in negozio.js) */
 .sb-campione[data-sfondo-box] {
     background-image: var(--sb-img); background-size: var(--sb-dim); background-color: var(--sb-col);
     background-position: 0 0; background-repeat: repeat; background-attachment: scroll;

@@ -65,6 +65,25 @@
 .ng-voce[data-tipo=card] .ng-anteprima b{font:900 .78rem 'Josefin Sans',sans-serif;letter-spacing:.08em;color:#000}
 .ng-voce[data-tipo=boxsfondo] .ng-anteprima{overflow:hidden}
 .ng-voce[data-tipo=entrata] .ng-anteprima{overflow:hidden;background:linear-gradient(135deg,#6b93b0 50%,#d96b6b 50%)}
+.ng-gp{display:grid;gap:8px}
+.ng-gp-nota{margin:0;font:600 .72rem/1.35 'Montserrat',sans-serif}
+.ng-gp-nota b{font:900 .78rem 'Josefin Sans',sans-serif;text-transform:uppercase;letter-spacing:.04em;margin-right:4px}
+.ng-gp-palco{position:relative;overflow:hidden;container-type:size;height:210px;border:3px solid #000;background:linear-gradient(180deg,#9cc3e6,#6b93b0 62%,#46657d)}
+.ng-gp-palco img{position:absolute;left:50%;bottom:12%;height:66%;width:auto;transform:translateX(-50%);image-rendering:pixelated;z-index:2;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.3))}
+.ng-gp-pedana{position:absolute;left:50%;bottom:6%;width:46%;height:12%;transform:translateX(-50%);border-radius:50%;background:rgba(0,0,0,.28);z-index:1}
+.ng-gp-card-lista{display:grid;gap:10px;padding:6px 8px 8px 4px}
+.ng-gp-card{justify-content:flex-start !important;gap:10px;height:50px;padding:0 14px}
+.ng-gp-card img{height:34px;width:auto;image-rendering:pixelated}
+.ng-gp-card b{flex:1;font:900 .9rem 'Josefin Sans',sans-serif;letter-spacing:.06em;color:#000}
+.ng-gp-card i{font:900 .8rem 'Josefin Sans',sans-serif;font-style:normal;color:#000}
+.ng-gp-pos{font:900 .8rem 'Josefin Sans',sans-serif;background:#000;color:#fff;padding:3px 6px 1px}
+.ng-gp-box{box-sizing:border-box;height:210px;padding:12px;border:3px solid #000;overflow:hidden;display:grid;grid-template-rows:auto 1fr;gap:10px;background-image:var(--sb-img);background-size:var(--sb-dim);background-color:var(--sb-col);color:var(--nb-testo,#000)}
+.ng-gp-box-titolo{justify-self:start;padding:5px 12px 2px;background:#000;color:#fff;font:900 .85rem 'Josefin Sans',sans-serif;letter-spacing:.08em}
+.ng-gp-teams{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start}
+.ng-gp-team{height:92px;border:3px solid #000;background:#fff;box-shadow:4px 4px 0 #000;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;align-content:center;padding:8px}
+.ng-gp-team span{height:22px;background:#d9dde6;border:2px solid #000;border-radius:50%}
+.ng-gp-entrata{position:relative;overflow:hidden;height:210px;border:3px solid #000;background:linear-gradient(135deg,#6b93b0 50%,#d96b6b 50%)}
+@media (max-width:900px){.ng-gp-palco,.ng-gp-box,.ng-gp-entrata{height:130px}.ng-gp-card{height:36px}.ng-gp-card img{height:24px}.ng-gp-team{height:56px;padding:4px}.ng-gp-team span{height:12px}.ng-gp-card-lista{gap:6px}}
 .ng-voce[data-tipo=nome] .ng-anteprima{display:flex;align-items:center;justify-content:center;background:#f3f4f8}
 .ng-nome-prova{font:900 1.2rem/1 'Josefin Sans',sans-serif;letter-spacing:-.01em;text-transform:uppercase;color:var(--pp-nome,#31c489);-webkit-text-stroke:.075em #000;paint-order:stroke fill;text-shadow:.07em .07em 0 #000}
 .ng-voce[data-tipo=palco] .ng-anteprima{position:relative;overflow:hidden;container-type:size;--ef-u:3cqh}
@@ -113,6 +132,31 @@
             return `<span class="ng-anteprima" style="${esc(stile)}"></span>`;
         }
         return `<span class="ng-anteprima" style="--ng-c:${colore}"></span>`;
+    }
+
+    /** Le voci che hanno una prova grande sotto la pagina (il pannello "shop-extra"): il palco, lo stile delle card, lo sfondo del Box e l'entrata */
+    const TIPI_PROVA_GRANDE = ['palco', 'card', 'boxsfondo', 'entrata'];
+
+    /**
+     * La prova grande di una voce (pura): il palco con il tuo avatar, tre card nel tuo stile (nel tuo colore e in altri due), una pagina Box con quello sfondo o la scena dell'entrata.
+     * o = { colore, avatar, nome }. L'entrata si anima dopo (EntrateVs.anteprima su .ev-palco).
+     */
+    function provaGrandeHtml(c, o = {}) {
+        const colore = /^#[0-9a-f]{6}$/i.test(String(o.colore || '')) ? o.colore : '#6b93b0';
+        const avatar = esc(o.avatar || 'immagini/magikarp.png');
+        const nome = esc(String(o.nome || 'Trainer').toUpperCase());
+        let corpo = '';
+        if (c.tipo === 'palco') corpo = `<div class="ng-gp-palco" data-effetto-palco="${esc(c.id)}"><img src="${avatar}" alt="" onerror="this.style.visibility='hidden'"><span class="ng-gp-pedana"></span></div>`;
+        else if (c.tipo === 'card') {
+            const righe = [[colore, 'Your colour'], ['#ffd966', ''], ['#9fd4ff', '']].map(([col, , ], i) =>
+                `<div class="sc-campione ng-gp-card" data-stile-card="${esc(c.id)}" style="--sc-fondo:${col}"><span class="ng-gp-pos">#${i + 1}</span><img src="${avatar}" alt="" onerror="this.style.visibility='hidden'"><b>${nome}</b><i>ELO ${1200 - i * 90}</i></div>`).join('');
+            corpo = `<div class="ng-gp-card-lista">${righe}</div>`;
+        } else if (c.tipo === 'boxsfondo') {
+            const team = Array.from({ length: 3 }, () => `<div class="ng-gp-team">${'<span></span>'.repeat(6)}</div>`).join('');
+            corpo = `<div class="ng-gp-box" data-sfondo-box="${esc(c.id)}"><b class="ng-gp-box-titolo">${nome}'S BOX</b><div class="ng-gp-teams">${team}</div></div>`;
+        } else if (c.tipo === 'entrata') corpo = `<div class="ng-gp-entrata ev-palco" data-entrata="${esc(c.id)}"></div>`;
+        else return '';
+        return `<div class="ng-gp" data-tipo="${esc(c.tipo)}">${corpo}<p class="ng-gp-nota"><b>${esc(c.nome)}</b> ${esc(c.descr || '')}</p></div>`;
     }
 
     /** Una riga del negozio (pura): la voce, com'è per chi guarda (sua, da comprare, in arrivo, finita). Toccando la riga si prova sulla pagina (data-ng="prova"), i tasti comprano e mettono */
@@ -250,5 +294,5 @@
         return fuori;
     }
 
-    return { catalogoHtml, movimentiHtml, premiHtml, shinyTeamHtml, frasiAcquisto, frasiRilascio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
+    return { TIPI_PROVA_GRANDE, provaGrandeHtml, catalogoHtml, movimentiHtml, premiHtml, shinyTeamHtml, frasiAcquisto, frasiRilascio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
 });
