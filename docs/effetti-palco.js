@@ -1,5 +1,5 @@
 // =====================================================
-// EFFETTI DEL PALCO — animati su canvas (neve, scintille, coriandoli, stelle, temporale, aurora, fuochi d'artificio, bolle, synthwave)
+// EFFETTI DEL PALCO — animati su canvas (neve, scintille, coriandoli, stelle, temporale, aurora, fuochi d'artificio, bolle, synthwave, lanterne)
 //
 // Ogni elemento con data-effetto-palco="palco-…" (la pagina pubblica, le anteprime del negozio, l'intro della palestra) riceve un <canvas> che gli sta davanti. Le particelle
 // sono vere: ognuna ha la sua profondità, la sua velocità, il suo sfasamento (il vento soffia a raffiche, i coriandoli girano su se stessi, i razzi salgono e scoppiano...), quindi
@@ -500,9 +500,83 @@
         };
     }
 
+    // =================================================
+    // LANTERNE: lanterne di carta che salgono piano, ognuna con il suo lume che vacilla; il fumo dell'incenso si alza a volute e le lucciole girano nell'aria
+    // =================================================
+    function lanterne(S) {
+        const { w, h, u } = S;
+        const TINTE = [[255, 150, 50], [255, 112, 60], [255, 190, 70], [255, 92, 72]];
+        const nuova = inizio => {
+            const d = rnd(0.45, 1), larg = (2.6 + 3.4 * d) * u;
+            return { x: rnd(0.05, 0.95) * w, y: inizio ? rnd(0, h) : h + larg * 1.6, d, larg, alt: larg * 1.25, v: (2.2 + 2.6 * d) * u, ph: rnd(0, TAU), f: rnd(0.4, 0.9), amp: rnd(1, 2.6) * u * d, fl: rnd(3, 7), tinta: pick(TINTE) };
+        };
+        const lanterneL = Array.from({ length: clamp(Math.round(w * h / 20000), 3, 10) }, () => nuova(true)).sort((a, b) => a.d - b.d);
+        const sorgenti = Array.from({ length: clamp(Math.round(w / 170), 2, 5) }, () => ({ x: rnd(0.08, 0.92) * w, t: rnd(0, 0.6) }));
+        const fumo = [];
+        const lucciole = Array.from({ length: clamp(Math.round(w * h / 15000), 5, 22) }, () => ({ x: rnd(0, w), y: rnd(0, h), a: rnd(0, TAU), v: rnd(0.8, 2.4) * u, ph: rnd(0, TAU), f: rnd(1, 3) }));
+        return {
+            frame(ctx, dt, t) {
+                // il fumo dell'incenso: sbuffi morbidi che salgono, si allargano e svaniscono
+                for (const s of sorgenti) {
+                    s.t -= dt;
+                    if (s.t <= 0 && fumo.length < 90) { fumo.push({ x0: s.x, x: s.x, y: h + rnd(0, 2) * u, eta: 0, vita: rnd(7, 11), r0: rnd(0.9, 1.6) * u, ph: rnd(0, TAU) }); s.t = rnd(0.35, 0.7); }
+                }
+                for (let i = fumo.length - 1; i >= 0; i--) {
+                    const p = fumo[i];
+                    p.eta += dt;
+                    if (p.eta >= p.vita) { fumo.splice(i, 1); continue; }
+                    p.y -= (5 + p.eta * 0.6) * u * dt;
+                    p.x = p.x0 + Math.sin(p.eta * 0.9 + p.ph) * (1.4 + p.eta * 0.9) * u + Math.sin(t * 0.3 + p.ph) * 1.2 * u;
+                    const k = p.eta / p.vita, a = Math.min(1, p.eta / 1.3) * Math.pow(1 - k, 1.5) * 0.11;
+                    alone(ctx, p.x, p.y, (p.r0 + p.eta * 0.75 * u) * 2.2, [236, 230, 240], a);
+                }
+                ctx.globalCompositeOperation = 'lighter';
+                // le lucciole
+                for (const l of lucciole) {
+                    l.a += rnd(-1, 1) * dt * 3; l.x += Math.cos(l.a) * l.v * dt; l.y += Math.sin(l.a) * l.v * dt - 0.4 * u * dt;
+                    if (l.x < -2 * u) l.x = w + 2 * u; else if (l.x > w + 2 * u) l.x = -2 * u;
+                    if (l.y < -2 * u) l.y = h + 2 * u; else if (l.y > h + 2 * u) l.y = -2 * u;
+                    const a = Math.pow(0.5 + 0.5 * Math.sin(t * l.f + l.ph), 2.2);
+                    alone(ctx, l.x, l.y, 1.5 * u, [255, 232, 130], a * 0.8);
+                    ctx.fillStyle = rgba([255, 246, 190], a); ctx.beginPath(); ctx.arc(l.x, l.y, Math.max(0.6, 0.22 * u), 0, TAU); ctx.fill();
+                }
+                ctx.globalCompositeOperation = 'source-over';
+                // le lanterne (le lontane prima, più piccole e spente)
+                for (const l of lanterneL) {
+                    l.y -= l.v * dt;
+                    if (l.y < -l.alt * 2) Object.assign(l, nuova(false));
+                    const x = l.x + Math.sin(t * l.f + l.ph) * l.amp, lume = 0.82 + 0.18 * Math.sin(t * l.fl + l.ph * 3) * Math.sin(t * 1.3 + l.ph);
+                    ctx.globalCompositeOperation = 'lighter';
+                    alone(ctx, x, l.y, l.larg * 2.6, l.tinta, 0.3 * l.d * lume);
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.save();
+                    ctx.translate(x, l.y);
+                    const A = l.alt, Lg = l.larg;
+                    ctx.beginPath();
+                    ctx.moveTo(-0.38 * Lg, -0.5 * A); ctx.lineTo(0.38 * Lg, -0.5 * A);
+                    ctx.bezierCurveTo(0.55 * Lg, -0.15 * A, 0.5 * Lg, 0.25 * A, 0.28 * Lg, 0.5 * A);
+                    ctx.lineTo(-0.28 * Lg, 0.5 * A);
+                    ctx.bezierCurveTo(-0.5 * Lg, 0.25 * A, -0.55 * Lg, -0.15 * A, -0.38 * Lg, -0.5 * A);
+                    ctx.closePath();
+                    const g = ctx.createRadialGradient(0, 0.2 * A, 0, 0, 0.1 * A, 0.75 * A);
+                    g.addColorStop(0, rgba([255, 244, 200], 0.97 * lume)); g.addColorStop(0.55, rgba(l.tinta, 0.92)); g.addColorStop(1, rgba(mixCol(l.tinta, [90, 20, 10], 0.55), 0.92));
+                    ctx.fillStyle = g; ctx.fill();
+                    // le nervature della carta e i bordi
+                    ctx.strokeStyle = 'rgba(110,40,10,0.35)'; ctx.lineWidth = Math.max(0.5, 0.1 * u);
+                    ctx.beginPath(); ctx.moveTo(-0.14 * Lg, -0.5 * A); ctx.quadraticCurveTo(-0.22 * Lg, 0, -0.1 * Lg, 0.5 * A); ctx.moveTo(0.14 * Lg, -0.5 * A); ctx.quadraticCurveTo(0.22 * Lg, 0, 0.1 * Lg, 0.5 * A); ctx.stroke();
+                    ctx.fillStyle = 'rgba(70,25,10,0.8)'; ctx.fillRect(-0.4 * Lg, -0.54 * A, 0.8 * Lg, 0.07 * A); ctx.fillRect(-0.3 * Lg, 0.47 * A, 0.6 * Lg, 0.07 * A);
+                    ctx.restore();
+                    ctx.globalCompositeOperation = 'lighter';
+                    alone(ctx, x, l.y + 0.25 * A, Lg * 0.9, [255, 235, 170], 0.55 * lume);
+                    ctx.globalCompositeOperation = 'source-over';
+                }
+            }
+        };
+    }
+
     const EFFETTI = {
         'palco-neve': neve, 'palco-scintille': scintille, 'palco-coriandoli': coriandoli, 'palco-stelle': stelle, 'palco-temporale': temporale,
-        'palco-aurora': aurora, 'palco-fuochi': fuochi, 'palco-bolle': bolle, 'palco-synthwave': synthwave
+        'palco-aurora': aurora, 'palco-fuochi': fuochi, 'palco-bolle': bolle, 'palco-synthwave': synthwave, 'palco-lanterne': lanterne
     };
     const PRESENTI = Object.keys(EFFETTI);
 
