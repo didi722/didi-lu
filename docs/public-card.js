@@ -211,7 +211,8 @@
             vola = GALLEGGIANO.includes(nome);
         }
         if (posto.dataset.giro !== String(mio)) return;     // nel frattempo ne è stato scelto un altro
-        if (!gif || /-mega(-[xyz])?$/.test(nome)) gif = gifShowdown(nomeGrezzo, brillante);     // le Mega: sempre la GIF di Showdown (PokeAPI per molte ha solo l'immagine ferma)
+        // senza GIF di PokeAPI (le Mega più recenti non ce l'hanno) si usa quella di Showdown; per una Mega mai l'immagine ferma (official-artwork), che sul palco sarebbe fuori stile
+        if (!gif || (/-mega(-[xyz])?$/.test(nome) && /\/official-artwork\//.test(gif))) gif = gifShowdown(nomeGrezzo, brillante);
 
         const regola = RIMPICCIOLISCI.includes(nome) ? 'rimpicciolisci' : INGRANDISCI.includes(nome) ? 'ingrandisci' : undefined;
         const misure = P.scalaScena(altezzaM, { regola, vola });
@@ -227,10 +228,12 @@
         // Il nome non è scritto sul palco (lo si riconosce a vista): resta solo nell'alt per chi legge lo schermo
         const img = h('img', { src: gif, alt: nomeGrezzo, class: 'pp-pkm-img' });
         // se la GIF (piccola, a pixel) viene ingrandita più del doppio — un Pokémon alto come Dhelmise: 65 px di GIF per ~300 di palco — il browser la sfoca: con la classe
-        // pp-ingrandita i pixel restano netti (style-public-card.css)
+        // pp-ingrandita i pixel restano netti (style-public-card.css). Se la GIF si può leggere (è nel sito: sprites/ani/) la si ricostruisce con i bordi lisci (xBR, sprite-nitido.js):
+        // un canvas prende il posto dell'<img>; altrimenti resta l'<img> a pixel netti
         img.addEventListener('load', () => {
             if (img.naturalHeight && img.clientHeight / img.naturalHeight > RAPPORTO_GIF_INGRANDITA) img.classList.add('pp-ingrandita');
             centraScena(set, posto, img);
+            if (img.classList.contains('pp-ingrandita') && window.SpriteNitido) window.SpriteNitido.migliora(img).then(c => { if (c) centraScena(set, posto, c); }).catch(() => {});
         });
         posto.replaceChildren(img);
     }
