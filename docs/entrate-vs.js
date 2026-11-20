@@ -33,6 +33,7 @@
     const FILTRO = {
         oro: 'brightness(0) invert(.85) sepia(1) saturate(6) hue-rotate(-5deg)',
         bianco: 'brightness(0) invert(1)',
+        grigio: 'brightness(0) invert(.78)',
         arancio: 'brightness(0) invert(.55) sepia(1) saturate(9) hue-rotate(-25deg)',
         rosso: 'brightness(0) invert(.5) sepia(1) saturate(14) hue-rotate(-50deg)',
         ciano: 'brightness(0) invert(.6) sepia(1) saturate(10) hue-rotate(150deg)'
@@ -271,7 +272,7 @@
             A(alone, { scale: [0.3, 1.1], opacity: [0, 0.9, 0] }, { duration: 700, delay: t0 - 120, easing: 'ease-out' });
         },
 
-        // un cerchio ensō tracciato con il pennello, un loto che sboccia dietro di lui e un'aureola dorata; lui compare nella luce
+        // un cerchio ensō tracciato con il pennello, un loto che sboccia dietro di lui e un'aureola dorata; lui compare con un lampo grigio chiaro
         'entrata-zen'(c) {
             const { doc, h, t0, A } = c, D = c.strato(true);
             const totale = t0 + 420;
@@ -290,7 +291,7 @@
             const enso = ensoPennello(doc, D, h, c.t0);
             A(enso.disegno, { opacity: [0, 1, 1, 0], offset: [0, 0.05, 0.72, 1] }, { duration: 1700, delay: Math.max(0, t0 - 460), easing: 'linear' });
             A(enso.maschera, { strokeDashoffset: [`${enso.lunghezza}`, '0'] }, { duration: 820, delay: Math.max(0, t0 - 440), easing: 'cubic-bezier(.45,.15,.3,1)' });
-            A(c.sagoma(FILTRO.oro), { opacity: [0, 0.85, 0] }, { duration: 560, delay: t0 - 20, easing: 'ease-out' });
+            A(c.sagoma(FILTRO.grigio), { opacity: [0, 0.7, 0] }, { duration: 620, delay: t0 - 20, easing: 'ease-out' });      // un lampo pacato: grigio chiaro, non dorato
         }
     };
     const ELENCO = Object.keys(EFFETTI);
