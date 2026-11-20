@@ -178,7 +178,7 @@ test('negozio: le tre famiglie hanno la loro anteprima e lo Shop fa girare le en
     assert.match(html, /<script src="entrate-vs\.js"><\/script>/);
 });
 
-test('Shop: sotto la tua pagina c\'è la prova grande di quello che si guarda (palco, card, sfondo del Box, entrata)', () => {
+test('Shop: sotto la tua pagina c\'è la prova grande di quello che si guarda (palco, la tua card, sfondo del Box, entrata)', () => {
     const N = require('../docs/negozio.js');
     const c = id => C.perId(id);
     const o = { colore: '#112233', avatar: 'immagini/profile/12.png', nome: 'Didi <b>' };
@@ -187,7 +187,9 @@ test('Shop: sotto la tua pagina c\'è la prova grande di quello che si guarda (p
     assert.match(palco, /<div class="ng-gp-palco" data-effetto-palco="palco-temporale"><img src="immagini\/profile\/12\.png"/);
     assert.match(palco, /<b>Thunderstorm<\/b>/, 'e il suo nome e la sua frase');
     const card = N.provaGrandeHtml(c('card-oro'), o);
-    assert.equal((card.match(/class="sc-campione ng-gp-card" data-stile-card="card-oro"/g) || []).length, 3, 'tre card: nel tuo colore e in altri due');
+    assert.equal((card.match(/class="sc-campione ng-gp-card" data-stile-card="card-oro"/g) || []).length, 1, 'la tua card una volta sola');
+    assert.equal((card.match(/class="ng-gp-vicina"/g) || []).length, 2, 'tra due righe di altri allenatori, senza stile e senza il tuo nome');
+    assert.doesNotMatch(card.replace(/<div class="sc-campione[^]*?<\/div>/, ''), /DIDI/);
     assert.match(card, /--sc-fondo:#112233/);
     assert.match(card, /<b>DIDI &lt;B&gt;<\/b>/, 'il nome passa dall\'escape');
     assert.match(N.provaGrandeHtml(c('box-notte'), o), /<div class="ng-gp-box" data-sfondo-box="box-notte"><b class="ng-gp-box-titolo">DIDI &lt;B&gt;'S BOX/);
