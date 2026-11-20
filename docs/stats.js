@@ -341,7 +341,7 @@
         const chiave = x[CHIAVE[tab]];
         const nome = tab === 'pokemon' ? x.specie : x.nome;   // (nelle schede Usage il nome è la specie)
         return `<article class="carta carta-${tab}" role="button" tabindex="0" data-chiave="${esc(chiave)}"
-                style="${stileColore(x.colore, COLORE_BASE[tab])};--tilt:${inclinazione(chiave)}deg"
+                style="${stileColore(x.colore, COLORE_BASE[tab])};--tilt:calc(var(--nb-rot, 1) * ${inclinazione(chiave)}deg)"
                 aria-label="#${i + 1} ${esc(nome)}: open details">
             <span class="carta-pos pos-${i < 3 ? i + 1 : 'x'}" aria-hidden="true">#${i + 1}</span>
             <div class="carta-testa">${testaCarta(tab, x)}${punteggio(grande, x)}</div>
