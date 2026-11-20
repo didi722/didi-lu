@@ -163,3 +163,10 @@ test('scheda di un giocatore, team o Pokémon (Stats, Usage, Pokédex): angoli e
     const ctrl = docs('controlli.css');
     assert.match(ctrl, /\.stats-modal-card, \.scheda-nome, \.scheda-titolo, \.stats-modal \.tessera, \.stats-modal \.vuoto, \.premio-titolo-testo, \.premio-tip, \.uso-formato,/);
 });
+
+test('Stats: nessuna inclinazione fissa (tag, chip, card, titoli): tutte seguono --nb-rot, quindi dritte in Arcade e quasi dritte nel Soft', () => {
+    const stile = docs('style-stats.css');
+    assert.doesNotMatch(stile.replace(/rotate\(0deg\)|--tilt: 0deg|rotate\(var\(--tilt\)\)/g, ''), /rotate\(-?[\d.]+deg\)|--tilt: -?[\d.]+deg/);
+    assert.match(stile, /--tilt: calc\(var\(--nb-rot, 1\) \* -2deg\)/);
+    assert.match(stats, /--tilt:calc\(var\(--nb-rot, 1\) \* \$\{inclinazione\(chiave\)\}deg\)/, 'anche l\'inclinazione di ogni card');
+});
