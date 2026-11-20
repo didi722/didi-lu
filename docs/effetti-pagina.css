@@ -328,6 +328,12 @@
 }
 @keyframes ef-scansione { from { transform: translateY(-100%); } to { transform: translateY(420%); } }
 
+/* Con effetti-palco.js gli effetti del palco (tutti tranne i petali di ciliegio) si disegnano su un canvas davanti alla scena: gli strati CSS qui sopra restano come ripiego
+   (se il file non c'è, o il canvas non parte) e con il canvas attivo si spengono */
+.ef-canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 20; display: block; pointer-events: none; }
+[data-ef-canvas]::before,
+[data-ef-canvas]::after { content: none !important; display: none !important; animation: none !important; }
+
 @media (prefers-reduced-motion: reduce) {
     [data-effetto-nome],
     [data-effetto-nome]::after,

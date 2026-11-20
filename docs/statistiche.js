@@ -505,6 +505,7 @@
                 id: g.id,
                 nome: info(g.id).name || g.id,
                 colore: info(g.id).color || '',
+                stileCard: info(g.id).stileCard || '',        // lo stile della card comprato nello Shop (stile-card.css)
                 avatar: info(g.id).avatar || '',
                 elo, eloDelta: g.delta, eloPicco: picco,
                 // come la pagina pubblica: globali = showdown contati nel profilo, per stagione = quelli giocati nella stagione

@@ -337,10 +337,14 @@
             </div>`;
     }
 
+    // lo stile della card comprato nello Shop: solo sulle card dei giocatori, e solo se è un id fatto come si deve (viene dal database)
+    const stileCardDi = (tab, x) => (tab === 'players' && /^card-[a-z-]{2,30}$/.test(String(x.stileCard || '')) ? x.stileCard : '');
+
     function carta(tab, x, i, grande, tessere) {
         const chiave = x[CHIAVE[tab]];
         const nome = tab === 'pokemon' ? x.specie : x.nome;   // (nelle schede Usage il nome è la specie)
-        return `<article class="carta carta-${tab}" role="button" tabindex="0" data-chiave="${esc(chiave)}"
+        const stile = stileCardDi(tab, x);
+        return `<article class="carta carta-${tab}" role="button" tabindex="0" data-chiave="${esc(chiave)}"${stile ? ` data-stile-card="${stile}"` : ''}
                 style="${stileColore(x.colore, COLORE_BASE[tab])};--tilt:calc(var(--nb-rot, 1) * ${inclinazione(chiave)}deg)"
                 aria-label="#${i + 1} ${esc(nome)}: open details">
             <span class="carta-pos pos-${i < 3 ? i + 1 : 'x'}" aria-hidden="true">#${i + 1}</span>
@@ -502,7 +506,7 @@
             parametri: numeriche.map(s => ({ id: s.id, titolo: s.titolo, tip: s.tip || '' })),
             titolo: nomeStagione(), vuoto: righe.length ? '' : messaggioVuoto(), totale: righe.length,
             righe: righe.slice(0, MAX_APP).map((x, i) => ({
-                chiave: x[CHIAVE[tab]], posizione: i + 1, nome: tab === 'pokemon' ? x.specie : x.nome, colore: coloreSicuro(x.colore) || COLORE_BASE[tab], testa: testa(x), sotto: sotto(x),
+                chiave: x[CHIAVE[tab]], posizione: i + 1, nome: tab === 'pokemon' ? x.specie : x.nome, colore: coloreSicuro(x.colore) || COLORE_BASE[tab], stileCard: stileCardDi(tab, x), testa: testa(x), sotto: sotto(x),
                 valori: Object.fromEntries(numeriche.map(s => [s.id, { titolo: s.titolo, html: s.html(x), sotto: s.sotto ? s.sotto(x) : '' }]))
             }))
         });

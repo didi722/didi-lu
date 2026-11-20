@@ -16,6 +16,7 @@
 // Modificane una e copiala sull'altra (lo controlla test/monete.test.js). Lo stesso vale per rarita-pkm.js, che questo file legge (nel sito va caricato prima: <script src="rarita-pkm.js">).
 //
 //   Cosmetici.CATALOGO, Cosmetici.perId(id), Cosmetici.TIPI, Cosmetici.PREMI, Cosmetici.PREZZI
+//   Cosmetici.valido(id, tipo)                         l'id se è un cosmetico di quel tipo ('aura', 'nome', 'palco', 'card', 'boxsfondo', 'entrata'), altrimenti ''
 //   Cosmetici.possiede(id, { wallet, info, pagina })   comprato, oppure già in uso (chi usava un motivo che ora è a pagamento lo tiene); per avatar, colori e canzoni: quelli che hai (comprati o in uso)
 //   Cosmetici.possedutiDa({ wallet, info, pagina })    l'insieme degli id posseduti del catalogo fisso
 //   Cosmetici.motivoBloccato(motivo, contesto)         true se quel motivo dello sfondo è a pagamento e non è posseduto
@@ -75,7 +76,10 @@
         aura: { nome: 'Trainer aura', frase: 'A glow around your trainer on your page.' },
         nome: { nome: 'Name effects', frase: 'Make your name stand out on your page.' },
         palco: { nome: 'Stage effects', frase: 'Animated effects in front of your stage.' },
-        sfondo: { nome: 'Page patterns', frase: 'More patterns for the background of your page.' }
+        sfondo: { nome: 'Page patterns', frase: 'More patterns for the background of your page.' },
+        card: { nome: 'Card styles', frase: 'How your card looks to everyone: in Trainers, in the season ranking and in Stats.' },
+        boxsfondo: { nome: 'Box backgrounds', frase: 'A background for your Box. Only you see it.' },
+        entrata: { nome: 'Battle entrances', frase: 'How your trainer arrives in the VS screen before every set.' }
     };
 
     // Edizioni limitate: nessuna per ora. Una voce con `edizione: { stagione, nome }` si vende solo finché quella stagione non è chiusa (vedi disponibilita).
@@ -118,7 +122,37 @@
         { id: 'sfondo-pokeball', tipo: 'sfondo', nome: 'Pokéballs', prezzo: 250, motivo: 'pokeball', descr: 'A field of tiny Poké Balls.' },
         { id: 'sfondo-anelli', tipo: 'sfondo', nome: 'Rings', prezzo: 250, motivo: 'anelli', descr: 'Overlapping rings.' },
         { id: 'sfondo-stelle', tipo: 'sfondo', nome: 'Stars', prezzo: 250, motivo: 'stelle', descr: 'A sky of little stars.' },
-        { id: 'sfondo-onde', tipo: 'sfondo', nome: 'Waves', prezzo: 250, motivo: 'onde', descr: 'Soft rolling waves.' }
+        { id: 'sfondo-onde', tipo: 'sfondo', nome: 'Waves', prezzo: 250, motivo: 'onde', descr: 'Soft rolling waves.' },
+        // Stile delle card: come si vede la card dell'allenatore (Trainers, classifica di stagione, Stats). L'aspetto sta in stile-card.css (data-stile-card="<id>")
+        { id: 'card-puntini', tipo: 'card', nome: 'Polka dots', prezzo: 400, campo: 'stileCard', descr: 'A field of tiny white dots on your card.' },
+        { id: 'card-argento', tipo: 'card', nome: 'Silver frame', prezzo: 500, campo: 'stileCard', descr: 'A polished silver frame with a passing shine.' },
+        { id: 'card-carbonio', tipo: 'card', nome: 'Carbon', prezzo: 500, campo: 'stileCard', descr: 'Carbon-fibre weave with a steel frame.' },
+        { id: 'card-oro', tipo: 'card', nome: 'Gold frame', prezzo: 700, campo: 'stileCard', descr: 'A golden frame that catches the light.' },
+        { id: 'card-bagliore-ciano', tipo: 'card', nome: 'Cyan glow', prezzo: 600, campo: 'stileCard', descr: 'Your card glows icy cyan.' },
+        { id: 'card-bagliore-rosa', tipo: 'card', nome: 'Pink glow', prezzo: 600, campo: 'stileCard', descr: 'Your card glows hot pink.' },
+        { id: 'card-bagliore-verde', tipo: 'card', nome: 'Toxic glow', prezzo: 600, campo: 'stileCard', descr: 'Your card glows acid green.' },
+        { id: 'card-stelle', tipo: 'card', nome: 'Starfield', prezzo: 600, campo: 'stileCard', descr: 'A night sky of drifting stars.' },
+        { id: 'card-circuito', tipo: 'card', nome: 'Circuit', prezzo: 700, campo: 'stileCard', descr: 'A glowing circuit board under your name.' },
+        { id: 'card-fiamma', tipo: 'card', nome: 'Flame', prezzo: 800, campo: 'stileCard', descr: 'Your card burns with a flickering glow.' },
+        { id: 'card-olografica', tipo: 'card', nome: 'Holo foil', prezzo: 900, campo: 'stileCard', descr: 'A holographic foil that shimmers as it moves.' },
+        { id: 'card-arcobaleno', tipo: 'card', nome: 'Rainbow frame', prezzo: 900, campo: 'stileCard', descr: 'A frame that cycles through every colour.' },
+        // Sfondi del Box: lo sfondo della pagina Box, solo per chi lo ha. L'aspetto sta in sfondo-box.css (data-sfondo-box="<id>")
+        { id: 'box-nuvole', tipo: 'boxsfondo', nome: 'Clouds', prezzo: 400, campo: 'sfondoBox', descr: 'A bright sky with slow clouds.' },
+        { id: 'box-blueprint', tipo: 'boxsfondo', nome: 'Blueprint', prezzo: 400, campo: 'sfondoBox', descr: 'White lines on blueprint blue.' },
+        { id: 'box-foresta', tipo: 'boxsfondo', nome: 'Forest', prezzo: 500, campo: 'sfondoBox', descr: 'Layers of green woods.' },
+        { id: 'box-oceano', tipo: 'boxsfondo', nome: 'Deep sea', prezzo: 500, campo: 'sfondoBox', descr: 'Dark water with rising light.' },
+        { id: 'box-tramonto', tipo: 'boxsfondo', nome: 'Sunset', prezzo: 500, campo: 'sfondoBox', descr: 'Orange, pink and purple, with the sun on the horizon.' },
+        { id: 'box-notte', tipo: 'boxsfondo', nome: 'Starry night', prezzo: 600, campo: 'sfondoBox', descr: 'A twinkling night sky.' },
+        { id: 'box-vulcano', tipo: 'boxsfondo', nome: 'Volcano', prezzo: 600, campo: 'sfondoBox', descr: 'Black rock with glowing lava.' },
+        { id: 'box-neon', tipo: 'boxsfondo', nome: 'Neon grid', prezzo: 600, campo: 'sfondoBox', descr: 'A neon grid on a dark floor.' },
+        // Entrate: cosa succede quando l'allenatore arriva nella schermata VS prima di ogni set (battle-intro.js, data-entrata="<id>"); tutte provate a schermo nello Shop
+        { id: 'entrata-scintille', tipo: 'entrata', nome: 'Sparkle burst', prezzo: 500, campo: 'effettoEntrata', descr: 'A burst of golden sparks as you land.' },
+        { id: 'entrata-fumo', tipo: 'entrata', nome: 'Smoke bomb', prezzo: 500, campo: 'effettoEntrata', descr: 'You appear out of a cloud of smoke.' },
+        { id: 'entrata-onda', tipo: 'entrata', nome: 'Shockwave', prezzo: 600, campo: 'effettoEntrata', descr: 'The ground rings out as you land.' },
+        { id: 'entrata-fulmine', tipo: 'entrata', nome: 'Lightning strike', prezzo: 600, campo: 'effettoEntrata', descr: 'A bolt from the sky, and there you are.' },
+        { id: 'entrata-pokeball', tipo: 'entrata', nome: 'Poké Ball', prezzo: 700, campo: 'effettoEntrata', descr: 'You are sent out of a Poké Ball.' },
+        { id: 'entrata-fiamma', tipo: 'entrata', nome: 'Blaze', prezzo: 700, campo: 'effettoEntrata', descr: 'Flames burst around you.' },
+        { id: 'entrata-glitch', tipo: 'entrata', nome: 'Glitch', prezzo: 800, campo: 'effettoEntrata', descr: 'You flicker into the screen like a broken signal.' }
     ];
 
     // ---- Le famiglie: avatar e canzoni ---------------------------------------------------------
@@ -221,6 +255,12 @@
 
     function possedutiDa(contesto) {
         return new Set(CATALOGO.filter(c => possiede(c.id, contesto)).map(c => c.id));
+    }
+
+    /** L'id se è davvero un cosmetico di quel tipo (nel catalogo), altrimenti '' (un valore scritto a mano nel database non finisce mai in un attributo HTML) */
+    function valido(id, tipo) {
+        const c = perId(id);
+        return c && c.tipo === tipo ? c.id : '';
     }
 
     /** Il motivo dello sfondo è a pagamento e chi guarda non lo possiede? */
@@ -400,5 +440,5 @@
         return { set, amichevoli, badge, stagione, mvp, totale: set + amichevoli + badge + stagione + mvp };
     }
 
-    return { PREMI, PREZZI, LIMITI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, possiede, possedutiDa, motivoBloccato, disponibilita, stagioniEdizioni, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, possedutiDiTipo, prezzoAcquisto, prezzoPer, stimaStagione, compagnoDelBox, compagnoShiny, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
+    return { PREMI, PREZZI, LIMITI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, valido, possiede, possedutiDa, motivoBloccato, disponibilita, stagioniEdizioni, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, possedutiDiTipo, prezzoAcquisto, prezzoPer, stimaStagione, compagnoDelBox, compagnoShiny, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
 });

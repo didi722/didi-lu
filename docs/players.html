@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="tooltip.css">
 <link rel="stylesheet" href="badge-team.css">
 <link rel="stylesheet" href="scontri-diretti.css">
+<link rel="stylesheet" href="stile-card.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
 <script src="temi.js"></script>
@@ -319,6 +320,7 @@ async function initTrainersPage() {
                 name: info.name || key,
                 avatar: info.avatar || 'immagini/magikarp.png',
                 color: info.color || '#31c489',
+                stileCard: window.Cosmetici ? Cosmetici.valido(info.stileCard, 'card') : '',      // lo stile della card comprato nello Shop (stile-card.css)
                 ranking: indStats.ranking !== undefined ? Number(indStats.ranking) : 0,
                 classificato: Number(indStats.showdownsPlayed || 0) >= Statistiche.MIN_SD_CLASSIFICA,   // meno showdown: unranked, N/A
                 trophiesWon: trophiesWon,
@@ -341,7 +343,7 @@ async function initTrainersPage() {
         // l'app disegna gli allenatori a modo suo (app-trainers.js): in ordine di classifica, con la posizione di chi è classificato
         if (window.AppSito) AppSito.pubblica('trainers', playersList.map((p, i) => ({
             id: p.id, nome: p.name, avatar: p.avatar, colore: p.color, elo: p.ranking, classificato: p.classificato, posizione: p.classificato ? i + 1 : null,
-            titolo: p.titolo, pkm: p.pkmPreferito, pkmShiny: p.pkmShiny, trofei: p.trofei, stagioniVinte: p.trophiesWon, badge: p.badgeApp, palestra: p.palestra
+            titolo: p.titolo, pkm: p.pkmPreferito, pkmShiny: p.pkmShiny, trofei: p.trofei, stagioniVinte: p.trophiesWon, badge: p.badgeApp, palestra: p.palestra, stileCard: p.stileCard
         })));
 
         gridContainer.innerHTML = playersList.map((player, index) => {
@@ -366,11 +368,11 @@ async function initTrainersPage() {
                    </div>`
                     : '');
 
-            // i tasti stanno accanto alla card (non dentro: con i badge sarebbe troppo piena): il testa a testa (VS) e la partita amichevole (le spade)
+            // la partita amichevole (le spade) sta accanto alla card, non dentro: con i badge sarebbe troppo piena
             return `
               <div class="trainer-riga">
                 <a href="public.html?player=${encodeURIComponent(player.id)}" 
-                   class="trainer-card" 
+                   class="trainer-card"${player.stileCard ? ` data-stile-card="${player.stileCard}"` : ''}
                    style="background-color: ${player.color}; --random-deg: ${randomRotation}deg;">
                     
                     <div class="trainer-left-group">

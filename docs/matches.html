@@ -46,6 +46,7 @@
 <script src="dettagli.js" defer></script>
 <link rel="stylesheet" href="showdown.css">
 <link rel="stylesheet" href="classifica.css">
+<link rel="stylesheet" href="stile-card.css">
 <link rel="stylesheet" href="mvp.css">
 <link rel="stylesheet" href="riepilogo-stagione.css">
 <link rel="stylesheet" href="tooltip.css">
@@ -1143,6 +1144,7 @@ async function renderRankings(leaderboardData) {
         const idTeamBox = String(infoPlayer.pkmBox || '').split('|')[0];
         if (idTeamBox && window.Cosmetici) { try { const t = (await db.ref(`players/${nameClean}/teams/${idTeamBox}`).once('value')).val(); if (t) teamBox = [{ id: idTeamBox, ...t }]; } catch (e) { /* senza: si vale come compagno generico */ } }
         const color = String(infoPlayer.color || "#31c489").replace(/[^#0-9a-zA-Z(),.%\s-]/g, '');
+        const stileCard = window.Cosmetici ? Cosmetici.valido(infoPlayer.stileCard, 'card') : '';      // lo stile della card comprato nello Shop (stile-card.css)
         const avatarHtml = infoPlayer.avatar
             ? `<img src="${escClassifica(infoPlayer.avatar)}" class="cl-avatar" alt="" loading="lazy">`
             : `<span class="cl-avatar cl-avatar-vuoto" aria-hidden="true"></span>`;
@@ -1150,12 +1152,12 @@ async function renderRankings(leaderboardData) {
         const sdWon = player.sdWon || 0;
         const sdLost = player.sdLost || 0;
         const playerUrlParam = encodeURIComponent(player.name.trim());
-        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(infoPlayer, teamBox) : false, sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
+        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, stileCard, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(infoPlayer, teamBox) : false, sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
 
         return `
        <div class="rank-riga">
            ${Sfide.bottoneRanking(player.name)}
-            <a class="cl-riga${index === 0 ? ' cl-primo' : ''}" href="public.html?player=${playerUrlParam}" style="--cl-colore: ${color};">
+            <a class="cl-riga${index === 0 ? ' cl-primo' : ''}" href="public.html?player=${playerUrlParam}"${stileCard ? ` data-stile-card="${stileCard}"` : ''} style="--cl-colore: ${color};">
                 <span class="cl-pos">#${index + 1}</span>
                 ${avatarHtml}
                 <span class="cl-testi">
@@ -1189,6 +1191,7 @@ async function renderClassificaDettagliata(stagione) {
         const playersData = snapPlayers.val() || {};
         const coloreDi = id => String(playersData[String(id).toLowerCase().trim()]?.info?.color || '#ffbd44').replace(/[^#0-9a-zA-Z(),.%\s-]/g, '');
         const avatarDi = id => playersData[String(id).toLowerCase().trim()]?.info?.avatar || '';
+        const stileDi = id => (window.Cosmetici ? Cosmetici.valido(playersData[String(id).toLowerCase().trim()]?.info?.stileCard, 'card') : '');      // lo stile della card comprato nello Shop (stile-card.css)
 
         let sorted = [];
 
@@ -1239,7 +1242,7 @@ async function renderClassificaDettagliata(stagione) {
             const val = (n, extra = '') => `<span class="cl-val ${extra}">${n || 0}</span>`;
 
             html += `
-                <a class="cl-tab cl-tab-riga${index === 0 ? ' cl-primo' : ''}" href="public.html?player=${url}" style="--cl-colore: ${coloreDi(p.id)};">
+                <a class="cl-tab cl-tab-riga${index === 0 ? ' cl-primo' : ''}" href="public.html?player=${url}"${stileDi(p.id) ? ` data-stile-card="${stileDi(p.id)}"` : ''} style="--cl-colore: ${coloreDi(p.id)};">
                     <span class="cl-pos">#${index + 1}</span>
                     <span class="cl-identita">${avatarHtml}<span class="cl-nome nome-scorrevole">${nome}</span></span>
                     ${val(p.sdTot, 'cl-tot')}${val(p.sdWon)}${val(p.sdLost, 'cl-perse')}
