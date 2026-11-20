@@ -211,7 +211,7 @@
             vola = GALLEGGIANO.includes(nome);
         }
         if (posto.dataset.giro !== String(mio)) return;     // nel frattempo ne è stato scelto un altro
-        if (!gif) gif = gifShowdown(nomeGrezzo, brillante);
+        if (!gif || /-mega(-[xyz])?$/.test(nome)) gif = gifShowdown(nomeGrezzo, brillante);     // le Mega: sempre la GIF di Showdown (PokeAPI per molte ha solo l'immagine ferma)
 
         const regola = RIMPICCIOLISCI.includes(nome) ? 'rimpicciolisci' : INGRANDISCI.includes(nome) ? 'ingrandisci' : undefined;
         const misure = P.scalaScena(altezzaM, { regola, vola });
