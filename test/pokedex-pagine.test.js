@@ -29,7 +29,7 @@ test('stats.html: il tag Pokédex, la sezione con i suoi controlli, gli stili e 
     const uso = html.indexOf('<script src="uso-globale.js"></script>');
     const pagina = html.indexOf('<script src="stats.js"></script>');
     assert.ok(uso > 0 && naz > uso && lega > naz && pagina > lega, 'uso-globale.js, pokedex-nazionale.js, pokedex-lega.js, poi stats.js');
-    assert.match(html, /<li><b>Pokédex<\/b> lists every Pokémon in national Pokédex order/, 'la spiegazione dei numeri');
+    assert.doesNotMatch(html, /How are these numbers calculated|stats-note/, 'niente più sezione "How are these numbers calculated?"');
     assert.match(docs('pokedex-lega.js'), /require\('\.\/pokedex-nazionale\.js'\)/);
 });
 
