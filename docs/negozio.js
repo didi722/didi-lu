@@ -72,9 +72,13 @@
 .ng-gp-palco img{position:absolute;left:50%;bottom:12%;height:66%;width:auto;transform:translateX(-50%);image-rendering:pixelated;z-index:2;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.3))}
 .ng-gp-pedana{position:absolute;left:50%;bottom:6%;width:46%;height:12%;transform:translateX(-50%);border-radius:50%;background:rgba(0,0,0,.28);z-index:1}
 .ng-gp-card-lista{display:grid;gap:10px;padding:6px 8px 8px 4px}
-.ng-gp-card{justify-content:flex-start !important;gap:10px;height:50px;padding:0 14px}
-.ng-gp-card img{height:34px;width:auto;image-rendering:pixelated}
-.ng-gp-card b{flex:1;font:900 .9rem 'Josefin Sans',sans-serif;letter-spacing:.06em;color:#000}
+.ng-gp-card{justify-content:flex-start !important;gap:12px;height:76px;padding:0 18px}
+.ng-gp-card img{height:54px;width:auto;image-rendering:pixelated}
+.ng-gp-vicina{display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;border:3px solid #000;background:#d9dde6;opacity:.55}
+.ng-gp-vicina span:first-child{width:26px;height:16px;background:#000}
+.ng-gp-vicina span:nth-child(2){flex:0 0 38%;height:12px;background:#000;opacity:.55}
+.ng-gp-vicina i{margin-left:auto;width:56px;height:14px;background:#000;opacity:.7}
+.ng-gp-card b{flex:1;font:900 1.05rem 'Josefin Sans',sans-serif;letter-spacing:.06em;color:#000}
 .ng-gp-card i{font:900 .8rem 'Josefin Sans',sans-serif;font-style:normal;color:#000}
 .ng-gp-pos{font:900 .8rem 'Josefin Sans',sans-serif;background:#000;color:#fff;padding:3px 6px 1px}
 .ng-gp-box{box-sizing:border-box;height:210px;padding:12px;border:3px solid #000;overflow:hidden;display:grid;grid-template-rows:auto 1fr;gap:10px;background-image:var(--sb-img);background-size:var(--sb-dim);background-color:var(--sb-col);color:var(--nb-testo,#000)}
@@ -83,7 +87,7 @@
 .ng-gp-team{height:92px;border:3px solid #000;background:#fff;box-shadow:4px 4px 0 #000;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;align-content:center;padding:8px}
 .ng-gp-team span{height:22px;background:#d9dde6;border:2px solid #000;border-radius:50%}
 .ng-gp-entrata{position:relative;overflow:hidden;height:210px;border:3px solid #000;background:linear-gradient(135deg,#6b93b0 50%,#d96b6b 50%)}
-@media (max-width:900px){.ng-gp-palco,.ng-gp-box,.ng-gp-entrata{height:130px}.ng-gp-card{height:36px}.ng-gp-card img{height:24px}.ng-gp-team{height:56px;padding:4px}.ng-gp-team span{height:12px}.ng-gp-card-lista{gap:6px}}
+@media (max-width:900px){.ng-gp-palco,.ng-gp-box,.ng-gp-entrata{height:130px}.ng-gp-card{height:50px}.ng-gp-card img{height:34px}.ng-gp-vicina{height:24px}.ng-gp-team{height:56px;padding:4px}.ng-gp-team span{height:12px}.ng-gp-card-lista{gap:6px}}
 .ng-voce[data-tipo=nome] .ng-anteprima{display:flex;align-items:center;justify-content:center;background:#f3f4f8}
 .ng-nome-prova{font:900 1.2rem/1 'Josefin Sans',sans-serif;letter-spacing:-.01em;text-transform:uppercase;color:var(--pp-nome,#31c489);-webkit-text-stroke:.075em #000;paint-order:stroke fill;text-shadow:.07em .07em 0 #000}
 .ng-voce[data-tipo=palco] .ng-anteprima{position:relative;overflow:hidden;container-type:size;--ef-u:3cqh}
@@ -148,9 +152,9 @@
         let corpo = '';
         if (c.tipo === 'palco') corpo = `<div class="ng-gp-palco" data-effetto-palco="${esc(c.id)}"><img src="${avatar}" alt="" onerror="this.style.visibility='hidden'"><span class="ng-gp-pedana"></span></div>`;
         else if (c.tipo === 'card') {
-            const righe = [[colore, 'Your colour'], ['#ffd966', ''], ['#9fd4ff', '']].map(([col, , ], i) =>
-                `<div class="sc-campione ng-gp-card" data-stile-card="${esc(c.id)}" style="--sc-fondo:${col}"><span class="ng-gp-pos">#${i + 1}</span><img src="${avatar}" alt="" onerror="this.style.visibility='hidden'"><b>${nome}</b><i>ELO ${1200 - i * 90}</i></div>`).join('');
-            corpo = `<div class="ng-gp-card-lista">${righe}</div>`;
+            // la tua card una volta sola, grande, tra due righe di altri allenatori (senza stile) per vedere come spicca
+            const vicina = '<div class="ng-gp-vicina" aria-hidden="true"><span></span><span></span><i></i></div>';
+            corpo = `<div class="ng-gp-card-lista">${vicina}<div class="sc-campione ng-gp-card" data-stile-card="${esc(c.id)}" style="--sc-fondo:${colore}"><span class="ng-gp-pos">#1</span><img src="${avatar}" alt="" onerror="this.style.visibility='hidden'"><b>${nome}</b><i>ELO 1200</i></div>${vicina}</div>`;
         } else if (c.tipo === 'boxsfondo') {
             const team = Array.from({ length: 3 }, () => `<div class="ng-gp-team">${'<span></span>'.repeat(6)}</div>`).join('');
             corpo = `<div class="ng-gp-box" data-sfondo-box="${esc(c.id)}"><b class="ng-gp-box-titolo">${nome}'S BOX</b><div class="ng-gp-teams">${team}</div></div>`;
