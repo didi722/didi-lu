@@ -107,21 +107,26 @@ test('htmlPokedex: una regione per sezione, con il conto; le caselle usate sono 
     assert.match(html, /<h3>Kanto<\/h3><span class="pdx-intervallo">#001–#151<\/span><span class="pdx-conto"><b>2<\/b>\/151<\/span>/);
     assert.match(html, /<h3>Galar &amp; Hisui<\/h3>/);
     // usata: pulsante con la forma più usata, il numero e il fumetto
-    assert.match(html, /<button type="button" class="pdx-cella pdx-usato" data-apri="usage" data-chiave="ninetalesalola" data-num="38" title="#038 Ninetales — in 2 teams · 2 trainers \(also as Ninetales-Alola\)"/);
+    assert.match(html, /<button type="button" class="pdx-cella pdx-usato" data-apri="usage" data-chiave="ninetalesalola" data-num="38" title="#038 Ninetales" aria-label="#038 Ninetales">/);
     assert.match(html, /<span class="pdx-icona" aria-hidden="true" style="--x:2;--y:3"><\/span><span class="pdx-num" aria-hidden="true">038<\/span><span class="pdx-n" aria-hidden="true">2<\/span>/, 'l\'icona sta alla colonna 38 % 12 e riga 38 / 12; il numero di team compare da due in su');
     // mai usata: niente pulsante
-    assert.match(html, /<span class="pdx-cella pdx-mai" data-num="1" title="#001 Bulbasaur — never used in the league" role="img"/);
+    assert.match(html, /<span class="pdx-cella pdx-mai" data-num="1" title="#001 Bulbasaur" role="img" aria-label="#001 Bulbasaur">/);
     assert.equal((html.match(/pdx-usato/g) || []).length, 4);
     assert.equal((html.match(/pdx-mai/g) || []).length, 1021);
     // una usata una volta sola non ha il numero accanto
     assert.doesNotMatch(html.match(/<button[^>]*data-num="892"[^]*?<\/button>/)[0], /class="pdx-n"/);
 });
 
-test('htmlPokedex, un allenatore: i fumetti parlano di lui', () => {
-    const html = PL.htmlPokedex(PL.calcola(uso, { chi: 'lu' }), { nomeChi: 'Lu' });
-    assert.match(html, /title="#445 Garchomp — in 1 team"/);
-    assert.match(html, /title="#001 Bulbasaur — never used by Lu"/);
-    assert.doesNotMatch(html, /trainers/);
+test('htmlPokedex: il fumetto di ogni casella è solo numero e nome, della lega o di un allenatore', () => {
+    for (const chi of ['', 'lu']) {
+        const html = PL.htmlPokedex(PL.calcola(uso, { chi }));
+        const titoli = [...html.matchAll(/title="([^"]*)"/g)].map(x => x[1]);
+        assert.equal(titoli.length, 1025);
+        assert.ok(titoli.every(t => /^#\d{3,4} [^—·]+$/.test(t)), 'nessun "never used", team o trainer nel fumetto');
+        assert.ok(titoli.includes('#445 Garchomp') && titoli.includes('#001 Bulbasaur'));
+    }
+    const html = PL.htmlPokedex(PL.calcola(uso, { chi: 'lu' }));
+    assert.doesNotMatch(html, /never used|trainers/);
 });
 
 test('htmlPokedex: ricerca (nome, numero, forma); tutti i Pokémon, usati e mai usati', () => {
@@ -140,9 +145,8 @@ test('htmlPokedex: ricerca (nome, numero, forma); tutti i Pokémon, usati e mai 
 
 test('htmlPokedex: il testo che viene dai dati non entra come HTML', () => {
     const m = PL.calcola({ specie: [{ specieId: 'garchomp', nome: 'Garchomp' }], squadre: [{ giocatore: 'x', specieId: ['garchomp'] }] }, { chi: 'x' });
-    const html = PL.htmlPokedex(m, { nomeChi: '<img src=x onerror=1>', cerca: '' });
+    const html = PL.htmlPokedex(m, { cerca: '' });
     assert.doesNotMatch(html, /<img src=x/);
-    assert.match(html, /never used by &lt;img src=x onerror=1&gt;/);
     const ricerca = PL.htmlPokedex(m, { cerca: '<script>' });
     assert.doesNotMatch(ricerca, /<script>/);
     assert.match(ricerca, /Nothing matches “&lt;script&gt;”/);

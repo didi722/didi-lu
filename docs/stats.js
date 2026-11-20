@@ -401,7 +401,7 @@
             <span class="pdx-totale-testo">${m.perc}% of the Pokédex ${nomeChi ? `used by <b>${esc(nomeChi)}</b>` : 'used in the league'}</span>`;
         $('pdx-indice').innerHTML = m.regioni.map(r => `<button type="button" class="pdx-vai" data-pdx-vai="${esc(r.id)}">${esc(r.nome)}<b>${r.usati}/${r.totale}</b></button>`).join('');
         // nell'app le caselle le disegna app-stats.js (l'HTML parte nel modello); nel browser stanno qui
-        const html = PokedexLega.htmlPokedex(m, { nomeChi, cerca: STATO.cerca });
+        const html = PokedexLega.htmlPokedex(m, { cerca: STATO.cerca });
         const nellApp = document.documentElement.classList.contains('app-shell');
         if (!nellApp) $('pdx-corpo').innerHTML = html;
 
