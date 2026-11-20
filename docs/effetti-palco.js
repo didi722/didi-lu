@@ -441,61 +441,61 @@
     }
 
     // =================================================
-    // SYNTHWAVE: la griglia in prospettiva che corre verso di te, il sole a strisce all'orizzonte, i bagliori e una riga di luce che scende
+    // SYNTHWAVE: neutro, senza orizzonte (l'orizzonte del palco cambia con le misure della card): bagliori rosa e azzurri agli angoli, una griglia piatta che scorre,
+    // le righe di uno schermo a tubo, una barra di luce che scende e dei segni al neon che salgono
     // =================================================
     function synthwave(S) {
         const { w, h, u } = S;
-        const orizzonte = h * 0.6;
-        const stelle = Array.from({ length: clamp(Math.round(w * h / 6000), 6, 40) }, () => ({ x: rnd(0, w), y: rnd(0, orizzonte * 0.85), ph: rnd(0, TAU), sp: rnd(1, 3) }));
+        const ROSA = [255, 60, 200], AZZURRO = [70, 230, 255];
+        const segni = Array.from({ length: clamp(Math.round(w * h / 9000), 5, 24) }, () => ({ x: rnd(0, w), y: rnd(0, h), v: rnd(3, 8) * u, ph: rnd(0, TAU), tipo: Math.random() < 0.5 ? 'croce' : 'rombo', col: Math.random() < 0.5 ? ROSA : AZZURRO, r: rnd(0.5, 1.1) * u }));
         return {
             frame(ctx, dt, t) {
-                // il bagliore all'orizzonte
-                const cielo = ctx.createLinearGradient(0, orizzonte - 26 * u, 0, orizzonte + 4 * u);
-                cielo.addColorStop(0, 'rgba(255,60,200,0)'); cielo.addColorStop(1, 'rgba(255,60,200,0.28)');
-                ctx.fillStyle = cielo; ctx.fillRect(0, orizzonte - 26 * u, w, 30 * u);
-                ctx.fillStyle = 'rgba(255,255,255,0.8)';
-                for (const s of stelle) { ctx.globalAlpha = 0.25 + 0.6 * (0.5 + 0.5 * Math.sin(t * s.sp + s.ph)); ctx.fillRect(s.x, s.y, Math.max(1, 0.35 * u), Math.max(1, 0.35 * u)); }
-                ctx.globalAlpha = 1;
-                // il sole: un disco sfumato giallo-rosa, tagliato da strisce sempre più larghe verso il basso
-                const rs = 19 * u, cx = w / 2, cy = orizzonte - 4 * u;
+                // i bagliori agli angoli, che respirano
+                const r1 = Math.max(w, h) * (0.55 + 0.05 * Math.sin(t * 0.9));
+                alone(ctx, 0, 0, r1, ROSA, 0.3);
+                alone(ctx, w, h, r1, AZZURRO, 0.3);
+                alone(ctx, w, 0, r1 * 0.6, [170, 90, 255], 0.16);
+                alone(ctx, 0, h, r1 * 0.6, [170, 90, 255], 0.16);
+                // la griglia piatta: sfuma verso l'alto e il basso e scorre piano
+                const passo = 9 * u, off = (t * 2.2 * u) % passo;
                 ctx.save();
-                ctx.beginPath(); ctx.rect(0, 0, w, orizzonte); ctx.clip();
-                const sole = ctx.createLinearGradient(0, cy - rs, 0, cy + rs);
-                sole.addColorStop(0, 'rgba(255,230,90,0.55)'); sole.addColorStop(1, 'rgba(255,50,170,0.55)');
-                ctx.fillStyle = sole; ctx.beginPath(); ctx.arc(cx, cy, rs, 0, TAU); ctx.fill();
+                ctx.lineWidth = Math.max(0.6, 0.2 * u);
+                ctx.strokeStyle = 'rgba(70,230,255,0.38)';
+                ctx.beginPath();
+                for (let x = (-off % passo) - passo; x < w + passo; x += passo) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+                ctx.stroke();
+                ctx.strokeStyle = 'rgba(255,60,200,0.4)';
+                ctx.beginPath();
+                for (let y = off - passo; y < h + passo; y += passo) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+                ctx.stroke();
+                // la griglia svanisce al centro (dove sta l'allenatore) e resta più viva ai bordi
                 ctx.globalCompositeOperation = 'destination-out';
-                for (let i = 0; i < 6; i++) {
-                    const y = cy + rs * (0.1 + i * 0.16), sp = (0.5 + i * 0.5) * u * 0.55;
-                    ctx.fillStyle = 'rgba(0,0,0,1)'; ctx.fillRect(cx - rs, y, rs * 2, sp);
-                }
+                const v = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.15, w / 2, h / 2, Math.max(w, h) * 0.65);
+                v.addColorStop(0, 'rgba(0,0,0,0.75)'); v.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = v; ctx.fillRect(0, 0, w, h);
                 ctx.restore();
                 ctx.globalCompositeOperation = 'source-over';
-                // la griglia: le righe orizzontali si avvicinano (e si allargano) scorrendo; le verticali partono dal punto di fuga
-                const f = (t * 0.22) % 1;
-                ctx.lineWidth = Math.max(0.7, 0.28 * u);
-                const N = 9, sotto = h - orizzonte;
-                for (let i = 0; i < N; i++) {
-                    const k = (i + f) / N, y = orizzonte + sotto * Math.pow(k, 2.4);
-                    ctx.strokeStyle = `rgba(255,70,210,${(0.15 + 0.6 * k).toFixed(3)})`;
-                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                // le righe dello schermo
+                ctx.fillStyle = 'rgba(0,0,0,0.07)';
+                for (let y = 0; y < h; y += 3 * Math.max(1, u * 0.5)) ctx.fillRect(0, y, w, Math.max(1, u * 0.3));
+                // i segni al neon che salgono
+                ctx.globalCompositeOperation = 'lighter';
+                for (const s of segni) {
+                    s.y -= s.v * dt;
+                    if (s.y < -2 * u) { s.y = h + 2 * u; s.x = rnd(0, w); }
+                    const a = 0.35 + 0.5 * (0.5 + 0.5 * Math.sin(t * 2 + s.ph));
+                    ctx.strokeStyle = rgba(s.col, a); ctx.lineWidth = Math.max(0.8, 0.28 * u);
+                    ctx.beginPath();
+                    if (s.tipo === 'croce') { ctx.moveTo(s.x - s.r, s.y); ctx.lineTo(s.x + s.r, s.y); ctx.moveTo(s.x, s.y - s.r); ctx.lineTo(s.x, s.y + s.r); }
+                    else { ctx.moveTo(s.x, s.y - s.r); ctx.lineTo(s.x + s.r, s.y); ctx.lineTo(s.x, s.y + s.r); ctx.lineTo(s.x - s.r, s.y); ctx.closePath(); }
+                    ctx.stroke();
                 }
-                const V = 14;
-                for (let i = -V; i <= V; i++) {
-                    const x2 = cx + i * (w * 0.14);
-                    const g = ctx.createLinearGradient(0, orizzonte, 0, h);
-                    g.addColorStop(0, 'rgba(70,230,255,0)'); g.addColorStop(1, 'rgba(70,230,255,0.6)');
-                    ctx.strokeStyle = g;
-                    ctx.beginPath(); ctx.moveTo(cx + i * (w * 0.012), orizzonte); ctx.lineTo(x2, h); ctx.stroke();
-                }
-                // la linea dell'orizzonte e la riga di luce che scende
-                const o = ctx.createLinearGradient(0, 0, w, 0);
-                o.addColorStop(0, 'rgba(70,230,255,0)'); o.addColorStop(0.5, 'rgba(255,255,255,0.8)'); o.addColorStop(1, 'rgba(255,70,210,0)');
-                ctx.strokeStyle = o; ctx.lineWidth = Math.max(0.8, 0.4 * u);
-                ctx.beginPath(); ctx.moveTo(0, orizzonte); ctx.lineTo(w, orizzonte); ctx.stroke();
+                // la riga di luce che scende
                 const yl = ((t * 0.2) % 1.3 - 0.15) * h;
                 const l = ctx.createLinearGradient(0, yl - 8 * u, 0, yl + 8 * u);
-                l.addColorStop(0, 'rgba(80,240,255,0)'); l.addColorStop(0.5, 'rgba(80,240,255,0.22)'); l.addColorStop(1, 'rgba(80,240,255,0)');
+                l.addColorStop(0, 'rgba(80,240,255,0)'); l.addColorStop(0.5, 'rgba(80,240,255,0.24)'); l.addColorStop(1, 'rgba(80,240,255,0)');
                 ctx.fillStyle = l; ctx.fillRect(0, yl - 8 * u, w, 16 * u);
+                ctx.globalCompositeOperation = 'source-over';
             }
         };
     }
