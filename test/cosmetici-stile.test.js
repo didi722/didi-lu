@@ -178,14 +178,15 @@ test('negozio: le tre famiglie hanno la loro anteprima e lo Shop fa girare le en
     assert.match(html, /<script src="entrate-vs\.js"><\/script>/);
 });
 
-test('Shop: sotto la tua pagina c\'è la prova grande di quello che si guarda (palco, la tua card, sfondo del Box, entrata)', () => {
+test('Shop: sotto la tua pagina c\'è sempre quello che si prova: un ritaglio della pagina vera (palco, nome, angolo) o il disegno di card, sfondo del Box ed entrata', () => {
     const N = require('../docs/negozio.js');
     const c = id => C.perId(id);
     const o = { colore: '#112233', avatar: 'immagini/profile/12.png', nome: 'Didi <b>' };
-    assert.deepEqual(N.TIPI_PROVA_GRANDE, ['palco', 'card', 'boxsfondo', 'entrata']);
-    const palco = N.provaGrandeHtml(c('palco-temporale'), o);
-    assert.match(palco, /<div class="ng-gp-palco" data-effetto-palco="palco-temporale"><img src="immagini\/profile\/12\.png"/);
-    assert.match(palco, /<b>Thunderstorm<\/b>/, 'e il suo nome e la sua frase');
+    assert.deepEqual(N.TIPI_PROVA_GRANDE, ['card', 'boxsfondo', 'entrata']);
+    assert.deepEqual(N.FUOCO_PROVA, { aura: 'palco', palco: 'palco', nome: 'identita', sfondo: 'pagina' });
+    // ogni voce del catalogo ha un pannello: o il ritaglio o il disegno
+    for (const v of C.CATALOGO) assert.ok(N.FUOCO_PROVA[v.tipo] || N.TIPI_PROVA_GRANDE.includes(v.tipo), `${v.id} non ha una prova sotto la pagina`);
+    // la tua card una volta sola, tra due righe di altri allenatori
     const card = N.provaGrandeHtml(c('card-oro'), o);
     assert.equal((card.match(/class="sc-campione ng-gp-card" data-stile-card="card-oro"/g) || []).length, 1, 'la tua card una volta sola');
     assert.equal((card.match(/class="ng-gp-vicina"/g) || []).length, 2, 'tra due righe di altri allenatori, senza stile e senza il tuo nome');
@@ -194,15 +195,22 @@ test('Shop: sotto la tua pagina c\'è la prova grande di quello che si guarda (p
     assert.match(card, /<b>DIDI &lt;B&gt;<\/b>/, 'il nome passa dall\'escape');
     assert.match(N.provaGrandeHtml(c('box-notte'), o), /<div class="ng-gp-box" data-sfondo-box="box-notte"><b class="ng-gp-box-titolo">DIDI &lt;B&gt;'S BOX/);
     assert.match(N.provaGrandeHtml(c('entrata-fumo'), o), /<div class="ng-gp-entrata ev-palco" data-entrata="entrata-fumo"><\/div>/);
-    assert.equal(N.provaGrandeHtml(c('aura-oro'), o), '', 'le altre voci si provano sulla pagina');
+    assert.equal(N.provaGrandeHtml(c('palco-neve'), o), '', 'il palco, l\'aura, il nome e i motivi si vedono sulla pagina vera, non in un disegno');
     assert.match(N.provaGrandeHtml(c('card-oro'), { colore: 'rosso', nome: 'x' }), /--sc-fondo:#6b93b0/, 'un colore che non è un colore non entra nello stile');
     // il pannello e la sua logica
     const html = docs('shop.html'), shop = docs('shop.js');
-    assert.match(html, /<div class="shop-extra" id="shop-extra" hidden aria-live="polite"><\/div>/);
+    assert.match(html, /<div class="shop-extra" id="shop-extra" hidden aria-live="polite">\s*<div class="shop-zoom" id="shop-zoom" hidden><iframe id="shop-iframe2"/);
     assert.match(shop, /const voceGrande = \(\) => \{ const c = S\.provando \? C\.perId\(S\.provando\) : null; return c && N\.TIPI_PROVA_GRANDE\.includes\(c\.tipo\) \? c : null; \};/);
-    assert.match(shop, /box\.innerHTML = N\.provaGrandeHtml\(c, \{ colore: S\.info\.color, avatar: S\.info\.avatar, nome: S\.info\.name \|\| S\.giocatore \}\);/);
-    assert.match(shop, /if \(id === grandeId\) return;/, 'si ridisegna solo quando cambia la voce');
+    assert.match(shop, /if \(c && N\.FUOCO_PROVA\[c\.tipo\]\) return N\.FUOCO_PROVA\[c\.tipo\];\s*if \(S\.prova\.avatar\) return 'palco';\s*if \(S\.prova\.color\) return 'identita';/, 'avatar e colore hanno il loro ritaglio');
+    assert.match(shop, /querySelector\(`\.pp-blocco\[data-blocco="\$\{fuoco\}"\]`\)/, 'il palco vero (con il compagno), non un disegno');
+    assert.match(shop, /if \(fuoco === 'pagina'\) return \{ left: 0, top: 0, width: 560, height: 315 \};/);
+    assert.match(shop, /for \(const f of \[\$\('shop-iframe'\), \$\('shop-iframe2'\)\]\)/, 'le prove vanno a tutte e due le pagine');
+    assert.match(shop, /\[\$\('shop-iframe'\), \$\('shop-iframe2'\)\]\.find\(f => f && f\.contentWindow === e\.source\)/, 'ognuna dice quando è pronta');
     assert.match(shop, /S\.prova = campo \? \{ \[campo\]: valore \} : \{\}; S\.provando = id;/, 'card, Box ed entrata non toccano la pagina nel riquadro');
     assert.match(shop, /fermaGrande = window\.EntrateVs\.anteprima\(entrata, entrata\.dataset\.entrata, S\.info\.avatar\)/);
     assert.match(docs('style-shop.css'), /\.shop-extra \{[^}]*border-top: 3px dashed/);
+    assert.match(docs('style-shop.css'), /\.shop-zoom iframe \{[^}]*width: 1440px; height: 810px;/, 'la pagina è larga 1440 come nel riquadro in alto');
+    // la pagina nel riquadro non si legge da una cache vecchia
+    assert.match(shop, /const indirizzoAnteprima = \(\) => `public\.html\?player=\$\{encodeURIComponent\(S\.giocatore\)\}&anteprima=1&_=\$\{Date\.now\(\)\.toString\(36\)\}`;/);
+    assert.match(shop, /\$\('shop-iframe'\)\.src = indirizzoAnteprima\(\);/);
 });
