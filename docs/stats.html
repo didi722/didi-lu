@@ -10,6 +10,7 @@
     <!-- l'ossatura (loader, menu, login, banner) è quella di tutte le pagine -->
     <link rel="stylesheet" href="style-schermata-base-vuota.css">
     <link rel="stylesheet" href="style-stats.css">
+    <link rel="stylesheet" href="pokedex-lega.css">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="db-leggero.js"></script>
@@ -136,6 +137,7 @@
             <button type="button" class="tag tag-teams" role="tab" data-tab="teams" aria-selected="false">Teams</button>
             <button type="button" class="tag tag-pokemon" role="tab" data-tab="pokemon" aria-selected="false">Pokémon</button>
             <button type="button" class="tag tag-usage" role="tab" data-tab="usage" aria-selected="false" title="Which Pokémon are used the most, and with which moves, items and abilities">Usage</button>
+            <button type="button" class="tag tag-pokedex" role="tab" data-tab="pokedex" aria-selected="false" title="Every Pokémon in Pokédex order: in colour the ones that have been used, in grey the ones never used. Of the whole league or of a trainer">Pokédex</button>
         </div>
         <div class="stats-filtri">
             <label class="filtro">
@@ -158,6 +160,22 @@
     <!-- Usage: i Pokémon più usati di ogni formato (solo con "All formats") -->
     <section id="stats-uso-formati" class="uso-formati" aria-label="Most used Pokémon by format" hidden></section>
 
+    <!-- Pokédex: tutti i Pokémon in ordine nazionale, a colori gli usati e in grigio i mai usati (della lega o di un allenatore) -->
+    <section id="stats-pokedex" class="pdx" aria-label="Pokédex" hidden>
+        <div class="pdx-controlli">
+            <label class="pdx-chi"><span>Pokédex of</span><select id="pdx-chi"></select></label>
+            <div class="pdx-filtri" id="pdx-filtri" role="group" aria-label="Show">
+                <button type="button" class="pdx-filtro" data-pdx-filtro="tutti" aria-pressed="true">All</button>
+                <button type="button" class="pdx-filtro" data-pdx-filtro="usati" aria-pressed="false">Used</button>
+                <button type="button" class="pdx-filtro" data-pdx-filtro="mai" aria-pressed="false">Never used</button>
+            </div>
+        </div>
+        <div id="pdx-totale" class="pdx-totale" aria-live="polite"></div>
+        <nav id="pdx-indice" class="pdx-indice" aria-label="Regions"></nav>
+        <div id="pdx-corpo" class="pdx-corpo"></div>
+        <p id="pdx-nota" class="pdx-nota"></p>
+    </section>
+
     <!-- Ordinamento: una chip per ogni statistica (sostituisce le intestazioni della vecchia tabella) -->
     <div id="stats-ordina" class="stats-ordina" role="group" aria-label="Sort by"></div>
 
@@ -176,6 +194,7 @@
                 Moves, items, abilities and natures are shares of the sets of that Pokémon. A team registered to a season only counts from its first official set: until then it does not show up here, and teams that were never registered or only tried out in the Box never do.
                 In closed sheet seasons only the Pokémon of a team count, never their moves, items, abilities or natures: opponents do not see those either.</li>
             <li><b>Pokémon</b> are the individual ones of each team (not the species): the Garchomp of one team and the Garchomp of another are different entries.</li>
+            <li><b>Pokédex</b> lists every Pokémon in national Pokédex order. A Pokémon is <i>used</i> when it is in a team that has played at least one official set (the same rule as Usage, so the season and format filters apply); the others stay grey. Forms (Mega, regional...) count for their base species. Pick a trainer to see their own Pokédex.</li>
             <li><b>KOs</b> are credited to the Pokémon that caused it, also when they come from poison, burn, entry hazards, weather, Leech Seed, Perish Song…; self-inflicted KOs (recoil, Life Orb) are credited to nobody.</li>
             <li><b>KO share</b> is the part of the team's credited KOs scored by that Pokémon.</li>
             <li><b>Last standing</b>: sets won as the only Pokémon left on its team.</li>
@@ -452,6 +471,8 @@ loginModal.addEventListener('click', (event) => {
 <script src="mvp.js"></script>
 <script src="mvp-voto.js"></script>
 <script src="uso-globale.js"></script>
+<script src="pokedex-nazionale.js"></script>
+<script src="pokedex-lega.js"></script>
 <script src="badge-team.js"></script>
 <script src="badge-allenatore.js"></script>
 <script src="titoli.js"></script>

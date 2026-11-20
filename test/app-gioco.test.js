@@ -196,9 +196,9 @@ test('app-gioco.css e app-menu.css: ogni regola riguarda l\'app (html.app…); l
     assert.match(comune, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*animation(-duration)?:\s*(none|\.01ms|0\.01ms)/);
 });
 
-test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprietà del tema; --c e --x li scrive il menù scena per scena, le scintille portano --l --z --d --r, --i e --n le locandine di Play', () => {
+test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprietà del tema; --c e --x li scrive il menù scena per scena, le scintille portano --l --z --d --r, --i e --n le locandine di Play, --x e --y le caselle del Pokédex', () => {
     const fogli = ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css'].map(f => senzaCommenti(docs(f))).join('\n');
-    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'scala-pkm.js', 'dettagli.js', 'matches.html'].map(docs).join('\n');
+    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'pokedex-lega.js', 'scala-pkm.js', 'dettagli.js', 'matches.html'].map(docs).join('\n');
     const tema = docs('temi.css') + docs('nb-pagine.css');
     const usate = new Set([...fogli.matchAll(/var\((--[a-z0-9-]+)/gi)].map(m => m[1]));
     const definite = new Set([...fogli.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map(m => m[1]));
