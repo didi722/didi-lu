@@ -1,0 +1,260 @@
+/* =====================================================
+   SCONTRI DIRETTI — il tasto "VS" accanto alle card di Trainers e la finestra del testa a testa (scontri-diretti-ui.js)
+   Segue il tema del sito (le variabili --nb-*). Nell'app lo stile sta in app-gioco-pagine.css.
+   ===================================================== */
+
+html.h2h-aperto, html.h2h-aperto body { overflow: hidden; }
+
+/* ---------- il tasto accanto alla card ---------- */
+.tasto-scontro {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    box-sizing: border-box;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 8px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    font: 900 .78rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .06em;
+    cursor: pointer;
+    transition: transform .1s ease, box-shadow .1s ease, background-color .1s;
+}
+.tasto-scontro:hover { background: #fff; transform: translate(-1px, -2px) rotate(3deg); }
+.tasto-scontro:active { transform: translate(2px, 2px); box-shadow: none; }
+.tasto-scontro:focus-visible { outline: 3px solid var(--nb-ink, #000); outline-offset: 3px; }
+.tasto-scontro[hidden] { display: none !important; }
+/* il proprio tasto non c'è, ma il suo posto resta: le card hanno tutte la stessa larghezza */
+.trainer-riga .tasto-scontro[hidden] { display: inline-flex !important; visibility: hidden; }
+/* i tasti accanto alla card (il VS e le spade): in fila, e sul telefono uno sopra l'altro, così la card resta larga come prima */
+.trainer-azioni { display: flex; flex: none; align-items: center; gap: 10px; }
+@media (max-width: 600px) { .trainer-azioni { flex-direction: column; gap: 6px; } }
+
+/* ---------- la finestra ---------- */
+.h2h-velo {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 20px;
+    background: rgba(0, 0, 0, .55);
+}
+.h2h-velo[hidden] { display: none; }
+.h2h-scheda {
+    position: relative;
+    box-sizing: border-box;
+    width: min(700px, 100%);
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px 22px 24px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+    font-family: var(--nb-font-testo, 'Montserrat', sans-serif);
+}
+.h2h-titolo {
+    display: inline-block;
+    margin: 0 0 14px;
+    padding: 6px 16px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border-radius: var(--nb-raggio, 0px);
+    font: 900 1.15rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.5deg));
+}
+.h2h-x {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    font: 900 1.3rem/1 var(--nb-font-titoli, sans-serif);
+    cursor: pointer;
+}
+.h2h-x:hover { background: var(--nb-giallo, #ffbd44); }
+
+/* i due allenatori, uno per colore, e in mezzo il VS (scambia i lati) */
+.h2h-versus { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; margin: 0 0 16px; }
+.h2h-lato {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 12px 10px 12px;
+    background: var(--c, #31c489);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 4px 4px 0 #000);
+}
+.h2h-avatar {
+    display: block;
+    width: 72px;
+    height: 72px;
+    box-sizing: border-box;
+    padding: 3px;
+    object-fit: contain;
+    background: #fff;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+}
+.h2h-nome { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 1.1rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .03em; text-transform: uppercase; }
+.h2h-scelta {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 7px 30px 5px 10px;
+    background-color: #fff;
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    font: 800 .86rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.h2h-vs {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    font: 900 1.1rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .04em;
+    cursor: pointer;
+    transform: rotate(calc(var(--nb-rot, 1) * -4deg));
+    transition: transform .15s ease;
+}
+.h2h-vs:hover { transform: rotate(calc(var(--nb-rot, 1) * 4deg)) scale(1.06); }
+.h2h-vs:active { transform: scale(.94); }
+.h2h-vs:focus-visible, .h2h-x:focus-visible, .h2h-altri:focus-visible, .h2h-riprova:focus-visible { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 2px; }
+
+/* il verdetto */
+.h2h-verdetto { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 16px; font: 700 .95rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.h2h-sticker {
+    flex: none;
+    padding: 3px 12px 2px;
+    background: #e5e7eb;
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: min(var(--nb-raggio, 0px), 8px);
+    font: 900 .78rem/1.5 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot, 1) * -2deg));
+}
+.h2h-v-nemesi .h2h-sticker { background: #ff7b7b; }
+.h2h-v-preda .h2h-sticker { background: #4ade80; }
+.h2h-v-rivali .h2h-sticker { background: #c4a6ff; }
+.h2h-v-pari .h2h-sticker { background: var(--nb-giallo, #ffbd44); }
+
+/* i numeri */
+.h2h-tabellone { margin: 0 0 16px; padding: 12px 14px 10px; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); background: color-mix(in srgb, var(--nb-carta, #fff) 92%, var(--nb-ink, #000)); }
+.h2h-riga { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; text-align: center; }
+.h2h-riga + .h2h-riga { margin-top: 6px; }
+.h2h-num { font: 900 1.5rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); opacity: .6; }
+.h2h-num.h2h-avanti { opacity: 1; }
+.h2h-riga-grande .h2h-num { font-size: 2.6rem; }
+.h2h-voce { min-width: 92px; font: 800 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; opacity: .75; }
+.h2h-barra { display: flex; height: 14px; margin: 4px 0 10px; border: 3px solid var(--nb-ink, #000); border-radius: min(var(--nb-raggio, 0px), 8px); overflow: hidden; background: #fff; }
+.h2h-barra-a { background: var(--ca, #31c489); }
+.h2h-barra-b { background: var(--cb, #ff7b7b); }
+.h2h-barra span + span { border-left: 3px solid var(--nb-ink, #000); }
+.h2h-nota { margin: 6px 0 0; text-align: center; font: 700 .76rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
+
+/* forma recente e formati */
+.h2h-forma, .h2h-formati { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 14px; }
+.h2h-titoletto { font: 800 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+.h2h-pallini { display: inline-flex; gap: 4px; }
+.h2h-pallini i {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: min(var(--nb-raggio, 0px), 6px);
+    color: #000;
+    font: 900 .78rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    font-style: normal;
+}
+.h2h-pallini .h2h-w { background: #4ade80; }
+.h2h-pallini .h2h-l { background: #ff7b7b; }
+.h2h-serie { font: 700 .8rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.h2h-formati-lista { display: flex; flex-wrap: wrap; gap: 6px; }
+.h2h-formato { padding: 3px 10px 2px; border: 2px solid var(--nb-ink, #000); border-radius: min(var(--nb-raggio, 0px), 8px); font: 700 .8rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.h2h-formato b { font-weight: 900; margin-right: 4px; }
+
+/* gli ultimi incontri */
+.h2h-sotto { margin: 4px 0 8px; font: 900 .85rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
+.h2h-incontri { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.h2h-incontro { padding: 8px 12px 9px; border: 3px solid var(--nb-ink, #000); border-left-width: 10px; border-radius: var(--nb-raggio, 0px); background: color-mix(in srgb, var(--nb-carta, #fff) 94%, var(--nb-ink, #000)); }
+.h2h-vince-a { border-left-color: var(--ca, #31c489); }
+.h2h-vince-b { border-left-color: var(--cb, #ff7b7b); }
+.h2h-in-corso { border-style: dashed; border-left-style: solid; border-left-color: var(--nb-giallo, #ffbd44); }
+.h2h-inc-testa { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin: 0 0 4px; }
+.h2h-inc-stagione { color: inherit; font: 900 .85rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 2px; }
+.h2h-inc-formato { font: 700 .78rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .85; }
+.h2h-inc-data { margin-left: auto; font: 600 .74rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .7; }
+.h2h-inc-corpo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.h2h-inc-esito { font: 800 .85rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.h2h-inc-match { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.h2h-m { min-width: 38px; box-sizing: border-box; padding: 2px 7px 1px; text-align: center; color: #000; border: 2px solid var(--nb-ink, #000); border-radius: min(var(--nb-raggio, 0px), 6px); font: 900 .78rem/1.5 var(--nb-font-titoli, 'Josefin Sans', sans-serif); cursor: help; }
+.h2h-m-a { background: var(--ca, #31c489); }
+.h2h-m-b { background: var(--cb, #ff7b7b); }
+.h2h-altri, .h2h-riprova {
+    margin: 10px 0 0;
+    padding: 6px 14px 5px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    font: 900 .8rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.h2h-altri:hover, .h2h-riprova:hover { background: var(--nb-giallo, #ffbd44); }
+.h2h-riprova { margin: 0 0 0 4px; padding: 2px 10px 1px; }
+.h2h-vuoto, .h2h-attesa { margin: 18px 0 8px; text-align: center; font: 700 .95rem/1.5 var(--nb-font-testo, 'Montserrat', sans-serif); }
+
+@media (max-width: 560px) {
+    .h2h-velo { padding: 10px; }
+    .h2h-scheda { padding: 14px 14px 18px; }
+    .h2h-versus { gap: 6px; }
+    .h2h-lato { padding: 8px 6px; gap: 6px; }
+    .h2h-avatar { width: 52px; height: 52px; }
+    .h2h-vs { width: 42px; height: 42px; font-size: .95rem; }
+    .h2h-scelta { padding: 6px 22px 4px 7px; font-size: .72rem; letter-spacing: 0; background-position: calc(100% - 14px) 52%, calc(100% - 8px) 52%; }
+    .h2h-riga-grande .h2h-num { font-size: 2.1rem; }
+    .h2h-num { font-size: 1.25rem; }
+    .h2h-voce { min-width: 70px; font-size: .64rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .h2h-vs, .tasto-scontro { transition: none; }
+}

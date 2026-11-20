@@ -350,7 +350,7 @@
 
     return {
         BETA, MATCH_PER_SHOWDOWN, FORMA_MAX, MIN_MATCH_RIVALE,
-        idDi, percorsoAvatar, matchValido, completato, prossimoMatch, vincitoreMatch, vincitoreShowdown,
+        idDi, percorsoAvatar, matchValido, completato, prossimoMatch, giocatoriShowdown, vincitoreMatch, vincitoreShowdown, tempoDi,
         stato, formatiStagione, nomiIscritti, tempoRimasto,
         rivali, riepilogoRivali, showdownRimasti, daFare
     };
