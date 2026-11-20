@@ -55,7 +55,7 @@ test('cablaggio nel Box: preferenze salvate (filtri, ordine, vista) e le tre vis
     assert.match(box, /localStorage\.setItem\(chiavePrefs\(\)/);
     assert.match(box, /const chiavePrefs = \(\) => `boxPrefs:\$\{playerID\}`/, 'per giocatore');
     // la lista e le cartelle
-    assert.match(box, /vistaBox === 'cartelle'\) return renderizzaCartelle\(/);
+    assert.match(box, /vistaBox === 'cartelle'\) \{ renderizzaCartelle\(/);
     assert.match(box, /classList\.toggle\('vista-lista'/);
     assert.match(box, /function apriCartella\(cat\)/);
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'box-vista.css')));

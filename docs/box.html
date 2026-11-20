@@ -40,6 +40,7 @@
 <script src="badge-team.js"></script>
 <script src="note-team.js"></script>
 <script src="etichette-team.js"></script>
+<script src="bozze-team.js"></script>
 <script src="formato-pool.js"></script>
 <script src="dati-gen.js"></script>
 <script src="sprites/indice.js"></script>
@@ -292,6 +293,7 @@ const db = firebase.database();
 const auth = firebase.auth();
 let playerID = ""; // Verrà popolata dopo il login
 let tuttiITeam = [];
+let bozzeTeam = [];         // le bozze del giocatore (bozze-team.js): team in lavorazione messi da parte, dalla più recente
 let playerColors = {};
 
 const CONFIG_CHIAVI_HELPER = {
@@ -671,6 +673,7 @@ async function inizializzaPaginaBox() {
         
         // 3. ATTENDIAMO che i team siano stati scaricati ed elaborati
         await scaricaDati(); 
+        await ascoltaBozze();       // le bozze (team in lavorazione) stanno in testa alla griglia
 
         if (typeof ascoltaMusicaFirebase === "function" && !INCORPORATO) {     // nell'editor del simulatore la musica non serve
             ascoltaMusicaFirebase();
@@ -704,6 +707,7 @@ async function inizializzaPaginaBox() {
 
         console.log(`✅ Box loaded successfully for ${nomeFormattato}. Teams found: ${tuttiITeam.length}`);
         if (INCORPORATO) avviaEditorIncorporato();
+        else proponiBackup();       // un team in lavorazione rimasto aperto quando la pagina si è chiusa: si propone di riprenderlo
 
     } catch (e) {
         console.error("❌ Error during Box initialization:", e);
@@ -1054,7 +1058,7 @@ async function renderizza(lista, contenitore) {
     const principale = grid.id === 'teamsGrid';
     grid.classList.toggle('vista-lista', principale && vistaBox === 'lista');
     grid.classList.remove('vista-cartelle');
-    if (principale && vistaBox === 'cartelle') return renderizzaCartelle(lista, grid, coloreFormato);
+    if (principale && vistaBox === 'cartelle') { renderizzaCartelle(lista, grid, coloreFormato); aggiungiBozze(grid, coloreFormato); return; }
 
     // le card entrano una dopo l'altra solo la prima volta: cercando o filtrando non devono ripartire
     grid.classList.toggle('intro', !grid.dataset.disegnata);
@@ -1180,6 +1184,7 @@ async function renderizza(lista, contenitore) {
         `;
     }).join('');
 
+    if (principale) aggiungiBozze(grid, coloreFormato);       // le bozze (team in lavorazione) in testa alla griglia
     if (typeof avviaFumettoSimile === 'function') avviaFumettoSimile(grid);
 
     // le medagliette dei badge sulle card (arrivano appena sono pronte le statistiche reali)
@@ -3487,7 +3492,7 @@ async function mostraSuccessoSalvataggio(messaggio) {
 let salvataggioTeamInCorso = false; // evita doppi salvataggi (es. Invio premuto sul bottone durante l'attesa)
 
 // Salva (o aggiorna) un team dal Team Builder: { nome, categoria (il formato), testo (in formato Showdown), editingId (null se è nuovo) }
-async function salvaTeamSuFirebase({ nome, categoria, testo, editingId = null } = {}) {
+async function salvaTeamSuFirebase({ nome, categoria, testo, editingId = null, bozzaId = null } = {}) {
     if (salvataggioTeamInCorso) return;
 
     const databaseRef = typeof db !== 'undefined' ? db.ref() : firebase.database().ref();
@@ -3622,6 +3627,14 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
             await newTeamRef.set(datiTeamDaSalvare);
         }
 
+        // Il team è nel Box: la bozza da cui veniva (e il backup nel browser) non servono più
+        if (bozzaId) {
+            try { await databaseRef.child(`${BozzeTeam.percorso(playerID)}/${bozzaId}`).remove(); }
+            catch (e) { console.warn('Draft not removed:', e); }
+        }
+        BozzeTeam.cancellaBackup(memoriaBrowser(), playerID);
+        tbBackupScritto = false;
+
         // Messaggio finale, mostrato dentro il loader (niente popup del browser)
         const azione = editingId ? "Team updated" : "Team saved";
         const messaggio = (await copiaRiuscita)
@@ -3675,6 +3688,96 @@ function cancellaTeamDaFirebase(teamId) {
                 alert("Error: Technical error during deletion.");
             });
     }
+}
+
+// ---------- Bozze dei team (bozze-team.js) ----------
+// Un team in lavorazione (anche a metà: cinque Pokémon, niente mosse, niente nome) si mette da parte dal Team Builder e si riprende da qui. Una bozza non è un team:
+// sta in players/<id>/bozze, non va in stagioni né in match, e sparisce quando la si salva nel Box. Le card delle bozze stanno in testa alla griglia, in ogni vista.
+const memoriaBrowser = () => { try { return window.localStorage; } catch (e) { return null; } };
+
+// Ascolta le bozze del giocatore; la promessa si risolve alla prima lettura. Dopo, ogni cambiamento (qui o in un'altra scheda) ridisegna il Box.
+function ascoltaBozze() {
+    return new Promise(resolve => {
+        if (!playerID || INCORPORATO) return resolve([]);
+        let primo = true;
+        db.ref(BozzeTeam.percorso(playerID)).on('value', snap => {
+            bozzeTeam = BozzeTeam.elenco(snap.val());
+            if (primo) { primo = false; return resolve(bozzeTeam); }
+            if (typeof applicaFiltri === 'function') applicaFiltri();
+        }, () => { if (primo) { primo = false; resolve([]); } });
+    });
+}
+
+// Gli stessi filtri dei team (ricerca, formato, etichetta) valgono per le bozze
+function filtriDelBox() {
+    const valore = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+    return { testo: valore('searchInput').toLowerCase().trim(), categoria: valore('categoryFilter'), etichetta: valore('labelFilter') };
+}
+
+function aggiungiBozze(grid, coloreFormato) {
+    if (INCORPORATO || !grid || !bozzeTeam.length) return;
+    const visibili = BozzeTeam.filtra(bozzeTeam, filtriDelBox());
+    if (!visibili.length) return;
+    const ora = Date.now();
+    grid.insertAdjacentHTML('afterbegin', visibili.map((b, i) =>
+        BozzeTeam.htmlCard(b, { esc: escEtichetta, gif: nome => SpritePkm.gif(nome, false), colore: coloreFormato, ora, posizione: i })).join(''));
+}
+
+// Il team del Box da cui veniva la bozza, se c'è ancora e si può ancora modificare (altrimenti la bozza diventa un team nuovo)
+async function teamDiOrigineDellaBozza(daTeam) {
+    const team = daTeam ? tuttiITeam.find(t => t.id === daTeam) : null;
+    if (!team) return null;
+    await caricaTeamBloccati();
+    return TeamBloccati.eBloccato(window.nomiTeamBloccati, team.nome) ? null : team.id;
+}
+
+async function continuaBozza(id) {
+    const b = bozzeTeam.find(x => x.id === id);
+    if (!b) return;
+    await modificaTeamNelBuilder(await teamDiOrigineDellaBozza(b.daTeam), b);
+}
+
+async function cancellaBozza(id) {
+    const b = bozzeTeam.find(x => x.id === id);
+    if (!b) return;
+    if (!confirm(`Delete the draft "${BozzeTeam.nomeVisibile(b)}"? This can't be undone.`)) return;
+    try { await db.ref(`${BozzeTeam.percorso(playerID)}/${id}`).remove(); }
+    catch (e) { console.error('Draft not deleted', e); alert("Error: the draft could not be deleted. Try again."); }
+}
+
+// La copia di sicurezza nel browser: se la pagina si chiude con un team in lavorazione non salvato, alla prossima apertura del Box si propone di riprenderlo
+function proponiBackup() {
+    if (INCORPORATO || !playerID || document.getElementById('bozza-ripresa')) return;
+    const b = BozzeTeam.leggiBackup(memoriaBrowser(), playerID);
+    if (!b) return;
+    // identico a una bozza già salvata: non c'è niente da recuperare
+    const salvata = b.bozzaId && bozzeTeam.find(x => x.id === b.bozzaId);
+    if (salvata && salvata.testoShowdown === b.testoShowdown && salvata.nome === b.nome) return BozzeTeam.cancellaBackup(memoriaBrowser(), playerID);
+    const banner = document.createElement('div');
+    banner.id = 'bozza-ripresa';
+    banner.className = 'bozza-ripresa';
+    banner.setAttribute('role', 'status');
+    banner.innerHTML = `
+        <p><b>Unsaved team found.</b> You were working on <b>${escEtichetta(BozzeTeam.nomeVisibile(b))}</b> (${escEtichetta(b.categoria)}, ${b.quanti}/6 Pokémon) when the page was closed.</p>
+        <div class="bozza-ripresa-azioni">
+            <button type="button" class="tb-btn tb-btn-save" onclick="riprendiBackup()">Resume</button>
+            <button type="button" class="tb-btn tb-btn-secondario" onclick="scartaBackup()">Discard</button>
+        </div>`;
+    document.body.appendChild(banner);
+}
+
+function chiudiBannerBackup() { const b = document.getElementById('bozza-ripresa'); if (b) b.remove(); }
+
+function scartaBackup() {
+    BozzeTeam.cancellaBackup(memoriaBrowser(), playerID);
+    chiudiBannerBackup();
+}
+
+async function riprendiBackup() {
+    const b = BozzeTeam.leggiBackup(memoriaBrowser(), playerID);
+    chiudiBannerBackup();
+    if (!b) return;
+    await modificaTeamNelBuilder(await teamDiOrigineDellaBozza(b.daTeam), { id: b.bozzaId || null, nome: b.nome, categoria: b.categoria, testoShowdown: b.testoShowdown, daBackup: true });
 }
 
 // MODIFICA uno specifico team: si apre direttamente il Team Builder, con il team dentro
@@ -4817,6 +4920,7 @@ function inizializzaChiusuraHelper(event) {
 
 function chiudiTuttoHelper() {
         tbModifica = null; // chiudendo l'helper si esce dalla modifica di un team del box
+    tbBozzaId = null; tbBozzaSalvata = '';
     // 1. Chiude il modale principale e RIPRISTINA lo scorrimento
     const modal = document.getElementById('helper-modal-overlay');
     if (modal) modal.style.display = 'none';
@@ -4951,6 +5055,13 @@ const tbStato = {
 
 // Team del box aperto nel builder per la modifica (null = team nuovo)
 let tbModifica = null;
+
+// Le bozze nel builder: l'id della bozza su cui si sta lavorando (null = nessuna ancora), com'era il team (nome + testo) quando è stata salvata o aperta, e il backup nel browser
+let tbBozzaId = null;
+let tbBozzaSalvata = '';
+let tbBackupScritto = false;
+let tbTimerBackup = null;
+const tbImpronta = () => `${tbNomeTeam()}\u0001${tbTestoShowdown()}`;
 
 // ---------------------------------------------------------------------
 // LA LEGA NEI TOOLTIP (lega-box.js): quello che si gioca davvero in questo formato, dai team iscritti che hanno già giocato un set ufficiale.
@@ -6969,13 +7080,14 @@ async function tbPreparaDettaglio(team) {
 // Bottoni Copy / Save e tag delle debolezze (in colonna nell'editor, in riga nella scelta Pokémon)
 function tbHtmlAzioni(variante) {
     return `
-        <div class="tb-actions ${variante === 'riga' ? 'tb-actions-row' : ''}">
+        <div class="tb-actions ${variante === 'riga' ? 'tb-actions-row' : ''}${INCORPORATO ? '' : ' tb-con-bozza'}">
             <div class="tb-actions-io">
                 <button type="button" id="tb-btn-import" class="tb-btn tb-btn-copy" onclick="tbApriShowdown('import')">Import</button>
                 <button type="button" id="tb-btn-export" class="tb-btn tb-btn-copy" onclick="tbApriShowdown('export')">Export</button>
+                ${INCORPORATO ? '' : `<button type="button" id="tb-btn-bozza" class="tb-btn tb-btn-copy tb-btn-bozza" onclick="tbSalvaBozza()" title="Put this team aside as a draft, even if it is not finished: you can pick it up later from the Box">Save draft</button>`}
             </div>
             <div class="tb-save-wrap" id="tb-save-wrap">
-                <button type="button" id="tb-btn-save" class="tb-btn tb-btn-save" onclick="tbSalvaNelBox()">${tbModifica ? 'Update team' : 'Save to box'}</button>
+                <button type="button" id="tb-btn-save" class="tb-btn tb-btn-save" onclick="tbSalvaNelBox()">${tbModifica && tbModifica.teamId ? 'Update team' : 'Save to box'}</button>
                 <div class="tb-bubble" id="tb-save-bubble"></div>
             </div>
             <div class="tb-cov-wrap">
@@ -8048,8 +8160,10 @@ async function tbAttendiBuilderPronto() {
 
 // Apre nel Team Builder un team del Box. Il loader sfocato copre subito tutto; sotto si prepara il builder, invisibile
 // (la lista del formato la calcola l'helper, anche lui nascosto) e il loader svanisce solo quando il team è pronto.
-async function modificaTeamNelBuilder(teamId) {
-    const team = teamId ? tuttiITeam.find(t => t.id === teamId) : null;
+async function modificaTeamNelBuilder(teamId, bozza = null) {
+    const teamBox = teamId ? tuttiITeam.find(t => t.id === teamId) : null;
+    // Una bozza si apre come un team: il suo formato, il suo nome, i suoi Pokémon. Se veniva da un team del Box (teamId) il salvataggio lo aggiorna, altrimenti ne crea uno nuovo.
+    const team = bozza ? { categoria: bozza.categoria, nome: bozza.nome, testoShowdown: bozza.testoShowdown } : teamBox;
     if (!team) {
         alert("Error: Team not found.");
         return;
@@ -8072,7 +8186,9 @@ async function modificaTeamNelBuilder(teamId) {
 
     // Loader sfocato sopra la pagina finché il builder non è pronto
     mostraLoaderSalvataggio('Loading...');
-    const sessione = tbModifica = { teamId, nome, pokemon };
+    const sessione = tbModifica = { teamId: teamBox ? teamId : null, nome, pokemon, daBackup: !!(bozza && bozza.daBackup) };
+    tbBozzaId = bozza && bozza.id ? bozza.id : null;
+    tbBozzaSalvata = '';
     tbStato.firma = '';
     tbStato.slot = [null, null, null, null, null, null];
     helper.style.display = 'none';
@@ -8089,6 +8205,7 @@ async function modificaTeamNelBuilder(teamId) {
     const annulla = async (messaggio) => {
         if (tbModifica !== sessione) return;
         tbModifica = null;
+        tbBozzaId = null;
         document.body.style.overflow = '';
         await sfumaLoaderSalvataggio();
         alert(messaggio);
@@ -8194,6 +8311,13 @@ async function apriTeamBuilder() {
             tbInizializzaStato(firma, regolamento, lista, listaConfronto);
             tbCaricaTeamEsistente(tbModifica.pokemon);
             tbModifica.testoIniziale = tbTestoShowdown();
+            if (tbModifica.daBackup) {
+                // ripreso dal backup: non è salvato da nessuna parte, quindi chiudere senza salvare chiede cosa farne; e il backup resta finché non si decide
+                tbModifica.testoIniziale = '\u0000';
+                tbBackupScritto = true;
+            } else if (tbBozzaId) {
+                tbBozzaSalvata = tbImpronta();        // aperto da una bozza: finché non cambia niente non c'è niente da perdere
+            }
         } else if (tbStato.firma !== firma) {
             tbInizializzaStato(firma, regolamento, lista, listaConfronto);
         } else {
@@ -8249,20 +8373,130 @@ function chiudiTeamBuilder() {
 function tbCiSonoModifiche() {
     const overlay = document.getElementById('tb-overlay');
     if (!(overlay && overlay.classList.contains('open') && tbStato.slot.some(Boolean))) return false;
+    // Aperto da una bozza (o messo da parte come bozza in questa sessione): conta ciò che è cambiato rispetto alla bozza salvata, anche solo il nome
+    if (tbBozzaId) return tbBozzaSalvata !== tbImpronta();
     // In modifica conta solo se il team è diverso da quello caricato dal box
     return !(tbModifica && tbTestoShowdown() === tbModifica.testoIniziale);
 }
 
-// X, clic fuori dal builder o Esc: chiede conferma se il team non è vuoto
+// X, clic fuori dal builder o Esc: con il team non salvato si sceglie cosa farne (bozza, scartare, continuare); nell'editor del simulatore le bozze non ci sono: si chiede conferma
 function tbChiediChiusura() {
-    if (tbCiSonoModifiche() &&
-        !confirm("Are you sure you want to close the Team Builder? Your changes to the team will not be saved.")) {
-        return;
+    if (!tbCiSonoModifiche()) return tbChiudiDefinitivo();
+    if (INCORPORATO) {
+        if (!confirm("Are you sure you want to close the Team Builder? Your changes to the team will not be saved.")) return;
+        return tbChiudiDefinitivo();
     }
+    tbApriDialogoChiusura();
+}
+
+// Si chiude davvero: il prossimo team riparte da zero e il backup nel browser non serve più
+function tbChiudiDefinitivo() {
     tbStato.firma = ''; // alla prossima apertura il team riparte da zero
-        tbModifica = null;  // ed esce dalla modifica del team del box
+    tbModifica = null;  // ed esce dalla modifica del team del box
+    tbBozzaId = null;
+    tbBozzaSalvata = '';
+    clearTimeout(tbTimerBackup);
+    if (tbBackupScritto) BozzeTeam.cancellaBackup(memoriaBrowser(), playerID);
+    tbBackupScritto = false;
+    tbChiudiDialogoChiusura();
     chiudiTeamBuilder();
 }
+
+function tbApriDialogoChiusura() {
+    const overlay = document.getElementById('tb-overlay');
+    if (!overlay) return;
+    tbChiudiDialogoChiusura();
+    const dalBox = !!(tbModifica && tbModifica.teamId);
+    const dialogo = document.createElement('div');
+    dialogo.id = 'tb-chiusura';
+    dialogo.className = 'tb-sd tb-chiusura';
+    dialogo.setAttribute('role', 'alertdialog');
+    dialogo.setAttribute('aria-modal', 'true');
+    dialogo.setAttribute('aria-labelledby', 'tb-chiusura-titolo');
+    dialogo.innerHTML = `
+        <div class="tb-sd-scheda">
+            <div class="tb-sd-testa"><h3 id="tb-chiusura-titolo">Close the Team Builder?</h3></div>
+            <p class="tb-sd-aiuto">${dalBox ? 'You changed this team and the changes are not saved yet.' : 'This team is not in your Box yet.'} Keep it as a draft to finish it later (you will find it in your Box), or discard it.</p>
+            <div class="tb-sd-azioni">
+                <button type="button" class="tb-btn tb-btn-save" id="tb-chiusura-bozza" onclick="tbChiudiConBozza()">Save as draft</button>
+                <button type="button" class="tb-btn tb-btn-secondario" onclick="tbChiudiDefinitivo()">Discard</button>
+                <button type="button" class="tb-btn tb-btn-secondario" onclick="tbChiudiDialogoChiusura()">Keep editing</button>
+            </div>
+        </div>`;
+    overlay.appendChild(dialogo);
+    dialogo.addEventListener('mousedown', e => { if (e.target === dialogo) tbChiudiDialogoChiusura(); });
+    dialogo.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); tbChiudiDialogoChiusura(); } });
+    document.getElementById('tb-chiusura-bozza').focus();
+}
+
+function tbChiudiDialogoChiusura() {
+    const d = document.getElementById('tb-chiusura');
+    if (d) d.remove();
+}
+
+async function tbChiudiConBozza() {
+    if (await tbSalvaBozza()) tbChiudiDefinitivo();
+}
+
+// Mette da parte il team com'è (anche a metà): una bozza per sessione, che si aggiorna a ogni salvataggio. Restituisce true se è stata scritta.
+async function tbSalvaBozza() {
+    if (INCORPORATO || !playerID) return false;
+    const btn = document.getElementById('tb-btn-bozza');
+    const dati = BozzeTeam.perSalvare({
+        nome: tbNomeTeam(),
+        categoria: tbStato.regolamento ? tbStato.regolamento.categoria : '',
+        testo: tbTestoShowdown(),
+        daTeam: tbModifica && tbModifica.teamId ? tbModifica.teamId : ''
+    });
+    if (!dati) { alert('Add at least one Pokémon first: there is nothing to put aside yet.'); return false; }
+    if (!tbBozzaId && bozzeTeam.length >= BozzeTeam.MASSIMO) {
+        alert(`You can keep up to ${BozzeTeam.MASSIMO} drafts. Delete one from your Box to save another.`);
+        return false;
+    }
+    const testoBottone = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+    try {
+        const id = tbBozzaId || db.ref(BozzeTeam.percorso(playerID)).push().key;
+        await db.ref(`${BozzeTeam.percorso(playerID)}/${id}`).set(dati);
+        tbBozzaId = id;
+        tbBozzaSalvata = tbImpronta();
+        BozzeTeam.cancellaBackup(memoriaBrowser(), playerID);      // la bozza ha preso il suo posto
+        tbBackupScritto = false;
+        if (btn) { btn.textContent = 'Draft saved ✓'; setTimeout(() => { if (btn.isConnected) { btn.textContent = testoBottone; tbRenderRiepilogo(); } }, 1800); }
+        return true;
+    } catch (e) {
+        console.error('Draft not saved', e);
+        alert('Error: the draft could not be saved. Check your connection and try again.');
+        if (btn) btn.textContent = testoBottone;
+        return false;
+    } finally {
+        if (btn && btn.textContent === 'Saving...') btn.textContent = testoBottone;
+        if (btn) btn.disabled = !tbStato.slot.some(Boolean);
+    }
+}
+
+// La copia di sicurezza nel browser: a ogni cambiamento (con un attimo di pausa) e quando la pagina sparisce; si cancella quando il team si salva o si scarta
+function tbProgrammaBackup() {
+    if (INCORPORATO || !playerID) return;
+    clearTimeout(tbTimerBackup);
+    tbTimerBackup = setTimeout(tbScriviBackup, 700);
+}
+function tbScriviBackup() {
+    if (INCORPORATO || !playerID) return;
+    const overlay = document.getElementById('tb-overlay');
+    if (!(overlay && overlay.classList.contains('open')) || !tbStato.regolamento) return;
+    if (!tbCiSonoModifiche()) {
+        // tutto salvato (o tolti tutti i Pokémon): il backup di questa sessione non serve più
+        if (tbBackupScritto) { BozzeTeam.cancellaBackup(memoriaBrowser(), playerID); tbBackupScritto = false; }
+        return;
+    }
+    tbBackupScritto = BozzeTeam.scriviBackup(memoriaBrowser(), playerID, {
+        nome: tbNomeTeam(), categoria: tbStato.regolamento.categoria || '', testo: tbTestoShowdown(),
+        daTeam: tbModifica && tbModifica.teamId ? tbModifica.teamId : '', bozzaId: tbBozzaId || ''
+    }) || tbBackupScritto;
+}
+window.addEventListener('pagehide', () => { clearTimeout(tbTimerBackup); tbScriviBackup(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(tbTimerBackup); tbScriviBackup(); } });
 
 // Ricarica, chiusura della scheda, frecce avanti/indietro del browser
 window.addEventListener('beforeunload', (e) => {
@@ -9298,9 +9532,12 @@ function tbRenderRiepilogo() {
     }
     if (fumetto) {
         fumetto.innerHTML = errori.length
-            ? `<b>Can't save to the box yet:</b><ul>${errori.map(e => `<li>${tbEsc(e)}</li>`).join('')}</ul>`
+            ? `<b>Can't save to the box yet:</b><ul>${errori.map(e => `<li>${tbEsc(e)}</li>`).join('')}</ul>${INCORPORATO ? '' : '<p class="tb-bubble-bozza">Not finished? <b>Save draft</b> keeps it as it is.</p>'}`
             : '';
     }
+    const btnBozza = document.getElementById('tb-btn-bozza');
+    if (btnBozza) btnBozza.disabled = !tbStato.slot.some(Boolean);
+    tbProgrammaBackup();
 
     const btnEsporta = document.getElementById('tb-btn-export');
     if (btnEsporta) btnEsporta.disabled = !tbStato.slot.some(Boolean);
@@ -9851,7 +10088,8 @@ async function tbSalvaNelBox() {
         nome: tbNomeTeam(),
         categoria: tbStato.regolamento.categoria || '',
         testo: tbTestoShowdown(),
-        editingId: tbModifica ? tbModifica.teamId : null
+        editingId: tbModifica ? tbModifica.teamId : null,
+        bozzaId: tbBozzaId
     });
     if (btn) { btn.disabled = false; btn.textContent = testoBottone; } // se il salvataggio fallisce si può riprovare
 }
