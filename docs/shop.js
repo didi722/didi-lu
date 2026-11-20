@@ -113,43 +113,92 @@
         if (q && q.clientWidth > 0) q.style.setProperty('--k', (q.clientWidth / 1440).toFixed(4));
     }
     window.addEventListener('resize', adattaAnteprima);
+    // L'indirizzo della pagina nel riquadro: con un numero diverso a ogni apertura, così il browser non ne tiene una vecchia in cache (la pagina pubblica cambia spesso)
+    const indirizzoAnteprima = () => `public.html?player=${encodeURIComponent(S.giocatore)}&anteprima=1&_=${Date.now().toString(36)}`;
+
     function aggiornaAnteprima() {
-        const f = $('shop-iframe');
-        const prova = Object.keys(S.prova).length > 0 || !!voceGrande();
+        const prova = Object.keys(S.prova).length > 0 || !!voceGrande() || !!fuocoCorrente();
         $('shop-reset').hidden = !prova;
         $('shop-anteprima-nota').textContent = prova ? 'Trying it on' : 'Tap anything to try it on';
-        if (f && f.contentWindow && f.dataset.pronta) f.contentWindow.postMessage({ tipo: 'shop-prova', valori: { ...base(), ...S.prova } }, window.location.origin);
+        for (const f of [$('shop-iframe'), $('shop-iframe2')]) {
+            if (f && f.contentWindow && f.dataset.pronta) f.contentWindow.postMessage({ tipo: 'shop-prova', valori: { ...base(), ...S.prova } }, window.location.origin);
+        }
         aggiornaGrande();
     }
 
-    // La prova grande sotto la tua pagina (negozio.js, provaGrandeHtml): il palco, le card, lo sfondo del Box o l'entrata di quello che si sta guardando.
-    // Si ridisegna solo quando cambia la voce (altrimenti l'entrata ripartirebbe a ogni messaggio).
+    // ---- Il pannello sotto la pagina: mostra sempre quello che si sta provando ----
+    // - aure, palchi, avatar, effetti del nome, colori, motivi dello sfondo: lo stesso pezzo della pagina vera, ritagliato e ingrandito (un secondo riquadro con la pagina);
+    // - stile delle card, sfondo del Box ed entrata: un disegno a parte (negozio.js, provaGrandeHtml).
     let grandeId = '', fermaGrande = null;
     const voceGrande = () => { const c = S.provando ? C.perId(S.provando) : null; return c && N.TIPI_PROVA_GRANDE.includes(c.tipo) ? c : null; };
+    /** Quale pezzo della pagina ingrandire: 'palco' | 'identita' | 'pagina' | '' */
+    function fuocoCorrente() {
+        const c = S.provando ? C.perId(S.provando) : null;
+        if (c && N.FUOCO_PROVA[c.tipo]) return N.FUOCO_PROVA[c.tipo];
+        if (S.prova.avatar) return 'palco';
+        if (S.prova.color) return 'identita';
+        return '';
+    }
+    // dove sta il pezzo nella pagina (1440 x 810): il blocco del palco o del nome; per i motivi un angolo di pagina
+    function rettangoloFuoco(doc, fuoco) {
+        if (fuoco === 'pagina') return { left: 0, top: 0, width: 560, height: 315 };
+        const e = doc.querySelector(`.pp-blocco[data-blocco="${fuoco}"]`);
+        if (!e) return null;
+        const r = e.getBoundingClientRect();
+        return r.width > 20 && r.height > 20 ? { left: r.left, top: r.top, width: r.width, height: r.height } : null;
+    }
+    function adattaZoom() {
+        const z = $('shop-zoom'), f = $('shop-iframe2');
+        const fuoco = fuocoCorrente();
+        if (!z || !f || z.hidden || !fuoco || !f.dataset.pronta) return;
+        let doc = null;
+        try { doc = f.contentDocument; } catch (e) { doc = null; }
+        const r = doc && rettangoloFuoco(doc, fuoco);
+        if (!r || !z.clientWidth) return;
+        const larghezza = z.clientWidth - 6, tetto = window.innerWidth <= 900 ? 150 : 340;
+        const k = Math.min(larghezza / r.width, tetto / r.height);
+        z.style.height = `${Math.round(r.height * k) + 6}px`;
+        f.style.transform = `translate(${Math.round((larghezza - r.width * k) / 2 - r.left * k)}px, ${Math.round(-r.top * k)}px) scale(${k.toFixed(4)})`;
+    }
+    window.addEventListener('resize', adattaZoom);
     function aggiornaGrande() {
         const box = $('shop-extra');
         if (!box) return;
-        const c = voceGrande();
-        const id = c ? c.id : '';
-        if (id === grandeId) return;
-        grandeId = id;
-        if (fermaGrande) { fermaGrande(); fermaGrande = null; }
-        if (!c) { box.hidden = true; box.textContent = ''; return; }
-        box.innerHTML = N.provaGrandeHtml(c, { colore: S.info.color, avatar: S.info.avatar, nome: S.info.name || S.giocatore });
-        box.hidden = false;
-        const entrata = box.querySelector('.ev-palco[data-entrata]');
-        if (entrata && window.EntrateVs) fermaGrande = window.EntrateVs.anteprima(entrata, entrata.dataset.entrata, S.info.avatar);
+        const fuoco = fuocoCorrente(), c = voceGrande();
+        const catalogo = S.provando ? C.perId(S.provando) : null;
+        const chiave = c ? `corpo|${c.id}` : fuoco ? `zoom|${fuoco}` : '';
+        // la pagina del secondo riquadro si carica la prima volta che serve
+        const f2 = $('shop-iframe2');
+        if (fuoco && f2 && !f2.getAttribute('src') && S.giocatore) f2.src = indirizzoAnteprima();
+        if (chiave !== grandeId) {
+            grandeId = chiave;
+            if (fermaGrande) { fermaGrande(); fermaGrande = null; }
+            $('shop-zoom').hidden = !fuoco;
+            $('shop-extra-corpo').innerHTML = c ? N.provaGrandeHtml(c, { colore: S.info.color, avatar: S.info.avatar, nome: S.info.name || S.giocatore }) : '';
+            box.hidden = !chiave;
+            const entrata = box.querySelector('.ev-palco[data-entrata]');
+            if (entrata && window.EntrateVs) fermaGrande = window.EntrateVs.anteprima(entrata, entrata.dataset.entrata, S.info.avatar);
+        }
+        // sotto il ritaglio: il nome della voce e la sua frase (per avatar e colori non c'è)
+        const nota = $('shop-extra-nota');
+        nota.hidden = !(fuoco && catalogo);
+        if (fuoco && catalogo) nota.innerHTML = `<b>${esc(catalogo.nome)}</b> ${esc(catalogo.descr || '')}`;
+        adattaZoom();
+        // la pagina del riquadro ha un'entrata animata e ricostruisce il blocco a ogni prova: si riadatta quando si è assestata
+        setTimeout(adattaZoom, 250); setTimeout(adattaZoom, 1100);
     }
     window.addEventListener('message', e => {
         if (e.origin !== window.location.origin || !e.data || e.data.tipo !== 'shop-pronta') return;
-        $('shop-iframe').dataset.pronta = '1';
+        // la pagina che ha risposto (quella intera o quella ingrandita) è pronta a ricevere le prove
+        const pronta = [$('shop-iframe'), $('shop-iframe2')].find(f => f && f.contentWindow === e.source);
+        if (pronta) pronta.dataset.pronta = '1';
         aggiornaAnteprima();
     });
     function provaVoce(id) {
         const c = C.perId(id);
         if (!c) return;
         const campo = c.tipo === 'aura' ? 'aura' : c.tipo === 'nome' ? 'effettoNome' : c.tipo === 'palco' ? 'effettoPalco' : c.tipo === 'sfondo' ? 'sfondoMotivo' : '';
-        if (!campo && !N.TIPI_PROVA_GRANDE.includes(c.tipo)) return;      // card, sfondo del Box ed entrata non stanno sulla pagina pubblica: hanno solo la prova grande
+        if (!campo && !N.TIPI_PROVA_GRANDE.includes(c.tipo)) return;      // card, sfondo del Box ed entrata non stanno sulla pagina pubblica: hanno solo il loro disegno sotto
         const valore = c.tipo === 'sfondo' ? c.motivo : c.id;
         // una prova alla volta: sceglierne un'altra toglie la precedente
         S.scelta = null;
@@ -488,7 +537,7 @@
             corpo.hidden = false;
             const modifica = $('shop-edit-card');
             modifica.href = `public.html?player=${encodeURIComponent(S.giocatore)}&edit=1`; modifica.hidden = false;
-            $('shop-iframe').src = `public.html?player=${encodeURIComponent(S.giocatore)}&anteprima=1`;
+            $('shop-iframe').src = indirizzoAnteprima();
             const q = new URLSearchParams(window.location.search);
             if (q.get('team') && S.teams.some(t => t.id === q.get('team'))) S.squadra = q.get('team');
             vai(q.get('tab') || (q.get('team') ? 'pokemon' : 'pagina'));

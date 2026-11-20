@@ -68,9 +68,6 @@
 .ng-gp{display:grid;gap:8px}
 .ng-gp-nota{margin:0;font:600 .72rem/1.35 'Montserrat',sans-serif}
 .ng-gp-nota b{font:900 .78rem 'Josefin Sans',sans-serif;text-transform:uppercase;letter-spacing:.04em;margin-right:4px}
-.ng-gp-palco{position:relative;overflow:hidden;container-type:size;height:210px;border:3px solid #000;background:linear-gradient(180deg,#9cc3e6,#6b93b0 62%,#46657d)}
-.ng-gp-palco img{position:absolute;left:50%;bottom:12%;height:66%;width:auto;transform:translateX(-50%);image-rendering:pixelated;z-index:2;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.3))}
-.ng-gp-pedana{position:absolute;left:50%;bottom:6%;width:46%;height:12%;transform:translateX(-50%);border-radius:50%;background:rgba(0,0,0,.28);z-index:1}
 .ng-gp-card-lista{display:grid;gap:10px;padding:6px 8px 8px 4px}
 .ng-gp-card{justify-content:flex-start !important;gap:12px;height:76px;padding:0 18px}
 .ng-gp-card img{height:54px;width:auto;image-rendering:pixelated}
@@ -87,7 +84,7 @@
 .ng-gp-team{height:92px;border:3px solid #000;background:#fff;box-shadow:4px 4px 0 #000;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;align-content:center;padding:8px}
 .ng-gp-team span{height:22px;background:#d9dde6;border:2px solid #000;border-radius:50%}
 .ng-gp-entrata{position:relative;overflow:hidden;height:210px;border:3px solid #000;background:linear-gradient(135deg,#6b93b0 50%,#d96b6b 50%)}
-@media (max-width:900px){.ng-gp-palco,.ng-gp-box,.ng-gp-entrata{height:130px}.ng-gp-card{height:50px}.ng-gp-card img{height:34px}.ng-gp-vicina{height:24px}.ng-gp-team{height:56px;padding:4px}.ng-gp-team span{height:12px}.ng-gp-card-lista{gap:6px}}
+@media (max-width:900px){.ng-gp-box,.ng-gp-entrata{height:130px}.ng-gp-card{height:50px}.ng-gp-card img{height:34px}.ng-gp-vicina{height:24px}.ng-gp-team{height:56px;padding:4px}.ng-gp-team span{height:12px}.ng-gp-card-lista{gap:6px}}
 .ng-voce[data-tipo=nome] .ng-anteprima{display:flex;align-items:center;justify-content:center;background:#f3f4f8}
 .ng-nome-prova{font:900 1.2rem/1 'Josefin Sans',sans-serif;letter-spacing:-.01em;text-transform:uppercase;color:var(--pp-nome,#31c489);-webkit-text-stroke:.075em #000;paint-order:stroke fill;text-shadow:.07em .07em 0 #000}
 .ng-voce[data-tipo=palco] .ng-anteprima{position:relative;overflow:hidden;container-type:size;--ef-u:3cqh}
@@ -138,11 +135,16 @@
         return `<span class="ng-anteprima" style="--ng-c:${colore}"></span>`;
     }
 
-    /** Le voci che hanno una prova grande sotto la pagina (il pannello "shop-extra"): il palco, lo stile delle card, lo sfondo del Box e l'entrata */
-    const TIPI_PROVA_GRANDE = ['palco', 'card', 'boxsfondo', 'entrata'];
+    /** Le voci che hanno una prova disegnata a parte sotto la pagina (il pannello "shop-extra"): lo stile delle card, lo sfondo del Box e l'entrata */
+    const TIPI_PROVA_GRANDE = ['card', 'boxsfondo', 'entrata'];
+    /**
+     * Le voci che si vedono sulla pagina pubblica hanno sotto lo stesso pezzo di pagina, ritagliato e ingrandito (un secondo riquadro con la pagina vera):
+     * il palco (con l'allenatore e il compagno) per aure, palchi e avatar; il blocco del nome per gli effetti del nome e il colore; un angolo di pagina per i motivi dello sfondo.
+     */
+    const FUOCO_PROVA = { aura: 'palco', palco: 'palco', nome: 'identita', sfondo: 'pagina' };
 
     /**
-     * La prova grande di una voce (pura): il palco con il tuo avatar, tre card nel tuo stile (nel tuo colore e in altri due), una pagina Box con quello sfondo o la scena dell'entrata.
+     * La prova disegnata di una voce (pura): la tua card tra due righe di altri allenatori, una pagina Box con quello sfondo o la scena dell'entrata.
      * o = { colore, avatar, nome }. L'entrata si anima dopo (EntrateVs.anteprima su .ev-palco).
      */
     function provaGrandeHtml(c, o = {}) {
@@ -150,8 +152,7 @@
         const avatar = esc(o.avatar || 'immagini/magikarp.png');
         const nome = esc(String(o.nome || 'Trainer').toUpperCase());
         let corpo = '';
-        if (c.tipo === 'palco') corpo = `<div class="ng-gp-palco" data-effetto-palco="${esc(c.id)}"><img src="${avatar}" alt="" onerror="this.style.visibility='hidden'"><span class="ng-gp-pedana"></span></div>`;
-        else if (c.tipo === 'card') {
+        if (c.tipo === 'card') {
             // la tua card una volta sola, grande, tra due righe di altri allenatori (senza stile) per vedere come spicca
             const vicina = '<div class="ng-gp-vicina" aria-hidden="true"><span></span><span></span><i></i></div>';
             corpo = `<div class="ng-gp-card-lista">${vicina}<div class="sc-campione ng-gp-card" data-stile-card="${esc(c.id)}" style="--sc-fondo:${colore}"><span class="ng-gp-pos">#1</span><img src="${avatar}" alt="" onerror="this.style.visibility='hidden'"><b>${nome}</b><i>ELO 1200</i></div>${vicina}</div>`;
@@ -298,5 +299,5 @@
         return fuori;
     }
 
-    return { TIPI_PROVA_GRANDE, provaGrandeHtml, catalogoHtml, movimentiHtml, premiHtml, shinyTeamHtml, frasiAcquisto, frasiRilascio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
+    return { TIPI_PROVA_GRANDE, FUOCO_PROVA, provaGrandeHtml, catalogoHtml, movimentiHtml, premiHtml, shinyTeamHtml, frasiAcquisto, frasiRilascio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
 });
