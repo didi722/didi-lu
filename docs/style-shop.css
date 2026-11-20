@@ -48,6 +48,8 @@ body.pg-shop .shop-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); max
 .shop-reset { pointer-events: auto; padding: 4px 10px 2px; cursor: pointer; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 900 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 .shop-reset[hidden] { display: none; }
 /* la tua pagina come la vede chi ha lo schermo grande (1440 x 810, un monitor 16:9: la pagina sta sempre intera, senza scorrere), rimpicciolita per starci: shop.js calcola --k */
+.shop-extra { margin-top: 12px; padding-top: 12px; border-top: 3px dashed var(--nb-ink, #000); }
+.shop-extra[hidden] { display: none; }
 .shop-schermo { position: relative; width: 100%; height: calc(var(--k, .3) * 810px); overflow: hidden; }
 .shop-schermo iframe { pointer-events: none; /* è solo da guardare: niente hover, clic né finestre */ position: absolute; left: 0; top: 0; width: 1440px; height: 810px; border: 0; background: transparent; transform: scale(var(--k, .3)); transform-origin: 0 0; }
 @media (max-width: 900px) {
