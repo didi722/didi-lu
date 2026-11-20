@@ -160,6 +160,93 @@
                 const e = centrato(doc, L, rnd(-0.1, 0.1) * h, rnd(0.05, 0.95) * h, h * rnd(0.9, 1.4), a, { background: i % 2 ? '#7ff3ff' : '#fff' });
                 A(e, { opacity: [0, 1, 0, 1, 0], easing: 'steps(1)' }, { duration: rnd(260, 420), delay: inizio + rnd(0, 220), easing: 'linear' });
             }
+        },
+
+        // un fascio di luce dall'alto: l'avatar compare dentro, tra pulviscolo che sale
+        'entrata-spotlight'(c) {
+            const { doc, h, t0, A } = c, L = c.strato(true);
+            const totale = t0 + 300;
+            A(c.img, { opacity: [0, 0, 1], offset: [0, (t0 - 80) / totale, 1] }, { duration: totale, easing: 'linear' });
+            const l = h * 1.25;
+            const fascio = blocco(doc, L, { left: px(-l / 2), bottom: '0px', width: px(l), height: px(h * 2.6), clipPath: 'polygon(36% 0, 64% 0, 100% 100%, 0 100%)', background: 'linear-gradient(180deg, rgba(255,255,235,.15), rgba(255,250,205,.7) 70%, rgba(255,255,255,.85))', transformOrigin: '50% 100%' });
+            A(fascio, { opacity: [0, 0.95, 0.8, 0], scale: ['1 0.2', '1 1', '1 1', '1 1'], offset: [0, 0.18, 0.7, 1] }, { duration: 1300, delay: Math.max(0, t0 - 380), easing: 'ease-out' });
+            const pozza = centrato(doc, L, 0, h * 0.03, h * 1.1, h * 0.26, { borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(255,250,205,.95), rgba(255,235,150,.4) 55%, transparent 72%)' });
+            A(pozza, { scale: [0.2, 1], opacity: [0, 1, 0.7, 0], offset: [0, 0.2, 0.7, 1] }, { duration: 1300, delay: Math.max(0, t0 - 380), easing: 'ease-out' });
+            for (let i = 0; i < 14; i++) {
+                const d = rnd(0.015, 0.035) * h, x = rnd(-0.35, 0.35) * h;
+                const m = centrato(doc, L, x, rnd(0.05, 0.4) * h, d, d, { borderRadius: '50%', background: 'rgba(255,255,230,.9)' });
+                A(m, { translate: ['0px 0px', `${px(rnd(-0.08, 0.08) * h)} ${px(-rnd(0.5, 1.1) * h)}`], opacity: [0, 0.9, 0] }, { duration: rnd(900, 1400), delay: Math.max(0, t0 - 250 + rnd(0, 300)), easing: 'ease-out' });
+            }
+            A(c.sagoma(FILTRO.bianco), { opacity: [0, 0.8, 0] }, { duration: 420, delay: Math.max(0, t0 - 60), easing: 'ease-out' });
+        },
+
+        // tre immagini residue che inseguono l'avatar dal lato da cui arriva e si fondono con lui
+        'entrata-immagini'(c) {
+            const { h, t0, A } = c, dir = c.dir;
+            const vie = [[1.7, 0.18, 'drop-shadow(0 0 5px rgba(110,200,255,.95)) saturate(1.6) brightness(1.3)'], [1.15, 0.3, 'drop-shadow(0 0 5px rgba(170,120,255,.95)) saturate(1.6) brightness(1.2)'], [0.6, 0.45, 'drop-shadow(0 0 5px rgba(255,120,200,.95)) saturate(1.6) brightness(1.1)']];
+            vie.forEach(([distanza, alfa, filtro], i) => {
+                const s = c.sagoma(filtro);
+                A(s, { translate: [`${px(dir * distanza * h)} 0px`, `${px(dir * distanza * h * 0.55)} 0px`, '0px 0px'], opacity: [0, alfa * 2, alfa, 0], offset: [0, 0.3, 0.7, 1] }, { duration: 760, delay: Math.max(0, t0 - 560 + i * 40), easing: 'ease-out' });
+            });
+            const flash = c.sagoma(FILTRO.ciano);
+            A(flash, { opacity: [0, 0.8, 0] }, { duration: 360, delay: Math.max(0, t0 - 40), easing: 'ease-out' });
+        },
+
+        // un vortice di petali di ciliegio che si stringe attorno all'avatar, che ne esce
+        'entrata-sakura'(c) {
+            const { doc, h, t0, A } = c, L = c.strato();
+            const totale = t0 + 420;
+            A(c.img, { opacity: [0, 0, 1], offset: [0, t0 / totale, 1] }, { duration: totale, easing: 'linear' });
+            const ROSA = ['#ffb7d0', '#ffd0e0', '#ff9fc0', '#ffc2d8', '#fff0f5'];
+            for (let i = 0; i < 30; i++) {
+                const a0 = rnd(0, TAU), giri = rnd(1.1, 1.9), r0 = rnd(0.7, 1.25) * h, r1 = rnd(0.05, 0.3) * h, quota = rnd(0.2, 0.9) * h, passi = 6;
+                const punti = [], giro = [];
+                for (let k = 0; k <= passi; k++) {
+                    const f = k / passi, a = a0 + f * giri * TAU, r = r0 + (r1 - r0) * f;
+                    punti.push(`${px(Math.cos(a) * r)} ${px(-(quota * (1 - f * 0.35) + Math.sin(a) * r * 0.25))}`);
+                    giro.push(`${Math.round(f * rnd(300, 700))}deg`);
+                }
+                const lung = rnd(0.07, 0.12) * h;
+                const e = centrato(doc, L, 0, 0, lung, lung * 0.6, { borderRadius: '70% 30% 70% 30%', background: ROSA[i % ROSA.length] });
+                A(e, { translate: punti, rotate: giro, opacity: [0, 1, 1, 1, 1, 1, 0] }, { duration: rnd(1000, 1500), delay: Math.max(0, t0 - 650 + rnd(0, 380)), easing: 'ease-in-out' });
+            }
+            const alone = centrato(doc, L, 0, h * 0.5, h * 1.5, h * 1.5, { borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,235,245,.8), rgba(255,183,208,.3) 45%, transparent 70%)' });
+            A(alone, { scale: [0.3, 1.1], opacity: [0, 0.9, 0] }, { duration: 700, delay: t0 - 120, easing: 'ease-out' });
+        },
+
+        // un cerchio ensō tracciato con il pennello, un loto che sboccia dietro di lui e un'aureola dorata; lui compare nella luce
+        'entrata-zen'(c) {
+            const { doc, h, t0, A } = c, L = c.strato(), D = c.strato(true);
+            const totale = t0 + 420;
+            A(c.img, { opacity: [0, 0, 1], offset: [0, t0 / totale, 1] }, { duration: totale, easing: 'linear' });
+            // l'aureola dietro
+            const aureola = centrato(doc, D, 0, h * 0.52, h * 1.5, h * 1.5, { borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,226,130,.85), rgba(255,200,80,.35) 48%, transparent 70%)' });
+            A(aureola, { scale: [0.3, 1], opacity: [0, 1, 0.55, 0], offset: [0, 0.25, 0.7, 1] }, { duration: 1500, delay: Math.max(0, t0 - 380), easing: 'ease-out' });
+            // il loto: petali a ventaglio dietro i piedi
+            const N = 9;
+            for (let i = 0; i < N; i++) {
+                const ang = (-78 + (156 * i) / (N - 1)), l = h * 0.2, a = h * (0.5 - Math.abs(ang) / 400);
+                const p = blocco(doc, D, { left: px(-l / 2), bottom: px(h * 0.04), width: px(l), height: px(a), borderRadius: '50% 50% 50% 50% / 80% 80% 20% 20%', background: i % 2 ? 'linear-gradient(0deg, #ffe3ef, #ff9fc6)' : 'linear-gradient(0deg, #fff5fa, #ffb7d6)', transformOrigin: '50% 100%', border: `${px(Math.max(1, h * 0.008))} solid rgba(255,255,255,.7)`, boxSizing: 'border-box' });
+                A(p, { rotate: [`${ang * 0.3}deg`, `${ang}deg`], scale: ['0.1 0.1', '1 1'], opacity: [0, 1, 1, 0], offset: [0, 0.35, 0.8, 1] }, { duration: 1300, delay: Math.max(0, t0 - 340 + Math.abs(i - (N - 1) / 2) * 50), easing: 'cubic-bezier(.2,.9,.3,1.15)' });
+            }
+            // l'ensō: un arco di pennello che si traccia attorno a lui e poi svanisce
+            const d = h * 1.35, raggio = d * 0.42, circ = 2 * Math.PI * raggio;
+            const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'vi-fx');
+            svg.setAttribute('viewBox', `${-d / 2} ${-d / 2} ${d} ${d}`);
+            Object.assign(svg.style, { position: 'absolute', pointerEvents: 'none', left: px(-d / 2), bottom: px(h * 0.52 - d / 2), width: px(d), height: px(d), overflow: 'visible' });
+            for (const [colore, spessore, alfa] of [['rgba(255,214,90,.5)', 0.07, 1], ['#fff4c2', 0.028, 1]]) {
+                const cerchio = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                cerchio.setAttribute('r', String(raggio)); cerchio.setAttribute('cx', '0'); cerchio.setAttribute('cy', '0'); cerchio.setAttribute('fill', 'none');
+                cerchio.setAttribute('stroke', colore); cerchio.setAttribute('stroke-width', String(Math.max(2, h * spessore))); cerchio.setAttribute('stroke-linecap', 'round');
+                cerchio.setAttribute('stroke-dasharray', `${circ * 0.93} ${circ}`);
+                cerchio.setAttribute('transform', 'rotate(-110)');
+                svg.appendChild(cerchio);
+                A(cerchio, { strokeDashoffset: [`${circ * 0.93}`, '0'] }, { duration: 700, delay: Math.max(0, t0 - 420), easing: 'cubic-bezier(.3,.7,.3,1)' });
+            }
+            L.appendChild(svg);
+            A(svg, { opacity: [0, 1, 1, 0], offset: [0, 0.08, 0.7, 1] }, { duration: 1500, delay: Math.max(0, t0 - 420), easing: 'linear' });
+            A(c.sagoma(FILTRO.oro), { opacity: [0, 0.85, 0] }, { duration: 560, delay: t0 - 20, easing: 'ease-out' });
         }
     };
     const ELENCO = Object.keys(EFFETTI);
@@ -172,9 +259,9 @@
         const c = {
             doc: o.doc, img: o.img, dir: o.dir || -1, h: o.h, t0: Number.isFinite(o.t0) ? o.t0 : 700,
             A: (e, keyframes, opzioni) => { const a = o.A(e, keyframes, opzioni); animazioni.push(a); return a; },
-            /** lo strato dei pezzi, sul piede dell'avatar */
-            strato() {
-                const s = blocco(o.doc, o.ancora, { left: '0px', bottom: '0px', width: '0px', height: '0px', zIndex: '4', overflow: 'visible' });
+            /** lo strato dei pezzi, sul piede dell'avatar (davanti a lui, o dietro con `dietro`) */
+            strato(dietro) {
+                const s = blocco(o.doc, o.ancora, { left: '0px', bottom: '0px', width: '0px', height: '0px', zIndex: dietro ? '-1' : '4', overflow: 'visible' });
                 creati.push(s);
                 return s;
             },
