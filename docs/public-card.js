@@ -211,7 +211,8 @@
             vola = GALLEGGIANO.includes(nome);
         }
         if (posto.dataset.giro !== String(mio)) return;     // nel frattempo ne è stato scelto un altro
-        if (!gif || /-mega(-[xyz])?$/.test(nome)) gif = gifShowdown(nomeGrezzo, brillante);     // le Mega: sempre la GIF di Showdown (PokeAPI per molte ha solo l'immagine ferma)
+        // senza GIF di PokeAPI (le Mega più recenti non ce l'hanno) si usa quella di Showdown; per una Mega mai l'immagine ferma (official-artwork), che sul palco sarebbe fuori stile
+        if (!gif || (/-mega(-[xyz])?$/.test(nome) && /\/official-artwork\//.test(gif))) gif = gifShowdown(nomeGrezzo, brillante);
 
         const regola = RIMPICCIOLISCI.includes(nome) ? 'rimpicciolisci' : INGRANDISCI.includes(nome) ? 'ingrandisci' : undefined;
         const misure = P.scalaScena(altezzaM, { regola, vola });

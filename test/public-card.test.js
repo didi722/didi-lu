@@ -590,7 +590,7 @@ test('party: il Pokémon più alto del team riempie lo slot, gli altri in propor
     assert.match(css, /\.pp-slot:not\(\[data-q\]\) \.pp-slot-img \{ opacity: 0; \}/, 'finché non si sa la taglia l\'immagine non si vede: niente salto');
 });
 
-test('lista dei compagni: le forme Mega si aggiungono dopo il loro Pokémon di base (e la card usa la GIF di Showdown)', () => {
+test('lista dei compagni: le forme Mega si aggiungono dopo il loro Pokémon di base (la card tiene la GIF di PokeAPI; senza, per una Mega, quella di Showdown e mai la figura ferma)', () => {
     const src = fs.readFileSync(path.join(__dirname, '..', 'docs', 'public-editor-trainer.js'), 'utf8');
     const m = /function conMega\(specie, forme\) \{[\s\S]*?\n    \}\n/.exec(src);
     assert.ok(m, 'conMega esiste');
@@ -600,5 +600,5 @@ test('lista dei compagni: le forme Mega si aggiungono dopo il loro Pokémon di b
     assert.deepEqual(conMega(specie, forme).map(p => p.name), ['venusaur', 'venusaur-mega', 'charizard', 'charizard-mega-x', 'charizard-mega-y', 'blastoise', 'floette-mega']);
     assert.deepEqual(conMega(specie, []), specie);
     assert.match(src, /offset=1025/);
-    assert.match(card, /-mega\(-\[xyz\]\)\?\$\/\.test\(nome\)\) gif = gifShowdown/);
+    assert.match(card, /if \(!gif \|\| \(\/-mega\(-\[xyz\]\)\?\$\/\.test\(nome\) && \/\\\/official-artwork\\\/\/\.test\(gif\)\)\) gif = gifShowdown\(nomeGrezzo, brillante\);/);
 });

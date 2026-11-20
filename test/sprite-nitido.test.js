@@ -110,7 +110,8 @@ test('sprite-nitido: di quanto si ingrandisce, e meno se i fotogrammi non stareb
     assert.equal(SN.fattore(3.5, 66, 79, 69), 3);
     assert.equal(SN.fattore(4.5, 66, 79, 69), 4);
     assert.equal(SN.fattore(9, 66, 79, 69), 4, 'più di 4 non esiste');
-    assert.equal(SN.fattore(5, 146, 81, 119), 2, 'Wailord: 119 fotogrammi 146x81: a 4x sarebbero 90 MB, a 2x 22');
+    assert.equal(SN.fattore(5, 146, 81, 119), 3, 'Wailord: 119 fotogrammi 146x81: a 4x sarebbero 90 MB, a 3x 51');
+    assert.equal(SN.fattore(5, 84, 124, 110), 3, 'Mega Froslass (84x124, un centinaio di fotogrammi): 4x sarebbero 73 MB, 3x ne sono 41');
     assert.equal(SN.fattore(5, 200, 200, 300), 0, 'troppo grande anche a 2x: si lascia l\'immagine com\'è');
     for (const [r, l, a, n] of [[5, 66, 79, 69], [5, 146, 81, 119], [4, 118, 193, 60]]) {
         const k = SN.fattore(r, l, a, n);
@@ -221,6 +222,24 @@ test('migliora: i fotogrammi che mancano si preparano negli intervalli (e quelli
     assert.ok(b.scorri() > 60, 'un fotogramma per intervallo');
     assert.equal(dati.xbr[4].filter(Boolean).length, 69, 'alla fine tutti');
     assert.equal(b.chiamate.length, 1, 'la GIF si è scaricata una volta sola');
+});
+
+test('migliora: dove il browser ha i "momenti liberi" (requestIdleCallback) i fotogrammi si preparano solo finché c\'è tempo', async () => {
+    SN.svuota();
+    const b = fintoBrowser(sprite('froslass'));
+    const liberi = [];
+    let restante = 5;
+    b.win.requestIdleCallback = (f, opzioni) => { assert.equal(opzioni.timeout, 300, 'se la pagina è sempre occupata, entro 300 ms si lavora lo stesso'); liberi.push(f); };
+    await SN.migliora(b.img, { win: b.win });
+    const dati = await SN.carica('https://didi722.github.io/didi-lu/sprites/ani/froslass.gif', b.win);
+    const pronti = () => dati.xbr[4].filter(Boolean).length;
+    assert.equal(liberi.length, 1, 'un solo invito in attesa');
+    liberi.shift()({ timeRemaining: () => restante });
+    assert.equal(pronti(), 2, 'con poco tempo (5 ms) un fotogramma alla volta');
+    restante = 100;
+    liberi.shift()({ timeRemaining: () => restante });
+    assert.equal(pronti(), 69, 'con tanto tempo si fanno tutti');
+    assert.equal(liberi.length, 0, 'finiti: niente altri inviti');
 });
 
 test('migliora: se la pagina ridisegna il compagno la GIF già decodificata si riusa; un insuccesso non si ricorda', async () => {

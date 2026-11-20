@@ -18,7 +18,7 @@
 })(typeof self !== 'undefined' ? self : this, function (radice, XBR, Gif) {
     'use strict';
 
-    const MAX_BYTE = 40e6;                       // quanta memoria al massimo per i fotogrammi ingranditi di una GIF (una GIF lunga ne chiede di più: si ingrandisce meno)
+    const MAX_BYTE = 64e6;                       // quanta memoria al massimo per i fotogrammi ingranditi di una GIF (una GIF lunga ne chiede di più: si ingrandisce meno)
     const MAX_GIF_IN_MEMORIA = 4;                // quante GIF si ricordano (così se la pagina ridisegna il compagno non si rifà tutto)
     const HOST_CON_CORS = ['raw.githubusercontent.com'];       // gli altri host da cui si può leggere un'immagine (oltre al sito stesso)
     const OPZIONI_XBR = { blendColors: true, scaleAlpha: true };   // anche il bordo trasparente si ammorbidisce: i contorni dello sprite sono lisci
@@ -66,7 +66,7 @@
     /**
      * Un <canvas> che anima la GIF ingrandita `k` volte con xBR. Ritorna { canvas, avvia, ferma } (il canvas disegna già il primo fotogramma; l'animazione parte con `avvia`,
      * dopo averlo messo nella pagina) o null se il browser non dà il contesto 2D. I fotogrammi si ingrandiscono quando servono (e quelli che mancano si preparano
-     * negli intervalli), così all'inizio non c'è nessuna attesa; si ricordano, quindi dal secondo giro non costa più niente. Si ferma da solo se il canvas esce dalla pagina,
+     * nei momenti liberi del browser), così all'inizio non c'è nessuna attesa; si ricordano, quindi dal secondo giro non costa più niente. Si ferma da solo se il canvas esce dalla pagina,
      * e non disegna mentre è fuori dallo schermo. I ritardi sono quelli della GIF.
      */
     function riproduci(win, dati, k) {
@@ -95,12 +95,17 @@
             }
             win.requestAnimationFrame(giro);
         }
-        function prepara() {
+        // i fotogrammi che mancano si preparano uno alla volta nei momenti liberi del browser (requestIdleCallback; dove non c'è, a intervalli): su un telefono lento un
+        // fotogramma costa qualche decina di millisecondi e tutti insieme bloccherebbero la pagina
+        const poi = f => (typeof win.requestIdleCallback === 'function' ? win.requestIdleCallback(f, { timeout: 300 }) : win.setTimeout(f, 8));
+        function prepara(tempo) {
             if (fermo) return;
-            while (daPreparare < n && pronti[daPreparare]) daPreparare++;
-            if (daPreparare >= n) return;
-            calcola(daPreparare++);
-            win.setTimeout(prepara, 4);
+            do {
+                while (daPreparare < n && pronti[daPreparare]) daPreparare++;
+                if (daPreparare >= n) return;
+                calcola(daPreparare++);
+            } while (tempo && typeof tempo.timeRemaining === 'function' && tempo.timeRemaining() > 8);      // finché il browser dice che c'è tempo
+            poi(prepara);
         }
         function avvia() {
             if (fermo || n < 2) return;
@@ -109,7 +114,7 @@
                 osservatore.observe(canvas);
             }
             win.requestAnimationFrame(giro);
-            win.setTimeout(prepara, 4);
+            poi(prepara);
         }
         return { canvas, avvia, ferma };
     }
