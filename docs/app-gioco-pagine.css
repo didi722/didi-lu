@@ -801,6 +801,67 @@
     html.app-shell .at-palestra { align-self: flex-start; display: inline-flex; align-items: center; gap: calc(6 * var(--u)); margin-top: calc(2 * var(--u)); padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); text-decoration: none; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; -webkit-tap-highlight-color: transparent; }
     html.app-shell .at-palestra:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
     html.app-shell .at-palestra-mia { background: rgba(0, 0, 0, .55); color: #fff; border-color: rgba(255, 255, 255, .5); box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .6); }
+    /* i tasti della scheda, in fila: la palestra e il testa a testa */
+    html.app-shell .at-azioni { align-self: flex-start; display: flex; flex-wrap: wrap; align-items: center; gap: calc(8 * var(--u)); margin-top: calc(2 * var(--u)); }
+    html.app-shell .at-azioni .at-palestra { margin-top: 0; }
+    html.app-shell .at-scontro { display: inline-flex; align-items: center; gap: calc(7 * var(--u)); padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)) calc(7 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; -webkit-tap-highlight-color: transparent; }
+    html.app-shell .at-scontro:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .at-scontro .at-vs { padding: calc(2 * var(--u)) calc(6 * var(--u)) calc(1 * var(--u)); background: #000; color: var(--gx-giallo); border-radius: calc(5 * var(--u)); font-size: calc(10 * var(--u)); letter-spacing: .06em; }
+    /* le righe di Trainers che l'app non usa più (la griglia è nascosta): niente tasti VS che sporgono se il carosello non parte */
+    html.app-shell .trainer-azioni { display: contents; }
+    html.app-shell .trainer-riga .tasto-scontro { display: none !important; }
+
+    /* ---------- 4c. Scontri diretti (scontri-diretti-ui.js): il testa a testa, scuro come le altre finestre. A sinistra i due allenatori, il verdetto e i numeri; a destra la forma, i formati e gli incontri (che scorrono da soli) ---------- */
+    html.app-shell .h2h-velo { z-index: 3000; padding: calc(6 * var(--u)); background: rgba(5, 4, 15, .72); }
+    html.app-shell .h2h-scheda {
+        display: flex; flex-direction: column; width: min(calc(730 * var(--u)), 100%); max-height: calc(100vh - 12 * var(--u)); overflow: hidden; padding: calc(8 * var(--u)) calc(14 * var(--u)) calc(11 * var(--u));
+        background: #1b1740; color: #fff; border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(13 * var(--u)); box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000);
+        animation: gx-finestra .26s cubic-bezier(.2, 1.3, .4, 1) backwards;
+    }
+    html.app-shell .h2h-titolo { flex: none; align-self: flex-start; margin: 0 0 calc(6 * var(--u)); padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)); background: var(--gx-giallo); color: #000; border-radius: calc(8 * var(--u)); font-size: calc(15 * var(--u)); transform: none; }
+    html.app-shell .h2h-x { top: calc(7 * var(--u)); right: calc(8 * var(--u)); width: calc(32 * var(--u)); height: calc(32 * var(--u)); background: rgba(255, 255, 255, .12); color: #fff; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .45); border-radius: calc(10 * var(--u)); font-size: calc(20 * var(--u)); }
+    html.app-shell .h2h-contenuto {
+        flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: calc(290 * var(--u)) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: calc(14 * var(--u)); row-gap: calc(7 * var(--u)); align-content: start;
+    }
+    html.app-shell .h2h-corpo { display: contents; }
+    html.app-shell .h2h-versus { grid-column: 1; grid-row: 1; gap: calc(5 * var(--u)); margin: 0; }
+    html.app-shell .h2h-sintesi { grid-column: 1; grid-row: 2; min-height: 0; display: flex; flex-direction: column; gap: calc(7 * var(--u)); }
+    html.app-shell .h2h-dettagli { grid-column: 2; grid-row: 1 / span 2; min-height: 0; display: flex; flex-direction: column; gap: calc(7 * var(--u)); padding-top: calc(2 * var(--u)); }
+    html.app-shell .h2h-verdetto { margin: 0; gap: calc(3 * var(--u)) calc(8 * var(--u)); font-size: calc(11 * var(--u)); line-height: 1.3; }
+    html.app-shell .h2h-tabellone { margin: 0; padding: calc(7 * var(--u)) calc(10 * var(--u)) calc(6 * var(--u)); background: rgba(0, 0, 0, .35); border: calc(3 * var(--u)) solid rgba(255, 255, 255, .22); border-radius: calc(10 * var(--u)); }
+    html.app-shell .h2h-forma { margin: 0; gap: calc(4 * var(--u)) calc(8 * var(--u)); padding-right: calc(40 * var(--u)); }
+    html.app-shell .h2h-formati { margin: 0; gap: calc(4 * var(--u)) calc(8 * var(--u)); }
+    html.app-shell .h2h-incontri-box { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding-bottom: calc(4 * var(--u)); }
+    html.app-shell .h2h-incontri-box::-webkit-scrollbar { display: none; }
+    html.app-shell :is(.h2h-vuoto, .h2h-attesa) { grid-column: 1 / -1; margin: calc(30 * var(--u)) 0; font-size: calc(14 * var(--u)); }
+    html.app-shell .h2h-lato { gap: calc(4 * var(--u)); padding: calc(6 * var(--u)) calc(6 * var(--u)) calc(7 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .h2h-avatar { flex: none; width: calc(40 * var(--u)); height: calc(40 * var(--u)); padding: calc(2 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(7 * var(--u)); }
+    html.app-shell .h2h-scelta { padding: calc(4 * var(--u)) calc(20 * var(--u)) calc(3 * var(--u)) calc(6 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(7 * var(--u)); font-size: calc(10.5 * var(--u)); letter-spacing: 0; background-size: calc(5 * var(--u)) calc(5 * var(--u)); background-position: calc(100% - 11 * var(--u)) 52%, calc(100% - 6 * var(--u)) 52%; }
+    html.app-shell .h2h-nome { font-size: calc(11 * var(--u)); }
+    html.app-shell .h2h-vs { width: calc(30 * var(--u)); height: calc(30 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font-size: calc(11 * var(--u)); transform: none; }
+    html.app-shell .h2h-vs:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .h2h-sticker { padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(6 * var(--u)); font-size: calc(9.5 * var(--u)); transform: none; }
+    html.app-shell .h2h-riga-grande .h2h-num { font-size: calc(30 * var(--u)); }
+    html.app-shell .h2h-num { font-size: calc(17 * var(--u)); color: #fff; }
+    html.app-shell .h2h-riga + .h2h-riga { margin-top: calc(2 * var(--u)); }
+    html.app-shell .h2h-voce { min-width: calc(74 * var(--u)); font-size: calc(8.5 * var(--u)); }
+    html.app-shell .h2h-barra { height: calc(11 * var(--u)); margin: calc(2 * var(--u)) 0 calc(6 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(6 * var(--u)); background: rgba(0, 0, 0, .4); }
+    html.app-shell .h2h-barra span + span { border-left-width: calc(2.5 * var(--u)); }
+    html.app-shell .h2h-nota { margin-top: calc(3 * var(--u)); font-size: calc(9 * var(--u)); }
+    html.app-shell .h2h-titoletto { font-size: calc(8.5 * var(--u)); }
+    html.app-shell .h2h-pallini i { width: calc(19 * var(--u)); height: calc(19 * var(--u)); border-width: calc(2 * var(--u)); border-radius: calc(5 * var(--u)); font-size: calc(10 * var(--u)); }
+    html.app-shell .h2h-serie { font-size: calc(10 * var(--u)); }
+    html.app-shell .h2h-formato { padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(1 * var(--u)); border-width: calc(2 * var(--u)); border-radius: calc(6 * var(--u)); font-size: calc(10 * var(--u)); }
+    html.app-shell .h2h-sotto { margin: 0 0 calc(4 * var(--u)); font-size: calc(10 * var(--u)); }
+    html.app-shell .h2h-incontri { gap: calc(5 * var(--u)); }
+    html.app-shell .h2h-incontro { padding: calc(5 * var(--u)) calc(9 * var(--u)) calc(5 * var(--u)); border-width: calc(2.5 * var(--u)); border-left-width: calc(7 * var(--u)); border-radius: calc(8 * var(--u)); background: rgba(255, 255, 255, .07); }
+    html.app-shell .h2h-inc-testa { margin: 0 0 calc(2 * var(--u)); gap: calc(1 * var(--u)) calc(8 * var(--u)); }
+    html.app-shell .h2h-inc-stagione { font-size: calc(10.5 * var(--u)); }
+    html.app-shell :is(.h2h-inc-formato, .h2h-inc-data) { font-size: calc(9.5 * var(--u)); }
+    html.app-shell .h2h-inc-esito { font-size: calc(10.5 * var(--u)); }
+    html.app-shell .h2h-m { min-width: calc(30 * var(--u)); padding: calc(1 * var(--u)) calc(5 * var(--u)); border-width: calc(2 * var(--u)); border-radius: calc(5 * var(--u)); font-size: calc(9.5 * var(--u)); }
+    html.app-shell .h2h-altri { margin: calc(6 * var(--u)) 0 0; padding: calc(4 * var(--u)) calc(11 * var(--u)) calc(3 * var(--u)); background: rgba(255, 255, 255, .12); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .45); border-radius: calc(8 * var(--u)); font-size: calc(10 * var(--u)); }
+    html.app-shell .h2h-riprova { background: var(--gx-giallo); color: #000; border-color: var(--nb-ink, #000); font-size: calc(11 * var(--u)); border-radius: calc(7 * var(--u)); }
     html.app-shell .at-coppa { display: inline-flex; align-items: center; gap: calc(3 * var(--u)); padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(2 * var(--u)) calc(4 * var(--u)); background: rgba(0, 0, 0, .5); border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(12 * var(--u)); }
     html.app-shell .at-coppa img { width: calc(24 * var(--u)); height: calc(24 * var(--u)); object-fit: contain; }
     html.app-shell .at-coppa b { font: 900 calc(14 * var(--u))/1 var(--nb-font-titoli); }

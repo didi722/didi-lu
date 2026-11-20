@@ -72,13 +72,22 @@
         return '';
     }
 
+    /**
+     * Il tasto del testa a testa (scontri-diretti-ui.js): su ogni scheda tranne la propria. Chi non ha fatto il login lo vede su tutte (si confronta con il primo della classifica).
+     * `io`: il nome di chi è collegato (vuoto se nessuno).
+     */
+    function htmlScontro(g, io) {
+        if (io && idDi(io) === idDi(g.id)) return '';
+        return `<button type="button" class="at-scontro" data-scontro="${esc(g.id)}" data-suono="scegli"><span class="at-vs" aria-hidden="true">VS</span> Head to head</button>`;
+    }
+
     /** La scheda di un allenatore: niente sfondo. Al centro lui e il suo Pokémon compagno sul palco tondo; di fianco il nome, il ranking, l'Elo, i trofei e i badge. `gif(specie)` dà l'indirizzo del Pokémon animato. */
     function htmlCarta(g, indice, { gif, centro, io } = {}) {
         const c = coloreSicuro(g.colore);
         // tutte le GIF partono insieme e si contendono la rete: il compagno che si guarda ha la precedenza, gli altri aspettano (fetchpriority)
         const prio = centro === undefined ? '' : ` fetchpriority="${indice === centro ? 'high' : 'low'}" decoding="async"`;
         const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm, g.pkmShiny))}"${prio} data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="SpritePkm.ritenta(this)">` : '';
-        const trofei = htmlTrofei(g), badge = htmlBadge(g), palestra = htmlPalestra(g, io);
+        const trofei = htmlTrofei(g), badge = htmlBadge(g), palestra = htmlPalestra(g, io), scontro = htmlScontro(g, io);
         return `<article class="at-carta" data-i="${indice}" style="--c:${c}">
             <div class="at-palco">
                 <span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span>
@@ -90,7 +99,7 @@
                 ${htmlNumeri(g)}
                 ${trofei ? `<div class="at-trofei">${trofei}</div>` : ''}
                 ${badge ? `<div class="at-badge-riga">${badge}</div>` : ''}
-                ${palestra}
+                ${palestra || scontro ? `<div class="at-azioni">${palestra}${scontro}</div>` : ''}
             </div>
         </article>`;
     }
@@ -183,7 +192,10 @@
             stato.pista.addEventListener('click', e => {
                 const carta = e.target.closest ? e.target.closest('.at-carta') : null;
                 // toccare una scheda di lato la porta al centro (anche se si è toccato il suo tasto della palestra: quello funziona solo sulla scheda al centro)
-                if (carta && !carta.classList.contains('at-centro')) { if (e.target.closest('a')) e.preventDefault(); vai(Number(carta.dataset.i)); }
+                if (carta && !carta.classList.contains('at-centro')) { if (e.target.closest('a')) e.preventDefault(); vai(Number(carta.dataset.i)); return; }
+                // il testa a testa dell'allenatore al centro (la finestra è di scontri-diretti-ui.js, caricato da players.html)
+                const scontro = e.target.closest ? e.target.closest('[data-scontro]') : null;
+                if (scontro && win.ScontriDirettiUI) win.ScontriDirettiUI.apri(scontro.dataset.scontro);
             });
             if (!radice.dataset.gesti) {              // una volta sola, anche se i dati arrivano di nuovo
                 radice.dataset.gesti = '1';
@@ -202,5 +214,5 @@
         return { monta, vai, passo };
     }
 
-    return { indiceIniziale, htmlTrofei, testoBadge, htmlBadge, htmlNumeri, htmlPalestra, htmlCarta, avvia };
+    return { indiceIniziale, htmlTrofei, testoBadge, htmlBadge, htmlNumeri, htmlPalestra, htmlScontro, htmlCarta, avvia };
 });

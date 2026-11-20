@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
 <link rel="stylesheet" href="badge-team.css">
+<link rel="stylesheet" href="scontri-diretti.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
 <script src="temi.js"></script>
@@ -35,6 +36,9 @@
 <script src="badge-allenatore.js"></script>
 <script src="cosmetici.js"></script>
 <script src="palestra.js"></script>
+<script src="profilo-personale.js"></script>
+<script src="scontri-diretti.js"></script>
+<script src="scontri-diretti-ui.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -332,6 +336,8 @@ async function initTrainersPage() {
 
         // prima i classificati per Elo, poi gli unranked
         playersList.sort((a, b) => (b.classificato - a.classificato) || (b.ranking - a.ranking));
+        // il testa a testa (scontri-diretti-ui.js): gli allenatori in ordine di classifica, per i selettori della finestra
+        if (window.ScontriDirettiUI) ScontriDirettiUI.imposta({ db, giocatori: playersList.map(p => ({ id: p.id, nome: p.name, avatar: p.avatar, colore: p.color })) });
         // l'app disegna gli allenatori a modo suo (app-trainers.js): in ordine di classifica, con la posizione di chi è classificato
         if (window.AppSito) AppSito.pubblica('trainers', playersList.map((p, i) => ({
             id: p.id, nome: p.name, avatar: p.avatar, colore: p.color, elo: p.ranking, classificato: p.classificato, posizione: p.classificato ? i + 1 : null,
@@ -360,7 +366,7 @@ async function initTrainersPage() {
                    </div>`
                     : '');
 
-            // il tasto per la partita amichevole sta accanto alla card (non dentro: con i badge sarebbe troppo piena)
+            // i tasti stanno accanto alla card (non dentro: con i badge sarebbe troppo piena): il testa a testa (VS) e la partita amichevole (le spade)
             return `
               <div class="trainer-riga">
                 <a href="public.html?player=${encodeURIComponent(player.id)}" 
@@ -390,12 +396,16 @@ async function initTrainersPage() {
                         ${player.classificato ? player.ranking : 'N/A'}
                     </div>
                 </a>
-                ${window.Amichevoli ? Amichevoli.htmlTasto(player.name) : ''}
+                <div class="trainer-azioni">
+                    ${window.ScontriDirettiUI ? ScontriDirettiUI.htmlTasto(player.id, player.name) : ''}
+                    ${window.Amichevoli ? Amichevoli.htmlTasto(player.name) : ''}
+                </div>
               </div>
             `;
         }).join('');
         // le spade per sfidare a una partita amichevole (non sul proprio nome)
         if (window.Amichevoli) Amichevoli.aggiornaTasti(gridContainer);
+        if (window.ScontriDirettiUI) ScontriDirettiUI.aggiornaTasti(gridContainer);          // niente VS contro se stessi
 
     } catch (error) {
         console.error("Errore durante il caricamento dei giocatori:", error);
