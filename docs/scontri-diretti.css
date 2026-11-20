@@ -1,39 +1,9 @@
 /* =====================================================
-   SCONTRI DIRETTI — il tasto "VS" accanto alle card di Trainers e la finestra del testa a testa (scontri-diretti-ui.js)
+   SCONTRI DIRETTI — la finestra del testa a testa (scontri-diretti-ui.js)
    Segue il tema del sito (le variabili --nb-*). Nell'app lo stile sta in app-gioco-pagine.css.
    ===================================================== */
 
 html.h2h-aperto, html.h2h-aperto body { overflow: hidden; }
-
-/* ---------- il tasto accanto alla card ---------- */
-.tasto-scontro {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-    box-sizing: border-box;
-    min-width: 40px;
-    height: 40px;
-    padding: 0 8px;
-    background: var(--nb-giallo, #ffbd44);
-    color: #000;
-    border: 3px solid var(--nb-ink, #000);
-    border-radius: var(--nb-raggio, 0px);
-    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    font: 900 .78rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
-    letter-spacing: .06em;
-    cursor: pointer;
-    transition: transform .1s ease, box-shadow .1s ease, background-color .1s;
-}
-.tasto-scontro:hover { background: #fff; transform: translate(-1px, -2px) rotate(3deg); }
-.tasto-scontro:active { transform: translate(2px, 2px); box-shadow: none; }
-.tasto-scontro:focus-visible { outline: 3px solid var(--nb-ink, #000); outline-offset: 3px; }
-.tasto-scontro[hidden] { display: none !important; }
-/* il proprio tasto non c'è, ma il suo posto resta: le card hanno tutte la stessa larghezza */
-.trainer-riga .tasto-scontro[hidden] { display: inline-flex !important; visibility: hidden; }
-/* i tasti accanto alla card (il VS e le spade): in fila, e sul telefono uno sopra l'altro, così la card resta larga come prima */
-.trainer-azioni { display: flex; flex: none; align-items: center; gap: 10px; }
-@media (max-width: 600px) { .trainer-azioni { flex-direction: column; gap: 6px; } }
 
 /* ---------- la finestra ---------- */
 .h2h-velo {
@@ -256,5 +226,5 @@ html.h2h-aperto, html.h2h-aperto body { overflow: hidden; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .h2h-vs, .tasto-scontro { transition: none; }
+    .h2h-vs { transition: none; }
 }

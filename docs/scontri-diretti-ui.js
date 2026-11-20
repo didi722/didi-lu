@@ -1,7 +1,7 @@
 // =====================================================
 // SCONTRI DIRETTI — la finestra (pagina Trainers e app)
 //
-// Il tasto "VS" accanto a ogni allenatore apre il testa a testa: chi guarda (se ha fatto il login) contro quell'allenatore, con due selettori per
+// Il tasto "Head to head" della pagina Trainers apre il testa a testa: chi guarda (se ha fatto il login) a sinistra, con due selettori per
 // confrontare qualunque coppia e il VS in mezzo per scambiare i lati. I calcoli e l'HTML sono in scontri-diretti.js (puro, provato in Node);
 // qui si legge il database e si gestisce la finestra.
 //
@@ -9,10 +9,10 @@
 // quindi aprire la finestra non scarica niente di nuovo. Chi non può leggerle (senza login) vede un avviso con "try again".
 //
 //   ScontriDirettiUI.imposta({ db, giocatori })    il database e gli allenatori [{ id, nome, avatar, colore }] in ordine di classifica
-//   ScontriDirettiUI.apri(idAvversario)            apre la finestra: chi è collegato contro `idAvversario` (senza login: il primo della classifica)
+//   ScontriDirettiUI.apri([idAvversario])          apre la finestra: chi è collegato (senza login: il primo della classifica) contro `idAvversario` (senza: il primo degli altri)
 //   ScontriDirettiUI.chiudi()
-//   ScontriDirettiUI.htmlTasto(id, nome)           il tasto "VS" da scrivere nella pagina; clic(evento, tasto) lo collega
-//   ScontriDirettiUI.aggiornaTasti(radice)         nasconde il proprio (non ci si confronta con se stessi)
+//
+// Il tasto è scritto in players.html (class btn-floating-h2h): controlli.js lo porta in alto con gli altri, come "Team builder" nel Box, e scorrendo si riduce alla sola icona.
 //
 // Chi è collegato lo dice window.__nomeUtente (lo scrive la pagina dopo il login).
 // =====================================================
@@ -126,7 +126,7 @@
 
     function apri(idAvversario) {
         const { a, b } = SD.coppiaIniziale(io(), idAvversario, stato.giocatori);
-        if (!b) return;
+        if (!a || !b) return;
         Object.assign(stato, { a, b, tutti: false });
         stato.fuoco = document.activeElement;
         creaVelo();
@@ -147,23 +147,5 @@
         if (f && typeof f.focus === 'function' && document.contains(f)) f.focus();
     }
 
-    // Il tasto da scrivere dentro la pagina (accanto alla card dell'allenatore)
-    function htmlTasto(id, nome) {
-        return `<button type="button" class="tasto-scontro" data-id="${esc(idDi(id))}" title="Head to head with ${esc(nome)}" aria-label="Head to head with ${esc(nome)}" onclick="ScontriDirettiUI.clic(event, this)"><span>VS</span></button>`;
-    }
-
-    function clic(evento, tasto) {
-        evento.preventDefault();
-        evento.stopPropagation();
-        apri(tasto.dataset.id);
-    }
-
-    // Nasconde il proprio tasto; chi non ha fatto il login li vede tutti (il primo della classifica fa da punto di vista)
-    function aggiornaTasti(radice) {
-        const mio = io();
-        (radice || document).querySelectorAll('.tasto-scontro[data-id]').forEach(t => { t.hidden = !!mio && t.dataset.id === mio; });
-    }
-    document.addEventListener('app-utente', () => aggiornaTasti(document));
-
-    window.ScontriDirettiUI = { imposta, apri, chiudi, clic, htmlTasto, aggiornaTasti };
+    window.ScontriDirettiUI = { imposta, apri, chiudi };
 })();

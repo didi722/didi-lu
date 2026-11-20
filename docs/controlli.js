@@ -57,7 +57,7 @@
     }
 
     // ---- 1. tasti in alto ----
-    const SELETTORE_TASTI = '.sfide-btn, .btn-floating-admin, .btn-floating-helper';
+    const SELETTORE_TASTI = '.sfide-btn, .btn-floating-admin, .btn-floating-helper, .btn-floating-h2h';
 
     function raggruppaTasti(doc) {
         if (!doc.body) return null;

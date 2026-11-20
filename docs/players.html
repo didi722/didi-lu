@@ -396,16 +396,12 @@ async function initTrainersPage() {
                         ${player.classificato ? player.ranking : 'N/A'}
                     </div>
                 </a>
-                <div class="trainer-azioni">
-                    ${window.ScontriDirettiUI ? ScontriDirettiUI.htmlTasto(player.id, player.name) : ''}
-                    ${window.Amichevoli ? Amichevoli.htmlTasto(player.name) : ''}
-                </div>
+                ${window.Amichevoli ? Amichevoli.htmlTasto(player.name) : ''}
               </div>
             `;
         }).join('');
         // le spade per sfidare a una partita amichevole (non sul proprio nome)
         if (window.Amichevoli) Amichevoli.aggiornaTasti(gridContainer);
-        if (window.ScontriDirettiUI) ScontriDirettiUI.aggiornaTasti(gridContainer);          // niente VS contro se stessi
 
     } catch (error) {
         console.error("Errore durante il caricamento dei giocatori:", error);
@@ -779,4 +775,6 @@ async function applicaColoreUtente(user) {
 
 
 </script>
+<!-- Il testa a testa: un solo tasto, in alto con gli altri (controlli.js) come "Team builder" nel Box. Apre la finestra con chi è collegato a sinistra; si può confrontare qualunque coppia -->
+<button type="button" class="btn-floating-h2h" onclick="if (window.ScontriDirettiUI) ScontriDirettiUI.apri()" title="Compare any two trainers"><i class="fas fa-people-arrows tasto-icona"></i><span class="tasto-testo">Head to head</span></button>
 <script src="controlli.js"></script>
