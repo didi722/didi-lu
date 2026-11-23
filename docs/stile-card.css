@@ -74,19 +74,18 @@
    - le righe dell'Hall of Fame e i premi del riepilogo non hanno una posizione propria: gli strati ci si ancorano
    - chi ha perso un Match of the week è spento (grigio): con una cornice si spegne il contenuto, non la cornice */
 :root :is(.hof-voce, .rs-premio, .rs-fcard)[data-stile-card] { position: relative; }
-/* la cornice sporge dal bordo (7 px e l'alone): più spazio tra le card che ne hanno una, così non si toccano */
-:root .hof-record ol:has(> [data-stile-card]) { gap: 18px; }
-:root .ms-scontro:has(> [data-stile-card]) { gap: 18px; }
-:root .rs-righe:has(> [data-stile-card]) { gap: calc(18 * var(--rs-u, 1)); }
+/* la cornice sporge dal bordo (7 px e l'alone): più spazio tra le card, sempre (con o senza cornice), così non si toccano e le liste hanno tutte lo stesso respiro */
+:root .hof-record ol { gap: 18px; }
+:root .ms-scontro { gap: 18px; }
+:root .rs-righe { gap: calc(18 * var(--rs-u, 1)); }
 /* nella finestra dello showdown le regole del team (vincitore, passaggio del mouse) hanno un id: senza questa l'ombra piena resterebbe sotto la cornice */
 #sd-modal-overlay .sd-team[data-stile-card], #sd-modal-overlay .sd-team[data-stile-card]:is(:hover, :focus-visible, :active) { box-shadow: var(--sc-glow, none); }
 :root .lato-nome[data-stile-card] { overflow: visible; }
-/* le liste fitte (classifica a lato e tabella estesa, righe dello showdown): più spazio tra le righe con la cornice e un alone più corto, così gli aloni di righe vicine non si mescolano; l'anello resta */
+/* le liste fitte (classifica a lato e tabella estesa, righe dello showdown): più spazio tra le righe (sempre) e un alone più corto, così gli aloni di righe vicine non si mescolano; l'anello resta */
 :root :is(.cl-riga, .cl-tab-riga, .sd-lato)[data-stile-card] { --sc-glow: var(--sc-glow-lieve); --sc-glow2: var(--sc-glow2-lieve, var(--sc-glow-lieve)); }
-:root .cl-laterale .rank-riga:has(> [data-stile-card]) { margin: 11px 0 22px; }
-:root .cl-pile:has(> [data-stile-card]) { gap: 22px; }
-:root .showdown-summary-card .sd-lato[data-stile-card] { margin-bottom: 10px; }
-:root .showdown-summary-card .sd-lato + .sd-lato[data-stile-card] { margin-top: 10px; margin-bottom: 0; }      /* il nome che scorre sta in un riquadro interno: la cornice può uscire */
+:root .cl-laterale .rank-riga { margin: 11px 0 22px; }
+:root .cl-pile { gap: 22px; }
+:root .showdown-summary-card .sd-lato + .sd-lato { margin-top: 10px; }      /* il nome che scorre sta in un riquadro interno: la cornice può uscire */
 :root .ms-perde[data-stile-card] { filter: none; }
 :root .ms-perde[data-stile-card] > * { filter: grayscale(0.8); }
 
