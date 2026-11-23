@@ -122,16 +122,16 @@ test('apriModaleShowdown: titolo, formato, data, serie e una cartolina per parti
     assert.doesNotMatch(h, /data-stile-card/, 'senza una cornice comprata non c\'è l\'attributo');
 });
 
-test('apriModaleShowdown: il team di ogni allenatore porta la sua cornice (anche il match senza team, Random); chi non ne ha una no', async () => {
+test('apriModaleShowdown: la cornice la porta solo il team di chi ha vinto il match (anche quello senza team, Random)', async () => {
     const { html: h } = await eseguiApri({
         info: { player1: 'Didi', player2: 'Lu', categoria: 'Random', data: '2026-03-06' },
-        stili: { s1: 'card-fiamma', s2: '' },
+        stili: { s1: 'card-fiamma', s2: 'card-oro' },
         matches: { match1: { team1: 'Martiri', team2: 'Rain', p1score: 2, p2score: 0 }, match2: { team1: '', team2: '', p1score: 0, p2score: 2 } }
     });
-    assert.match(h, /<button type="button" class="sd-team sd-team-1 sd-vincitore" data-stile-card="card-fiamma"\s+style="--c: #31c489;"/, 'il team di Didi, con il suo pulsante');
-    assert.match(h, /<div class="sd-team sd-team-1 sd-senza-team sd-perde" data-stile-card="card-fiamma" style="--c: #31c489;">/, 'anche senza team (Random) il lato di Didi ha la sua cornice');
-    assert.equal((h.match(/data-stile-card/g) || []).length, 2, 'Lu non ne ha una: i suoi lati restano com\'erano');
-    assert.doesNotMatch(h, /sd-team-2[^>]*data-stile-card/);
+    assert.match(h, /<button type="button" class="sd-team sd-team-1 sd-vincitore" data-stile-card="card-fiamma"\s+style="--c: #31c489;"/, 'Didi ha vinto il match 1');
+    assert.match(h, /<div class="sd-team sd-team-2 sd-senza-team sd-vincitore" data-stile-card="card-oro" style="--c: #8e44ad;">/, 'Lu ha vinto il match 2, anche senza team');
+    assert.equal((h.match(/data-stile-card/g) || []).length, 2, 'chi ha perso non ha la cornice');
+    assert.doesNotMatch(h, /sd-perde"[^>]*data-stile-card/);
 });
 
 test('apriModaleShowdown: apostrofi e virgolette nei nomi non rompono né il testo né i gestori onclick', async () => {
