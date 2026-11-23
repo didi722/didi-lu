@@ -197,3 +197,38 @@ test('Pokémon: le card di Stats, MVP e Dream Team (Hall of Fame e riepilogo) po
     assert.ok(!css.includes('.carta-usage'), 'le schede di uso di una specie no');
     for (const f of ['box.html', 'box-team.css', 'box-vista.css']) assert.doesNotMatch(docs(f), /data-stile-card/, f);
 });
+
+test('simulatore: il riquadro col nome ha la cornice del giocatore (il nome che scorre sta in un riquadro interno) e l\'aura comprata compare sull\'avatar grande', () => {
+    const SB = docs('scheda-battaglia.js'), ex = docs('battle-extra.js');
+    assert.match(SB, /stileCard: \/\^card-\[a-z-\]\{2,30\}\$\/\.test\(String\(info\.stileCard \|\| ''\)\) \? String\(info\.stileCard\) : ''/);
+    assert.match(ex, /const cornice = sc && \/\^card-\[a-z-\]\{2,30\}\$\/\.test\(String\(sc\.stileCard \|\| ''\)\) \? sc\.stileCard : '';/);
+    assert.match(ex, /<h2 class="lato-nome" data-stile-card="\$\{cornice\}" title="\$\{esc\(nome\)\}"><span class="nome-scorrevole" style="display:block">/);
+    assert.match(ex, /<h2 class="lato-nome nome-scorrevole" title=/, 'senza cornice è com\'era');
+    assert.match(ex, /sc\.medaglie\.length, sc\.stileCard\]/, 'cambiando la cornice la colonna si ridisegna');
+    assert.match(docs('battle.html'), /style-versus\.css">\s*<link rel="stylesheet" href="stile-card\.css">/);
+    const css = docs('stile-card.css');
+    assert.match(css, /\.sd-lato, \.lato-nome, \.carta-pokemon/);
+    assert.match(css, /:root \.lato-nome\[data-stile-card\] \{ overflow: visible; \}/);
+    // l'aura: sullo sfondo "sfida", sul compagno di palestra e nell'intro VS (che copia l'attributo dall'avatar dello sfondo)
+    const ui = docs('battle-ui.js');
+    assert.equal((ui.match(/'data-aura': (t|tema)\.aura \? (t|tema)\.aura\.id : null, style: (t|tema)\.aura/g) || []).length, 2, 'i due avatar grandi');
+    assert.match(docs('battle-intro.js'), /const aura = s\.avatar\.getAttribute\('data-aura'\);[^\n]*\n\s*if \(aura\) img\.setAttribute\('data-aura', aura\);/);
+    const v = docs('style-versus.css');
+    assert.match(v, /\.vs-avatar\[data-aura\], \.vi-avatar\[data-aura\] \{\s*filter: drop-shadow\(0 0 8px var\(--pal-aura/);
+    assert.match(v, /\.vs-avatar\[data-aura="aura-arcobaleno"\], \.vi-avatar\[data-aura="aura-arcobaleno"\] \{ animation: vs-aura-arcobaleno/);
+    assert.match(v, /@keyframes vs-aura-arcobaleno/);
+});
+
+test('cornici senza motivo proprio: tengono i pallini semplici sullo sfondo (non lo lasciano vuoto); chi ha un motivo suo lo usa', () => {
+    const css = docs('stile-card.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.match(css, /--sc-pallini: radial-gradient\(rgba\(0, 0, 0, 0\.13\) 1\.4px, transparent 1\.7px\);/);
+    assert.match(css, /background-image: var\(--sc-img, var\(--sc-pallini\)\) !important;\s*background-size: var\(--sc-dim, 11px 11px\) !important;/, 'di base i pallini');
+    for (const id of ['card-oro', 'card-argento', 'card-olografica']) {
+        const i = css.indexOf(`[data-stile-card="${id}"] {`), b = css.slice(i, css.indexOf('}', i));
+        assert.match(b, /var\(--sc-pallini\)/, `${id}: il suo riflesso sopra i pallini`);
+        assert.match(b, /--sc-dim: [^;]*11px 11px;/, id);
+    }
+    const g = css.slice(css.indexOf('[data-stile-card^="card-bagliore-"] {')); assert.match(g.slice(0, g.indexOf('}')), /var\(--sc-pallini\)/, 'anche le luminose');
+    assert.match(css, /@keyframes sc-olo \{ 0%, 12% \{ background-position: 140% 0, 0 0, 0 0; \} 100% \{ background-position: -40% 0, 0 0, 0 0; \} \}/, 'la luce scorre, i pallini no');
+    for (const id of ['card-puntini', 'card-righe', 'card-scacchi', 'card-pokeball']) { const i = css.indexOf(`[data-stile-card="${id}"] {`); assert.doesNotMatch(css.slice(i, css.indexOf('}', i)), /sc-pallini/, `${id} ha il suo motivo`); }
+});

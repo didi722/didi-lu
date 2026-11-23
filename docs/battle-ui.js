@@ -1498,7 +1498,7 @@ function vestiPalestra(gym) {
     // a sinistra l'avatar del capopalestra (specchiato: gli avatar guardano verso sinistra), a destra il suo Pokémon compagno; ognuno centrato sotto la sua colonna
     const SP = self.SpritePkm;
     const decor = el('div', { class: 'vs-sfondo pal-decor', 'aria-hidden': 'true' });
-    if (tema.avatar) decor.append(el('img', { class: 'vs-avatar pal-avatar', 'data-colonna': 'sx', src: tema.avatar, alt: '', draggable: 'false', style: tema.aura ? `--pal-aura:${tema.aura.colore}` : null, onerror: ev => ev.target.remove() }));
+    if (tema.avatar) decor.append(el('img', { class: 'vs-avatar pal-avatar', 'data-colonna': 'sx', src: tema.avatar, alt: '', draggable: 'false', 'data-aura': tema.aura ? tema.aura.id : null, style: tema.aura ? `--pal-aura:${tema.aura.colore}` : null, onerror: ev => ev.target.remove() }));
     const comp = gym.aspetto && gym.aspetto.compagno;
     if (comp && SP) decor.append(el('img', { class: 'vs-compagno', 'data-colonna': 'dx', src: SP.gif(comp.nome, comp.shiny), alt: '', draggable: 'false', 'data-pkm': comp.nome, onerror: ev => { if (!SP.ritenta(ev.target)) ev.target.remove(); } }));
     document.body.prepend(decor);
@@ -1560,7 +1560,7 @@ function creaLatoVersus(a, nome, classe) {
     box.append(el('div', { class: 'vs-scritta', 'aria-hidden': 'true' }, righe));
     // l'entrata comprata nello Shop (entrate-vs.js): la legge l'intro VS quando l'avatar arriva
     const entrata = self.Cosmetici ? self.Cosmetici.valido(a.effettoEntrata, 'entrata') : '';
-    if (t.avatar) box.append(el('img', { class: 'vs-avatar', src: t.avatar, alt: '', draggable: 'false', style: t.aura ? `--pal-aura:${t.aura.colore}` : null, 'data-entrata': entrata || null, onerror: ev => ev.target.remove() }));
+    if (t.avatar) box.append(el('img', { class: 'vs-avatar', src: t.avatar, alt: '', draggable: 'false', 'data-aura': t.aura ? t.aura.id : null, style: t.aura ? `--pal-aura:${t.aura.colore}` : null, 'data-entrata': entrata || null, onerror: ev => ev.target.remove() }));
     return box;
 }
 

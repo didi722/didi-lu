@@ -847,7 +847,7 @@ function disegnaLati() {
         const elenco = elencoLato(lato);
         const nome = S.info[lato].nome || S.battle?.[lato]?.name || (lato === 'p1' ? 'Player 1' : 'Player 2');
         const sc = S.schede[lato] || null;
-        const firma = JSON.stringify([nome, S.info[lato].team, elenco.map(x => x.nome), S.openSheet, S.latiNoti, sc && [sc.id, sc.elo, sc.posizione, sc.titolo, sc.medaglie.length]]);
+        const firma = JSON.stringify([nome, S.info[lato].team, elenco.map(x => x.nome), S.openSheet, S.latiNoti, sc && [sc.id, sc.elo, sc.posizione, sc.titolo, sc.medaglie.length, sc.stileCard]]);
         if (box.dataset.firma === firma) continue;
         box.dataset.firma = firma;
         box.dataset.elenco = elenco.map(x => `${x.specie}|${x.nome}`).join(',');
@@ -857,9 +857,12 @@ function disegnaLati() {
         const SB = window.SchedaBattaglia;
         const nomeTeam = S.info[lato].team;
         const nomiTeam = elenco.map(x => x.nome === x.specie ? x.specie : `${x.nome} (${x.specie})`);
+        const cornice = sc && /^card-[a-z-]{2,30}$/.test(String(sc.stileCard || '')) ? sc.stileCard : '';      // la cornice comprata nello Shop sul riquadro col nome
         const badgeTeam = SB && sc ? SB.htmlBadgeTeam(S.schede.risultato, sc, nomeTeam) : '';
         box.innerHTML = `
-            <h2 class="lato-nome nome-scorrevole" title="${esc(nome)}">${esc(nome)}</h2>
+            ${cornice
+                ? `<h2 class="lato-nome" data-stile-card="${cornice}" title="${esc(nome)}"><span class="nome-scorrevole" style="display:block">${esc(nome)}</span></h2>`
+                : `<h2 class="lato-nome nome-scorrevole" title="${esc(nome)}">${esc(nome)}</h2>`}
             ${SB && sc ? SB.htmlScheda(sc) : ''}
             ${nomeTeam ? `<div class="lato-team-riquadro"><p class="lato-team nome-scorrevole" title="${esc(nomeTeam)}">${esc(nomeTeam)}</p>${badgeTeam}</div>` : ''}
             <ol class="lato-pkm">${elenco.map((x, i) => `

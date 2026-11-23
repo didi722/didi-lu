@@ -288,6 +288,8 @@
                 img.src = s.avatar.currentSrc || s.avatar.src;
                 const stile = s.avatar.getAttribute('style');       // l'alone (--pal-aura) dell'avatar
                 if (stile) img.setAttribute('style', stile);
+                const aura = s.avatar.getAttribute('data-aura');        // quale aura (come sulla pagina: l'arcobaleno cambia colore)
+                if (aura) img.setAttribute('data-aura', aura);
                 img.style.height = `${s.altezza}px`;
                 corpo.appendChild(img);
                 imgAvatar = img;
