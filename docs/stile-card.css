@@ -80,7 +80,13 @@
 :root .rs-righe:has(> [data-stile-card]) { gap: calc(18 * var(--rs-u, 1)); }
 /* nella finestra dello showdown le regole del team (vincitore, passaggio del mouse) hanno un id: senza questa l'ombra piena resterebbe sotto la cornice */
 #sd-modal-overlay .sd-team[data-stile-card], #sd-modal-overlay .sd-team[data-stile-card]:is(:hover, :focus-visible, :active) { box-shadow: var(--sc-glow, none); }
-:root .lato-nome[data-stile-card] { overflow: visible; }      /* il nome che scorre sta in un riquadro interno: la cornice può uscire */
+:root .lato-nome[data-stile-card] { overflow: visible; }
+/* le liste fitte (classifica a lato e tabella estesa, righe dello showdown): più spazio tra le righe con la cornice e un alone più corto, così gli aloni di righe vicine non si mescolano; l'anello resta */
+:root :is(.cl-riga, .cl-tab-riga, .sd-lato)[data-stile-card] { --sc-glow: var(--sc-glow-lieve); --sc-glow2: var(--sc-glow2-lieve, var(--sc-glow-lieve)); }
+:root .cl-laterale .rank-riga:has(> [data-stile-card]) { margin: 11px 0 22px; }
+:root .cl-pile:has(> [data-stile-card]) { gap: 22px; }
+:root .showdown-summary-card .sd-lato[data-stile-card] { margin-bottom: 10px; }
+:root .showdown-summary-card .sd-lato + .sd-lato[data-stile-card] { margin-top: 10px; margin-bottom: 0; }      /* il nome che scorre sta in un riquadro interno: la cornice può uscire */
 :root .ms-perde[data-stile-card] { filter: none; }
 :root .ms-perde[data-stile-card] > * { filter: grayscale(0.8); }
 
@@ -132,24 +138,28 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-puntini"] {
     --sc-bordo: #000;
     --sc-glow: 0 0 0 3px #fff, 0 0 0 5px #000;
+    --sc-glow-lieve: 0 0 0 3px #fff, 0 0 0 5px #000;
     --sc-img: radial-gradient(circle, rgba(255, 255, 255, 0.75) 2px, transparent 2.7px);
     --sc-dim: 14px 14px;
 }
 [data-stile-card="card-righe"] {
     --sc-bordo: #000;
     --sc-glow: 0 0 0 3px #fff, 0 0 0 5px #000;
+    --sc-glow-lieve: 0 0 0 3px #fff, 0 0 0 5px #000;
     --sc-img: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.4) 0 6px, transparent 6px 14px);
     --sc-dim: auto;
 }
 [data-stile-card="card-scacchi"] {
     --sc-bordo: #000;
     --sc-glow: 0 0 0 3px #fff, 0 0 0 5px #000;
+    --sc-glow-lieve: 0 0 0 3px #fff, 0 0 0 5px #000;
     --sc-img: conic-gradient(rgba(0, 0, 0, 0.16) 25%, transparent 0 50%, rgba(0, 0, 0, 0.16) 0 75%, transparent 0);
     --sc-dim: 30px 30px;
 }
 [data-stile-card="card-pokeball"] {
     --sc-bordo: #000;
     --sc-glow: 0 0 0 3px #e8231f, 0 0 0 5px #000;
+    --sc-glow-lieve: 0 0 0 3px #e8231f, 0 0 0 5px #000;
     --sc-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='rgba(0,0,0,.4)' stroke-width='1.6'%3E%3Cg transform='translate(11 11)'%3E%3Ccircle r='7.5'/%3E%3Cpath d='M-7.5 0H-2.6M2.6 0H7.5'/%3E%3Ccircle r='2.6'/%3E%3C/g%3E%3Cg transform='translate(33 33)'%3E%3Ccircle r='7.5'/%3E%3Cpath d='M-7.5 0H-2.6M2.6 0H7.5'/%3E%3Ccircle r='2.6'/%3E%3C/g%3E%3C/g%3E%3Cg fill='rgba(232,35,31,.3)'%3E%3Cpath transform='translate(11 11)' d='M-7.5 0A7.5 7.5 0 0 1 7.5 0H2.6A2.6 2.6 0 0 0 -2.6 0Z'/%3E%3Cpath transform='translate(33 33)' d='M-7.5 0A7.5 7.5 0 0 1 7.5 0H2.6A2.6 2.6 0 0 0 -2.6 0Z'/%3E%3C/g%3E%3C/svg%3E");      /* due Poké Ball per piastrella, in diagonale */
     --sc-dim: 44px 44px;
 }
@@ -158,6 +168,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-oro"] {
     --sc-bordo: transparent;
     --sc-glow: 0 0 16px 4px rgba(255, 200, 70, 0.55);
+    --sc-glow-lieve: 0 0 6px 2px rgba(255, 200, 70, 0.55);
     --sc-img: linear-gradient(135deg, rgba(255, 222, 120, 0.34), rgba(255, 170, 30, 0.12) 55%, rgba(255, 232, 150, 0.24)), var(--sc-pallini);
     --sc-dim: 100% 100%, var(--sc-pallini-dim);
     --sc-rep: no-repeat, repeat;
@@ -171,6 +182,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-argento"] {
     --sc-bordo: transparent;
     --sc-glow: 0 0 14px 3px rgba(205, 222, 240, 0.6);
+    --sc-glow-lieve: 0 0 6px 1px rgba(205, 222, 240, 0.6);
     --sc-img: linear-gradient(135deg, rgba(235, 242, 250, 0.4), rgba(150, 165, 180, 0.12) 55%, rgba(235, 242, 250, 0.3)), var(--sc-pallini);
     --sc-dim: 100% 100%, var(--sc-pallini-dim);
     --sc-rep: no-repeat, repeat;
@@ -184,6 +196,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-carbonio"] {
     --sc-bordo: transparent;
     --sc-glow: 0 0 10px 2px rgba(120, 132, 146, 0.5);
+    --sc-glow-lieve: 0 0 4px 1px rgba(120, 132, 146, 0.5);
     --sc-img: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.28) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.28) 0 2px, transparent 2px 4px);
     --sc-dim: auto;
     --sc-ring-on: "";
@@ -200,6 +213,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-olografica"] {
     --sc-bordo: transparent;
     --sc-glow: 0 0 18px 3px rgba(150, 190, 255, 0.7);
+    --sc-glow-lieve: 0 0 7px 1px rgba(150, 190, 255, 0.7);
     --sc-img:
         linear-gradient(105deg, transparent 18%, rgba(255, 0, 140, 0.34) 30%, rgba(255, 230, 0, 0.3) 38%, rgba(0, 255, 170, 0.34) 46%, rgba(0, 160, 255, 0.34) 54%, rgba(190, 0, 255, 0.3) 62%, transparent 74%),
         linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)),
@@ -217,6 +231,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-arcobaleno"] {
     --sc-bordo: transparent;
     --sc-glow: 0 0 16px 3px rgba(255, 255, 255, 0.35);
+    --sc-glow-lieve: 0 0 6px 1px rgba(255, 255, 255, 0.35);
     --sc-ring-on: "";
     --sc-ring: linear-gradient(90deg, #ff4d6d, #ffb02e, #ffe94d, #3be07a, #3ba8ff, #b04dff, #ff4d6d);
     --sc-ring-dim: 200% 100%;
@@ -228,6 +243,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-stelle"] {
     --sc-bordo: transparent;
     --sc-glow: 0 0 18px 4px rgba(150, 165, 255, 0.55), inset 0 0 18px 2px rgba(20, 25, 110, 0.4);
+    --sc-glow-lieve: 0 0 7px 2px rgba(150, 165, 255, 0.55), inset 0 0 18px 2px rgba(20, 25, 110, 0.4);
     --sc-img:
         radial-gradient(circle at 20% 30%, #fff 0 1.1px, rgba(255, 255, 255, 0.3) 1.5px 2.4px, transparent 3px),
         radial-gradient(circle at 75% 65%, #fff 0 0.9px, rgba(255, 255, 255, 0.3) 1.3px 2.1px, transparent 2.6px),
@@ -245,6 +261,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-circuito"] {
     --sc-bordo: transparent;
     --sc-glow: 0 0 14px 4px rgba(0, 255, 200, 0.5), inset 0 0 14px 1px rgba(0, 255, 200, 0.18);
+    --sc-glow-lieve: 0 0 6px 2px rgba(0, 255, 200, 0.5), inset 0 0 14px 1px rgba(0, 255, 200, 0.18);
     --sc-img:
         radial-gradient(circle at 0 0, #00ffc8 0 2.2px, rgba(0, 60, 54, 0.8) 2.6px 3.4px, transparent 3.9px),
         linear-gradient(90deg, rgba(0, 70, 60, 0.32) 1.5px, transparent 1.5px),
@@ -266,7 +283,9 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-fiamma"] {
     --sc-bordo: transparent;
     --sc-glow: 0 0 14px 3px #ff5a1f, 0 0 30px 8px rgba(255, 90, 20, 0.5);
+    --sc-glow-lieve: 0 0 6px 1px #ff5a1f, 0 0 12px 3px rgba(255, 90, 20, 0.5);
     --sc-glow2: 0 0 20px 5px #ff8a1f, 0 0 44px 13px rgba(255, 120, 20, 0.6);
+    --sc-glow2-lieve: 0 0 8px 2px #ff8a1f, 0 0 18px 5px rgba(255, 120, 20, 0.6);
     --sc-anim: sc-pulsa 0.9s ease-in-out infinite alternate;
     --sc-ring-on: "";
     --sc-ring: linear-gradient(0deg, #ffd23f 0%, #ff8a1f 38%, #e8330a 72%, #7a1200 100%);
@@ -296,47 +315,64 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-bagliore-oro"] {
     --sc-bordo: #4a3200;
     --sc-glow: 0 0 0 1.5px #fff3b8, 0 0 0 3.5px #ffcc33, 0 0 11px 4px #ffcc33, 0 0 28px 8px rgba(255, 204, 51, 0.48), inset 0 0 16px 1px rgba(255, 204, 51, 0.32);
+    --sc-glow-lieve: 0 0 0 1.5px #fff3b8, 0 0 0 3.5px #ffcc33, 0 0 4px 2px #ffcc33, 0 0 11px 3px rgba(255, 204, 51, 0.48), inset 0 0 16px 1px rgba(255, 204, 51, 0.32);
     --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #fff3b8, 0 0 18px 6px #ffcc33, 0 0 44px 13px rgba(255, 204, 51, 0.6), inset 0 0 24px 3px rgba(255, 204, 51, 0.5);
+    --sc-glow2-lieve: 0 0 0 1.5px #fff, 0 0 0 3.5px #fff3b8, 0 0 7px 2px #ffcc33, 0 0 18px 5px rgba(255, 204, 51, 0.6), inset 0 0 24px 3px rgba(255, 204, 51, 0.5);
 }
 [data-stile-card="card-bagliore-fiamma"] {
     --sc-bordo: #4a1500;
     --sc-glow: 0 0 0 1.5px #ffc9a0, 0 0 0 3.5px #ff5a1f, 0 0 11px 4px #ff5a1f, 0 0 28px 8px rgba(255, 90, 31, 0.48), inset 0 0 16px 1px rgba(255, 90, 31, 0.32);
+    --sc-glow-lieve: 0 0 0 1.5px #ffc9a0, 0 0 0 3.5px #ff5a1f, 0 0 4px 2px #ff5a1f, 0 0 11px 3px rgba(255, 90, 31, 0.48), inset 0 0 16px 1px rgba(255, 90, 31, 0.32);
     --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffc9a0, 0 0 18px 6px #ff5a1f, 0 0 44px 13px rgba(255, 90, 31, 0.6), inset 0 0 24px 3px rgba(255, 90, 31, 0.5);
+    --sc-glow2-lieve: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffc9a0, 0 0 7px 2px #ff5a1f, 0 0 18px 5px rgba(255, 90, 31, 0.6), inset 0 0 24px 3px rgba(255, 90, 31, 0.5);
 }
 [data-stile-card="card-bagliore-ciano"] {
     --sc-bordo: #06364a;
     --sc-glow: 0 0 0 1.5px #d6f5ff, 0 0 0 3.5px #5fd4ff, 0 0 11px 4px #5fd4ff, 0 0 28px 8px rgba(95, 212, 255, 0.48), inset 0 0 16px 1px rgba(95, 212, 255, 0.32);
+    --sc-glow-lieve: 0 0 0 1.5px #d6f5ff, 0 0 0 3.5px #5fd4ff, 0 0 4px 2px #5fd4ff, 0 0 11px 3px rgba(95, 212, 255, 0.48), inset 0 0 16px 1px rgba(95, 212, 255, 0.32);
     --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #d6f5ff, 0 0 18px 6px #5fd4ff, 0 0 44px 13px rgba(95, 212, 255, 0.6), inset 0 0 24px 3px rgba(95, 212, 255, 0.5);
+    --sc-glow2-lieve: 0 0 0 1.5px #fff, 0 0 0 3.5px #d6f5ff, 0 0 7px 2px #5fd4ff, 0 0 18px 5px rgba(95, 212, 255, 0.6), inset 0 0 24px 3px rgba(95, 212, 255, 0.5);
 }
 [data-stile-card="card-bagliore-smeraldo"] {
     --sc-bordo: #053d1a;
     --sc-glow: 0 0 0 1.5px #cbffdc, 0 0 0 3.5px #2ee66b, 0 0 11px 4px #2ee66b, 0 0 28px 8px rgba(46, 230, 107, 0.48), inset 0 0 16px 1px rgba(46, 230, 107, 0.32);
+    --sc-glow-lieve: 0 0 0 1.5px #cbffdc, 0 0 0 3.5px #2ee66b, 0 0 4px 2px #2ee66b, 0 0 11px 3px rgba(46, 230, 107, 0.48), inset 0 0 16px 1px rgba(46, 230, 107, 0.32);
     --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #cbffdc, 0 0 18px 6px #2ee66b, 0 0 44px 13px rgba(46, 230, 107, 0.6), inset 0 0 24px 3px rgba(46, 230, 107, 0.5);
+    --sc-glow2-lieve: 0 0 0 1.5px #fff, 0 0 0 3.5px #cbffdc, 0 0 7px 2px #2ee66b, 0 0 18px 5px rgba(46, 230, 107, 0.6), inset 0 0 24px 3px rgba(46, 230, 107, 0.5);
 }
 [data-stile-card="card-bagliore-viola"] {
     --sc-bordo: #2b0a55;
     --sc-glow: 0 0 0 1.5px #e8d0ff, 0 0 0 3.5px #a855ff, 0 0 11px 4px #a855ff, 0 0 28px 8px rgba(168, 85, 255, 0.48), inset 0 0 16px 1px rgba(168, 85, 255, 0.32);
+    --sc-glow-lieve: 0 0 0 1.5px #e8d0ff, 0 0 0 3.5px #a855ff, 0 0 4px 2px #a855ff, 0 0 11px 3px rgba(168, 85, 255, 0.48), inset 0 0 16px 1px rgba(168, 85, 255, 0.32);
     --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #e8d0ff, 0 0 18px 6px #a855ff, 0 0 44px 13px rgba(168, 85, 255, 0.6), inset 0 0 24px 3px rgba(168, 85, 255, 0.5);
+    --sc-glow2-lieve: 0 0 0 1.5px #fff, 0 0 0 3.5px #e8d0ff, 0 0 7px 2px #a855ff, 0 0 18px 5px rgba(168, 85, 255, 0.6), inset 0 0 24px 3px rgba(168, 85, 255, 0.5);
 }
 [data-stile-card="card-bagliore-rosa"] {
     --sc-bordo: #4a0a2c;
     --sc-glow: 0 0 0 1.5px #ffd2e7, 0 0 0 3.5px #ff5fa8, 0 0 11px 4px #ff5fa8, 0 0 28px 8px rgba(255, 95, 168, 0.48), inset 0 0 16px 1px rgba(255, 95, 168, 0.32);
+    --sc-glow-lieve: 0 0 0 1.5px #ffd2e7, 0 0 0 3.5px #ff5fa8, 0 0 4px 2px #ff5fa8, 0 0 11px 3px rgba(255, 95, 168, 0.48), inset 0 0 16px 1px rgba(255, 95, 168, 0.32);
     --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffd2e7, 0 0 18px 6px #ff5fa8, 0 0 44px 13px rgba(255, 95, 168, 0.6), inset 0 0 24px 3px rgba(255, 95, 168, 0.5);
+    --sc-glow2-lieve: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffd2e7, 0 0 7px 2px #ff5fa8, 0 0 18px 5px rgba(255, 95, 168, 0.6), inset 0 0 24px 3px rgba(255, 95, 168, 0.5);
 }
 [data-stile-card="card-bagliore-rosso"] {
     --sc-bordo: #4a0509;
     --sc-glow: 0 0 0 1.5px #ffc4c9, 0 0 0 3.5px #ff2d3d, 0 0 11px 4px #ff2d3d, 0 0 28px 8px rgba(255, 45, 61, 0.48), inset 0 0 16px 1px rgba(255, 45, 61, 0.32);
+    --sc-glow-lieve: 0 0 0 1.5px #ffc4c9, 0 0 0 3.5px #ff2d3d, 0 0 4px 2px #ff2d3d, 0 0 11px 3px rgba(255, 45, 61, 0.48), inset 0 0 16px 1px rgba(255, 45, 61, 0.32);
     --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffc4c9, 0 0 18px 6px #ff2d3d, 0 0 44px 13px rgba(255, 45, 61, 0.6), inset 0 0 24px 3px rgba(255, 45, 61, 0.5);
+    --sc-glow2-lieve: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffc4c9, 0 0 7px 2px #ff2d3d, 0 0 18px 5px rgba(255, 45, 61, 0.6), inset 0 0 24px 3px rgba(255, 45, 61, 0.5);
 }
 [data-stile-card="card-bagliore-verde"] {
     --sc-bordo: #213d00;
     --sc-glow: 0 0 0 1.5px #f0ffbc, 0 0 0 3.5px #b6ff2e, 0 0 11px 4px #b6ff2e, 0 0 28px 8px rgba(182, 255, 46, 0.48), inset 0 0 16px 1px rgba(182, 255, 46, 0.32);
+    --sc-glow-lieve: 0 0 0 1.5px #f0ffbc, 0 0 0 3.5px #b6ff2e, 0 0 4px 2px #b6ff2e, 0 0 11px 3px rgba(182, 255, 46, 0.48), inset 0 0 16px 1px rgba(182, 255, 46, 0.32);
     --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #f0ffbc, 0 0 18px 6px #b6ff2e, 0 0 44px 13px rgba(182, 255, 46, 0.6), inset 0 0 24px 3px rgba(182, 255, 46, 0.5);
+    --sc-glow2-lieve: 0 0 0 1.5px #fff, 0 0 0 3.5px #f0ffbc, 0 0 7px 2px #b6ff2e, 0 0 18px 5px rgba(182, 255, 46, 0.6), inset 0 0 24px 3px rgba(182, 255, 46, 0.5);
 }
 
 [data-stile-card="card-bagliore-arcobaleno"] {
     --sc-bordo: #1c1c2e;
     --sc-glow: 0 0 0 1.5px #fff, 0 0 0 3.5px #ff4d6d, 0 0 14px 4px #ff4d6d, 0 0 30px 8px rgba(255, 77, 109, 0.45), inset 0 0 16px 1px rgba(255, 77, 109, 0.3);
+    --sc-glow-lieve: 0 0 0 1.5px #fff, 0 0 0 3.5px #ff4d6d, 0 0 6px 2px #ff4d6d, 0 0 12px 3px rgba(255, 77, 109, 0.45), inset 0 0 16px 1px rgba(255, 77, 109, 0.3);
     --sc-anim: sc-arcobaleno 6s linear infinite;
 }
 
