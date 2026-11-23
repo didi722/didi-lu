@@ -57,8 +57,8 @@
 }
 :root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .season-card, .palm-card, .hof-voce, .sd-team, .sd-lato, .lato-nome, .carta-pokemon, .hof-membro, .format-nb-leader-box, .rs-campione, .sc-campione)[data-stile-card]::after {       /* cornice: l'anello sul bordo (e un po' fuori), ritagliato con una maschera */
     content: var(--sc-ring-on, none);
-    inset: -7px;
-    padding: 6px;
+    inset: calc(-1px - var(--sc-ring-w, 6px));      /* l'anello sta tutto fuori dal bordo, a 1px di distanza */
+    padding: var(--sc-ring-w, 6px);      /* lo spessore: 6px (le cornici con una texture, che ha bisogno di spazio), 4px per quelle lisce (fasce di colore o di metallo) */
     border-radius: inherit;
     background-image: var(--sc-ring, none);
     background-size: var(--sc-ring-dim, 100% 100%);
@@ -166,6 +166,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 
 /* metalli: una fascia lucida al posto del bordo, con la luce che la attraversa ogni tanto */
 [data-stile-card="card-oro"] {
+    --sc-ring-w: 4px;
     --sc-bordo: transparent;
     --sc-glow: 0 0 16px 4px rgba(255, 200, 70, 0.55);
     --sc-glow-lieve: 0 0 6px 2px rgba(255, 200, 70, 0.55);
@@ -180,6 +181,7 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-ring-anim: sc-scorre 5s ease-in-out infinite;
 }
 [data-stile-card="card-argento"] {
+    --sc-ring-w: 4px;
     --sc-bordo: transparent;
     --sc-glow: 0 0 14px 3px rgba(205, 222, 240, 0.6);
     --sc-glow-lieve: 0 0 6px 1px rgba(205, 222, 240, 0.6);
@@ -194,6 +196,7 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-ring-anim: sc-scorre 6s ease-in-out infinite;
 }
 [data-stile-card="card-carbonio"] {
+    --sc-ring-w: 4px;
     --sc-bordo: transparent;
     --sc-glow: 0 0 10px 2px rgba(120, 132, 146, 0.5);
     --sc-glow-lieve: 0 0 4px 1px rgba(120, 132, 146, 0.5);
@@ -211,6 +214,7 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-deco-anim: sc-scorre 7s ease-in-out infinite;
 }
 [data-stile-card="card-olografica"] {
+    --sc-ring-w: 4px;
     --sc-bordo: transparent;
     --sc-glow: 0 0 18px 3px rgba(150, 190, 255, 0.7);
     --sc-glow-lieve: 0 0 7px 1px rgba(150, 190, 255, 0.7);
@@ -229,6 +233,7 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-ring-anim: sc-scorre 4s ease-in-out infinite;
 }
 [data-stile-card="card-arcobaleno"] {
+    --sc-ring-w: 4px;
     --sc-bordo: transparent;
     --sc-glow: 0 0 16px 3px rgba(255, 255, 255, 0.35);
     --sc-glow-lieve: 0 0 6px 1px rgba(255, 255, 255, 0.35);
@@ -241,6 +246,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 
 /* natura e tecnologia */
 [data-stile-card="card-stelle"] {
+    --sc-ring-w: 4px;
     --sc-bordo: transparent;
     --sc-glow: 0 0 18px 4px rgba(150, 165, 255, 0.55), inset 0 0 18px 2px rgba(20, 25, 110, 0.4);
     --sc-glow-lieve: 0 0 7px 2px rgba(150, 165, 255, 0.55), inset 0 0 18px 2px rgba(20, 25, 110, 0.4);

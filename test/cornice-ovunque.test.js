@@ -304,3 +304,16 @@ test('replay da PC: se un allenatore ha un\'aura, compare intorno al suo avatar 
     assert.match(css, /\.rv-avatar\[data-aura="aura-arcobaleno"\] \{ animation: rv-aura-arcobaleno 4s linear infinite; \}/);
     assert.match(css, /@keyframes rv-aura-arcobaleno/);
 });
+
+test('cornici ad anello: lo spessore è una variabile (6px di base); le cornici lisce (arcobaleno, argento, oro, olografica, stelle, carbonio) sono più sottili, 4px', () => {
+    const css = docs('stile-card.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.match(css, /inset: calc\(-1px - var\(--sc-ring-w, 6px\)\);\s*padding: var\(--sc-ring-w, 6px\);/);
+    for (const n of ['card-arcobaleno', 'card-argento', 'card-oro', 'card-olografica', 'card-stelle', 'card-carbonio']) {
+        const b = css.match(new RegExp(`\\[data-stile-card="${n}"\\] \\{([^}]*)\\}`))[1];
+        assert.match(b, /--sc-ring-w: 4px;/, n);
+    }
+    for (const n of ['card-bambu', 'card-legno', 'card-circuito', 'card-fiamma']) {
+        const b = css.match(new RegExp(`\\[data-stile-card="${n}"\\] \\{([^}]*)\\}`))[1];
+        assert.doesNotMatch(b, /--sc-ring-w/, `${n}: la texture tiene i 6px`);
+    }
+});
