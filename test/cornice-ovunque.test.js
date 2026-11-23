@@ -268,7 +268,7 @@ test('liste fitte (classifica a lato, tabella estesa, righe dello showdown): piÃ
     assert.match(css, /:root \.cl-pile:has\(> \[data-stile-card\]\) \{ gap: 22px; \}/);
     assert.match(css, /\.showdown-summary-card \.sd-lato\[data-stile-card\] \{ margin-bottom: 10px; \}/);
     // ogni stile con un alone ha la sua versione corta: stessi anelli pieni, alone con meno sfocatura e meno spread
-    const blocchi = css.split('}').filter(b => /--sc-glow:/.test(b));
+    const blocchi = css.split('}').filter(b => /--sc-glow:/.test(b) && !/var\(--sc-glow-lieve\)/.test(b));
     assert.ok(blocchi.length >= 20);
     for (const b of blocchi) {
         const nome = (b.match(/\[data-stile-card[^\]]*\]/) || [''])[0];
