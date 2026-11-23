@@ -337,8 +337,8 @@
             </div>`;
     }
 
-    // lo stile della card comprato nello Shop: sulle card degli allenatori e dei loro team (non su quelle dei singoli Pokémon), e solo se è un id fatto come si deve (viene dal database)
-    const stileCardDi = (tab, x) => ((tab === 'players' || tab === 'teams') && /^card-[a-z-]{2,30}$/.test(String(x.stileCard || '')) ? x.stileCard : '');
+    // lo stile della card comprato nello Shop: sulle card degli allenatori, dei loro team e dei loro Pokémon (non sulle schede di uso di una specie), e solo se è un id fatto come si deve (viene dal database)
+    const stileCardDi = (tab, x) => ((tab === 'players' || tab === 'teams' || tab === 'pokemon') && /^card-[a-z-]{2,30}$/.test(String(x.stileCard || '')) ? x.stileCard : '');
 
     function carta(tab, x, i, grande, tessere) {
         const chiave = x[CHIAVE[tab]];

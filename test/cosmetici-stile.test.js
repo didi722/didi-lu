@@ -50,7 +50,7 @@ test('le due copie di cosmetici.js (sito e server) sono uguali', () => {
 
 test('stile delle card: una regola sola le applica a Trainers, classifica, Stats e all\'app; l\'attributo lo scrive ogni pagina da un id controllato', () => {
     const css = docs('stile-card.css');
-    assert.match(css, /:root :is\(\.trainer-card, \.cl-riga, \.cl-tab-riga, \.carta-players, \.carta-teams, \.player-rank-row, \.ms-lato, \.season-card, \.palm-card, \.hof-voce, \.sd-team, \.sd-lato, \.rs-campione, \.rs-premio, \.sc-campione\)\[data-stile-card\] \{/);
+    assert.match(css, /:root :is\(\.trainer-card, \.cl-riga, \.cl-tab-riga, \.carta-players, \.carta-teams, \.player-rank-row, \.ms-lato, \.season-card, \.palm-card, \.hof-voce, \.sd-team, \.sd-lato, \.carta-pokemon, \.hof-membro, \.rs-mvp, \.rs-fcard, \.rs-campione, \.rs-premio, \.sc-campione\)\[data-stile-card\] \{/);
     assert.match(css, /html\.app-shell \[data-stile-card\] \.pal-pedana \{/);
     assert.doesNotMatch(css.slice(css.indexOf(':root :is('), css.indexOf('}', css.indexOf(':root :is('))), /box-shadow:[^;]*!important/, 'senza !important: le animazioni vincono');
     // Trainers (browser)
@@ -69,7 +69,7 @@ test('stile delle card: una regola sola le applica a Trainers, classifica, Stats
     assert.match(docs('stats.html'), /<link rel="stylesheet" href="stile-card\.css">/);
     assert.match(docs('statistiche.js'), /stileCard: info\(g\.id\)\.stileCard \|\| ''/);
     const stats = docs('stats.js');
-    assert.match(stats, /const stileCardDi = \(tab, x\) => \(\(tab === 'players' \|\| tab === 'teams'\) && \/\^card-\[a-z-\]\{2,30\}\$\/\.test\(String\(x\.stileCard \|\| ''\)\) \? x\.stileCard : ''\);/, 'le card degli allenatori e dei loro team, non quelle dei Pokémon');
+    assert.match(stats, /const stileCardDi = \(tab, x\) => \(\(tab === 'players' \|\| tab === 'teams' \|\| tab === 'pokemon'\) && \/\^card-\[a-z-\]\{2,30\}\$\/\.test\(String\(x\.stileCard \|\| ''\)\) \? x\.stileCard : ''\);/, 'le card degli allenatori, dei loro team e dei loro Pokémon');
     assert.match(stats, /data-stile-card="\$\{stile\}"/);
 });
 
@@ -305,7 +305,7 @@ test('Formats: ogni riga della classifica del formato ha l\'avatar e la cornice 
     const css = docs('style-formats.css');
     assert.match(css, /\.player-rank-row \{\s*position: relative;/, 'la riga è il riferimento degli strati della cornice');
     assert.match(css, /\.fmt-avatar img \{[^}]*object-fit: contain;/);
-    assert.match(docs('stile-card.css'), /\.carta-players, \.carta-teams, \.player-rank-row, \.ms-lato, \.season-card, \.palm-card, \.hof-voce, \.sd-team, \.sd-lato, \.rs-campione, \.rs-premio, \.sc-campione\)\[data-stile-card\]/);
+    assert.match(docs('stile-card.css'), /\.carta-players, \.carta-teams, \.player-rank-row, \.ms-lato, \.season-card, \.palm-card, \.hof-voce, \.sd-team, \.sd-lato, \.carta-pokemon, \.hof-membro, \.rs-mvp, \.rs-fcard, \.rs-campione, \.rs-premio, \.sc-campione\)\[data-stile-card\]/);
 });
 
 // ---------------------------------------------------------------- le cornici: strati, animazioni e una cornice luminosa per ogni aura

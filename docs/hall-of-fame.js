@@ -144,8 +144,8 @@
                     const av = (giocatori[idDi(v.nome)] || {}).avatar || v.avatar;
                     const testa = v.specie ? medaglione(gif, v.specie) : (v.avatar !== '' || av ? avatarDi(av) : '');
                     const nome = v.link ? `<a class="hof-nome" href="${esc(v.link)}">${esc(v.nome)}</a>` : `<span class="hof-nome">${esc(v.nome)}</span>`;
-                    // la cornice dell'allenatore sulle schede degli allenatori e dei suoi team (non su quelle dei singoli Pokémon)
-                    const cornice = v.specie ? '' : stileCard((giocatori[v.idGiocatore] || giocatori[idDi(v.nome)] || {}).stileCard);
+                    // la cornice dell'allenatore sulle schede di allenatori, team e Pokémon
+                    const cornice = stileCard((giocatori[v.idGiocatore] || giocatori[idDi(v.nome)] || {}).stileCard);
                     return `<li class="hof-voce${i === 0 ? ' hof-primo' : ''}"${cornice ? ` data-stile-card="${cornice}"` : ''} style="--c:${esc(v.colore)}"><span class="hof-pos">${i + 1}</span>${testa}`
                         + `<span class="hof-chi">${nome}${v.sotto ? `<small>${esc(v.sotto)}</small>` : ''}</span>`
                         + `<span class="hof-quando">${v.quando ? `<time datetime="${esc(v.quando)}">${dataRecord(v.quando)}</time>` : ''}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
@@ -156,7 +156,8 @@
         if (!lista || !lista.length) return '<p class="hof-vuoto">No MVP or Dream Team yet: they are chosen when a season closes.</p>';
         const scheda = (m, ruolo) => {
             const g = giocatori[idDi(m.player)] || {};
-            return `<li class="hof-membro" style="--c:${esc(coloreSicuro(g.color, '#d9dde6'))}">${ruolo && m.formato ? `<span class="hof-tag-nero">${esc(m.formato)}</span>` : ''}${medaglione(gif, m.specie)}`
+            const cornice = stileCard(g.stileCard);
+            return `<li class="hof-membro"${cornice ? ` data-stile-card="${cornice}"` : ''} style="--c:${esc(coloreSicuro(g.color, '#d9dde6'))}">${ruolo && m.formato ? `<span class="hof-tag-nero">${esc(m.formato)}</span>` : ''}${medaglione(gif, m.specie)}`
                 + `<b class="ms-banner">${esc(m.specie)}</b><span class="hof-sotto">${esc([m.team, m.player].filter(Boolean).join(' · '))}</span></li>`;
         };
         const blocco = (titolo, immagine, membri, ruolo) => `<section class="hof-blocco"><h4 class="hof-etichetta">${esc(titolo)}</h4><img class="hof-sticker" src="${esc(immagine)}" alt="" loading="lazy">`
