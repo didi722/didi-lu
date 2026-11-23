@@ -893,6 +893,10 @@ async function inizializzaPaginaArchivio() {
         sdCard.style.setProperty('--lato1', colorePlayer(p1Name));
         sdCard.style.setProperty('--lato2', colorePlayer(p2Name));
         const chiVince = vintiP1 === vintiP2 ? 0 : (vintiP1 > vintiP2 ? 1 : 2);
+        // la cornice comprata nello Shop (stile-card.css) la porta solo chi sta vincendo (non nell'app, che ha la sua grafica)
+        const corniceDi = nome => (window.Cosmetici && !document.documentElement.classList.contains('app-shell') ? Cosmetici.valido(dataPlayers[String(nome || '').toLowerCase().trim()]?.info?.stileCard, 'card') : '');
+        const corniceVince = chiVince ? corniceDi(chiVince === 1 ? p1Name : p2Name) : '';
+        const attrCornice = k => (chiVince === k && corniceVince ? ` data-stile-card="${corniceVince}"` : '');
         if (chiVince) sdCard.classList.add(`vince-${chiVince}`);
         const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -909,8 +913,8 @@ async function inizializzaPaginaArchivio() {
         <span class="sd-category-tag">${esc(info.categoria || "OU")}</span>
     </div>
     <div class="sd-card-content">
-        <div class="sd-lato sd-lato-1" title="${esc(p1Name)}"><span class="sd-nome nome-scorrevole">${esc(p1Name)}</span>${chiVince === 1 ? '<i class="sd-win">WIN</i>' : ''}<b class="sd-punti">${vintiP1}</b></div>
-        <div class="sd-lato sd-lato-2" title="${esc(p2Name)}"><span class="sd-nome nome-scorrevole">${esc(p2Name)}</span>${chiVince === 2 ? '<i class="sd-win">WIN</i>' : ''}<b class="sd-punti">${vintiP2}</b></div>
+        <div class="sd-lato sd-lato-1"${attrCornice(1)} title="${esc(p1Name)}"><span class="sd-nome nome-scorrevole">${esc(p1Name)}</span>${chiVince === 1 ? '<i class="sd-win">WIN</i>' : ''}<b class="sd-punti">${vintiP1}</b></div>
+        <div class="sd-lato sd-lato-2"${attrCornice(2)} title="${esc(p2Name)}"><span class="sd-nome nome-scorrevole">${esc(p2Name)}</span>${chiVince === 2 ? '<i class="sd-win">WIN</i>' : ''}<b class="sd-punti">${vintiP2}</b></div>
     </div>
     <div class="sd-card-footer">
         <span class="sd-date-text">${esc(info.data || 'No date')}</span>
@@ -1647,11 +1651,11 @@ async function apriModaleShowdown(sdId, sdData) {
         return `
             <article class="sd-match" style="--i: ${i};">
                 <span class="sd-numero">MATCH ${esc(String(mKey).replace('match', ''))}</span>
-                ${blocco(1, info.player1, m.team1, team1Escaped, p1.base, vince1, vince2, p1.stile)}
+                ${blocco(1, info.player1, m.team1, team1Escaped, p1.base, vince1, vince2, vince1 ? p1.stile : '')}
                 <div class="sd-punteggio">
                     <b${vince1 ? ' class="sd-vince"' : ''}>${esc(m.p1score)}</b><i>:</i><b${vince2 ? ' class="sd-vince"' : ''}>${esc(m.p2score)}</b>
                 </div>
-                ${blocco(2, info.player2, m.team2, team2Escaped, p2.base, vince2, vince1, p2.stile)}
+                ${blocco(2, info.player2, m.team2, team2Escaped, p2.base, vince2, vince1, vince2 ? p2.stile : '')}
                 <button type="button" class="sd-replay"
                         onclick="apriMatch('${jsq(sdId)}', '${jsq(mKey)}', '${team1Escaped}', '${team2Escaped}', '${jsq(m.p1score)}', '${jsq(m.p2score)}')">REPLAY</button>
             </article>`;

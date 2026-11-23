@@ -128,8 +128,8 @@ test('dettaglio di uno showdown: i due team hanno la cornice dei loro allenatori
     assert.match(matches, /stile: stili\.s2/);
     const finestra = matches.slice(matches.indexOf('const blocco = (lato, giocatore, team, escaped, colore, vince, perde, stile) =>'));
     assert.equal(conta(finestra.slice(0, 1400), /data-stile-card="\$\{stile\}"/g), 2, 'il team con il suo pulsante e il match senza team (Random)');
-    assert.match(finestra, /\$\{blocco\(1, info\.player1, m\.team1, team1Escaped, p1\.base, vince1, vince2, p1\.stile\)\}/);
-    assert.match(finestra, /\$\{blocco\(2, info\.player2, m\.team2, team2Escaped, p2\.base, vince2, vince1, p2\.stile\)\}/);
+    assert.match(finestra, /\$\{blocco\(1, info\.player1, m\.team1, team1Escaped, p1\.base, vince1, vince2, vince1 \? p1\.stile : ''\)\}/);
+    assert.match(finestra, /\$\{blocco\(2, info\.player2, m\.team2, team2Escaped, p2\.base, vince2, vince1, vince2 \? p2\.stile : ''\)\}/);
 });
 
 // ---------------------------------------------------------------- riepilogo di stagione
@@ -166,7 +166,7 @@ test('stile-card.css: le card che hanno già ::before (la linguetta dello stato)
     const deco = css.match(/:root :is\(([^)]*)\)\[data-stile-card\]::before \{/)[1].split(',').map(x => x.trim());
     assert.deepEqual(tutte.filter(x => !deco.includes(x)), ['.season-card', '.palm-card'], 'la linguetta FINISHED / LIVE NOW sta in ::before');
     assert.ok(docs('nb-pagine.css').includes('body.pg-index .season-card::before') && docs('style-palmares.css').includes('.palm-card::before'), 'è davvero così');
-    for (const c of ['.ms-lato', '.sd-team', '.hof-voce', '.carta-teams', '.rs-campione', '.rs-premio']) assert.ok(deco.includes(c) && tutte.includes(c), c);
+    for (const c of ['.ms-lato', '.sd-team', '.sd-lato', '.hof-voce', '.carta-teams', '.rs-campione', '.rs-premio']) assert.ok(deco.includes(c) && tutte.includes(c), c);
     // la riga dei record e il premio non hanno una posizione loro: gli strati ci si ancorano
     assert.match(css, /:root :is\(\.hof-voce, \.rs-premio\)\[data-stile-card\] \{ position: relative; \}/);
     // chi ha perso è grigio: con la cornice si spegne il contenuto, non la card
@@ -182,4 +182,14 @@ test('mai nel Box e mai sulle card dei singoli Pokémon: né il Box né le card 
     for (const f of ['box.html', 'box-team.css', 'box-vista.css']) assert.doesNotMatch(docs(f), /data-stile-card/, f);
     const css = docs('stile-card.css');
     for (const c of ['.carta-pokemon', '.carta-usage', '.hof-membro', '.rs-fcard', '.rs-mvp']) assert.ok(!css.replace(/\/\*[\s\S]*?\*\//g, '').includes(c), `${c} non è tra le card con cornice`);
+});
+
+test('showdown: la cornice la porta solo chi vince (il team vincitore di ogni match nella finestra, il lato vincitore nella card della lista)', () => {
+    const m = docs('matches.html');
+    assert.match(m, /vince1, vince2, vince1 \? p1\.stile : ''\)\}/);
+    assert.match(m, /vince2, vince1, vince2 \? p2\.stile : ''\)\}/);
+    assert.match(m, /const corniceVince = chiVince \? corniceDi\(chiVince === 1 \? p1Name : p2Name\) : '';/);
+    assert.match(m, /<div class="sd-lato sd-lato-1"\$\{attrCornice\(1\)\} title=/);
+    assert.match(m, /<div class="sd-lato sd-lato-2"\$\{attrCornice\(2\)\} title=/);
+    assert.match(m, /const attrCornice = k => \(chiVince === k && corniceVince/);
 });
