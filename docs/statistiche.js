@@ -534,6 +534,7 @@
             chiave: t.chiave, player: t.player,
             playerNome: info(t.player).name || t.player,
             colore: info(t.player).color || '',
+            stileCard: info(t.player).stileCard || '',      // la cornice del suo allenatore (stile-card.css)
             nome: t.nome, formato: t.formato,
             specie: t.roster.map(r => r.nome),
             stagioniGiocate: t.stagioni.size,

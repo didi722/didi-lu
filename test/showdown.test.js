@@ -66,7 +66,7 @@ test('showdown.css: su telefono la finestra scorre intera e le partite stanno un
 });
 
 // ---------- il markup che scrive apriModaleShowdown ----------
-function eseguiApri({ info, matches }) {
+function eseguiApri({ info, matches, stili }) {
     const inizio = html.indexOf('async function apriModaleShowdown');
     const fine = html.indexOf('// Funzione globale per il toggle');
     assert.ok(inizio > 0 && fine > inizio, 'funzione non trovata');
@@ -82,6 +82,7 @@ function eseguiApri({ info, matches }) {
     const ambiente = {
         document: documento,
         getPlayersColors: async () => ({ c1: '#31c489', c2: '#8e44ad' }),
+        getPlayersStili: async () => stili || { s1: '', s2: '' },       // le cornici comprate nello Shop (stile-card.css), '' se non ne hanno
         pSBC: c => c,
         generaHtmlGifs: () => '<img class="mini-gif" alt="">',
         formattaDataItaliana: d => d.split('-').reverse().join('/'),
@@ -118,6 +119,19 @@ test('apriModaleShowdown: titolo, formato, data, serie e una cartolina per parti
     assert.match(h, /onclick="chiudiModaleShowdown\(\)"/);
     assert.equal((h.match(/class="mini-gif"/g) || []).length, 6, 'le GIF della formazione, una per team e partita');
     for (const vecchio of ['sd-modal-container', 'match-card', 'team-badge', 'score-container']) assert.ok(!h.includes(vecchio), `classe vecchia: ${vecchio}`);
+    assert.doesNotMatch(h, /data-stile-card/, 'senza una cornice comprata non c\'è l\'attributo');
+});
+
+test('apriModaleShowdown: il team di ogni allenatore porta la sua cornice (anche il match senza team, Random); chi non ne ha una no', async () => {
+    const { html: h } = await eseguiApri({
+        info: { player1: 'Didi', player2: 'Lu', categoria: 'Random', data: '2026-03-06' },
+        stili: { s1: 'card-fiamma', s2: '' },
+        matches: { match1: { team1: 'Martiri', team2: 'Rain', p1score: 2, p2score: 0 }, match2: { team1: '', team2: '', p1score: 0, p2score: 2 } }
+    });
+    assert.match(h, /<button type="button" class="sd-team sd-team-1 sd-vincitore" data-stile-card="card-fiamma"\s+style="--c: #31c489;"/, 'il team di Didi, con il suo pulsante');
+    assert.match(h, /<div class="sd-team sd-team-1 sd-senza-team sd-perde" data-stile-card="card-fiamma" style="--c: #31c489;">/, 'anche senza team (Random) il lato di Didi ha la sua cornice');
+    assert.equal((h.match(/data-stile-card/g) || []).length, 2, 'Lu non ne ha una: i suoi lati restano com\'erano');
+    assert.doesNotMatch(h, /sd-team-2[^>]*data-stile-card/);
 });
 
 test('apriModaleShowdown: apostrofi e virgolette nei nomi non rompono né il testo né i gestori onclick', async () => {

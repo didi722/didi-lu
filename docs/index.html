@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="badge-team.css">
 <link rel="stylesheet" href="nome-scorrevole.css">
 <link rel="stylesheet" href="match-settimana.css">
+<link rel="stylesheet" href="stile-card.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
 <link rel="stylesheet" href="formato-tooltip.css">
@@ -42,6 +43,7 @@
 <script src="nome-scorrevole.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => NomeScorrevole.installa('.ms-nome'));</script>
 <script src="match-settimana.js"></script>
+<script src="cosmetici.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -509,6 +511,8 @@ function contaMvpScaduti() {
 // Il match della settimana: un banner con il set più bello di ogni settimana (da lunedì a domenica) e le frecce per scorrerle (match-settimana.js), con i
 // colori e gli avatar dei due allenatori. Il nodo `seasons` si rilegge a ogni cambiamento del database: il banner si ridisegna solo se cambia qualcosa
 // di ciò che mostra, e chi sta guardando una settimana vecchia ci resta.
+// la cornice comprata nello Shop (stile-card.css, cosmetici.js): '' se non c'è o non è una cornice vera
+const stileCardValido = v => (window.Cosmetici ? Cosmetici.valido(v, 'card') : '');
 let matchSettimanaBanner = null;
 // `riassunto`: quello salvato dal workflow (matchSettimana: settimane e badge già calcolati, la home non scarica le statistiche dei set); senza, si calcola da `data` (le stagioni con le statistiche)
 async function mostraMatchSettimana(data, riassunto) {
@@ -521,7 +525,7 @@ async function mostraMatchSettimana(data, riassunto) {
             caricaBadge: riassunto ? null : () => Fiocchi.carica(db),          // i badge dei team e del Pokémon protagonista (le stesse statistiche del Box); nel riassunto ci sono già
             leggiGiocatore: async id => {
                 const info = (await db.ref(`players/${id}/info`).once('value')).val() || {};
-                return { colore: info.color || '', avatar: info.avatar || '' };
+                return { colore: info.color || '', avatar: info.avatar || '', stileCard: stileCardValido(info.stileCard) };
             }
         });
     }
@@ -611,6 +615,7 @@ function caricaStagioniHome() {
             const info = seasonData ? (seasonData.info || seasonData) : null;
             
             const card = document.getElementById(`card-${item.label}`);
+            if (card) card.removeAttribute('data-stile-card');      // la cornice è di chi vince o guida: si rimette quando arriva la sua scheda
             const nameEl = document.getElementById(`${item.label}-name`);
             const rulesContainer = document.getElementById(`${item.label}-rules`);
             const footerEl = card ? card.querySelector('.card-footer') : null;
@@ -690,6 +695,8 @@ function caricaStagioniHome() {
                         const pInfo = pSnap.val();
                         if (pInfo) {
                             if (card && pInfo.color) card.style.backgroundColor = pInfo.color;
+                            const cornice = stileCardValido(pInfo.stileCard);
+                            if (card && cornice) card.setAttribute('data-stile-card', cornice);      // la cornice del vincitore (o di chi guida la stagione in corso)
                             const iconEl = document.getElementById(`display-icon-${item.label}`);
                             const avatarEl = document.getElementById(`display-avatar-${item.label}`);
                             if (pInfo.avatar && avatarEl) {

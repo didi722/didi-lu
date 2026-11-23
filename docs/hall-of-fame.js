@@ -6,7 +6,7 @@
 //   MVP & DREAM TEAMS     per ogni stagione chiusa: il Pokémon MVP e la squadra ideale
 //   MATCH OF THE WEEK     l'archivio dei set scelti ogni settimana, col replay a un tocco
 //
-//   HallOfFame.records(risultato)                 [{ id, gruppo, titolo, nota, voci: [{ nome, sotto, valore, specie, colore, link }] }]  (risultato = Statistiche.calcola(dati, { stagione: 'all' }))
+//   HallOfFame.records(risultato)                 [{ id, gruppo, titolo, nota, voci: [{ nome, sotto, valore, specie, colore, link, idGiocatore }] }]  (risultato = Statistiche.calcola(dati, { stagione: 'all' }))
 //   HallOfFame.stagioni(dati, { Statistiche, Mvp })   [{ stagione, nome, data, mvp: [...], dream: [...] }] (le chiuse, la più recente prima)
 //   HallOfFame.settimane(elenco, MatchSettimana)  l'archivio dei Match of the week, dal più recente
 //   HallOfFame.htmlRecords / htmlStagioni / htmlSettimane(...)   il markup (testo sempre protetto); i Match of the week usano il banner della home (MatchSettimana.html)
@@ -33,6 +33,8 @@
     /** La data di un record, con un punto in cui andare a capo (dopo il mese) se lo spazio tra il nome e il numero è poco: gg/mm/ sopra, aaaa sotto */
     const dataRecord = iso => { const t = esc(dataIt(iso)); return t.replace(/^(\d{1,2}\/\d{1,2}\/)(?=\d)/, '$1<wbr>'); };
     const pagina = nome => `public.html?player=${encodeURIComponent(nome)}`;
+    // la cornice comprata nello Shop (stile-card.css): solo un id fatto come si deve (viene dal database), mai testo libero
+    const stileCard = v => (/^card-[a-z-]{2,30}$/.test(String(v || '')) ? String(v) : '');
 
     // ---------------------------------------------------------------- i record
     // Ogni record: da quale elenco (players | teams | pokemon), che numero conta (più alto = meglio), chi può entrare e come si scrive.
@@ -66,6 +68,7 @@
             specie: def.da === 'pokemon' ? String(x.specie || '') : '',
             colore: coloreSicuro(x.colore, '#d9dde6'),
             avatar: def.da === 'players' ? String(x.avatar || '') : '',
+            idGiocatore: def.da === 'players' ? idDi(x.id || x.nome) : idDi(x.player || chi),      // di chi è la scheda (un allenatore, o il proprietario del team / del Pokémon)
             link: def.da === 'players' ? pagina(x.nome) : (chi ? pagina(chi) : ''),
             quando: def.quando ? String(def.quando(x) || '') : ''
         };
@@ -141,7 +144,9 @@
                     const av = (giocatori[idDi(v.nome)] || {}).avatar || v.avatar;
                     const testa = v.specie ? medaglione(gif, v.specie) : (v.avatar !== '' || av ? avatarDi(av) : '');
                     const nome = v.link ? `<a class="hof-nome" href="${esc(v.link)}">${esc(v.nome)}</a>` : `<span class="hof-nome">${esc(v.nome)}</span>`;
-                    return `<li class="hof-voce${i === 0 ? ' hof-primo' : ''}" style="--c:${esc(v.colore)}"><span class="hof-pos">${i + 1}</span>${testa}`
+                    // la cornice dell'allenatore sulle schede degli allenatori e dei suoi team (non su quelle dei singoli Pokémon)
+                    const cornice = v.specie ? '' : stileCard((giocatori[v.idGiocatore] || giocatori[idDi(v.nome)] || {}).stileCard);
+                    return `<li class="hof-voce${i === 0 ? ' hof-primo' : ''}"${cornice ? ` data-stile-card="${cornice}"` : ''} style="--c:${esc(v.colore)}"><span class="hof-pos">${i + 1}</span>${testa}`
                         + `<span class="hof-chi">${nome}${v.sotto ? `<small>${esc(v.sotto)}</small>` : ''}</span>`
                         + `<span class="hof-quando">${v.quando ? `<time datetime="${esc(v.quando)}">${dataRecord(v.quando)}</time>` : ''}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
                 }).join('') + '</ol></article>').join('') + '</div></section>').join('');
@@ -167,7 +172,7 @@
         if (!lista || !lista.length) return '<p class="hof-vuoto">No Match of the week yet.</p>';
         if (!MatchSettimana) return '';
         const info = {};
-        for (const [id, g] of Object.entries(giocatori)) info[id] = { colore: g.color || '', avatar: g.avatar || '' };
+        for (const [id, g] of Object.entries(giocatori)) info[id] = { colore: g.color || '', avatar: g.avatar || '', stileCard: stileCard(g.stileCard) };
         return `<ol class="hof-settimane">${lista.map(w => `<li class="ms hof-ms">${MatchSettimana.html(w.scelto, { giocatori: info, gif, settimana: { titolo: w.titolo, intervallo: w.intervallo }, totale: 1, da: 'hall-of-fame' })}</li>`).join('')}</ol>`;
     }
 
