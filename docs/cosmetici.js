@@ -130,6 +130,8 @@
         { id: 'card-scacchi', tipo: 'card', nome: 'Checkers', prezzo: 300, campo: 'stileCard', descr: 'A checkerboard under your name.' },
         { id: 'card-pokeball', tipo: 'card', nome: 'Pokéballs', prezzo: 400, campo: 'stileCard', descr: 'A field of tiny Poké Balls.' },
         { id: 'card-puntini', tipo: 'card', nome: 'Polka dots', prezzo: 400, campo: 'stileCard', descr: 'A field of tiny white dots on your card.' },
+        { id: 'card-bambu', tipo: 'card', nome: 'Bamboo frame', prezzo: 500, campo: 'stileCard', descr: 'A frame of green bamboo canes, knot by knot.' },
+        { id: 'card-legno', tipo: 'card', nome: 'Wood frame', prezzo: 500, campo: 'stileCard', descr: 'A warm wooden frame with the grain showing.' },
         { id: 'card-argento', tipo: 'card', nome: 'Silver frame', prezzo: 500, campo: 'stileCard', descr: 'A polished silver frame with a passing shine.' },
         { id: 'card-carbonio', tipo: 'card', nome: 'Carbon', prezzo: 500, campo: 'stileCard', descr: 'Carbon-fibre weave with a steel frame.' },
         { id: 'card-oro', tipo: 'card', nome: 'Gold frame', prezzo: 700, campo: 'stileCard', descr: 'A polished golden frame that catches the light, with a sparkle now and then.' },

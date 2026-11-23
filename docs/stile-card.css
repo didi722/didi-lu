@@ -300,6 +300,38 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-deco-anim: sc-fiamme 1.3s ease-in-out infinite alternate;
 }
 
+/* materiali: una cornice di bambù (canne verdi con i nodi) e una di legno (con le venature); ferme, come il materiale vero */
+[data-stile-card="card-bambu"] {
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 10px 2px rgba(110, 160, 40, 0.45);
+    --sc-glow-lieve: 0 0 4px 1px rgba(110, 160, 40, 0.45);
+    --sc-img: linear-gradient(rgba(120, 170, 50, 0.1), rgba(120, 170, 50, 0.03)), var(--sc-pallini);
+    --sc-dim: 100% 100%, var(--sc-pallini-dim);
+    --sc-rep: no-repeat, repeat;
+    --sc-ring-on: "";
+    --sc-ring:
+        repeating-linear-gradient(90deg, transparent 0 54px, rgba(35, 62, 8, 0.7) 54px 56px, rgba(226, 244, 160, 0.75) 56px 58px, transparent 58px 64px),
+        repeating-linear-gradient(0deg, transparent 0 54px, rgba(35, 62, 8, 0.7) 54px 56px, rgba(226, 244, 160, 0.75) 56px 58px, transparent 58px 64px),
+        linear-gradient(135deg, #b5d65a 0%, #6f9a22 28%, #4d7a14 50%, #8fb739 74%, #c3e06c 100%);
+    --sc-ring-dim: auto, auto, 100% 100%;
+}
+[data-stile-card="card-legno"] {
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 10px 2px rgba(95, 58, 24, 0.45);
+    --sc-glow-lieve: 0 0 4px 1px rgba(95, 58, 24, 0.45);
+    --sc-img: linear-gradient(rgba(150, 95, 45, 0.12), rgba(150, 95, 45, 0.04)), var(--sc-pallini);
+    --sc-dim: 100% 100%, var(--sc-pallini-dim);
+    --sc-rep: no-repeat, repeat;
+    --sc-ring-on: "";
+    --sc-ring:
+        repeating-linear-gradient(91deg, rgba(50, 24, 6, 0.55) 0 1px, transparent 1px 5px),
+        repeating-linear-gradient(89deg, rgba(255, 224, 176, 0.16) 0 2px, transparent 2px 11px),
+        radial-gradient(ellipse 18px 9px at 22% 40%, rgba(60, 30, 8, 0.55) 0 38%, transparent 42%),
+        radial-gradient(ellipse 16px 8px at 71% 62%, rgba(60, 30, 8, 0.5) 0 38%, transparent 42%),
+        linear-gradient(135deg, #b9803f 0%, #8a5826 30%, #a86d33 55%, #6f4220 80%, #9a6230 100%);
+    --sc-ring-dim: auto, auto, 100% 100%, 100% 100%, 100% 100%;
+}
+
 /* cornici luminose: una per colore di aura. Un tubo al neon (il bordo scuro, la linea accesa, l'alone), la luce che lo percorre ogni tanto e il respiro dell'alone */
 [data-stile-card^="card-bagliore-"] {
     --sc-img: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 52%), var(--sc-pallini);
