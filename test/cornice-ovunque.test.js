@@ -260,3 +260,21 @@ test('aura comprata: compare sugli avatar della card delle stagioni (home e Hall
 test('showdown: con la cornice il team non tiene l\'ombra piena del tema (vincitore e passaggio del mouse compresi)', () => {
     assert.match(docs('stile-card.css'), /#sd-modal-overlay \.sd-team\[data-stile-card\], #sd-modal-overlay \.sd-team\[data-stile-card\]:is\(:hover, :focus-visible, :active\) \{ box-shadow: var\(--sc-glow, none\); \}/);
 });
+
+test('liste fitte (classifica a lato, tabella estesa, righe dello showdown): più spazio tra le righe con la cornice e un alone più corto', () => {
+    const css = docs('stile-card.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.match(css, /:root :is\(\.cl-riga, \.cl-tab-riga, \.sd-lato\)\[data-stile-card\] \{ --sc-glow: var\(--sc-glow-lieve\); --sc-glow2: var\(--sc-glow2-lieve, var\(--sc-glow-lieve\)\); \}/);
+    assert.match(css, /:root \.cl-laterale \.rank-riga:has\(> \[data-stile-card\]\) \{ margin: 11px 0 22px; \}/);
+    assert.match(css, /:root \.cl-pile:has\(> \[data-stile-card\]\) \{ gap: 22px; \}/);
+    assert.match(css, /\.showdown-summary-card \.sd-lato\[data-stile-card\] \{ margin-bottom: 10px; \}/);
+    // ogni stile con un alone ha la sua versione corta: stessi anelli pieni, alone con meno sfocatura e meno spread
+    const blocchi = css.split('}').filter(b => /--sc-glow:/.test(b));
+    assert.ok(blocchi.length >= 20);
+    for (const b of blocchi) {
+        const nome = (b.match(/\[data-stile-card[^\]]*\]/) || [''])[0];
+        assert.match(b, /--sc-glow-lieve:/, nome);
+        assert.equal(/--sc-glow2:/.test(b), /--sc-glow2-lieve:/.test(b), `${nome}: anche il secondo passo`);
+    }
+    const oro = css.slice(css.indexOf('[data-stile-card="card-bagliore-oro"] {')); 
+    assert.match(oro.slice(0, oro.indexOf('}')), /--sc-glow-lieve: 0 0 0 1\.5px #fff3b8, 0 0 0 3\.5px #ffcc33, 0 0 4px 2px #ffcc33, 0 0 11px 3px rgba\(255, 204, 51, 0\.48\), inset 0 0 16px 1px/, 'la linea al neon resta intera, cambia l\'alone');
+});
