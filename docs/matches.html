@@ -3305,7 +3305,7 @@ selector.style.height = 'auto';
         modal.prepend(miniHeader);
         // i due allenatori ai lati della console (solo da PC, finestre.css): grandi, fermi, dietro a tutto, con la riga in diagonale in mezzo come nel simulatore
         const aspetto = k => avatar[String(k || '').toLowerCase().trim()] || {};
-        const versus = creaSfondoVersus(aspetto(sdData.info.player1).avatar, aspetto(sdData.info.player2).avatar, c1, c2, [aspetto(sdData.info.player1).tema, aspetto(sdData.info.player2).tema]);
+        const versus = creaSfondoVersus(aspetto(sdData.info.player1).avatar, aspetto(sdData.info.player2).avatar, c1, c2, [aspetto(sdData.info.player1).tema, aspetto(sdData.info.player2).tema], [aspetto(sdData.info.player1).aura, aspetto(sdData.info.player2).aura]);
         modal.prepend(versus.box);
         immaginiVersus = versus.caricate;
         adattaReplayAlloSchermo();
@@ -3422,14 +3422,17 @@ async function aspettoDeiGiocatori(nomi) {
                 const sfondo = (info.pagina && typeof info.pagina.sfondo === 'object' && info.pagina.sfondo) || {};
                 tema = window.Palestra.temaPalestra({ colore: info.color, avatar: info.avatar, pagina: { ...(info.pagina || {}), sfondo: { ...sfondo, colore: 'giocatore' } } }, window.PaginaPubblica, window.Cosmetici);
             }
-            fuori[k] = { avatar: info.avatar || '', tema };
-        } catch (e) { fuori[k] = { avatar: '', tema: null }; }
+            // l'aura comprata nello Shop: { id, colore } ben fatti, anche se il tema non si è potuto costruire
+            const c = window.Cosmetici && Cosmetici.perId ? Cosmetici.perId(info.aura) : null;
+            const aura = c && c.tipo === 'aura' && /^aura-[a-z-]{2,30}$/.test(String(c.id)) && /^#[0-9a-f]{6}$/i.test(String(c.colore || info.color || '')) ? { id: c.id, colore: c.colore || info.color } : null;
+            fuori[k] = { avatar: info.avatar || '', tema, aura };
+        } catch (e) { fuori[k] = { avatar: '', tema: null, aura: null }; }
     }));
     return fuori;
 }
 
 /** Lo sfondo "sfida" del replay da PC: la riga in diagonale (nera, con un filetto del colore di ognuno) e i due allenatori, il primo a sinistra e il secondo a destra, rivolti verso la console */
-function creaSfondoVersus(avatar1, avatar2, c1, c2, temi = []) {
+function creaSfondoVersus(avatar1, avatar2, c1, c2, temi = [], aure = []) {
     const box = document.createElement('div');
     box.className = 'replay-versus';
     box.setAttribute('aria-hidden', 'true');
@@ -3453,10 +3456,12 @@ function creaSfondoVersus(avatar1, avatar2, c1, c2, temi = []) {
     caricate.push(new Promise(ok => { console_.onload = ok; console_.onerror = () => { console_.remove(); ok(); }; }));
     console_.src = 'immagini/advance.png';
     box.appendChild(console_);
-    [[avatar1, 'rv-sx'], [avatar2, 'rv-dx']].forEach(([url, classe]) => {
+    [[avatar1, 'rv-sx', aure[0]], [avatar2, 'rv-dx', aure[1]]].forEach(([url, classe, aura]) => {
         if (!url) return;
         const img = document.createElement('img');
         img.className = 'rv-avatar ' + classe;
+        // se l'allenatore ha un'aura, compare anche qui, intorno al suo avatar (finestre.css; l'arcobaleno cambia colore)
+        if (aura) { img.setAttribute('data-aura', aura.id); img.style.setProperty('--pal-aura', aura.colore); }
         img.alt = '';
         img.draggable = false;
         caricate.push(new Promise(ok => { img.onload = ok; img.onerror = () => { img.remove(); ok(); }; }));

@@ -92,7 +92,6 @@
     <!-- Il tema scelto dal giocatore (Neubrutal, Sticker, Soft, Arcade) e, qui dentro, i colori dei neutri e la cronaca mostrata o nascosta -->
     <script src="temi.js"></script>
     <script src="battle-vista.js"></script>
-    <link rel="preload" as="image" href="immagini/app/seasons-vs.webp">
     <script>
         // Nelle partite (contro la CPU, in palestra, amichevoli, stagioni; non nell'app, non con "riduci movimento") l'intro VS è la prima cosa e parte appena si sa chi gioca. Fino ad allora una copertura scura con il VS
         // (vs-copertura, qui sotto) tiene nascosta la schermata di caricamento del simulatore; la toglie battle-intro.js. Se qualcosa va storto si toglie da sola.
@@ -112,7 +111,7 @@
     </script>
 </head>
 <body>
-    <div class="vs-copertura" id="vs-copertura" aria-hidden="true"><img src="immagini/app/seasons-vs.webp" alt="" draggable="false"><p>Getting ready</p></div>
+    <div class="vs-copertura" id="vs-copertura" aria-hidden="true"><p>Getting ready</p></div>
     <!-- .scala: in "una schermata" (html[data-modo="fit"]) battle-layout.js rimpicciolisce tutto l'insieme
          quanto basta per farlo stare nella finestra. Altrimenti è un normale contenitore. -->
     <div class="scala" id="scala">

@@ -2,24 +2,20 @@
    INTRO "VS" PRIMA DI OGNI SET (battle-intro.js)
    ---------------------------------------------------------------------
    Una copia a tutto schermo dello sfondo "sfida" (style-versus.css) che sta sopra a tutto per tre secondi: le due metà colorate, la riga nera in diagonale, gli
-   avatar con il tag del nome, il VS e un tabellone (match e punteggio, oppure battaglia e serie). Poi si apre e resta lo sfondo vero, che non si è mai mosso.
+   avatar con il tag del nome, il punteggio e un tabellone (match e punteggio, oppure battaglia e serie). Poi si apre e resta lo sfondo vero, che non si è mai mosso.
    Colori, ombre, angoli e caratteri sono quelli del tema del giocatore (variabili --nb-* e --sh-* di style-battle.css). Nell'app non c'è.
    ===================================================================== */
-/* la copertura di prima dell'intro (battle.html): scura, con il VS che batte piano, finché non si sa chi gioca. La toglie battle-intro.js quando le due metà si sono incontrate */
+/* la copertura di prima dell'intro (battle.html): scura, con la scritta «Getting ready», finché non si sa chi gioca. La toglie battle-intro.js quando le due metà si sono incontrate */
 .vs-copertura { display: none; }
 html.vs-copre .vs-copertura {
     position: fixed; inset: 0; z-index: 9400; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(10px, 2.5vh, 26px);
     background: var(--inchiostro, #1b1a2e); pointer-events: none;
 }
 html.vs-copre body { overflow: hidden; }
-.vs-copertura img { display: block; width: clamp(150px, min(30vw, 46vh), 440px); height: auto; filter: drop-shadow(0 6px 5px rgba(0, 0, 0, .45)); animation: vs-batte 1.1s ease-in-out infinite alternate; }
 .vs-copertura p {
     margin: 0; color: var(--carta, #fff); opacity: .85; font: 800 clamp(.7rem, 1.25vw, 1rem)/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .16em; text-transform: uppercase;
 }
 .vs-copertura p::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom; animation: vi-punti 1.2s steps(4, end) infinite; }
-@keyframes vs-batte { from { transform: scale(1) rotate(-3deg); } to { transform: scale(1.06) rotate(-3deg); } }
-@media (prefers-reduced-motion: reduce) { .vs-copertura img { animation: none; } }
-
 .vi { position: fixed; inset: 0; z-index: 9500; overflow: hidden; pointer-events: auto; cursor: pointer; user-select: none; -webkit-user-select: none; }
 html.app .vi { display: none; }
 .vs-sfondo.vi-in-corso :is(.vs-avatar, .vs-compagno) { visibility: hidden; }      /* durante l'intro gli avatar sono quelli dell'intro */
@@ -57,22 +53,19 @@ html.app .vi { display: none; }
 }
 .vi-dx .vi-tag { rotate: calc(4deg * var(--nb-rot, 1)); }
 
-/* il centro: il VS sulla riga nera e il tabellone sotto */
+/* il centro: il punteggio sulla riga nera e il tabellone sotto */
 .vi-centro {
     position: absolute; left: 50%; top: 50%; translate: -50% -54%; z-index: 5;
     display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 1.8vh, 20px);
 }
 .vi-vs {
     font-family: 'Archivo Black', 'Arial Black', Impact, sans-serif;
-    font-size: clamp(84px, min(17vw, 27vh), 250px); line-height: .9; letter-spacing: -.02em;
+    font-size: clamp(64px, min(13vw, 22vh), 200px); line-height: .9; letter-spacing: -.02em; white-space: nowrap;
     color: var(--ambra, #ffbd44);
     -webkit-text-stroke: clamp(4px, .6vw, 9px) #000; paint-order: stroke fill;
     text-shadow: .05em .05em 0 #000;
     rotate: calc(-4deg * var(--nb-rot, 1));
 }
-/* il VS in 3D dell'app (Seasons): al posto della scritta, che resta solo se l'immagine non si carica */
-.vi-vs.ha-img .vi-vs-testo { display: none; }
-.vi-vs-img { display: block; width: clamp(150px, min(30vw, 46vh), 440px); height: auto; filter: drop-shadow(0 6px 5px rgba(0, 0, 0, .45)); }
 /* il tabellone ha il linguaggio delle schede del simulatore (come "esito-card"): carta, bordo, ombra, angoli e carattere del tema del giocatore */
 .vi-tabellone {
     box-sizing: border-box; min-width: clamp(150px, 22vw, 300px); max-width: min(80vw, 30rem); padding: .6em 1.1em .65em;
@@ -86,10 +79,6 @@ html.app .vi { display: none; }
     border-radius: var(--raggio, 0px); box-shadow: var(--shs-4, 4px 4px 0 rgba(0, 0, 0, .3));      /* adesivo scuro: ombra trasparente, non nera piena */
     font: 800 clamp(.8rem, 1.5vw, 1.35rem)/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase;
     rotate: calc(-2deg * var(--nb-rot, 1));
-}
-.vi-pt {
-    margin: .14em 0 .02em; color: var(--inchiostro, #000); white-space: nowrap;
-    font: 900 clamp(2.4rem, 6.4vw, 5.6rem)/1.05 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .03em;
 }
 .vi-righe { display: flex; flex-direction: column; gap: .15em; margin-top: .15em; }
 .vi-righe span { font: 800 clamp(.7rem, 1.25vw, 1.1rem)/1.25 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
@@ -114,16 +103,13 @@ html.app .vi { display: none; }
 @media (max-width: 720px) {
     .vi-tag { max-width: 46vw; border-width: 3px; }
     .vi-centro { top: 37%; }
-    .vi-vs { font-size: clamp(64px, 22vw, 120px); }
-    .vi-vs-img { width: clamp(120px, 46vw, 220px); }
+    .vi-vs { font-size: clamp(48px, 17vw, 96px); }
     .vi-tabellone { border-width: 3px; padding: .45em .8em .5em; }
     .vi-righe span { font-size: .72rem; letter-spacing: .08em; }
 }
 /* schermo basso (telefono in orizzontale): il VS e il tabellone si stringono per non finire sugli avatar */
 @media (max-height: 520px) and (min-width: 721px) {
-    .vi-vs { font-size: min(17vw, 21vh); }
-    .vi-vs-img { width: min(26vw, 40vh); }
+    .vi-vs { font-size: min(12vw, 18vh); }
     .vi-tabellone { padding: .4em .9em .45em; }
-    .vi-pt { font-size: clamp(1.8rem, 5vw, 3.2rem); }
     .vi-righe span { font-size: .7rem; }
 }

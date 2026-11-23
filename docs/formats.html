@@ -1896,6 +1896,7 @@ async function caricaEVisualizzaFormati() {
             
             const playerAvatar = info.avatar || "https://via.placeholder.com/150"; 
             const playerColor = info.color || "#ffffff"; 
+            const playerStile = window.Cosmetici ? Cosmetici.valido(info.stileCard, 'card') : '';      // la cornice comprata nello Shop (stile-card.css)
 
             Object.entries(formatsStats).forEach(([formatName, stats]) => {
                 const points = Number(stats.points || 0);
@@ -1907,6 +1908,7 @@ async function caricaEVisualizzaFormati() {
                         maxPoints: points,
                         avatar: playerAvatar,
                         color: playerColor,
+                        stileCard: playerStile,
                         hasLeader: true,
                         rawDetails: null
                     };
@@ -1914,6 +1916,7 @@ async function caricaEVisualizzaFormati() {
                     allFormats[formatName].maxPoints = points;
                     allFormats[formatName].avatar = playerAvatar;
                     allFormats[formatName].color = playerColor;
+                    allFormats[formatName].stileCard = playerStile;
                     allFormats[formatName].hasLeader = true;
                 }
             });
@@ -1957,7 +1960,7 @@ async function caricaEVisualizzaFormati() {
 
                   <div class="format-nb-title-badge">${escHtml(format.formatName)}</div>
 
-                  <div class="format-nb-leader-box${format.hasLeader ? '' : ' senza-leader'}"${colore && format.hasLeader ? ` style="--fmt-leader: ${colore}"` : ''}
+                  <div class="format-nb-leader-box${format.hasLeader ? '' : ' senza-leader'}"${format.hasLeader && format.stileCard ? ` data-stile-card="${format.stileCard}"` : ''}${colore && format.hasLeader ? ` style="--fmt-leader: ${colore}"` : ''}
                        title="${format.hasLeader ? 'Current leader' : 'No leader for this format'}">
                     ${leaderContent}
                   </div>

@@ -799,6 +799,18 @@ html:not(.app-shell) #replayModal:not(.tel) .replay-versus {
 .rv-lato-c { clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%); --pp-sfondo: var(--c2, #555); }
 .rv-taglio-b { background: var(--nb-ink, #000); clip-path: polygon(calc(60% - 7px) 0, calc(60% + 7px) 0, calc(40% + 7px) 100%, calc(40% - 7px) 100%); }
 .rv-avatar { position: absolute; bottom: 0; height: var(--rv-h); width: auto; image-rendering: pixelated; filter: drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); user-select: none; }
+/* l'aura comprata nello Shop intorno all'avatar (come nel simulatore, style-versus.css): un alone ampio nel colore dell'aura; l'arcobaleno cambia colore */
+.rv-avatar[data-aura] { filter: drop-shadow(0 0 8px var(--pal-aura, transparent)) drop-shadow(0 0 26px var(--pal-aura, transparent)) drop-shadow(0 0 54px var(--pal-aura, transparent)) drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); }
+.rv-avatar[data-aura="aura-arcobaleno"] { animation: rv-aura-arcobaleno 4s linear infinite; }
+@keyframes rv-aura-arcobaleno {
+    0%, 100% { filter: drop-shadow(0 0 8px #ff3b3b) drop-shadow(0 0 26px #ff3b3b) drop-shadow(0 0 54px #ff3b3b) drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); }
+    17% { filter: drop-shadow(0 0 8px #ffb02e) drop-shadow(0 0 26px #ffb02e) drop-shadow(0 0 54px #ffb02e) drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); }
+    33% { filter: drop-shadow(0 0 8px #f4e03a) drop-shadow(0 0 26px #f4e03a) drop-shadow(0 0 54px #f4e03a) drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); }
+    50% { filter: drop-shadow(0 0 8px #3be07a) drop-shadow(0 0 26px #3be07a) drop-shadow(0 0 54px #3be07a) drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); }
+    67% { filter: drop-shadow(0 0 8px #3ba8ff) drop-shadow(0 0 26px #3ba8ff) drop-shadow(0 0 54px #3ba8ff) drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); }
+    83% { filter: drop-shadow(0 0 8px #b04dff) drop-shadow(0 0 26px #b04dff) drop-shadow(0 0 54px #b04dff) drop-shadow(5px 5px 0 rgba(0, 0, 0, .35)); }
+}
+@media (prefers-reduced-motion: reduce) { .rv-avatar[data-aura="aura-arcobaleno"] { animation: none; } }
 .rv-sx { left: max(calc(var(--rv-h) / 2 + 8px), calc(var(--rv-margine) / 2)); transform: translateX(-50%) scaleX(-1); }      /* il primo guarda a destra, verso la console */
 .rv-dx { right: max(calc(var(--rv-h) / 2 + 8px), calc(var(--rv-margine) / 2)); transform: translateX(50%); }
 

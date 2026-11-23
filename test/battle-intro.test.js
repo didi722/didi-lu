@@ -76,11 +76,11 @@ test('testiIntro, nelle stagioni: match, punteggio dei set, set, punteggio dei m
     // al meglio di 5
     assert.equal(B.testiIntro({ tipo: 'ufficiale', match: 3, matchTotali: 3, set: 5, setTotali: 5, punti: { sx: 2, dx: 2 }, showdown: { sx: 1, dx: 1 } }).righe[0], 'SET 5/5');
     // senza dati dei set il match si dice lo stesso
-    assert.deepEqual(B.testiIntro({ tipo: 'ufficiale', match: 2 }), { etichetta: 'MATCH 2/3', punteggio: null, righe: [] });
+    assert.deepEqual(B.testiIntro({ tipo: 'ufficiale', match: 2 }), { etichetta: 'MATCH 2/3', punteggio: '0 – 0', righe: [] });      // il punteggio sta sempre al centro, anche 0 – 0
 });
 
-test('testiIntro, nelle amichevoli: una partita sola non ha né set né punteggio; al meglio di più set sì', () => {
-    assert.deepEqual(B.testiIntro({ tipo: 'amichevole', setTotali: 1, set: 1, punti: { sx: 0, dx: 0 } }), { etichetta: 'FRIENDLY MATCH', punteggio: null, righe: [] });
+test('testiIntro, nelle amichevoli: il punteggio c\'è sempre (anche una partita sola: 0 – 0); i set solo se sono più di uno', () => {
+    assert.deepEqual(B.testiIntro({ tipo: 'amichevole', setTotali: 1, set: 1, punti: { sx: 0, dx: 0 } }), { etichetta: 'FRIENDLY MATCH', punteggio: '0 – 0', righe: [] });
     assert.deepEqual(B.testiIntro({ tipo: 'amichevole', formato: 'gen9 ou', setTotali: 1 }).righe, ['GEN9 OU']);
     assert.deepEqual(B.testiIntro({ tipo: 'amichevole', setTotali: 3, set: 2, punti: { sx: 0, dx: 1 } }), { etichetta: 'FRIENDLY MATCH', punteggio: '0 – 1', righe: ['SET 2/3'] });
 });
@@ -276,7 +276,7 @@ test('contestoIntro, amichevoli: tipo amichevole, niente match né showdown', ()
     assert.deepEqual(c.dati, { tipo: 'amichevole', formato: 'Gen9 OU', set: 2, setTotali: 3, punti: { sx: 0, dx: 1 } });
     assert.deepEqual(B.testiIntro(c.dati), { etichetta: 'FRIENDLY MATCH', punteggio: '0 – 1', righe: ['SET 2/3', 'GEN9 OU'] });
     const una = contestoIntroCon({ config: nomiDue, online: { ...online, info: { categoria: 'Gen9 OU', bestOf: 1 }, risultati: {} }, mioLato: 'p1' })(1);
-    assert.deepEqual(B.testiIntro(una.dati), { etichetta: 'FRIENDLY MATCH', punteggio: null, righe: ['GEN9 OU'] });
+    assert.deepEqual(B.testiIntro(una.dati), { etichetta: 'FRIENDLY MATCH', punteggio: '0 – 0', righe: ['GEN9 OU'] });
 });
 
 // ---------- il collegamento con il simulatore ----------
@@ -351,8 +351,9 @@ test('battle-intro.css: sta sopra a tutto ma non nell\'app; durante l\'intro gli
     assert.match(tabellone, /background: var\(--carta/);
     assert.match(tabellone, /color: var\(--inchiostro/);
     assert.doesNotMatch(tabellone, /background: #|border: [^;]*#000(?!\))/);
-    // il VS è il 3D dell'app (Seasons), la scritta resta di ripiego
-    assert.match(css, /\.vi-vs\.ha-img \.vi-vs-testo \{ display: none; \}/);
+    // niente "VS": al centro c'è il punteggio, grande (la regola .vi-vs è il suo carattere), e il tabellone non lo ripete
+    assert.match(css, /\.vi-vs \{[^}]*font-size: clamp\(64px[^}]*white-space: nowrap;/);
+    assert.doesNotMatch(css, /vi-vs-img|ha-img|\.vi-pt/);
     // telefono (verticale e orizzontale)
     assert.match(css, /@media \(max-width: 720px\)/);
     assert.match(css, /@media \(max-height: 520px\)/);
@@ -397,12 +398,13 @@ test('battle-intro.js: le animazioni di apertura restano al loro posto (fill for
     assert.match(battleIntro, /win\.__introVs = \{ radice, termina, stato: scriviStato \};/);
 });
 
-test('battle-intro.js: il VS è l\'immagine dell\'app (immagini/app/seasons-vs.webp, che esiste), con la scritta di ripiego', () => {
-    assert.match(battleIntro, /const IMMAGINE_VS = 'immagini\/app\/seasons-vs\.webp';/);
-    assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'app', 'seasons-vs.webp')), 'il file del VS');
-    assert.match(leggi('app-seasons.js'), /immaginiDi\('vs'\)/, 'è lo stesso VS che usa l\'app');
-    assert.match(battleIntro, /elemento\(doc, 'span', 'vi-vs-testo', 'VS'\)/, 'ripiego se l\'immagine non si carica');
-    assert.match(battleIntro, /caricate\.push\(vs\.pronta\)/, 'si aspetta l\'immagine (al massimo 1,5 s) prima di partire');
+test('battle-intro.js: niente scritta "VS" né immagine: al centro, sulla riga nera, il punteggio (le palestre, che non ne hanno, restano col solo tabellone)', () => {
+    assert.doesNotMatch(battleIntro, /'VS'|IMMAGINE_VS|seasons-vs|caricaImmagineVs|vi-vs-img/);
+    assert.match(battleIntro, /const vs = testi\.punteggio \? elemento\(doc, 'div', 'vi-vs', testi\.punteggio\) : null;/);
+    assert.match(battleIntro, /if \(vs\) centro\.appendChild\(vs\);/);
+    assert.match(battleIntro, /if \(vs\) A\(vs, /);
+    assert.match(battleIntro, /if \(vs\) O\(vs, /);
+    assert.doesNotMatch(battleIntro, /elemento\(doc, 'div', 'vi-pt'/, 'il tabellone non ripete il punteggio');
 });
 
 // ---------- l'intro che copre i caricamenti (battle-ui.js) ----------
@@ -651,10 +653,10 @@ test('battle-intro.css: la riga "in attesa" sta sotto il tabellone, compare solo
     assert.match(css, /@keyframes vi-punti/);
 });
 
-test('la copertura di prima dell\'intro: scura con il VS dal primo istante nelle partite (CPU, palestre, amichevoli, stagioni), tolta quando l\'intro è partita o se non ci sarà', () => {
+test('la copertura di prima dell\'intro: scura (solo «Getting ready», niente VS) dal primo istante nelle partite (CPU, palestre, amichevoli, stagioni), tolta quando l\'intro è partita o se non ci sarà', () => {
     // battle.html: l'elemento è il primo del body; la classe la mette uno script in testa, solo contro la CPU (non in palestra, non nell'app, non con "riduci movimento")
-    assert.match(html, /<body>\s*<div class="vs-copertura" id="vs-copertura" aria-hidden="true"><img src="immagini\/app\/seasons-vs\.webp"/);
-    assert.match(html, /<link rel="preload" as="image" href="immagini\/app\/seasons-vs\.webp">/);
+    assert.match(html, /<body>\s*<div class="vs-copertura" id="vs-copertura" aria-hidden="true"><p>Getting ready<\/p><\/div>/);
+    assert.doesNotMatch(html, /seasons-vs/);
     const script = html.match(/<script>\s*\/\/ Nelle partite[\s\S]*?<\/script>/)[0];
     assert.match(script, /\[\?&\]\(cpu\|amichevole\)=\[\^&\]/);
     assert.match(script, /\[\?&\]showdown=\[\^&\]\/\.test\(q\) && !\/\[\?&\]locale=/, 'non la modalità locale di prova');

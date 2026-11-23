@@ -302,7 +302,7 @@
 
         // ---- l'MVP
         const mvp = riep.mvp
-            ? `<section class="rs-b rs-mvp rs-s4"${attributoCornice(riep.mvp, cornici)} style="--c:${coloreSicuro(riep.mvp.colore, COLORE_NEUTRO)}">${etichetta('SEASON MVP')}<img class="rs-sticker" src="${IMMAGINE_MVP}" alt="" decoding="async">`
+            ? `<section class="rs-b rs-mvp rs-s4" style="--c:${coloreSicuro(riep.mvp.colore, COLORE_NEUTRO)}">${etichetta('SEASON MVP')}<img class="rs-sticker" src="${IMMAGINE_MVP}" alt="" decoding="async">`
               + `<div class="rs-mvp-scena">${medaglione(riep.mvp.specie, gif, 'rs-med-grande')}</div><b class="rs-banner">${esc(riep.mvp.specie)}</b>`
               + `<span class="rs-mvp-sotto">${esc(riep.mvp.team)} · ${esc(riep.mvp.player)}</span><span class="rs-voti">${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}</span></section>`
             : riep.mvpInCorso
@@ -319,7 +319,7 @@
         const formati = riep.squadra.length
             ? `<section class="rs-b rs-formati rs-squadra">${etichetta('DREAM TEAM')}<img class="rs-sticker rs-sticker-squadra" src="${IMMAGINE_SQUADRA}" alt="" decoding="async">`
               + `<div class="rs-formati-lista" style="--rs-col:${Math.min(3, riep.squadra.length)}">${riep.squadra.map(f =>
-                `<div class="rs-fcard"${attributoCornice(f, cornici)} style="--c:${coloreSicuro(f.colore, COLORE_NEUTRO)}"><span class="rs-tag-nero">${esc(f.formato)}</span>${medaglione(f.specie, gif, 'rs-med-medio')}`
+                `<div class="rs-fcard" style="--c:${coloreSicuro(f.colore, COLORE_NEUTRO)}"><span class="rs-tag-nero">${esc(f.formato)}</span>${medaglione(f.specie, gif, 'rs-med-medio')}`
                 + `<b class="rs-banner rs-banner-piccolo">${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div></section>`
             : '';
         const massimo = Math.max(1, ...riep.piuUsati.map(u => u.set));
@@ -333,7 +333,7 @@
         // ---- i premi: un riquadro ciascuno, sul colore di chi lo ha vinto
         const premi = riep.premi.length
             ? `<section class="rs-b rs-premi rs-s12">${etichetta('AWARDS')}<div class="rs-premi-lista">${riep.premi.map(p =>
-                `<article class="rs-premio"${attributoCornice(p.vincitori[0], cornici)} style="--c:${coloreSicuro(p.vincitori[0] && p.vincitori[0].colore, COLORE_NEUTRO)}"><div class="rs-premio-testa"><span class="rs-icona" aria-hidden="true">${htmlIconaPremio(p)}</span>`
+                `<article class="rs-premio" style="--c:${coloreSicuro(p.vincitori[0] && p.vincitori[0].colore, COLORE_NEUTRO)}"><div class="rs-premio-testa"><span class="rs-icona" aria-hidden="true">${htmlIconaPremio(p)}</span>`
                 + `<div><b>${esc(p.titolo)}</b><small>${esc(p.descrizione)}</small></div></div>`
                 + `<div class="rs-premio-pie"><div class="rs-premio-chi"><div class="rs-vincitori">${p.vincitori.map(x => `<a class="rs-nome-tag" href="${esc(linkGiocatore(x.nome))}">${esc(x.nome)}</a>`).join('')}</div>`
                 + `<span class="rs-valore">${esc(p.testoValore)}</span></div><div class="rs-avatar-premio">${p.vincitori.map(x => avatarImg(x, 'rs-av-premio')).join('')}</div></div></article>`).join('')}</div></section>`
