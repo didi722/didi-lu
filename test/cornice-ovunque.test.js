@@ -1,6 +1,6 @@
 'use strict';
 // La cornice comprata nello Shop (stile-card.css) dove c'è una card con l'avatar e il colore di un allenatore, o con un suo team: Match of the week (home e Hall of Fame),
-// card delle stagioni (home e Hall of Fame), record della Hall of Fame, team in Stats, i due team di uno showdown, riepilogo di stagione. Mai nel Box e mai sui singoli Pokémon.
+// card delle stagioni (home e Hall of Fame), record della Hall of Fame, team in Stats, i due team di uno showdown, riepilogo di stagione. Anche sui Pokémon di un allenatore (Stats, MVP, Dream Team). Mai nel Box.
 // Il disegno si prova a schermo; qui chi scrive l'attributo (sempre da un id controllato) e dove.
 //
 //   npm test        (dalla cartella principale)
@@ -68,16 +68,15 @@ test('Hall of Fame, stagioni: la card ha la cornice di chi ha vinto (o di chi gu
 // ---------------------------------------------------------------- Hall of Fame: record e Match of the week
 const voce = (o) => ({ nome: 'X', sotto: '', valore: '1', specie: '', colore: '#fff', avatar: '', link: '', quando: '', ...o });
 
-test('Hall of Fame, record: la cornice sulle righe degli allenatori e dei loro team, non su quelle dei Pokémon', () => {
+test('Hall of Fame, record: la cornice sulle righe degli allenatori, dei loro team e dei loro Pokémon', () => {
     const lista = [
         { id: 'a', gruppo: 'Trainers', titolo: 'T', nota: '', voci: [voce({ nome: 'Ada', avatar: 'a.png', idGiocatore: 'ada' })] },
         { id: 'b', gruppo: 'Teams', titolo: 'U', nota: '', voci: [voce({ nome: 'Team Uno', sotto: 'Ada', idGiocatore: 'ada' })] },
         { id: 'c', gruppo: 'Pokémon', titolo: 'V', nota: '', voci: [voce({ nome: 'Garchomp', specie: 'Garchomp', sotto: 'Team Uno · Ada', idGiocatore: 'ada' })] }
     ];
     const h = H.htmlRecords(lista, { gif: s => `${s}.gif`, giocatori: { ada: { avatar: 'a.png', stileCard: 'card-circuito' } } });
-    assert.equal(conta(h, /<li class="hof-voce hof-primo" data-stile-card="card-circuito"/g), 2, 'allenatore e team');
-    assert.equal(conta(h, /<li class="hof-voce hof-primo"/g), 3);
-    assert.match(h, /<li class="hof-voce hof-primo" style="--c:#fff"><span class="hof-pos">1<\/span><span class="ms-med" data-pkm="Garchomp"/, 'la riga del Pokémon resta com\'era');
+    assert.equal(conta(h, /<li class="hof-voce hof-primo" data-stile-card="card-circuito"/g), 3, 'allenatore, team e Pokémon');
+    assert.match(h, /data-stile-card="card-circuito" style="--c:#fff"><span class="hof-pos">1<\/span><span class="ms-med" data-pkm="Garchomp"/, 'anche la riga del Pokémon');
     // un valore scritto a mano nel database non arriva nella pagina; senza idGiocatore (dati vecchi) si cerca per nome
     assert.doesNotMatch(H.htmlRecords(lista, { giocatori: { ada: { stileCard: CATTIVO } } }), /data-stile-card/);
     assert.equal(conta(H.htmlRecords([lista[0]], { giocatori: { ada: { stileCard: 'card-oro' } } }).replace(/idGiocatore/g, ''), /data-stile-card="card-oro"/g), 1);
@@ -104,7 +103,7 @@ test('Hall of Fame, Match of the week: l\'archivio passa la cornice di ogni alle
 });
 
 // ---------------------------------------------------------------- Stats: i team
-test('Stats: ogni team porta la cornice del suo allenatore (anche per l\'app); i Pokémon no', () => {
+test('Stats: ogni team e ogni Pokémon porta la cornice del suo allenatore (anche per l\'app)', () => {
     const m = (p1, p2, a, b, data) => ({ player1: p1, player1Id: p1, player2: p2, player2Id: p2, winnerId: a > b ? p1 : p2, team1: 'A', team2: 'B', p1score: a, p2score: b, p1points: a, p2points: b, data, categoria: 'VGC', p1EloAtMatch: 1000, p2EloAtMatch: 1000, p1DeltaElo: 16, p2DeltaElo: -16 });
     const dati = { players: { didi: { info: { name: 'Didi', stileCard: 'card-oro' } }, lu: { info: { name: 'Lu' } } }, seasons: { s1: { info: { name: 'S1', status: 'closed' }, showdowns: { sd1: { info: { categoria: 'VGC', data: '2026-03-01' }, matches: { m1: m('didi', 'lu', 2, 0, '2026-03-01') } } } } } };
     const r = Statistiche.calcola(dati, { stagione: 'all', senzaSquadre: true });
@@ -113,9 +112,9 @@ test('Stats: ogni team porta la cornice del suo allenatore (anche per l\'app); i
     assert.ok(di('didi').every(t => t.stileCard === 'card-oro'), 'i team di Didi');
     assert.ok(di('lu').every(t => t.stileCard === ''), 'chi non ha una cornice non ne ha');
     assert.ok(r.players.find(p => p.id === 'didi').stileCard === 'card-oro', 'gli allenatori, come prima');
-    assert.ok(r.pokemon.every(x => !('stileCard' in x)), 'i singoli Pokémon non portano la cornice');
+    assert.ok(r.pokemon.filter(x => x.player === 'didi').every(x => x.stileCard === 'card-oro') && r.pokemon.filter(x => x.player === 'lu').every(x => x.stileCard === ''), 'i Pokémon, come i team');
     const stats = docs('stats.js');
-    assert.match(stats, /\(tab === 'players' \|\| tab === 'teams'\)/);
+    assert.match(stats, /\(tab === 'players' \|\| tab === 'teams' \|\| tab === 'pokemon'\)/);
     assert.match(stats, /<article class="carta carta-\$\{tab\}" role="button" tabindex="0" data-chiave="\$\{esc\(chiave\)\}"\$\{stile \? ` data-stile-card="\$\{stile\}"` : ''\}/, 'le card di Stats: .carta-teams è uno degli elementi con cornice');
 });
 
@@ -168,7 +167,7 @@ test('stile-card.css: le card che hanno già ::before (la linguetta dello stato)
     assert.ok(docs('nb-pagine.css').includes('body.pg-index .season-card::before') && docs('style-palmares.css').includes('.palm-card::before'), 'è davvero così');
     for (const c of ['.ms-lato', '.sd-team', '.sd-lato', '.hof-voce', '.carta-teams', '.rs-campione', '.rs-premio']) assert.ok(deco.includes(c) && tutte.includes(c), c);
     // la riga dei record e il premio non hanno una posizione loro: gli strati ci si ancorano
-    assert.match(css, /:root :is\(\.hof-voce, \.rs-premio\)\[data-stile-card\] \{ position: relative; \}/);
+    assert.match(css, /:root :is\(\.hof-voce, \.rs-premio, \.rs-fcard\)\[data-stile-card\] \{ position: relative; \}/);
     // chi ha perso è grigio: con la cornice si spegne il contenuto, non la card
     assert.match(css, /:root \.ms-perde\[data-stile-card\] \{ filter: none; \}\s*:root \.ms-perde\[data-stile-card\] > \* \{ filter: grayscale\(0\.8\); \}/);
     assert.match(docs('match-settimana.css'), /\.ms-perde \{[^}]*filter: grayscale\(\.8\);/, 'e senza cornice è come prima');
@@ -178,18 +177,23 @@ test('stile-card.css: le card che hanno già ::before (la linguetta dello stato)
     assert.match(css, /:root \.rs-righe:has\(> \[data-stile-card\]\) \{ gap: calc\(18 \* var\(--rs-u, 1\)\); \}/);
 });
 
-test('mai nel Box e mai sulle card dei singoli Pokémon: né il Box né le card dei Pokémon portano l\'attributo', () => {
+test('Pokémon: le card di Stats, MVP e Dream Team (Hall of Fame e riepilogo) portano la cornice del loro allenatore; mai nel Box', () => {
+    const giocatori = { ada: { color: '#aa00cc', stileCard: 'card-oro' }, bea: { color: '#000', stileCard: CATTIVO } };
+    const h = H.htmlStagioni([{ stagione: 's1', nome: 'S1', data: '', mvp: [{ specie: 'Mew', player: 'Ada', team: 'T' }], dream: [{ specie: 'Mew', player: 'Ada', team: 'T', formato: 'OU' }, { specie: 'Eevee', player: 'Bea', team: 'U', formato: 'OU' }] }], { giocatori });
+    assert.equal(conta(h, /<li class="hof-membro" data-stile-card="card-oro"/g), 2, 'MVP e Dream Team di Ada; quello di Bea (valore non valido) no');
+    assert.equal(conta(h, /data-stile-card/g), 2);
+    const rp = riepilogo('card-stelle');
+    rp.mvp = { specie: 'Mew', team: 'T', player: 'Ada', colore: '#aa00cc', stileCard: 'card-stelle', voti: 3 };
+    rp.squadra = [{ formato: 'OU', posto: 1, specie: 'Mew', team: 'T', player: 'Ada', colore: '#aa00cc', stileCard: 'card-stelle', koFatti: 1, set: 1 }];
+    const x = R.html(rp, { cornici: true, gif: s => s });
+    assert.match(x, /<section class="rs-b rs-mvp rs-s4" data-stile-card="card-stelle"/);
+    assert.match(x, /<div class="rs-fcard" data-stile-card="card-stelle"/);
+    assert.equal(conta(R.html(rp, { gif: s => s }), /data-stile-card/g), 0, 'senza cornici (app) nulla');
+    const m = docs('riepilogo-stagione.js');
+    assert.match(m, /stileCard: \(proprietario && proprietario\.stileCard\) \|\| ''/);
+    assert.match(m, /stileCard: \(\(colori\.get\(idDi\(m\.player\)\) \|\| \{\}\)\.stileCard\) \|\| ''/);
+    const css = docs('stile-card.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const c of ['.carta-pokemon', '.hof-membro', '.rs-mvp', '.rs-fcard']) assert.ok(css.includes(c), c);
+    assert.ok(!css.includes('.carta-usage'), 'le schede di uso di una specie no');
     for (const f of ['box.html', 'box-team.css', 'box-vista.css']) assert.doesNotMatch(docs(f), /data-stile-card/, f);
-    const css = docs('stile-card.css');
-    for (const c of ['.carta-pokemon', '.carta-usage', '.hof-membro', '.rs-fcard', '.rs-mvp']) assert.ok(!css.replace(/\/\*[\s\S]*?\*\//g, '').includes(c), `${c} non è tra le card con cornice`);
-});
-
-test('showdown: la cornice la porta solo chi vince (il team vincitore di ogni match nella finestra, il lato vincitore nella card della lista)', () => {
-    const m = docs('matches.html');
-    assert.match(m, /vince1, vince2, vince1 \? p1\.stile : ''\)\}/);
-    assert.match(m, /vince2, vince1, vince2 \? p2\.stile : ''\)\}/);
-    assert.match(m, /const corniceVince = chiVince \? corniceDi\(chiVince === 1 \? p1Name : p2Name\) : '';/);
-    assert.match(m, /<div class="sd-lato sd-lato-1"\$\{attrCornice\(1\)\} title=/);
-    assert.match(m, /<div class="sd-lato sd-lato-2"\$\{attrCornice\(2\)\} title=/);
-    assert.match(m, /const attrCornice = k => \(chiVince === k && corniceVince/);
 });

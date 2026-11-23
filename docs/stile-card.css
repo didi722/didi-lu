@@ -2,10 +2,10 @@
    STILE DELLE CARD — cosmetici del negozio (cosmetici.js, tipo "card"): come si vede la card di un allenatore, per tutti
    ---------------------------------------------------------------------
    Il valore (players/<id>/info/stileCard, es. "card-oro") va nell'attributo data-stile-card della card di quell'allenatore (o di un suo team), dovunque ce ne sia una:
-   Trainers (.trainer-card), classifica di stagione (.cl-riga e .cl-tab-riga di Matches), Stats (.carta-players e .carta-teams), la classifica di un formato (.player-rank-row di Formats),
+   Trainers (.trainer-card), classifica di stagione (.cl-riga e .cl-tab-riga di Matches), Stats (.carta-players, .carta-teams e .carta-pokemon), la classifica di un formato (.player-rank-row di Formats),
    il Match of the week (.ms-lato: home e Hall of Fame), le card delle stagioni (.season-card della home, .palm-card della Hall of Fame: la cornice è del vincitore o di chi guida),
    i record della Hall of Fame (.hof-voce, solo allenatori e team), i due team di uno showdown (.sd-team: solo quello di chi ha vinto il match) e la sua card nella lista (.sd-lato: solo il lato di chi vince), il riepilogo di stagione (.rs-campione, .rs-premio e le righe .cl-riga)
-   e, nell'app, la scheda a scorrimento (.at-carta, .ac-carta, .as-carta). Mai nel Box e mai sulle card dei singoli Pokémon.
+   e, nell'app, la scheda a scorrimento (.at-carta, .ac-carta, .as-carta). Anche sulle card dei Pokémon di un allenatore (Stats, MVP e Dream Team). Mai nel Box.
    Ogni stile è solo un gruppo di variabili; poi poche regole le applicano a ogni tipo di card, quindi uno stile nuovo = una voce nel catalogo + il suo gruppo qui:
      --sc-bordo   il colore del bordo della card
      --sc-glow    cornice e alone (box-shadow); --sc-glow2 è il secondo passo dell'alone che pulsa
@@ -19,7 +19,7 @@
    Il colore dell'allenatore, il testo e le misure della card non cambiano mai: cambia solo cosa le sta intorno e sopra. Va caricato dopo il foglio della pagina.
    ===================================================================== */
 
-:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .season-card, .palm-card, .hof-voce, .sd-team, .sd-lato, .rs-campione, .rs-premio, .sc-campione)[data-stile-card] {      /* :root alza la priorità sopra gli stati :hover e le regole dei temi */
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .season-card, .palm-card, .hof-voce, .sd-team, .sd-lato, .carta-pokemon, .hof-membro, .rs-mvp, .rs-fcard, .rs-campione, .rs-premio, .sc-campione)[data-stile-card] {      /* :root alza la priorità sopra gli stati :hover e le regole dei temi */
     border-color: var(--sc-bordo, var(--nb-ink, #000));
     box-shadow: var(--sc-glow, none);      /* senza !important: le animazioni (aloni che pulsano) non vincono su una regola importante */
     background-image: var(--sc-img, none) !important;
@@ -31,15 +31,15 @@
 .sc-campione[data-stile-card] { position: relative; }
 
 /* gli strati: tutti dietro al contenuto (z-index -1 dentro la card, che è un contesto a sé) e mai sotto il dito */
-:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .hof-voce, .sd-team, .sd-lato, .rs-campione, .rs-premio, .sc-campione)[data-stile-card]::before,
-:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .season-card, .palm-card, .hof-voce, .sd-team, .sd-lato, .rs-campione, .rs-premio, .sc-campione)[data-stile-card]::after {
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .hof-voce, .sd-team, .sd-lato, .carta-pokemon, .hof-membro, .rs-mvp, .rs-fcard, .rs-campione, .rs-premio, .sc-campione)[data-stile-card]::before,
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .season-card, .palm-card, .hof-voce, .sd-team, .sd-lato, .carta-pokemon, .hof-membro, .rs-mvp, .rs-fcard, .rs-campione, .rs-premio, .sc-campione)[data-stile-card]::after {
     position: absolute;
     z-index: -1;
     pointer-events: none;
     box-sizing: border-box;
     background-repeat: no-repeat;
 }
-:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .hof-voce, .sd-team, .sd-lato, .rs-campione, .rs-premio, .sc-campione)[data-stile-card]::before {      /* decorazione (non sulle card della home e dell'Hall of Fame: ::before è già la linguetta con lo stato della stagione) */
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .hof-voce, .sd-team, .sd-lato, .carta-pokemon, .hof-membro, .rs-mvp, .rs-fcard, .rs-campione, .rs-premio, .sc-campione)[data-stile-card]::before {      /* decorazione (non sulle card della home e dell'Hall of Fame: ::before è già la linguetta con lo stato della stagione) */
     content: var(--sc-deco-on, none);
     inset: 0;
     border-radius: inherit;
@@ -50,7 +50,7 @@
     transform-origin: var(--sc-deco-origin, 50% 50%);
     animation: var(--sc-deco-anim, none);
 }
-:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .season-card, .palm-card, .hof-voce, .sd-team, .sd-lato, .rs-campione, .rs-premio, .sc-campione)[data-stile-card]::after {       /* cornice: l'anello sul bordo (e un po' fuori), ritagliato con una maschera */
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .season-card, .palm-card, .hof-voce, .sd-team, .sd-lato, .carta-pokemon, .hof-membro, .rs-mvp, .rs-fcard, .rs-campione, .rs-premio, .sc-campione)[data-stile-card]::after {       /* cornice: l'anello sul bordo (e un po' fuori), ritagliato con una maschera */
     content: var(--sc-ring-on, none);
     inset: -7px;
     padding: 6px;
@@ -68,7 +68,7 @@
 /* aggiustamenti per le card che non sono tutte uguali:
    - le righe dell'Hall of Fame e i premi del riepilogo non hanno una posizione propria: gli strati ci si ancorano
    - chi ha perso un Match of the week è spento (grigio): con una cornice si spegne il contenuto, non la cornice */
-:root :is(.hof-voce, .rs-premio)[data-stile-card] { position: relative; }
+:root :is(.hof-voce, .rs-premio, .rs-fcard)[data-stile-card] { position: relative; }
 /* la cornice sporge dal bordo (7 px e l'alone): più spazio tra le card che ne hanno una, così non si toccano */
 :root .hof-record ol:has(> [data-stile-card]) { gap: 18px; }
 :root .ms-scontro:has(> [data-stile-card]) { gap: 18px; }

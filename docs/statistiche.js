@@ -556,6 +556,7 @@
                 chiave: m.chiave, squadra: m.squadra, player: m.player,
                 playerNome: info(m.player).name || m.player,
                 colore: info(m.player).color || '',
+                stileCard: info(m.player).stileCard || '',      // la cornice del suo allenatore (stile-card.css)
                 team: m.team, formato: m.formato,
                 specie: m.specie, specieId: m.specieId,
                 stagioniVinte: t ? t.stagioniVinte : 0,
