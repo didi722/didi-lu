@@ -24,6 +24,7 @@
 //   Cosmetici.stagioniEdizioni()                       gli id delle stagioni a cui sono legate le edizioni limitate (il negozio ne legge lo stato)
 //   Cosmetici.idAvatar(testo), idColore(testo), idCanzone(url)   l'id di un avatar (da "…/profile/12.png"), di un colore (da "#FF8800") o di una canzone (dal suo indirizzo)
 //   Cosmetici.COLORI_FIRMA, coloreDaId(id)             i colori che si possono scegliere (gli stessi di PALETTE_FIRMA in pagina-pubblica.js) e il colore di un id
+//   Cosmetici.raggruppaColori(lista), famigliaColore(hex), GRUPPI_COLORI   i colori raggruppati per tonalità (da Reds a Pinks, e dentro ogni gruppo dal più chiaro al più scuro): [{ nome, colori }]; lo Shop li mostra così
 //   Cosmetici.eDiDefault(tipo, info)                   ha ancora l'avatar / il colore / la canzone di partenza?
 //   Cosmetici.idCorrente(tipo, info)                   l'id dell'avatar / del colore / della canzone che porta adesso ('' se è quello di partenza o nessuno)
 //   Cosmetici.LIMITI                                   quanti avatar, colori e canzoni al massimo ha un allenatore: { avatar, colore, canzone }
@@ -185,9 +186,66 @@
         '#FF3333', '#FF8800', '#FFDD00', '#33CC66', '#00BFA5', '#3399FF', '#0055FF', '#7A29FF', '#D11A7A', '#FF4D8D',
         '#FF1744', '#FF5E00', '#FFEA00', '#00FF66', '#00FFCC', '#00F0FF', '#0066FF', '#7B00FF', '#CC00FF', '#FF0099',
         '#FF7B6B', '#F28C28', '#F4C430', '#A7C957', '#2A9D8F', '#1D7874', '#118AB2', '#264653',
-        '#5E60CE', '#6A0572', '#AB4E68', '#8D5524', '#5B3A29', '#0B3D2E', '#1B2A49', '#4A1942'
+        '#5E60CE', '#6A0572', '#AB4E68', '#8D5524', '#5B3A29', '#0B3D2E', '#1B2A49', '#4A1942',
+        '#D29589', '#EE6371', '#D21E1E', '#A14B36', '#913034', '#A80000', '#741111', '#E7B69D',
+        '#EBAD70', '#D66B00', '#C2470A', '#B37319', '#BE6F55', '#BE9255', '#856300', '#7E2E07',
+        '#FFE085', '#E0EB70', '#F0A000', '#C2940A', '#B9F98B', '#89D2B4', '#C4FF14', '#78E40C',
+        '#47C20A', '#54A008', '#159354', '#197411', '#1B6A49', '#ADF1FF', '#89C6D2', '#32E2D3',
+        '#0AB2C2', '#22876D', '#0893A0', '#076A7E', '#85C2FF', '#9985FF', '#607ED7', '#20BEF3',
+        '#001CA8', '#0070A8', '#155493', '#003785', '#E085FF', '#B69DE7', '#925CFF', '#AA6FC8',
+        '#6F42AE', '#6200A8', '#D47DCB', '#FF38DE', '#BE55A4', '#D600C1', '#A329A3', '#822B79',
+        '#FF8599', '#FF85CC', '#DDA6CB', '#F00064', '#C20A38', '#93155F', '#7E072E'
     ];
     const COLORE_DEFAULT = '#31C489';        // quello degli account nuovi (admin.html): finché c'è, il colore è "di partenza"
+
+    // ---- I colori per tonalità: colori simili vicini ---------------------------------------------------------
+    /** Tonalità (0-360), saturazione e luminosità (0-1) di un colore "#RRGGBB"; null se non lo è */
+    function tonalita(hex) {
+        const m = /^#?([0-9a-f]{6})$/i.exec(String(hex == null ? '' : hex).trim());
+        if (!m) return null;
+        const [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255);
+        const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+        let h = 0, s = 0;
+        if (d) {
+            s = d / (1 - Math.abs(2 * l - 1));
+            h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+            h = (h * 60 + 360) % 360;
+        }
+        return { h, s, l };
+    }
+    // le famiglie, nell'ordine dell'arcobaleno (i marroni stanno tra gli arancio e i gialli, di cui sono la versione scura o spenta)
+    const GRUPPI_COLORI = ['Reds', 'Oranges', 'Browns', 'Yellows', 'Greens', 'Teals', 'Blues', 'Purples', 'Magentas', 'Pinks', 'Greys'];
+    /** A quale famiglia appartiene un colore ('' se non è un colore) */
+    function famigliaColore(hex) {
+        const t = tonalita(hex);
+        if (!t) return '';
+        const { h, s, l } = t;
+        if (s < 0.1) return 'Greys';
+        if (h >= 12 && h < 50 && (s < 0.5 || l < 0.36)) return 'Browns';      // arancio e giallo scuri o spenti: terra, cuoio, ruggine
+        if (h >= 315 && h < 350) return 'Pinks';
+        if ((h >= 350 || h < 12) && l >= 0.72) return 'Pinks';                  // i rossi molto chiari sono rosa
+        if (h >= 350 || h < 12) return 'Reds';
+        if (h < 40) return 'Oranges';
+        if (h < 68) return 'Yellows';
+        if (h < 160) return 'Greens';
+        if (h < 195) return 'Teals';
+        if (h < 255) return 'Blues';
+        if (h < 295) return 'Purples';
+        return 'Magentas';
+    }
+    /** I colori raggruppati per famiglia, nell'ordine dell'arcobaleno, ognuna dal più chiaro al più scuro: [{ nome, colori }] (le famiglie vuote non ci sono; i valori che non sono colori neanche) */
+    function raggruppaColori(lista) {
+        const gruppi = new Map(GRUPPI_COLORI.map(n => [n, []]));
+        for (const c of Array.isArray(lista) ? lista : COLORI_FIRMA) {
+            const f = famigliaColore(c);
+            if (f) gruppi.get(f).push(c);
+        }
+        const chiaro = c => tonalita(c);
+        return [...gruppi].filter(([, l]) => l.length).map(([nome, l]) => ({
+            nome,
+            colori: l.slice().sort((a, b) => chiaro(b).l - chiaro(a).l || chiaro(b).s - chiaro(a).s || String(a).localeCompare(String(b)))
+        }));
+    }
 
     /** "https://x.io/immagini/profile/12.png?v=2", "profile/12.png" -> "avatar-12"; '' se non è un avatar della lista (il segnaposto, un'immagine qualunque) */
     function idAvatar(testo) {
@@ -455,5 +513,5 @@
         return { set, amichevoli, badge, stagione, mvp, totale: set + amichevoli + badge + stagione + mvp };
     }
 
-    return { PREMI, PREZZI, LIMITI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, valido, possiede, possedutiDa, motivoBloccato, disponibilita, stagioniEdizioni, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, possedutiDiTipo, prezzoAcquisto, prezzoPer, stimaStagione, compagnoDelBox, compagnoShiny, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
+    return { PREMI, PREZZI, LIMITI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, GRUPPI_COLORI, raggruppaColori, famigliaColore, perId, valido, possiede, possedutiDa, motivoBloccato, disponibilita, stagioniEdizioni, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, possedutiDiTipo, prezzoAcquisto, prezzoPer, stimaStagione, compagnoDelBox, compagnoShiny, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
 });

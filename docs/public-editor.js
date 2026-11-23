@@ -179,6 +179,8 @@
     // quello che si usa nella pagina SALVATA (non l'anteprima di una scelta ancora da salvare)
     const infoSalvata = () => ({ ...C.stato.dati.info, ...C.stato.infoSalvata });
     const contestoCosmetici = () => ({ wallet: portafoglio || {}, info: infoSalvata(), pagina: C.stato.salvata });
+    // i colori da scegliere per lo sfondo e la carta, raggruppati per tonalità (colori simili vicini, come nello Shop) e i neutri in fondo; senza il catalogo, nell'ordine di sempre
+    const tavolozza = () => (window.Cosmetici ? [...window.Cosmetici.raggruppaColori(P.PALETTE_FIRMA).flatMap(g => g.colori), ...P.PALETTE_NEUTRI] : P.PALETTE_SFONDO);
     const motivoBloccato = motivo => !!window.Cosmetici && window.Cosmetici.motivoBloccato(motivo, contestoCosmetici());
     /** Lo Shop (su una voce o su una scheda): lascia la pagina, e di modifiche non salvate si avvisa con beforeunload */
     const vaiAlloShop = (dove = '') => {
@@ -272,7 +274,7 @@
             altriMotivi ? h('p', { class: 'pe-nota pe-sotto' }, 'There are more patterns to get. ', h('button', { type: 'button', class: 'pe-bottone pe-piccolo pe-vai-shop', onclick: () => vaiAlloShop('tab=pagina'), testo: 'See them in the Shop →' })) : null),
             sezione('Colour', h('div', { class: 'pe-campioni pe-campioni-fitti' },
                 campione(proprio, s.colore === 'giocatore', 'My signature colour', () => cambia(c => { c.sfondo.colore = 'giocatore'; return c; }), h('span', { class: 'pe-campione-etichetta', testo: 'ME' })),
-                P.PALETTE_SFONDO.map(x => campione(x, s.colore === x.toLowerCase(), x, () => cambia(c => { c.sfondo.colore = x.toLowerCase(); return c; }))),
+                tavolozza().map(x => campione(x, s.colore === x.toLowerCase(), x, () => cambia(c => { c.sfondo.colore = x.toLowerCase(); return c; }))),
                 h('span', { class: `pe-campione pe-campione-libero${personalizzato ? ' is-on' : ''}`, stile: { '--c': personalizzato ? s.colore : '#fff' } }, campoColore, h('span', { class: 'pe-campione-etichetta', testo: '+' })))),
             sezione('Pattern strength', segmentato([[1, 'Soft'], [2, 'Medium'], [3, 'Bold']], s.forza, v => cambia(c => { c.sfondo.forza = v; return c; }))),
             sezione('Extras',
@@ -292,7 +294,7 @@
             sezione('Card colour',
                 h('div', { class: 'pe-campioni' }, Object.entries(P.TEMI).map(([id, t]) =>
                     campione(t.colore || proprio, k.tema === id, t.nome, () => nuovo('tema', id), id === 'colore' ? h('span', { class: 'pe-campione-etichetta', testo: 'ME' }) : null))),
-                h('div', { class: 'pe-campioni pe-campioni-fitti pe-sotto' }, P.PALETTE_SFONDO.map(x =>
+                h('div', { class: 'pe-campioni pe-campioni-fitti pe-sotto' }, tavolozza().map(x =>
                     campione(x, k.tema === x.toLowerCase(), x, () => nuovo('tema', x.toLowerCase()))))),
             sezione('Hard shadow', segmentato(P.OMBRE.map(o => [o, o === 0 ? 'None' : o === 6 ? 'S' : o === 10 ? 'M' : 'L']), k.ombra, v => nuovo('ombra', v))),
             sezione('Borders', segmentato(P.BORDI.map(b => [b, b === 3 ? 'Thin' : b === 4 ? 'Normal' : 'Thick']), k.bordo, v => nuovo('bordo', v))),
