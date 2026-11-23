@@ -22,14 +22,18 @@
 :root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .season-card, .palm-card, .hof-voce, .sd-team, .sd-lato, .lato-nome, .carta-pokemon, .hof-membro, .rs-mvp, .rs-fcard, .rs-campione, .rs-premio, .sc-campione)[data-stile-card] {      /* :root alza la priorità sopra gli stati :hover e le regole dei temi */
     border-color: var(--sc-bordo, var(--nb-ink, #000));
     box-shadow: var(--sc-glow, none);      /* senza !important: le animazioni (aloni che pulsano) non vincono su una regola importante */
-    --sc-pallini: radial-gradient(rgba(0, 0, 0, 0.13) 1.4px, transparent 1.7px);      /* il motivo semplice a pallini: lo tengono le cornici che non ne hanno uno loro */
+    --sc-pallini: none;      /* il motivo semplice che la card ha già: lo tengono le cornici che non ne hanno uno loro (sotto, per le card che lo hanno; le altre restano lisce) */
+    --sc-pallini-dim: 11px 11px;
     background-image: var(--sc-img, var(--sc-pallini)) !important;
-    background-size: var(--sc-dim, 11px 11px) !important;
+    background-size: var(--sc-dim, var(--sc-pallini-dim)) !important;
     background-repeat: var(--sc-rep, repeat) !important;
     animation: var(--sc-anim, none);
     isolation: isolate;      /* gli strati stanno dietro al testo ma sopra lo sfondo della card */
 }
 .sc-campione[data-stile-card] { position: relative; }
+/* le card che di loro hanno i pallini (Trainers, stagioni della home e della Hall of Fame; la finestra dello showdown, più fitti) li conservano con la cornice */
+:root :is(.trainer-card, .season-card, .palm-card)[data-stile-card] { --sc-pallini: radial-gradient(rgba(0, 0, 0, 0.13) 1.4px, transparent 1.7px); }
+:root .sd-team[data-stile-card] { --sc-pallini: radial-gradient(rgba(0, 0, 0, 0.16) 1.2px, transparent 1.5px); --sc-pallini-dim: 7px 7px; }
 
 /* gli strati: tutti dietro al contenuto (z-index -1 dentro la card, che è un contesto a sé) e mai sotto il dito */
 :root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .carta-teams, .player-rank-row, .ms-lato, .hof-voce, .sd-team, .sd-lato, .lato-nome, .carta-pokemon, .hof-membro, .rs-mvp, .rs-fcard, .rs-campione, .rs-premio, .sc-campione)[data-stile-card]::before,
@@ -153,7 +157,7 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-bordo: transparent;
     --sc-glow: 0 0 16px 4px rgba(255, 200, 70, 0.55);
     --sc-img: linear-gradient(135deg, rgba(255, 222, 120, 0.34), rgba(255, 170, 30, 0.12) 55%, rgba(255, 232, 150, 0.24)), var(--sc-pallini);
-    --sc-dim: 100% 100%, 11px 11px;
+    --sc-dim: 100% 100%, var(--sc-pallini-dim);
     --sc-rep: no-repeat, repeat;
     --sc-ring-on: "";
     --sc-ring:
@@ -166,7 +170,7 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-bordo: transparent;
     --sc-glow: 0 0 14px 3px rgba(205, 222, 240, 0.6);
     --sc-img: linear-gradient(135deg, rgba(235, 242, 250, 0.4), rgba(150, 165, 180, 0.12) 55%, rgba(235, 242, 250, 0.3)), var(--sc-pallini);
-    --sc-dim: 100% 100%, 11px 11px;
+    --sc-dim: 100% 100%, var(--sc-pallini-dim);
     --sc-rep: no-repeat, repeat;
     --sc-ring-on: "";
     --sc-ring:
@@ -198,7 +202,7 @@ html.app-shell [data-stile-card] .pal-pedana {
         linear-gradient(105deg, transparent 18%, rgba(255, 0, 140, 0.34) 30%, rgba(255, 230, 0, 0.3) 38%, rgba(0, 255, 170, 0.34) 46%, rgba(0, 160, 255, 0.34) 54%, rgba(190, 0, 255, 0.3) 62%, transparent 74%),
         linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)),
         var(--sc-pallini);
-    --sc-dim: 300% 100%, 100% 100%, 11px 11px;
+    --sc-dim: 300% 100%, 100% 100%, var(--sc-pallini-dim);
     --sc-rep: no-repeat, no-repeat, repeat;
     --sc-anim: sc-olo 3s ease-in-out infinite;
     --sc-ring-on: "";
@@ -279,7 +283,7 @@ html.app-shell [data-stile-card] .pal-pedana {
 /* cornici luminose: una per colore di aura. Un tubo al neon (il bordo scuro, la linea accesa, l'alone), la luce che lo percorre ogni tanto e il respiro dell'alone */
 [data-stile-card^="card-bagliore-"] {
     --sc-img: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 52%), var(--sc-pallini);
-    --sc-dim: 100% 100%, 11px 11px;
+    --sc-dim: 100% 100%, var(--sc-pallini-dim);
     --sc-rep: no-repeat, repeat;
     --sc-anim: sc-pulsa 2.6s ease-in-out infinite alternate;
     --sc-ring-on: "";

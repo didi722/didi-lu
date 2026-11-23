@@ -219,14 +219,19 @@ test('simulatore: il riquadro col nome ha la cornice del giocatore (il nome che 
     assert.match(v, /@keyframes vs-aura-arcobaleno/);
 });
 
-test('cornici senza motivo proprio: tengono i pallini semplici sullo sfondo (non lo lasciano vuoto); chi ha un motivo suo lo usa', () => {
+test('cornici senza motivo proprio: tengono i pallini che la card ha già (e solo quelli: una card liscia resta liscia); chi ha un motivo suo lo usa', () => {
     const css = docs('stile-card.css').replace(/\/\*[\s\S]*?\*\//g, '');
-    assert.match(css, /--sc-pallini: radial-gradient\(rgba\(0, 0, 0, 0\.13\) 1\.4px, transparent 1\.7px\);/);
-    assert.match(css, /background-image: var\(--sc-img, var\(--sc-pallini\)\) !important;\s*background-size: var\(--sc-dim, 11px 11px\) !important;/, 'di base i pallini');
+    assert.match(css, /--sc-pallini: none;\s*--sc-pallini-dim: 11px 11px;\s*background-image: var\(--sc-img, var\(--sc-pallini\)\) !important;\s*background-size: var\(--sc-dim, var\(--sc-pallini-dim\)\) !important;/, 'di base niente');
+    assert.match(css, /:root :is\(\.trainer-card, \.season-card, \.palm-card\)\[data-stile-card\] \{ --sc-pallini: radial-gradient\(rgba\(0, 0, 0, 0\.13\) 1\.4px, transparent 1\.7px\); \}/, 'le card coi pallini');
+    assert.match(css, /:root \.sd-team\[data-stile-card\] \{ --sc-pallini: radial-gradient\(rgba\(0, 0, 0, 0\.16\) 1\.2px, transparent 1\.5px\); --sc-pallini-dim: 7px 7px; \}/);
+    // i pallini che la card ha davvero (showdown.css, nb-pagine.css, style-palmares.css)
+    assert.match(docs('nb-pagine.css'), /\.season-card \{[^}]*radial-gradient\(rgba\(0, 0, 0, \.13\) 1\.4px/);
+    assert.match(docs('style-palmares.css'), /\.palm-card \{[^}]*radial-gradient\(rgba\(0, 0, 0, \.13\) 1\.4px/);
+    assert.match(docs('showdown.css'), /\.sd-team \{[^}]*radial-gradient\(rgba\(0, 0, 0, \.16\) 1\.2px/);
     for (const id of ['card-oro', 'card-argento', 'card-olografica']) {
         const i = css.indexOf(`[data-stile-card="${id}"] {`), b = css.slice(i, css.indexOf('}', i));
         assert.match(b, /var\(--sc-pallini\)/, `${id}: il suo riflesso sopra i pallini`);
-        assert.match(b, /--sc-dim: [^;]*11px 11px;/, id);
+        assert.match(b, /--sc-dim: [^;]*var\(--sc-pallini-dim\);/, id);
     }
     const g = css.slice(css.indexOf('[data-stile-card^="card-bagliore-"] {')); assert.match(g.slice(0, g.indexOf('}')), /var\(--sc-pallini\)/, 'anche le luminose');
     assert.match(css, /@keyframes sc-olo \{ 0%, 12% \{ background-position: 140% 0, 0 0, 0 0; \} 100% \{ background-position: -40% 0, 0 0, 0 0; \} \}/, 'la luce scorre, i pallini no');
