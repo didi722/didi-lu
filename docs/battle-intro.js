@@ -1,10 +1,10 @@
 // =====================================================
-// INTRO "VS" — prima di ogni set del simulatore (CPU, amichevoli, stagioni ufficiali)
+// INTRO "VS" (senza la scritta: al centro il punteggio) — prima di ogni set del simulatore (CPU, amichevoli, stagioni ufficiali)
 //
 // Parte dalla schermata a due colori già disegnata dietro il tavolo (style-versus.css, vestiVersus in battle-ui.js) e la mette sopra a tutto:
 //   1. le due metà (il colore, il motivo e il nome gigante di ciascun allenatore) scivolano dai lati e si incontrano sulla diagonale nera;
 //   2. gli avatar entrano dal loro lato, ognuno con il tag del nome sopra la testa;
-//   3. in centro, sulla riga nera, compare "VS" e sotto un tabellone: nelle stagioni match, set e punteggio; contro la CPU il numero della battaglia e la
+//   3. in centro, sulla riga nera, compare il punteggio (niente scritta "VS") e sotto un tabellone: nelle stagioni match, set e punteggio; contro la CPU il numero della battaglia e la
 //      serie; nelle amichevoli (se sono al meglio di più set) set e punteggio;
 //   4. la diagonale si apre: le due metà escono ai lati e gli avatar scivolano al loro posto sullo sfondo, esattamente dove stanno ora.
 // Parte prima che la partita sia pronta e ne copre i caricamenti: la diagonale si apre solo quando la pagina lo dice (`attesa`), non prima del tempo fisso e non oltre
@@ -85,14 +85,14 @@
             const sd = c.showdown ? `MATCH SCORE ${trat(num(c.showdown.sx), num(c.showdown.dx))}` : '';       // sempre, anche 0 – 0: match, punteggio dei match, set e punteggio dei set
             return {
                 etichetta: `MATCH ${c.match || 1}/${c.matchTotali || 3}`,
-                punteggio: c.setTotali > 1 ? trat(num(punti.sx), num(punti.dx)) : null,
+                punteggio: trat(num(punti.sx), num(punti.dx)),
                 righe: con([setRiga, sd], formato)
             };
         }
-        // amichevole: una partita sola non ha né set né punteggio da dire
+        // amichevole: il punteggio (dei set) sta sempre al centro, anche se è una partita sola (0 – 0)
         return {
             etichetta: 'FRIENDLY MATCH',
-            punteggio: c.setTotali > 1 ? trat(num(punti.sx), num(punti.dx)) : null,
+            punteggio: trat(num(punti.sx), num(punti.dx)),
             righe: con([setRiga], formato)
         };
     }
@@ -148,15 +148,6 @@
 
     // ---------------------------------------------------------------- disegno
     const pausa = ms => new Promise(ok => setTimeout(ok, ms));
-    const IMMAGINE_VS = 'immagini/app/seasons-vs.webp';        // il VS in 3D che usa anche l'app (Seasons); se non si carica resta la scritta
-    let immagineVs = null;                                       // { img, pronta: Promise<boolean> }: si carica una volta sola
-    function caricaImmagineVs(win) {
-        if (immagineVs) return immagineVs;
-        const img = new win.Image();
-        const pronta = new Promise(ok => { img.onload = () => ok(true); img.onerror = () => ok(false); });
-        img.src = IMMAGINE_VS;
-        return (immagineVs = { img, pronta });
-    }
 
     /** Si può fare? Non nell'app (lì lo sfondo non c'è), non a pagina nascosta, non con "riduci movimento", non senza Web Animations */
     function puoRiprodurre(win) {
@@ -210,12 +201,9 @@
         if (win.__introVs) win.__introVs.termina(true);
         // gli avatar devono essere già caricati: servono le loro misure (di solito lo sono da un pezzo; al primo set ci può voler un attimo)
         const immagini = dati ? dati.map(l => l.avatar).filter(Boolean) : Array.from(sfondo.querySelectorAll('.vs-avatar'));
-        // (e il VS in immagine: se manca o tarda, resta la scritta)
-        const vs = typeof win.Image === 'function' ? caricaImmagineVs(win) : null;
-        const pronte = immagini.every(i => i.complete) && (!vs || vs.img.complete);
+        const pronte = immagini.every(i => i.complete);
         if (pronte) return costruisci(win, opz, sfondo);
         const caricate = immagini.map(i => (i.complete ? Promise.resolve() : new Promise(ok => { i.addEventListener('load', ok, { once: true }); i.addEventListener('error', ok, { once: true }); })));
-        if (vs) caricate.push(vs.pronta);
         return Promise.race([Promise.all(caricate), pausa(1500)]).then(() => costruisci(win, opz, sfondo));
     }
 
@@ -303,23 +291,16 @@
 
         // il VS sulla riga nera e il tabellone sotto
         const centro = elemento(doc, 'div', 'vi-centro');
-        const vs = elemento(doc, 'div', 'vi-vs');
-        vs.appendChild(elemento(doc, 'span', 'vi-vs-testo', 'VS'));
-        if (immagineVs && immagineVs.img.complete && immagineVs.img.naturalWidth > 0) {
-            const img = doc.createElement('img');
-            img.className = 'vi-vs-img'; img.alt = ''; img.draggable = false; img.src = IMMAGINE_VS;
-            vs.appendChild(img);
-            vs.classList.add('ha-img');         // il testo resta solo di ripiego
-        }
+        // niente "VS": al centro, grande, c'è il punteggio (le palestre non ne hanno e restano col solo tabellone)
+        const vs = testi.punteggio ? elemento(doc, 'div', 'vi-vs', testi.punteggio) : null;
         const tabellone = elemento(doc, 'div', 'vi-tabellone');
         if (testi.etichetta) tabellone.appendChild(elemento(doc, 'div', 'vi-et', testi.etichetta));
-        if (testi.punteggio) tabellone.appendChild(elemento(doc, 'div', 'vi-pt', testi.punteggio));
         if (testi.righe && testi.righe.length) {
             const righe = elemento(doc, 'div', 'vi-righe');
             testi.righe.forEach(t => righe.appendChild(elemento(doc, 'span', '', t)));
             tabellone.appendChild(righe);
         }
-        centro.appendChild(vs);
+        if (vs) centro.appendChild(vs);
         if (tabellone.childNodes.length) centro.appendChild(tabellone);
         radice.appendChild(centro);
         const lampo = elemento(doc, 'div', 'vi-lampo');
@@ -366,7 +347,7 @@
             if (entrata && p.img && win.EntrateVs) win.EntrateVs.suona(entrata, { doc, ancora: p.ancora, corpo: p.corpo, img: p.img, dir: lati[i].dir, h: lati[i].altezza * ingr, A, t0: T.ritardoAvatar + T.entraAvatar });
         });
         // 3. il VS e il tabellone
-        A(vs, { scale: [3.2, 0.9, 1], rotate: ['-16deg', '-3deg', '-4deg'], opacity: [0, 1, 1], offset: [0, 0.62, 1] }, { duration: T.vs, delay: T.ritardoVs, easing: CURVE.pop });
+        if (vs) A(vs, { scale: [3.2, 0.9, 1], rotate: ['-16deg', '-3deg', '-4deg'], opacity: [0, 1, 1], offset: [0, 0.62, 1] }, { duration: T.vs, delay: T.ritardoVs, easing: CURVE.pop });
         A(tabellone, { translate: ['0 46px', '0 0'], opacity: [0, 1] }, { duration: T.tabellone, delay: T.ritardoTabellone, easing: CURVE.entra });
         // 3b. dopo il tempo fisso, se la partita non è ancora pronta, tutto resta in vita: il VS pulsa piano e gli avatar ondeggiano
         const oscillazioni = [];
@@ -375,7 +356,7 @@
             animazioni.push(a);
             oscillazioni.push({ e, a });
         };
-        O(vs, { scale: [1, 1.06] }, { duration: 700 });
+        if (vs) O(vs, { scale: [1, 1.06] }, { duration: 700 });
         personaggi.forEach((p, i) => O(p.corpo, { rotate: ['-1.2deg', '1.2deg'] }, { duration: 1100 + i * 140 }));
 
         // ---- fine, o salto ----

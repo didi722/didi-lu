@@ -143,13 +143,13 @@ const riepilogo = (stile) => {
     };
 };
 
-test('riepilogo di stagione: il campione, le righe della classifica e i premi portano la cornice di chi li ha (solo sul sito, e solo con un id fatto come si deve)', () => {
+test('riepilogo di stagione: il campione e le righe della classifica portano la cornice di chi la possiede (premi, MVP e Dream Team no) (solo sul sito, e solo con un id fatto come si deve)', () => {
     assert.equal(conta(R.html(riepilogo('card-stelle')), /data-stile-card/g), 0, 'di base niente: l\'app e l\'immagine da condividere hanno il loro aspetto');
     const h = R.html(riepilogo('card-stelle'), { cornici: true });
     assert.match(h, /<section class="rs-b rs-campione rs-s12" data-stile-card="card-stelle" style="--c:#aa00cc">/);
     assert.match(h, /<a class="cl-riga cl-primo" data-stile-card="card-stelle" href="/);
-    assert.match(h, /<article class="rs-premio" data-stile-card="card-stelle" style="--c:#aa00cc">/);
-    assert.equal(conta(h, /data-stile-card/g), 3, 'Bea non ne ha una: la sua riga resta com\'era');
+    assert.match(h, /<article class="rs-premio" style="--c:#aa00cc">/, 'i premi (Awards) non hanno la cornice');
+    assert.equal(conta(h, /data-stile-card/g), 2, 'campione e riga di Ada; Bea non ne ha una e i premi non la portano');
     assert.equal(conta(R.html(riepilogo(CATTIVO), { cornici: true }), /data-stile-card/g), 0);
     const modulo = docs('riepilogo-stagione.js');
     assert.match(modulo, /corpo\.innerHTML = html\(riep, \{ gif, cornici: !doc\.documentElement\.classList\.contains\('app-shell'\) \}\);/, 'nell\'app niente cornici');
@@ -165,9 +165,9 @@ test('stile-card.css: le card che hanno già ::before (la linguetta dello stato)
     const deco = css.match(/:root :is\(([^)]*)\)\[data-stile-card\]::before \{/)[1].split(',').map(x => x.trim());
     assert.deepEqual(tutte.filter(x => !deco.includes(x)), ['.season-card', '.palm-card'], 'la linguetta FINISHED / LIVE NOW sta in ::before');
     assert.ok(docs('nb-pagine.css').includes('body.pg-index .season-card::before') && docs('style-palmares.css').includes('.palm-card::before'), 'è davvero così');
-    for (const c of ['.ms-lato', '.sd-team', '.sd-lato', '.hof-voce', '.carta-teams', '.rs-campione', '.rs-premio']) assert.ok(deco.includes(c) && tutte.includes(c), c);
+    for (const c of ['.ms-lato', '.sd-team', '.sd-lato', '.hof-voce', '.carta-teams', '.rs-campione', '.format-nb-leader-box']) assert.ok(deco.includes(c) && tutte.includes(c), c);
     // la riga dei record e il premio non hanno una posizione loro: gli strati ci si ancorano
-    assert.match(css, /:root :is\(\.hof-voce, \.rs-premio, \.rs-fcard\)\[data-stile-card\] \{ position: relative; \}/);
+    assert.doesNotMatch(css, /\.rs-premio|\.rs-fcard|\.rs-mvp/, 'premi, MVP e Dream Team del riepilogo non hanno la cornice');
     // chi ha perso è grigio: con la cornice si spegne il contenuto, non la card
     assert.match(css, /:root \.ms-perde\[data-stile-card\] \{ filter: none; \}\s*:root \.ms-perde\[data-stile-card\] > \* \{ filter: grayscale\(0\.8\); \}/);
     assert.match(docs('match-settimana.css'), /\.ms-perde \{[^}]*filter: grayscale\(\.8\);/, 'e senza cornice è come prima');
@@ -177,7 +177,7 @@ test('stile-card.css: le card che hanno già ::before (la linguetta dello stato)
     assert.match(css, /:root \.rs-righe \{ gap: calc\(18 \* var\(--rs-u, 1\)\); \}/);
 });
 
-test('Pokémon: le card di Stats, MVP e Dream Team (Hall of Fame e riepilogo) portano la cornice del loro allenatore; mai nel Box', () => {
+test('Pokémon: le card di Stats e quelle MVP / Dream Team della Hall of Fame portano la cornice del loro allenatore; mai nel Box né nel riepilogo', () => {
     const giocatori = { ada: { color: '#aa00cc', stileCard: 'card-oro' }, bea: { color: '#000', stileCard: CATTIVO } };
     const h = H.htmlStagioni([{ stagione: 's1', nome: 'S1', data: '', mvp: [{ specie: 'Mew', player: 'Ada', team: 'T' }], dream: [{ specie: 'Mew', player: 'Ada', team: 'T', formato: 'OU' }, { specie: 'Eevee', player: 'Bea', team: 'U', formato: 'OU' }] }], { giocatori });
     assert.equal(conta(h, /<li class="hof-membro" data-stile-card="card-oro"/g), 2, 'MVP e Dream Team di Ada; quello di Bea (valore non valido) no');
@@ -186,14 +186,15 @@ test('Pokémon: le card di Stats, MVP e Dream Team (Hall of Fame e riepilogo) po
     rp.mvp = { specie: 'Mew', team: 'T', player: 'Ada', colore: '#aa00cc', stileCard: 'card-stelle', voti: 3 };
     rp.squadra = [{ formato: 'OU', posto: 1, specie: 'Mew', team: 'T', player: 'Ada', colore: '#aa00cc', stileCard: 'card-stelle', koFatti: 1, set: 1 }];
     const x = R.html(rp, { cornici: true, gif: s => s });
-    assert.match(x, /<section class="rs-b rs-mvp rs-s4" data-stile-card="card-stelle"/);
-    assert.match(x, /<div class="rs-fcard" data-stile-card="card-stelle"/);
+    assert.match(x, /<section class="rs-b rs-mvp rs-s4"/);
+    assert.match(x, /<div class="rs-fcard"/);
+    assert.equal(conta(x, /rs-mvp[^>]*data-stile-card|rs-fcard[^>]*data-stile-card/g), 0, 'MVP e Dream Team del riepilogo: niente cornice');
     assert.equal(conta(R.html(rp, { gif: s => s }), /data-stile-card/g), 0, 'senza cornici (app) nulla');
     const m = docs('riepilogo-stagione.js');
     assert.match(m, /stileCard: \(proprietario && proprietario\.stileCard\) \|\| ''/);
     assert.match(m, /stileCard: \(\(colori\.get\(idDi\(m\.player\)\) \|\| \{\}\)\.stileCard\) \|\| ''/);
     const css = docs('stile-card.css').replace(/\/\*[\s\S]*?\*\//g, '');
-    for (const c of ['.carta-pokemon', '.hof-membro', '.rs-mvp', '.rs-fcard']) assert.ok(css.includes(c), c);
+    for (const c of ['.carta-pokemon', '.hof-membro']) assert.ok(css.includes(c), c);
     assert.ok(!css.includes('.carta-usage'), 'le schede di uso di una specie no');
     for (const f of ['box.html', 'box-team.css', 'box-vista.css']) assert.doesNotMatch(docs(f), /data-stile-card/, f);
 });
@@ -208,7 +209,7 @@ test('simulatore: il riquadro col nome ha la cornice del giocatore (il nome che 
     assert.match(docs('battle.html'), /style-versus\.css">\s*<link rel="stylesheet" href="stile-card\.css">/);
     const css = docs('stile-card.css');
     assert.match(css, /\.sd-lato, \.lato-nome, \.carta-pokemon/);
-    assert.match(css, /:root \.lato-nome\[data-stile-card\] \{ overflow: visible; \}/);
+    assert.match(css, /:root :is\(\.lato-nome, \.format-nb-leader-box\)\[data-stile-card\] \{ overflow: visible; \}/);
     // l'aura: sullo sfondo "sfida", sul compagno di palestra e nell'intro VS (che copia l'attributo dall'avatar dello sfondo)
     const ui = docs('battle-ui.js');
     assert.equal((ui.match(/'data-aura': (t|tema)\.aura \? (t|tema)\.aura\.id : null, style: (t|tema)\.aura/g) || []).length, 2, 'i due avatar grandi');
@@ -276,5 +277,30 @@ test('liste fitte (classifica a lato, tabella estesa, righe dello showdown): pi�
         assert.equal(/--sc-glow2:/.test(b), /--sc-glow2-lieve:/.test(b), `${nome}: anche il secondo passo`);
     }
     const oro = css.slice(css.indexOf('[data-stile-card="card-bagliore-oro"] {')); 
-    assert.match(oro.slice(0, oro.indexOf('}')), /--sc-glow-lieve: 0 0 0 1\.5px #fff3b8, 0 0 0 3\.5px #ffcc33, 0 0 4px 2px #ffcc33, 0 0 11px 3px rgba\(255, 204, 51, 0\.48\), inset 0 0 16px 1px/, 'la linea al neon resta intera, cambia l\'alone');
+    assert.match(oro.slice(0, oro.indexOf('}')), /--sc-glow-lieve: 0 0 0 1\.5px #fff3b8, 0 0 0 3\.5px #ffcc33, 0 0 3px 1px rgba\(255, 204, 51, 0\.5\), 0 0 7px 2px rgba\(255, 204, 51, 0\.2\), inset 0 0 12px 0/, 'la linea al neon resta intera, cambia l\'alone');
+});
+
+// ---------------------------------------------------------------- Formats (leader), showdown (angoli) e replay (aura)
+test('Formats: il riquadro del leader ha la cornice del suo allenatore (e non la taglia)', () => {
+    const f = docs('formats.html');
+    assert.match(f, /const playerStile = window\.Cosmetici \? Cosmetici\.valido\(info\.stileCard, 'card'\) : '';/);
+    assert.match(f, /<div class="format-nb-leader-box[^"]*"\$\{format\.hasLeader && format\.stileCard \? ` data-stile-card="\$\{format\.stileCard\}"` : ''\}/);
+    assert.match(docs('stile-card.css'), /\.format-nb-leader-box\)\[data-stile-card\] \{ overflow: visible; \}/);
+});
+
+test('showdown: i riquadri delle squadre con una cornice ad anello non hanno bordo nero (niente nero negli angoli)', () => {
+    assert.match(docs('stile-card.css'), /#sd-modal-overlay \.sd-team\[data-stile-card\] \{ border-color: var\(--sc-bordo, var\(--nb-ink, #000\)\); \}/);
+});
+
+test('replay da PC: se un allenatore ha un\'aura, compare intorno al suo avatar sullo sfondo del replay (anche l\'arcobaleno)', () => {
+    const m = docs('matches.html'), css = docs('finestre.css');
+    assert.match(m, /const aura = c && c\.tipo === 'aura' && \/\^aura-\[a-z-\]\{2,30\}\$\/\.test\(String\(c\.id\)\)/);
+    assert.match(m, /fuori\[k\] = \{ avatar: info\.avatar \|\| '', tema, aura \};/);
+    assert.match(m, /function creaSfondoVersus\(avatar1, avatar2, c1, c2, temi = \[\], aure = \[\]\)/);
+    assert.match(m, /\[\[avatar1, 'rv-sx', aure\[0\]\], \[avatar2, 'rv-dx', aure\[1\]\]\]/);
+    assert.match(m, /img\.setAttribute\('data-aura', aura\.id\); img\.style\.setProperty\('--pal-aura', aura\.colore\);/);
+    assert.match(m, /\[aspetto\(sdData\.info\.player1\)\.aura, aspetto\(sdData\.info\.player2\)\.aura\]\);/);
+    assert.match(css, /\.rv-avatar\[data-aura\] \{ filter: drop-shadow\(0 0 8px var\(--pal-aura, transparent\)\)/);
+    assert.match(css, /\.rv-avatar\[data-aura="aura-arcobaleno"\] \{ animation: rv-aura-arcobaleno 4s linear infinite; \}/);
+    assert.match(css, /@keyframes rv-aura-arcobaleno/);
 });
