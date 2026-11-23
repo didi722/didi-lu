@@ -48,3 +48,18 @@ html.app .vs-sfondo { display: none; }
 @media (max-width: 720px) {
     .vs-avatar { height: 40vh; }
 }
+
+/* l'aura comprata nello Shop sull'avatar grande (sfondo "sfida" e schermata VS): un alone ampio come sulla pagina, nel colore dell'aura; l'arcobaleno cambia colore */
+.vs-avatar[data-aura], .vi-avatar[data-aura] {
+    filter: drop-shadow(0 0 8px var(--pal-aura, transparent)) drop-shadow(0 0 26px var(--pal-aura, transparent)) drop-shadow(0 0 54px var(--pal-aura, transparent)) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3));
+}
+.vs-avatar[data-aura="aura-arcobaleno"], .vi-avatar[data-aura="aura-arcobaleno"] { animation: vs-aura-arcobaleno 4s linear infinite; }
+@keyframes vs-aura-arcobaleno {
+    0%, 100% { filter: drop-shadow(0 0 8px #ff3b3b) drop-shadow(0 0 26px #ff3b3b) drop-shadow(0 0 54px #ff3b3b) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3)); }
+    17% { filter: drop-shadow(0 0 8px #ffb02e) drop-shadow(0 0 26px #ffb02e) drop-shadow(0 0 54px #ffb02e) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3)); }
+    33% { filter: drop-shadow(0 0 8px #f4e03a) drop-shadow(0 0 26px #f4e03a) drop-shadow(0 0 54px #f4e03a) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3)); }
+    50% { filter: drop-shadow(0 0 8px #3be07a) drop-shadow(0 0 26px #3be07a) drop-shadow(0 0 54px #3be07a) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3)); }
+    67% { filter: drop-shadow(0 0 8px #3ba8ff) drop-shadow(0 0 26px #3ba8ff) drop-shadow(0 0 54px #3ba8ff) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3)); }
+    83% { filter: drop-shadow(0 0 8px #b04dff) drop-shadow(0 0 26px #b04dff) drop-shadow(0 0 54px #b04dff) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3)); }
+}
+@media (prefers-reduced-motion: reduce) { .vs-avatar[data-aura="aura-arcobaleno"], .vi-avatar[data-aura="aura-arcobaleno"] { animation: none; } }

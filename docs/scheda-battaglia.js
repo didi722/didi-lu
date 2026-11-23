@@ -92,6 +92,7 @@
                 const lista = BadgeAllenatore ? BadgeAllenatore.calcola(risultato, chiave) : null;
                 out[lato] = {
                     id: chiave, nome: info.name || chiave, colore: info.color || '',
+                    stileCard: /^card-[a-z-]{2,30}$/.test(String(info.stileCard || '')) ? String(info.stileCard) : '',      // la cornice comprata nello Shop (stile-card.css)
                     titolo: titoloVisibile(info, PaginaPubblica),
                     elo: unranked ? 'N/A' : Number(individuali.ranking) || 1000,
                     posizione,
