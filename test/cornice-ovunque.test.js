@@ -172,9 +172,9 @@ test('stile-card.css: le card che hanno già ::before (la linguetta dello stato)
     assert.match(css, /:root \.ms-perde\[data-stile-card\] \{ filter: none; \}\s*:root \.ms-perde\[data-stile-card\] > \* \{ filter: grayscale\(0\.8\); \}/);
     assert.match(docs('match-settimana.css'), /\.ms-perde \{[^}]*filter: grayscale\(\.8\);/, 'e senza cornice è come prima');
     // più spazio tra le card con la cornice, che sporge dal bordo
-    assert.match(css, /:root \.hof-record ol:has\(> \[data-stile-card\]\) \{ gap: 18px; \}/);
-    assert.match(css, /:root \.ms-scontro:has\(> \[data-stile-card\]\) \{ gap: 18px; \}/);
-    assert.match(css, /:root \.rs-righe:has\(> \[data-stile-card\]\) \{ gap: calc\(18 \* var\(--rs-u, 1\)\); \}/);
+    assert.match(css, /:root \.hof-record ol \{ gap: 18px; \}/);
+    assert.match(css, /:root \.ms-scontro \{ gap: 18px; \}/);
+    assert.match(css, /:root \.rs-righe \{ gap: calc\(18 \* var\(--rs-u, 1\)\); \}/);
 });
 
 test('Pokémon: le card di Stats, MVP e Dream Team (Hall of Fame e riepilogo) portano la cornice del loro allenatore; mai nel Box', () => {
@@ -264,9 +264,9 @@ test('showdown: con la cornice il team non tiene l\'ombra piena del tema (vincit
 test('liste fitte (classifica a lato, tabella estesa, righe dello showdown): più spazio tra le righe con la cornice e un alone più corto', () => {
     const css = docs('stile-card.css').replace(/\/\*[\s\S]*?\*\//g, '');
     assert.match(css, /:root :is\(\.cl-riga, \.cl-tab-riga, \.sd-lato\)\[data-stile-card\] \{ --sc-glow: var\(--sc-glow-lieve\); --sc-glow2: var\(--sc-glow2-lieve, var\(--sc-glow-lieve\)\); \}/);
-    assert.match(css, /:root \.cl-laterale \.rank-riga:has\(> \[data-stile-card\]\) \{ margin: 11px 0 22px; \}/);
-    assert.match(css, /:root \.cl-pile:has\(> \[data-stile-card\]\) \{ gap: 22px; \}/);
-    assert.match(css, /\.showdown-summary-card \.sd-lato\[data-stile-card\] \{ margin-bottom: 10px; \}/);
+    assert.match(css, /:root \.cl-laterale \.rank-riga \{ margin: 11px 0 22px; \}/);
+    assert.match(css, /:root \.cl-pile \{ gap: 22px; \}/);
+    assert.match(css, /\.showdown-summary-card \.sd-lato \+ \.sd-lato \{ margin-top: 10px; \}/);
     // ogni stile con un alone ha la sua versione corta: stessi anelli pieni, alone con meno sfocatura e meno spread
     const blocchi = css.split('}').filter(b => /--sc-glow:/.test(b) && !/var\(--sc-glow-lieve\)/.test(b));
     assert.ok(blocchi.length >= 20);
