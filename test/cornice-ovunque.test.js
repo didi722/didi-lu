@@ -40,7 +40,7 @@ test('Match of the week: la home legge la cornice dei due allenatori con il rest
     assert.match(home, /<link rel="stylesheet" href="match-settimana\.css">\n<link rel="stylesheet" href="stile-card\.css">/, 'dopo i fogli della pagina');
     assert.match(home, /<script src="cosmetici\.js"><\/script>/);
     assert.match(home, /const stileCardValido = v => \(window\.Cosmetici \? Cosmetici\.valido\(v, 'card'\) : ''\);/);
-    assert.match(home, /return \{ colore: info\.color \|\| '', avatar: info\.avatar \|\| '', stileCard: stileCardValido\(info\.stileCard\), aura: auraComprata\(info\.aura\) \};/);
+    assert.match(home, /return \{ colore: info\.color \|\| '', avatar: info\.avatar \|\| '', stileCard: stileCardValido\(info\.stileCard\) \};/);
 });
 
 // ---------------------------------------------------------------- le card delle stagioni
@@ -99,7 +99,7 @@ test('Hall of Fame, Match of the week: l\'archivio passa la cornice di ogni alle
     let visto = null;
     const finto = { html: (sc, o) => { visto = o.giocatori; return '<banner>'; } };
     H.htmlSettimane([{ titolo: 'T', intervallo: 'I', scelto: { stagione: 's1' } }], { MatchSettimana: finto, giocatori: { ada: { color: '#fff', avatar: 'a.png', stileCard: 'card-oro' }, bea: { color: '#000', stileCard: CATTIVO } } });
-    assert.deepEqual(visto, { ada: { colore: '#fff', avatar: 'a.png', stileCard: 'card-oro', aura: null }, bea: { colore: '#000', avatar: '', stileCard: '', aura: null } });
+    assert.deepEqual(visto, { ada: { colore: '#fff', avatar: 'a.png', stileCard: 'card-oro' }, bea: { colore: '#000', avatar: '', stileCard: '' } });
 });
 
 // ---------------------------------------------------------------- Stats: i team
@@ -238,26 +238,21 @@ test('cornici senza motivo proprio: tengono i pallini che la card ha già (e sol
     for (const id of ['card-puntini', 'card-righe', 'card-scacchi', 'card-pokeball']) { const i = css.indexOf(`[data-stile-card="${id}"] {`); assert.doesNotMatch(css.slice(i, css.indexOf('}', i)), /sc-pallini/, `${id} ha il suo motivo`); }
 });
 
-test('aura comprata: compare sugli avatar della home (card delle stagioni e Match of the week) e della Hall of Fame, solo se ben fatta', () => {
+test('aura comprata: compare sugli avatar della card delle stagioni (home e Hall of Fame) e dei record, non nel Match of the week, solo se ben fatta', () => {
     const buona = { id: 'aura-oro', colore: '#ffcc33' };
-    const h = M.html(set(), { giocatori: { ada: { avatar: 'a.png', aura: buona }, bea: { avatar: 'b.png', aura: { id: 'aura-oro" onclick="x', colore: '#ffcc33' } } } });
-    assert.match(h, /<img class="ms-av" data-aura="aura-oro" style="--pal-aura:#ffcc33" src="a\.png"/);
-    assert.doesNotMatch(h, /onclick/);
-    assert.equal(conta(h, /data-aura/g), 1);
+    const h = M.html(set(), { giocatori: { ada: { avatar: 'a.png', aura: buona } } });
+    assert.doesNotMatch(h, /data-aura/, 'nel Match of the week l\'aura non c\'è');
     const p = P.html([{ stagione: 's1', tipo: 'league', nome: 'S1', data: '2026-10-01', vincitore: 'Ada', stato: 'closed', icona: 'x.png' }], { ada: { name: 'Ada', color: '#aa00cc', avatar: 'a.png', aura: buona } });
     assert.match(p, /<span class="palm-avatar" data-aura="aura-oro" style="--pal-aura:#ffcc33"><img/);
     const r = H.htmlRecords([{ id: 'a', gruppo: 'Trainers', titolo: 'T', voci: [voce({ nome: 'Ada', avatar: 'a.png', idGiocatore: 'ada' })] }], { giocatori: { ada: { avatar: 'a.png', aura: buona } } });
     assert.match(r, /<img class="ms-av" data-aura="aura-oro"/);
-    let visto = null;
-    H.htmlSettimane([{ titolo: 'T', intervallo: 'I', scelto: { stagione: 's1' } }], { MatchSettimana: { html: (sc, o) => { visto = o.giocatori; return ''; } }, giocatori: { ada: { color: '#fff', avatar: 'a', aura: buona } } });
-    assert.deepEqual(visto.ada.aura, buona);
     const home = docs('index.html');
     assert.match(home, /<link rel="stylesheet" href="aura-avatar\.css">/);
     assert.match(home, /const auraComprata = id => \{ const c = window\.Cosmetici && id \? Cosmetici\.perId\(id\) : null; return c && c\.tipo === 'aura'/);
     assert.match(home, /avatarEl\.dataset\.aura = aura\.id; avatarEl\.style\.setProperty\('--pal-aura', aura\.colore\)/);
-    assert.match(home, /aura: auraComprata\(info\.aura\) \};/);
+    assert.doesNotMatch(home, /aura: auraComprata\(info\.aura\)/, 'non nel Match of the week');
     assert.match(docs('palmares.html'), /aura-avatar\.css[\s\S]*cosmetici\.js[\s\S]*hall-of-fame\.js/);
     const css = docs('aura-avatar.css');
-    assert.match(css, /:is\(\.winner-avatar-home, \.palm-avatar, \.ms-av\)\[data-aura\] \{/);
+    assert.match(css, /:is\(\.winner-avatar-home, \.palm-avatar, \.hof-voce \.ms-av\)\[data-aura\] \{/);
     assert.match(css, /@keyframes aura-av-arcobaleno/);
 });
