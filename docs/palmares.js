@@ -18,6 +18,8 @@
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // l'aura comprata nello Shop sull'avatar (aura-avatar.css): { id, colore } ben fatti, mai testo libero
+    const auraDi = a => (a && /^aura-[a-z-]{2,30}$/.test(String(a.id)) && /^#[0-9a-f]{6}$/i.test(String(a.colore)) ? ` data-aura="${a.id}" style="--pal-aura:${a.colore}"` : '');
     const dataIt = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
     // la cornice comprata nello Shop (stile-card.css): solo un id fatto come si deve (viene dal database), mai testo libero
     const stileCard = v => (/^card-[a-z-]{2,30}$/.test(String(v || '')) ? String(v) : '');
@@ -64,7 +66,7 @@
             const chi = chiusa ? v.vincitore : (giocando ? v.capo : '');
             const g = (giocatori || {})[idDi(chi)] || {};
             const cerchio = chi
-                ? (g.avatar ? `<span class="palm-avatar"><img src="${esc(g.avatar)}" alt=""></span>` : `<span class="palm-avatar palm-senza">?</span>`)
+                ? (g.avatar ? `<span class="palm-avatar"${auraDi(g.aura)}><img src="${esc(g.avatar)}" alt=""></span>` : `<span class="palm-avatar palm-senza">?</span>`)
                 : `<span class="palm-avatar palm-senza">?</span>`;
             const segno = chiusa
                 ? `<img src="${esc(v.icona)}" alt="" class="palm-trofeo" onerror="this.src='immagini/season-winner-color.png';this.onerror=null">`
@@ -180,7 +182,8 @@
                 const lb = await db.ref(`seasons/${v.stagione}/leaderboard`).once('value').then(x => x.val()).catch(() => null);
                 v.capo = capoClassifica(lb);
             }));
-            for (const [id, p] of Object.entries(snap.val() || {})) giocatori[idDi(id)] = { name: p && p.info && p.info.name, color: p && p.info && p.info.color, avatar: p && p.info && p.info.avatar, stileCard: stileCard(p && p.info && p.info.stileCard) };
+            const auraComprata = id => { const c = window.Cosmetici && id ? window.Cosmetici.perId(id) : null; return c && c.tipo === 'aura' ? { id: c.id, colore: c.colore } : null; };
+            for (const [id, p] of Object.entries(snap.val() || {})) giocatori[idDi(id)] = { name: p && p.info && p.info.name, color: p && p.info && p.info.color, avatar: p && p.info && p.info.avatar, stileCard: stileCard(p && p.info && p.info.stileCard), aura: auraComprata(p && p.info && p.info.aura) };
         } catch (e) { console.warn('Archive not available:', e); }
         disegna();
         montaSezioni(giocatori);

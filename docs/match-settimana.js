@@ -264,6 +264,8 @@
         return `${d.getUTCDate()} ${MESI[d.getUTCMonth()]}`;
     };
     const COLORE_NEUTRO = '#d9dde6';
+    // l'aura comprata nello Shop sull'avatar (aura-avatar.css): { id, colore } ben fatti, mai testo libero
+    const auraDi = a => (a && /^aura-[a-z-]{2,30}$/.test(String(a.id)) && /^#[0-9a-f]{6}$/i.test(String(a.colore)) ? ` data-aura="${a.id}" style="--pal-aura:${a.colore}"` : '');
     // la cornice comprata nello Shop (stile-card.css): solo un id fatto come si deve (viene dal database), mai testo libero
     const stileCard = v => (/^card-[a-z-]{2,30}$/.test(String(v || '')) ? String(v) : '');
     const FRECCIA = { '-1': 'M16 3 L7 12 L16 21', '1': 'M8 3 L17 12 L8 21' };
@@ -277,7 +279,7 @@
      *   nella riga: i due allenatori uno di fronte all'altro (avatar, nome, i Pokémon portati), in mezzo formato e set, il Pokémon protagonista con il motivo, il replay
      * @param {object} s  il set scelto di una settimana (settimane().elenco[i].scelto)
      * @param {object} extra
-     *   giocatori   { id: { colore, avatar, stileCard } }   (stileCard: la cornice dell'allenatore, sulla sua scheda)
+     *   giocatori   { id: { colore, avatar, stileCard, aura: { id, colore } } }   (stileCard: la cornice dell'allenatore, sulla sua scheda)
      *   gif         gif(specie): l'immagine animata di un Pokémon
      *   settimana   { titolo, intervallo } (etichettaSettimana)
      *   indice, totale  quale settimana è e quante sono: con più di una compaiono le frecce
@@ -300,7 +302,7 @@
             const g = s.giocatori[k], extra = giocatori[g.id] || {};
             const vince = s.vincitore === k;
             const pagina = `public.html?player=${encodeURIComponent(g.nome)}`;
-            const avatar = extra.avatar ? `<img class="ms-av" src="${esc(extra.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>';
+            const avatar = extra.avatar ? `<img class="ms-av"${auraDi(extra.aura)} src="${esc(extra.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>';
             // dell'allenatore resta l'avatar (il nome è nel suggerimento); il tag nero porta il nome del team (senza team, quello dell'allenatore)
             const cornice = stileCard(extra.stileCard);
             return `<div class="ms-lato ms-l${n} ${vince ? 'ms-vince' : 'ms-perde'}"${cornice ? ` data-stile-card="${cornice}"` : ''} style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}" title="${esc(g.nome)} · ${vince ? 'won' : 'lost'}">`

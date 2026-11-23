@@ -32,6 +32,8 @@
     const dataIt = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : String(iso || ''); };
     /** La data di un record, con un punto in cui andare a capo (dopo il mese) se lo spazio tra il nome e il numero è poco: gg/mm/ sopra, aaaa sotto */
     const dataRecord = iso => { const t = esc(dataIt(iso)); return t.replace(/^(\d{1,2}\/\d{1,2}\/)(?=\d)/, '$1<wbr>'); };
+    // l'aura comprata nello Shop sull'avatar (aura-avatar.css): { id, colore } ben fatti, mai testo libero
+    const auraDi = a => (a && /^aura-[a-z-]{2,30}$/.test(String(a.id)) && /^#[0-9a-f]{6}$/i.test(String(a.colore)) ? ` data-aura="${a.id}" style="--pal-aura:${a.colore}"` : '');
     const pagina = nome => `public.html?player=${encodeURIComponent(nome)}`;
     // la cornice comprata nello Shop (stile-card.css): solo un id fatto come si deve (viene dal database), mai testo libero
     const stileCard = v => (/^card-[a-z-]{2,30}$/.test(String(v || '')) ? String(v) : '');
@@ -130,7 +132,7 @@
     // Gli stessi pezzi della home e del riepilogo di stagione: medaglione del Pokémon (.ms-med, colorato da MedaglionePkm), avatar che saltella (.ms-av), tag neri inclinati per i nomi,
     // etichette nere che sporgono dal bordo, banner bianchi (match-settimana.css, stile-palmares.css). Colori, ombre e rotazioni sono quelli del tema di chi guarda (--nb-*).
     const medaglione = (gif, specie) => (gif && specie ? `<span class="ms-med" data-pkm="${esc(specie)}" title="${esc(specie)}"><img src="${esc(gif(specie))}" alt="${esc(specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)"></span>` : '');
-    const avatarDi = av => (av ? `<img class="ms-av" src="${esc(av)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>');
+    const avatarDi = (av, aura) => (av ? `<img class="ms-av"${auraDi(aura)} src="${esc(av)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>');
 
     function htmlRecords(lista, { gif, giocatori = {} } = {}) {
         if (!lista || !lista.length) return '<p class="hof-vuoto">No records yet: they appear as the league plays.</p>';
@@ -142,7 +144,7 @@
             + g.lista.map(rec => `<article class="hof-record"><h4 class="hof-etichetta">${esc(rec.titolo)}</h4>${rec.nota ? `<p class="hof-nota">${esc(rec.nota)}</p>` : ''}<ol>`
                 + rec.voci.map((v, i) => {
                     const av = (giocatori[idDi(v.nome)] || {}).avatar || v.avatar;
-                    const testa = v.specie ? medaglione(gif, v.specie) : (v.avatar !== '' || av ? avatarDi(av) : '');
+                    const testa = v.specie ? medaglione(gif, v.specie) : (v.avatar !== '' || av ? avatarDi(av, (giocatori[v.idGiocatore] || giocatori[idDi(v.nome)] || {}).aura) : '');
                     const nome = v.link ? `<a class="hof-nome" href="${esc(v.link)}">${esc(v.nome)}</a>` : `<span class="hof-nome">${esc(v.nome)}</span>`;
                     // la cornice dell'allenatore sulle schede di allenatori, team e Pokémon
                     const cornice = stileCard((giocatori[v.idGiocatore] || giocatori[idDi(v.nome)] || {}).stileCard);
@@ -173,7 +175,7 @@
         if (!lista || !lista.length) return '<p class="hof-vuoto">No Match of the week yet.</p>';
         if (!MatchSettimana) return '';
         const info = {};
-        for (const [id, g] of Object.entries(giocatori)) info[id] = { colore: g.color || '', avatar: g.avatar || '', stileCard: stileCard(g.stileCard) };
+        for (const [id, g] of Object.entries(giocatori)) info[id] = { colore: g.color || '', avatar: g.avatar || '', stileCard: stileCard(g.stileCard), aura: g.aura || null };
         return `<ol class="hof-settimane">${lista.map(w => `<li class="ms hof-ms">${MatchSettimana.html(w.scelto, { giocatori: info, gif, settimana: { titolo: w.titolo, intervallo: w.intervallo }, totale: 1, da: 'hall-of-fame' })}</li>`).join('')}</ol>`;
     }
 

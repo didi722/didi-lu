@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="nome-scorrevole.css">
 <link rel="stylesheet" href="match-settimana.css">
 <link rel="stylesheet" href="stile-card.css">
+<link rel="stylesheet" href="aura-avatar.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
 <link rel="stylesheet" href="formato-tooltip.css">
@@ -512,6 +513,7 @@ function contaMvpScaduti() {
 // colori e gli avatar dei due allenatori. Il nodo `seasons` si rilegge a ogni cambiamento del database: il banner si ridisegna solo se cambia qualcosa
 // di ciò che mostra, e chi sta guardando una settimana vecchia ci resta.
 // la cornice comprata nello Shop (stile-card.css, cosmetici.js): '' se non c'è o non è una cornice vera
+const auraComprata = id => { const c = window.Cosmetici && id ? Cosmetici.perId(id) : null; return c && c.tipo === 'aura' ? { id: c.id, colore: c.colore } : null; };
 const stileCardValido = v => (window.Cosmetici ? Cosmetici.valido(v, 'card') : '');
 let matchSettimanaBanner = null;
 // `riassunto`: quello salvato dal workflow (matchSettimana: settimane e badge già calcolati, la home non scarica le statistiche dei set); senza, si calcola da `data` (le stagioni con le statistiche)
@@ -525,7 +527,7 @@ async function mostraMatchSettimana(data, riassunto) {
             caricaBadge: riassunto ? null : () => Fiocchi.carica(db),          // i badge dei team e del Pokémon protagonista (le stesse statistiche del Box); nel riassunto ci sono già
             leggiGiocatore: async id => {
                 const info = (await db.ref(`players/${id}/info`).once('value')).val() || {};
-                return { colore: info.color || '', avatar: info.avatar || '', stileCard: stileCardValido(info.stileCard) };
+                return { colore: info.color || '', avatar: info.avatar || '', stileCard: stileCardValido(info.stileCard), aura: auraComprata(info.aura) };
             }
         });
     }
@@ -702,6 +704,8 @@ function caricaStagioniHome() {
                             if (pInfo.avatar && avatarEl) {
                                 if (iconEl) iconEl.style.display = "none";
                                 avatarEl.src = pInfo.avatar;
+                                const aura = auraComprata(pInfo.aura);
+                                if (aura) { avatarEl.dataset.aura = aura.id; avatarEl.style.setProperty('--pal-aura', aura.colore); }      // l'aura comprata nello Shop (aura-avatar.css)
                                 avatarEl.style.display = "block";
                             }
                         }
