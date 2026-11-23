@@ -281,16 +281,13 @@
 
     function htmlColore(presi) {
         const mie = new Set(possedute('colore')), pr = C.prezzoAcquisto('colore', contestoW());
-        // raggruppati per tonalità (dai rossi ai rosa, ogni famiglia dal più chiaro al più scuro): i colori simili stanno vicini; una famiglia di cui hai già tutto non compare
-        const bottoni = C.raggruppaColori(P.PALETTE_FIRMA).map(g => {
-            const dentro = g.colori.map(c => {
-                const K = c.toUpperCase(), id = C.idColore(K);
-                if (!id || mie.has(id)) return '';
-                const altro = presi.colori.has(K) || presoDa(id);
-                const titolo = altro ? `${K} · taken` : `${K} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} coins`}`;
-                return `<button type="button" class="shop-col${altro ? ' is-preso' : ''}${S.scelta && S.scelta.id === id ? ' is-prova' : ''}" style="--c:${esc(K)}" data-ng="prendi" data-tipo="colore" data-id="${id}" data-nome="${esc(K)}" data-c="${esc(K)}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}></button>`;
-            }).join('');
-            return dentro ? `<h5 class="shop-famiglia">${esc(g.nome)}</h5>${dentro}` : '';
+        // tutti in fila, ordinati per tonalità (dai rossi ai rosa, poi bianchi e grigi; ogni famiglia dal più chiaro al più scuro): i colori simili stanno vicini
+        const bottoni = C.raggruppaColori(P.PALETTE_FIRMA).flatMap(g => g.colori).map(c => {
+            const K = c.toUpperCase(), id = C.idColore(K);
+            if (!id || mie.has(id)) return '';
+            const altro = presi.colori.has(K) || presoDa(id);
+            const titolo = altro ? `${K} · taken` : `${K} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} coins`}`;
+            return `<button type="button" class="shop-col${altro ? ' is-preso' : ''}${S.scelta && S.scelta.id === id ? ' is-prova' : ''}" style="--c:${esc(K)}" data-ng="prendi" data-tipo="colore" data-id="${id}" data-nome="${esc(K)}" data-c="${esc(K)}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}></button>`;
         }).join('');
         return `<section class="ng-gruppo"><h3>Signature colour ${conta('colore')}</h3><p>It colours your name, stats and trophy. ${notaCollezione('colore')}</p>${htmlMiei('colore')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4>${barraScelta('colore')}<div class="shop-colori">${bottoni}</div></section>`;
     }

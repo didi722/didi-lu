@@ -101,9 +101,6 @@ html.app-shell { --shop-testo: #fff; }
 .shop-av.is-on { background: var(--nb-giallo, #ffbd44); cursor: default; }
 .shop-av.is-preso, .shop-col.is-preso, .shop-canzone.is-preso { opacity: .35; filter: grayscale(1); cursor: not-allowed; box-shadow: none; }
 .shop-colori { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 9px; padding: 8px 6px 10px; }
-/* il nome di una famiglia di colori (Reds, Blues…): una riga tutta sua sopra i suoi colori */
-.shop-famiglia { grid-column: 1 / -1; margin: 8px 0 -1px; font: 800 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .14em; text-transform: uppercase; opacity: .7; }
-.shop-famiglia:first-child { margin-top: 0; }
 .shop-col { position: relative; box-sizing: border-box; aspect-ratio: 1; cursor: pointer; background: var(--c, #ccc); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
 .shop-col:hover:not(:disabled) { translate: -2px -2px; }
 .shop-col.is-on { outline: 4px solid #fff; outline-offset: -7px; cursor: default; }
