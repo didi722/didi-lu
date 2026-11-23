@@ -26,7 +26,7 @@ test('catalogo: card, sfondi del Box ed entrate hanno campo e prefisso giusti e 
     const regole = leggi('REGOLE-DATABASE.md');
     for (const [campo, prefisso] of [['stileCard', 'card-'], ['sfondoBox', 'box-'], ['effettoEntrata', 'entrata-']]) assert.match(regole, new RegExp(`"${campo}": \\{ "\\.validate": "[^"]*beginsWith\\('${prefisso}'\\)`), campo);
     // le animazioni rispettano chi non le vuole
-    assert.match(card, /@media \(prefers-reduced-motion: reduce\) \{\s*\[data-stile-card\], \[data-stile-card\] \.pal-pedana \{ animation: none !important; \}/);
+    assert.match(card, /@media \(prefers-reduced-motion: reduce\) \{\s*\[data-stile-card\], \[data-stile-card\]::before, \[data-stile-card\]::after, \[data-stile-card\] \.pal-pedana \{ animation: none !important; \}/, 'anche gli strati');
 });
 
 test('Cosmetici.valido: solo gli id del catalogo di quel tipo (un valore scritto a mano nel database non finisce in un attributo)', () => {
@@ -50,7 +50,7 @@ test('le due copie di cosmetici.js (sito e server) sono uguali', () => {
 
 test('stile delle card: una regola sola le applica a Trainers, classifica, Stats e all\'app; l\'attributo lo scrive ogni pagina da un id controllato', () => {
     const css = docs('stile-card.css');
-    assert.match(css, /:root :is\(\.trainer-card, \.cl-riga, \.cl-tab-riga, \.carta-players, \.sc-campione\)\[data-stile-card\] \{/);
+    assert.match(css, /:root :is\(\.trainer-card, \.cl-riga, \.cl-tab-riga, \.carta-players, \.player-rank-row, \.sc-campione\)\[data-stile-card\] \{/);
     assert.match(css, /html\.app-shell \[data-stile-card\] \.pal-pedana \{/);
     assert.doesNotMatch(css.slice(css.indexOf(':root :is('), css.indexOf('}', css.indexOf(':root :is('))), /box-shadow:[^;]*!important/, 'senza !important: le animazioni vincono');
     // Trainers (browser)
@@ -254,4 +254,106 @@ test('Zen: l\'ensō è un tratto di pennello (sagoma con spessore che cala, seto
     // la sagoma: spessore che cala lungo il tratto
     assert.match(js, /1 - 0\.8 \* Math\.pow\(\(f - 0\.05\) \/ 0\.95, 1\.25\)/);
     assert.match(docs('stile-card.css'), /--sc-anim: sc-olo 3s ease-in-out infinite;/, 'il foil olografico passa ogni 3 secondi');
+});
+
+// ---------------------------------------------------------------- la cornice appena comprata si vede subito
+
+test('cornice appena comprata: lo Shop svuota la cache tra le pagine (db-leggero.js ricorda players per 3 minuti: Trainers, Stats e Formats mostravano ancora la vecchia)', async () => {
+    const N = require('../docs/negozio.js');
+    const finta = (risposta, extra = {}) => {
+        const chiamate = [];
+        const win = Object.assign({
+            firebase: { functions() {}, app: () => ({ functions: regione => ({ httpsCallable: nome => async dati => { chiamate.push({ regione, nome, dati }); return { data: risposta }; } }) }) },
+            DbLeggero: { svuotaCache: () => { chiamate.push('svuotata'); } }
+        }, extra);
+        return { win, chiamate };
+    };
+    const riuscita = finta({ ok: true, saldo: 100 });
+    assert.deepEqual(await N.chiama(riuscita.win, 'acquistaCosmetico', { id: 'card-oro' }), { ok: true, saldo: 100 });
+    assert.deepEqual(riuscita.chiamate.map(c => c.nome || c), ['acquistaCosmetico', 'svuotata'], 'prima il server, poi la cache');
+    const rifiutata = finta({ ok: false, motivo: 'poor' });
+    assert.equal((await N.chiama(rifiutata.win, 'acquistaCosmetico', { id: 'card-oro' })).motivo, 'poor');
+    assert.ok(!rifiutata.chiamate.includes('svuotata'), 'se non è cambiato niente la cache resta');
+    // senza il modulo, o con un modulo che si rompe, la risposta arriva lo stesso
+    assert.equal((await N.chiama(finta({ ok: true }, { DbLeggero: undefined }).win, 'equipaCosmetico', {})).ok, true);
+    assert.equal((await N.chiama(finta({ ok: true }, { DbLeggero: { svuotaCache() { throw new Error('scheda piena'); } } }).win, 'equipaCosmetico', {})).ok, true);
+});
+
+test('cache tra le pagine: svuotaCache toglie anche i colori dei giocatori (un colore comprato nello Shop compare subito altrove)', () => {
+    const D = require('../docs/db-leggero.js');
+    const memoria = new Map([['colori-giocatori-v1', '{"t":1,"v":{}}'], ['dbl-cache-v1:nodo:players', '1|{}'], ['altro', 'resta']]);
+    const scheda = { get length() { return memoria.size; }, key: i => [...memoria.keys()][i], getItem: k => (memoria.has(k) ? memoria.get(k) : null), setItem: (k, v) => memoria.set(k, v), removeItem: k => memoria.delete(k) };
+    D.svuotaCache({ radice: { sessionStorage: scheda } });
+    assert.deepEqual([...memoria.keys()], ['altro']);
+});
+
+test('cornice appena comprata: lo Shop carica db-leggero.js, e il salvataggio della propria pagina svuota la cache', () => {
+    const shop = docs('shop.html');
+    assert.ok(shop.indexOf('<script src="db-leggero.js"></script>') > 0, 'lo Shop ha il modulo');
+    assert.ok(shop.indexOf('db-leggero.js') < shop.indexOf('<script src="negozio.js"'), 'prima di negozio.js');
+    assert.match(docs('public-editor.js'), /await database\.ref\(`players\/\$\{chiave\}\/info`\)\.update\(aggiornamenti\);\n\s*try \{ if \(window\.DbLeggero\) window\.DbLeggero\.svuotaCache\(\); \} catch/);
+});
+
+test('Formats: ogni riga della classifica del formato ha l\'avatar e la cornice di quell\'allenatore (come Trainers e la classifica di stagione)', () => {
+    const formats = docs('formats.html');
+    assert.match(formats, /<link rel="stylesheet" href="finestre\.css">\n<link rel="stylesheet" href="stile-card\.css">/, 'dopo i fogli della pagina');
+    assert.match(formats, /<script src="cosmetici\.js"><\/script>/);
+    const righe = formats.slice(formats.indexOf('async function renderRankingsDelFormato('));
+    assert.match(righe, /avatar: pData\.info\?\.avatar \|\| 'immagini\/magikarp\.png',/);
+    assert.match(righe, /stileCard: window\.Cosmetici \? Cosmetici\.valido\(pData\.info\?\.stileCard, 'card'\) : '',/, 'solo un id del catalogo');
+    assert.match(righe, /<span class="fmt-avatar"><img src="\$\{escHtml\(player\.avatar\)\}" alt="" loading="lazy" onerror="this\.onerror=null;this\.src='immagini\/magikarp\.png'"><\/span>/, 'l\'indirizzo passa da escHtml e se manca c\'è il Magikarp');
+    const css = docs('style-formats.css');
+    assert.match(css, /\.player-rank-row \{\s*position: relative;/, 'la riga è il riferimento degli strati della cornice');
+    assert.match(css, /\.fmt-avatar img \{[^}]*object-fit: contain;/);
+    assert.match(docs('stile-card.css'), /\.carta-players, \.player-rank-row, \.sc-campione\)\[data-stile-card\]/);
+});
+
+// ---------------------------------------------------------------- le cornici: strati, animazioni e una cornice luminosa per ogni aura
+
+test('cornici luminose: ogni aura ha la sua cornice dello stesso colore ("<X> aura" -> "<X> glow"); le voci nuove tra le aure ne chiedono una anche qui', () => {
+    const css = docs('stile-card.css');
+    const MAPPA = {
+        'aura-oro': 'card-bagliore-oro', 'aura-fiamma': 'card-bagliore-fiamma', 'aura-ghiaccio': 'card-bagliore-ciano', 'aura-arcobaleno': 'card-bagliore-arcobaleno', 'aura-smeraldo': 'card-bagliore-smeraldo',
+        'aura-viola': 'card-bagliore-viola', 'aura-rosa': 'card-bagliore-rosa', 'aura-rosso': 'card-bagliore-rosso', 'aura-lime': 'card-bagliore-verde'
+    };
+    assert.deepEqual(per('aura').map(a => a.id).sort(), Object.keys(MAPPA).sort(), 'una aura nuova (o tolta) cambia anche le cornici: aggiornare qui la tabella');
+    for (const a of per('aura')) {
+        const c = C.perId(MAPPA[a.id]);
+        assert.ok(c && c.tipo === 'card' && c.campo === 'stileCard', `${a.id}: manca ${MAPPA[a.id]} nel catalogo`);
+        assert.equal(c.nome, a.nome.replace(/ aura$/, ' glow'), `${c.id}: il nome segue quello dell'aura`);
+        assert.equal(c.prezzo, a.id === 'aura-arcobaleno' ? 900 : 600, `${c.id}: prezzo`);
+        const inizio = css.indexOf(`[data-stile-card="${c.id}"] {`);
+        assert.ok(inizio > 0, `${c.id}: ha il suo stile`);
+        const gruppo = css.slice(inizio, css.indexOf('}', inizio));
+        assert.match(gruppo, /--sc-glow:/);
+        if (a.id !== 'aura-arcobaleno') {
+            assert.ok(gruppo.includes(a.colore), `${c.id}: il colore dell'aura (${a.colore}) è nell'alone`);
+            assert.match(gruppo, /--sc-glow2:/, `${c.id}: l'alone respira`);
+        } else assert.match(gruppo, /--sc-anim: sc-arcobaleno /, 'l\'arcobaleno cambia colore');
+    }
+    // le tre di prima hanno tenuto il loro id (chi le ha comprate le ha ancora)
+    for (const id of ['card-bagliore-ciano', 'card-bagliore-rosa', 'card-bagliore-verde']) assert.ok(C.perId(id), id);
+});
+
+test('cornici: gli strati (anello e decorazione) stanno dietro al testo, gli stili li accendono con una variabile e ogni animazione nominata esiste', () => {
+    const css = docs('stile-card.css');
+    assert.match(css, /isolation: isolate;/, 'la card è un contesto a sé: gli strati con z-index -1 stanno sopra il suo sfondo e sotto il testo');
+    assert.match(css, /\[data-stile-card\]::before,\s*\n:root :is\([^)]*\)\[data-stile-card\]::after \{\s*position: absolute;\s*z-index: -1;\s*pointer-events: none;/);
+    assert.match(css, /content: var\(--sc-deco-on, none\);/);
+    assert.match(css, /content: var\(--sc-ring-on, none\);/);
+    assert.match(css, /-webkit-mask-composite: xor;\s*mask: linear-gradient\(#000 0 0\) content-box, linear-gradient\(#000 0 0\);\s*mask-composite: exclude;/, 'l\'anello è ritagliato con la maschera (anche nei browser con il prefisso)');
+    assert.match(css, /\.sc-campione\[data-stile-card\] \{ position: relative; \}/, 'il riquadro del negozio è il riferimento degli strati');
+    // chi usa uno strato lo accende; chi lo accende lo riempie
+    const blocchi = css.replace(/\/\*[\s\S]*?\*\//g, '').split('}').filter(b => /\[data-stile-card/.test(b) && /--sc-[a-z0-9-]+:/.test(b));
+    for (const b of blocchi) {
+        const nome = (b.match(/\[data-stile-card[^\]]*\]/) || [''])[0];
+        assert.equal(/--sc-ring:/.test(b), /--sc-ring-on:/.test(b), `${nome}: anello e interruttore vanno insieme`);
+        assert.equal(/--sc-deco:/.test(b), /--sc-deco-on:/.test(b), `${nome}: decorazione e interruttore vanno insieme`);
+    }
+    // ogni animazione nominata in uno stile ha il suo @keyframes
+    const usate = new Set([...css.matchAll(/--sc-(?:ring-|deco-)?anim:\s*([a-z0-9-]+)/g)].map(m => m[1]));
+    assert.ok(usate.size >= 8, 'ce n\'è una buona scelta');
+    for (const n of usate) assert.ok(css.includes(`@keyframes ${n} `), `@keyframes ${n}`);
+    // chi non vuole animazioni non le ha, nemmeno sugli strati
+    assert.match(css, /prefers-reduced-motion: reduce\) \{\s*\[data-stile-card\], \[data-stile-card\]::before, \[data-stile-card\]::after, \[data-stile-card\] \.pal-pedana \{ animation: none !important; \}/);
 });

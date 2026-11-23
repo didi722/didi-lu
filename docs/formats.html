@@ -20,12 +20,14 @@
 
 <link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="finestre.css">
+<link rel="stylesheet" href="stile-card.css">
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
 <script src="temi.js"></script>
 <script src="menu-sito.js"></script>
 <script src="formato-random.js"></script>
+<script src="cosmetici.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -2455,6 +2457,8 @@ async function renderRankingsDelFormato(formatName, players) {
             sortedPlayers.push({
                 name: pData.info?.name || pId,
                 color: coloreSicuro(pData.info?.color, '#31c489'),
+                avatar: pData.info?.avatar || 'immagini/magikarp.png',
+                stileCard: window.Cosmetici ? Cosmetici.valido(pData.info?.stileCard, 'card') : '',      // la cornice comprata nello Shop (stile-card.css)
                 points: Number(specificStats.points || 0),
                 won: Number(specificStats.won || 0),
                 lost: Number(specificStats.lost || 0),
@@ -2482,8 +2486,9 @@ async function renderRankingsDelFormato(formatName, players) {
 
     // Una riga per giocatore, sul suo colore (un link alla sua pagina pubblica)
     const htmlRows = sortedPlayers.map((player, index) => `
-        <a class="player-rank-row" href="public.html?player=${encodeURIComponent(player.name.trim())}" style="--fmt-colore: ${player.color}">
+        <a class="player-rank-row" href="public.html?player=${encodeURIComponent(player.name.trim())}"${player.stileCard ? ` data-stile-card="${player.stileCard}"` : ''} style="--fmt-colore: ${player.color}">
             <span class="fmt-pos">#${index + 1}</span>
+            <span class="fmt-avatar"><img src="${escHtml(player.avatar)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='immagini/magikarp.png'"></span>
             <span class="fmt-chi">
                 <span class="fmt-nome">${escHtml(player.name)}</span>
                 <span class="fmt-numeri">P: ${player.showdownsPlayed}, S: ${player.showdownsWon}/${player.showdownsLost}, W/L: ${player.won}/${player.lost}</span>

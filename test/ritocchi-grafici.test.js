@@ -94,7 +94,7 @@ test('formats: la scheda di un formato è una finestra come le altre (titolo, ri
     assert.match(formats, /function chiudiModaleFormato\(\) \{[^}]*classList\.remove\('aperto'\)/);
     // le righe della classifica sono link alla pagina pubblica del giocatore (non div con un onclick)
     const righe = formats.slice(formats.indexOf('async function renderRankingsDelFormato('));
-    assert.match(righe, /<a class="player-rank-row" href="public\.html\?player=\$\{encodeURIComponent\(player\.name\.trim\(\)\)\}" style="--fmt-colore: \$\{player\.color\}">/);
+    assert.match(righe, /<a class="player-rank-row" href="public\.html\?player=\$\{encodeURIComponent\(player\.name\.trim\(\)\)\}"\$\{player\.stileCard \? ` data-stile-card="\$\{player\.stileCard\}"` : ''\} style="--fmt-colore: \$\{player\.color\}">/);
     assert.doesNotMatch(righe, /onmouseenter|onmouseleave|window\.location\.href/);
     // i colori degli stati (vietato, permesso...) li dà il foglio
     for (const chip of ['fmt-chip-no', 'fmt-chip-si', 'fmt-chip-info', 'fmt-chip-lista']) assert.ok(scheda.includes(chip), chip);
