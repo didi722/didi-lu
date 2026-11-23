@@ -194,7 +194,8 @@
         '#0AB2C2', '#22876D', '#0893A0', '#076A7E', '#85C2FF', '#9985FF', '#607ED7', '#20BEF3',
         '#001CA8', '#0070A8', '#155493', '#003785', '#E085FF', '#B69DE7', '#925CFF', '#AA6FC8',
         '#6F42AE', '#6200A8', '#D47DCB', '#FF38DE', '#BE55A4', '#D600C1', '#A329A3', '#822B79',
-        '#FF8599', '#FF85CC', '#DDA6CB', '#F00064', '#C20A38', '#93155F', '#7E072E'
+        '#FF8599', '#FF85CC', '#DDA6CB', '#F00064', '#C20A38', '#93155F', '#7E072E',
+        '#FAFAFA', '#E8E4DC', '#D3D6DA', '#CBC5BD', '#B4B4B4', '#9A9590', '#8C919A', '#7C7C7C', '#6E7480', '#5F6368'
     ];
     const COLORE_DEFAULT = '#31C489';        // quello degli account nuovi (admin.html): finché c'è, il colore è "di partenza"
 
@@ -211,7 +212,7 @@
             h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
             h = (h * 60 + 360) % 360;
         }
-        return { h, s, l };
+        return { h, s, l, c: d };
     }
     // le famiglie, nell'ordine dell'arcobaleno (i marroni stanno tra gli arancio e i gialli, di cui sono la versione scura o spenta)
     const GRUPPI_COLORI = ['Reds', 'Oranges', 'Browns', 'Yellows', 'Greens', 'Teals', 'Blues', 'Purples', 'Magentas', 'Pinks', 'Greys'];
@@ -219,8 +220,8 @@
     function famigliaColore(hex) {
         const t = tonalita(hex);
         if (!t) return '';
-        const { h, s, l } = t;
-        if (s < 0.1) return 'Greys';
+        const { h, l, c } = t, s = t.s;
+        if (c < 0.1) return 'Greys';      // bianchi, grigi e quasi: poca differenza tra i canali (la saturazione ingannerebbe vicino al bianco)
         if (h >= 12 && h < 50 && (s < 0.5 || l < 0.36)) return 'Browns';      // arancio e giallo scuri o spenti: terra, cuoio, ruggine
         if (h >= 315 && h < 350) return 'Pinks';
         if ((h >= 350 || h < 12) && l >= 0.72) return 'Pinks';                  // i rossi molto chiari sono rosa

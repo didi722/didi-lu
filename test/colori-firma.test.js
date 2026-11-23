@@ -42,7 +42,7 @@ const EXTRA_DI_PRIMA = ['#FF7B6B', '#F28C28', '#F4C430', '#A7C957', '#2A9D8F', '
 
 test('colori firma: una scelta ampia, scritta una volta sola, senza il verde di partenza e senza i neutri; quelli di prima ci sono ancora', () => {
     const tutti = P.PALETTE_FIRMA;
-    assert.ok(tutti.length >= 110, `ce ne sono ${tutti.length}`);
+    assert.ok(tutti.length >= 120, `ce ne sono ${tutti.length}`);
     for (const c of tutti) assert.match(c, /^#[0-9A-F]{6}$/, `${c}: sei cifre, maiuscole (come l'id che ne deriva)`);
     assert.equal(new Set(tutti.map(c => c.toLowerCase())).size, tutti.length, 'nessun colore doppio');
     assert.ok(!tutti.includes(C.COLORE_DEFAULT), 'il verde degli account nuovi resta "di partenza"');
@@ -67,7 +67,7 @@ test('colori firma: ogni colore nuovo si distingue bene da tutti gli altri (e da
     }
     // niente quasi-neri (illeggibili sulle card) né quasi-bianchi (sembrerebbero bianchi): come quelli di prima
     const luce = c => { const [r, g, b] = rgb(c).map(v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
-    for (const nuovo of P.PALETTE_FIRMA.slice(ORIGINALI)) { const y = luce(nuovo); assert.ok(y >= 0.03 && y <= 0.85, `${nuovo}: luminosità ${y.toFixed(2)}`); }
+    for (const nuovo of P.PALETTE_FIRMA.slice(ORIGINALI)) { const y = luce(nuovo); assert.ok(y >= 0.03 && (y <= 0.85 || C.famigliaColore(nuovo) === 'Greys'), `${nuovo}: luminosità ${y.toFixed(2)}`); }   // i bianchi sono voluti
 });
 
 test('famigliaColore: ogni colore sta nella sua famiglia, dai rossi ai rosa; un valore che non è un colore no', () => {
@@ -88,7 +88,10 @@ test('famigliaColore: ogni colore sta nella sua famiglia, dai rossi ai rosa; un 
     assert.equal(famiglia('#7A29FF'), 'Purples');
     assert.equal(famiglia('#CC00FF'), 'Purples');
     assert.equal(famiglia('#6A0572'), 'Magentas');
-    assert.equal(famiglia('#BDBDBD'), 'Greys', 'i grigi, se mai ce ne fossero, hanno la loro famiglia (in fondo)');
+    assert.equal(famiglia('#BDBDBD'), 'Greys');
+    assert.equal(famiglia('#FAFAFA'), 'Greys', 'i bianchi');
+    assert.equal(famiglia('#E8E4DC'), 'Greys', 'anche i bianchi caldi (la saturazione HSL vicino al bianco ingannerebbe)');
+    assert.equal(famiglia('#BAFFF0'), 'Teals', 'un pastello colorato no');
     assert.equal(famiglia('ff3333'), 'Reds', 'anche senza il cancelletto (come Cosmetici.idColore)');
     for (const x of ['', 'rosso', '#GG0000', '#FFF', null, undefined, 5]) assert.equal(famiglia(x), '', String(x));
     assert.equal(famiglia('#ff3333'), 'Reds', 'maiuscole o minuscole');
@@ -99,7 +102,7 @@ test('raggruppaColori: ogni colore compare una volta sola, le famiglie vanno com
     const piatti = gruppi.flatMap(g => g.colori);
     assert.equal(piatti.length, P.PALETTE_FIRMA.length);
     assert.deepEqual(piatti.slice().sort(), P.PALETTE_FIRMA.slice().sort(), 'gli stessi colori, solo in un altro ordine');
-    assert.deepEqual(gruppi.map(g => g.nome), ['Reds', 'Oranges', 'Browns', 'Yellows', 'Greens', 'Teals', 'Blues', 'Purples', 'Magentas', 'Pinks'], 'in ordine d\'arcobaleno; i grigi non ci sono');
+    assert.deepEqual(gruppi.map(g => g.nome), ['Reds', 'Oranges', 'Browns', 'Yellows', 'Greens', 'Teals', 'Blues', 'Purples', 'Magentas', 'Pinks', 'Greys'], 'in ordine d\'arcobaleno, poi bianchi e grigi in fondo');
     assert.deepEqual(gruppi.map(g => g.nome), C.GRUPPI_COLORI.filter(n => gruppi.some(g => g.nome === n)));
     for (const g of gruppi) {
         assert.ok(g.colori.length >= 6, `${g.nome}: ${g.colori.length} colori`);
@@ -115,16 +118,14 @@ test('raggruppaColori: ogni colore compare una volta sola, le famiglie vanno com
     assert.deepEqual(require('../functions/cosmetici.js').raggruppaColori(P.PALETTE_FIRMA), gruppi);
 });
 
-test('Shop: i colori si vedono raggruppati per tonalità, con il nome della famiglia sopra; una famiglia di cui hai già tutto non compare', () => {
+test('Shop: i colori stanno tutti in fila (nessun titolo di famiglia, nessuna riga a parte), ordinati per tonalità', () => {
     const shop = docs('shop.js');
-    assert.match(shop, /C\.raggruppaColori\(P\.PALETTE_FIRMA\)\.map\(g => \{/);
-    assert.match(shop, /return dentro \? `<h5 class="shop-famiglia">\$\{esc\(g\.nome\)\}<\/h5>\$\{dentro\}` : '';/);
+    assert.match(shop, /C\.raggruppaColori\(P\.PALETTE_FIRMA\)\.flatMap\(g => g\.colori\)\.map\(c => \{/);
+    assert.doesNotMatch(shop, /shop-famiglia/, 'niente titoli: un\'unica griglia');
+    assert.doesNotMatch(docs('style-shop.css'), /shop-famiglia/);
     assert.match(shop, /if \(!id \|\| mie\.has\(id\)\) return '';/, 'quelli che hai già non si ricomprano');
     assert.match(shop, /<div class="shop-colori">\$\{bottoni\}<\/div>/);
-    const css = docs('style-shop.css');
-    assert.match(css, /\.shop-famiglia \{ grid-column: 1 \/ -1;/, 'il nome occupa una riga tutta sua nella griglia dei colori');
-    assert.match(css, /\.shop-colori \{ display: grid; grid-template-columns: repeat\(auto-fill, minmax\(36px, 1fr\)\);/);
-    // il catalogo, sul sito e sul server, è lo stesso file
+    assert.match(docs('style-shop.css'), /\.shop-colori \{ display: grid; grid-template-columns: repeat\(auto-fill, minmax\(36px, 1fr\)\);/);
     assert.equal(docs('cosmetici.js'), fs.readFileSync(path.join(__dirname, '..', 'functions', 'cosmetici.js'), 'utf8'));
 });
 
