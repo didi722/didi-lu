@@ -139,3 +139,32 @@ test('editor della pagina: i colori dello sfondo e della carta stanno nello stes
     assert.deepEqual(tav.slice().sort(), P.PALETTE_SFONDO.slice().sort());
     assert.ok(docs('public.html').includes('<script src="cosmetici.js"></script>'), 'l\'editor ha il catalogo');
 });
+
+test('Shop: provando un colore si vede una presentazione di quattro cose (classifica, palco, card, Match of the week), non il pezzo di pagina', () => {
+    const N = require('../docs/negozio.js');
+    const h = N.provaColoreHtml({ colore: '#D21E1E', avatar: 'immagini/profile/5.png', nome: 'Didi<b>' });
+    assert.match(h, /^<div class="ng-cs" style="--cs:#D21E1E">/);
+    assert.equal((h.match(/class="ng-cs-slide/g) || []).length, 4);
+    assert.equal((h.match(/class="ng-cs-slide is-on"/g) || []).length, 1, 'la prima è già visibile');
+    for (const t of ['Season standings', 'Your stage', 'Trainer card', 'Match of the week']) assert.ok(h.includes(`<figcaption>${t}</figcaption>`), t);
+    assert.equal((h.match(/data-ng-punto=/g) || []).length, 4);
+    assert.doesNotMatch(h, /DIDI<B>/i, 'il nome è protetto'); assert.match(h, /DIDI&lt;B&gt;/);
+    assert.match(N.provaColoreHtml({ colore: 'rosso"x' }), /--cs:#6b93b0/, 'un colore non valido torna al blu di riserva');
+    const shop = docs('shop.js');
+    assert.match(shop, /const coloreInProva = \(\) => \(S\.scelta && S\.scelta\.tipo === 'colore'/);
+    assert.match(shop, /N\.provaColoreHtml\(\{ colore: col,/);
+    assert.match(shop, /setInterval\(avanti, 2800\)/);
+    assert.match(shop, /prefers-reduced-motion: reduce/, 'chi non vuole movimento non ha la rotazione');
+    assert.doesNotMatch(shop, /if \(S\.prova\.color\) return 'identita';/, 'il colore non ingrandisce più il blocco della pagina');
+});
+
+test('cornici a fascia (metalli, arcobaleno, stelle...): niente bordo nero né contorno scuro che spunti negli angoli: la fascia è il bordo', () => {
+    const css = docs('stile-card.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    const blocchi = css.split('}').filter(b => /\[data-stile-card="card-[a-z-]+"\]\s*\{/.test(b) && /--sc-ring-on/.test(b));
+    assert.ok(blocchi.length >= 8);
+    for (const b of blocchi) {
+        const nome = b.match(/card-[a-z-]+/)[0];
+        assert.match(b, /--sc-bordo: transparent;/, nome);
+        assert.doesNotMatch(b, /0 0 0 4px #/, `${nome}: niente anello scuro di contorno`);
+    }
+});

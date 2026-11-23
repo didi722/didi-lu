@@ -148,8 +148,8 @@ html.app-shell [data-stile-card] .pal-pedana {
 
 /* metalli: una fascia lucida al posto del bordo, con la luce che la attraversa ogni tanto */
 [data-stile-card="card-oro"] {
-    --sc-bordo: #5a3b00;
-    --sc-glow: 0 0 0 4px #5a3b00, 0 0 16px 4px rgba(255, 200, 70, 0.55);
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 16px 4px rgba(255, 200, 70, 0.55);
     --sc-img: linear-gradient(135deg, rgba(255, 222, 120, 0.34), rgba(255, 170, 30, 0.12) 55%, rgba(255, 232, 150, 0.24));
     --sc-dim: 100% 100%;
     --sc-rep: no-repeat;
@@ -161,8 +161,8 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-ring-anim: sc-scorre 5s ease-in-out infinite;
 }
 [data-stile-card="card-argento"] {
-    --sc-bordo: #2d3541;
-    --sc-glow: 0 0 0 4px #2d3541, 0 0 14px 3px rgba(205, 222, 240, 0.6);
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 14px 3px rgba(205, 222, 240, 0.6);
     --sc-img: linear-gradient(135deg, rgba(235, 242, 250, 0.4), rgba(150, 165, 180, 0.12) 55%, rgba(235, 242, 250, 0.3));
     --sc-dim: 100% 100%;
     --sc-rep: no-repeat;
@@ -174,8 +174,8 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-ring-anim: sc-scorre 6s ease-in-out infinite;
 }
 [data-stile-card="card-carbonio"] {
-    --sc-bordo: #14171b;
-    --sc-glow: 0 0 0 4px #14171b, 0 0 10px 2px rgba(120, 132, 146, 0.5);
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 10px 2px rgba(120, 132, 146, 0.5);
     --sc-img: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.28) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.28) 0 2px, transparent 2px 4px);
     --sc-dim: auto;
     --sc-ring-on: "";
@@ -190,8 +190,8 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-deco-anim: sc-scorre 7s ease-in-out infinite;
 }
 [data-stile-card="card-olografica"] {
-    --sc-bordo: #20204a;
-    --sc-glow: 0 0 0 4px #20204a, 0 0 18px 3px rgba(150, 190, 255, 0.7);
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 18px 3px rgba(150, 190, 255, 0.7);
     --sc-img:
         linear-gradient(105deg, transparent 18%, rgba(255, 0, 140, 0.34) 30%, rgba(255, 230, 0, 0.3) 38%, rgba(0, 255, 170, 0.34) 46%, rgba(0, 160, 255, 0.34) 54%, rgba(190, 0, 255, 0.3) 62%, transparent 74%),
         linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
@@ -206,8 +206,8 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-ring-anim: sc-scorre 4s ease-in-out infinite;
 }
 [data-stile-card="card-arcobaleno"] {
-    --sc-bordo: #000;
-    --sc-glow: 0 0 0 4px #000, 0 0 16px 3px rgba(255, 255, 255, 0.35);
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 16px 3px rgba(255, 255, 255, 0.35);
     --sc-ring-on: "";
     --sc-ring: linear-gradient(90deg, #ff4d6d, #ffb02e, #ffe94d, #3be07a, #3ba8ff, #b04dff, #ff4d6d);
     --sc-ring-dim: 200% 100%;
@@ -217,8 +217,8 @@ html.app-shell [data-stile-card] .pal-pedana {
 
 /* natura e tecnologia */
 [data-stile-card="card-stelle"] {
-    --sc-bordo: #131850;
-    --sc-glow: 0 0 0 4px #131850, 0 0 18px 4px rgba(150, 165, 255, 0.55), inset 0 0 18px 2px rgba(20, 25, 110, 0.4);
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 18px 4px rgba(150, 165, 255, 0.55), inset 0 0 18px 2px rgba(20, 25, 110, 0.4);
     --sc-img:
         radial-gradient(circle at 20% 30%, #fff 0 1.1px, rgba(255, 255, 255, 0.3) 1.5px 2.4px, transparent 3px),
         radial-gradient(circle at 75% 65%, #fff 0 0.9px, rgba(255, 255, 255, 0.3) 1.3px 2.1px, transparent 2.6px),
@@ -234,8 +234,8 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-ring-anim: sc-scorre 6.5s ease-in-out infinite;
 }
 [data-stile-card="card-circuito"] {
-    --sc-bordo: #003c36;
-    --sc-glow: 0 0 0 4px #003c36, 0 0 14px 4px rgba(0, 255, 200, 0.5), inset 0 0 14px 1px rgba(0, 255, 200, 0.18);
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 14px 4px rgba(0, 255, 200, 0.5), inset 0 0 14px 1px rgba(0, 255, 200, 0.18);
     --sc-img:
         radial-gradient(circle at 0 0, #00ffc8 0 2.2px, rgba(0, 60, 54, 0.8) 2.6px 3.4px, transparent 3.9px),
         linear-gradient(90deg, rgba(0, 70, 60, 0.32) 1.5px, transparent 1.5px),
@@ -255,9 +255,9 @@ html.app-shell [data-stile-card] .pal-pedana {
     --sc-deco-anim: sc-impulsi 3.4s linear infinite;
 }
 [data-stile-card="card-fiamma"] {
-    --sc-bordo: #3a0f00;
-    --sc-glow: 0 0 0 4px #3a0f00, 0 0 14px 3px #ff5a1f, 0 0 30px 8px rgba(255, 90, 20, 0.5);
-    --sc-glow2: 0 0 0 4px #3a0f00, 0 0 20px 5px #ff8a1f, 0 0 44px 13px rgba(255, 120, 20, 0.6);
+    --sc-bordo: transparent;
+    --sc-glow: 0 0 14px 3px #ff5a1f, 0 0 30px 8px rgba(255, 90, 20, 0.5);
+    --sc-glow2: 0 0 20px 5px #ff8a1f, 0 0 44px 13px rgba(255, 120, 20, 0.6);
     --sc-anim: sc-pulsa 0.9s ease-in-out infinite alternate;
     --sc-ring-on: "";
     --sc-ring: linear-gradient(0deg, #ffd23f 0%, #ff8a1f 38%, #e8330a 72%, #7a1200 100%);

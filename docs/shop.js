@@ -130,13 +130,29 @@
     // - aure, palchi, avatar, effetti del nome, colori, motivi dello sfondo: lo stesso pezzo della pagina vera, ritagliato e ingrandito (un secondo riquadro con la pagina);
     // - stile delle card, sfondo del Box ed entrata: un disegno a parte (negozio.js, provaGrandeHtml).
     let grandeId = '', fermaGrande = null;
+    // provando un colore: non un pezzo della pagina, ma una presentazione di quattro cose in cui compare (classifica, palco, card, Match of the week), una ogni pochi secondi
+    const coloreInProva = () => (S.scelta && S.scelta.tipo === 'colore' && /^#[0-9a-f]{6}$/i.test(String(S.prova.color || '')) ? S.prova.color : '');
+    let giraColore = null;
+    function mostraSlide(box, i) {
+        box.querySelectorAll('.ng-cs-slide').forEach((x, k) => x.classList.toggle('is-on', k === i));
+        box.querySelectorAll('.ng-cs-punto').forEach((x, k) => x.classList.toggle('is-on', k === i));
+        box.dataset.slide = String(i);
+    }
+    function avviaPresentazione(box) {
+        const n = box.querySelectorAll('.ng-cs-slide').length;
+        const avanti = () => mostraSlide(box, ((Number(box.dataset.slide) || 0) + 1) % n);
+        const parti = () => { if (!giraColore && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) giraColore = setInterval(avanti, 2800); };
+        const ferma = () => { clearInterval(giraColore); giraColore = null; };
+        box.addEventListener('click', e => { const p = e.target.closest('[data-ng-punto]'); if (p) { ferma(); mostraSlide(box, Number(p.dataset.ngPunto)); parti(); } });
+        parti();
+        return ferma;
+    }
     const voceGrande = () => { const c = S.provando ? C.perId(S.provando) : null; return c && N.TIPI_PROVA_GRANDE.includes(c.tipo) ? c : null; };
     /** Quale pezzo della pagina ingrandire: 'palco' | 'identita' | 'pagina' | '' */
     function fuocoCorrente() {
         const c = S.provando ? C.perId(S.provando) : null;
         if (c && N.FUOCO_PROVA[c.tipo]) return N.FUOCO_PROVA[c.tipo];
         if (S.prova.avatar) return 'palco';
-        if (S.prova.color) return 'identita';
         return '';
     }
     // dove sta il pezzo nella pagina (1440 x 810): il blocco del palco o del nome; per i motivi un angolo di pagina
@@ -166,7 +182,8 @@
         if (!box) return;
         const fuoco = fuocoCorrente(), c = voceGrande();
         const catalogo = S.provando ? C.perId(S.provando) : null;
-        const chiave = c ? `corpo|${c.id}` : fuoco ? `zoom|${fuoco}` : '';
+        const col = coloreInProva();
+        const chiave = c ? `corpo|${c.id}` : fuoco ? `zoom|${fuoco}` : col ? `colore|${col}|${S.info.avatar || ''}` : '';
         // la pagina del secondo riquadro si carica la prima volta che serve
         const f2 = $('shop-iframe2');
         if (fuoco && f2 && !f2.getAttribute('src') && S.giocatore) f2.src = indirizzoAnteprima();
@@ -176,6 +193,10 @@
             $('shop-zoom').hidden = !fuoco;
             $('shop-extra-corpo').innerHTML = c ? N.provaGrandeHtml(c, { colore: S.info.color, avatar: S.info.avatar, nome: S.info.name || S.giocatore }) : '';
             box.hidden = !chiave;
+            if (col && !c && !fuoco) {
+                $('shop-extra-corpo').innerHTML = N.provaColoreHtml({ colore: col, avatar: S.info.avatar, nome: S.info.name || S.giocatore });
+                fermaGrande = avviaPresentazione($('shop-extra-corpo').firstElementChild);
+            }
             const entrata = box.querySelector('.ev-palco[data-entrata]');
             if (entrata && window.EntrateVs) fermaGrande = window.EntrateVs.anteprima(entrata, entrata.dataset.entrata, S.info.avatar);
         }

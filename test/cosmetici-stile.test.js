@@ -201,7 +201,7 @@ test('Shop: sotto la tua pagina c\'è sempre quello che si prova: un ritaglio de
     const html = docs('shop.html'), shop = docs('shop.js');
     assert.match(html, /<div class="shop-extra" id="shop-extra" hidden aria-live="polite">\s*<div class="shop-zoom" id="shop-zoom" hidden><iframe id="shop-iframe2"/);
     assert.match(shop, /const voceGrande = \(\) => \{ const c = S\.provando \? C\.perId\(S\.provando\) : null; return c && N\.TIPI_PROVA_GRANDE\.includes\(c\.tipo\) \? c : null; \};/);
-    assert.match(shop, /if \(c && N\.FUOCO_PROVA\[c\.tipo\]\) return N\.FUOCO_PROVA\[c\.tipo\];\s*if \(S\.prova\.avatar\) return 'palco';\s*if \(S\.prova\.color\) return 'identita';/, 'avatar e colore hanno il loro ritaglio');
+    assert.match(shop, /if \(c && N\.FUOCO_PROVA\[c\.tipo\]\) return N\.FUOCO_PROVA\[c\.tipo\];\s*if \(S\.prova\.avatar\) return 'palco';\s*return '';/, 'l\'avatar ha il suo ritaglio; il colore una presentazione (provaColoreHtml)');
     assert.match(shop, /querySelector\(`\.pp-blocco\[data-blocco="\$\{fuoco\}"\]`\)/, 'il palco vero (con il compagno), non un disegno');
     assert.match(shop, /if \(fuoco === 'pagina'\) return \{ left: 0, top: 0, width: 560, height: 315 \};/);
     assert.match(shop, /for \(const f of \[\$\('shop-iframe'\), \$\('shop-iframe2'\)\]\)/, 'le prove vanno a tutte e due le pagine');

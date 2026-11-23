@@ -84,6 +84,28 @@
 .ng-gp-team{height:92px;border:3px solid #000;background:#fff;box-shadow:4px 4px 0 #000;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;align-content:center;padding:8px}
 .ng-gp-team span{height:22px;background:#d9dde6;border:2px solid #000;border-radius:50%}
 .ng-gp-entrata{position:relative;overflow:hidden;height:210px;border:3px solid #000;background:linear-gradient(135deg,#6b93b0 50%,#d96b6b 50%)}
+.ng-cs{display:grid;gap:8px;--cs:#6b93b0}
+.ng-cs-slide{display:none;margin:0;gap:6px}.ng-cs-slide.is-on{display:grid;animation:ng-cs-entra .35s ease-out}
+@keyframes ng-cs-entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ng-cs-slide figcaption{font:900 .72rem 'Josefin Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
+.ng-cs-scena{height:190px;display:grid;align-content:center;box-sizing:border-box}
+.ng-cs-scena img{height:60px;width:auto;image-rendering:pixelated;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.35))}
+.ng-cs-lista{display:grid;gap:10px;padding:0 6px}
+.ng-cs-riga{display:flex;align-items:center;gap:12px;height:68px;padding:0 16px;border:3px solid #000;background:var(--cs);box-shadow:4px 4px 0 #000;color:#000}
+.ng-cs-riga b{flex:1;font:900 1.05rem 'Josefin Sans',sans-serif;letter-spacing:.06em}.ng-cs-riga i{font:900 .85rem 'Josefin Sans',sans-serif;font-style:normal}
+.ng-cs-palco{position:relative;display:grid;place-items:center;height:190px;border:3px solid #000;overflow:hidden;background:radial-gradient(circle at 50% 62%,rgba(255,255,255,.55),transparent 55%),repeating-conic-gradient(rgba(0,0,0,.09) 0 8deg,transparent 8deg 16deg),var(--cs)}
+.ng-cs-palco img{position:relative;z-index:1;height:96px;margin-top:-14px}
+.ng-cs-pedana{position:absolute;left:50%;bottom:26px;width:150px;height:34px;translate:-50% 0;border:3px solid #000;border-radius:50%;background:rgba(255,255,255,.7)}
+.ng-cs-carta{display:flex;align-items:center;gap:16px;padding:16px;border:3px solid #000;background:var(--cs);box-shadow:5px 5px 0 #000;color:#000}
+.ng-cs-carta img{height:84px}
+.ng-cs-tag{display:inline-block;padding:4px 10px 2px;background:#000;color:#fff;font:900 .85rem 'Josefin Sans',sans-serif;letter-spacing:.08em}
+.ng-cs-stat{display:flex;gap:8px;margin-top:10px}.ng-cs-stat span{padding:4px 8px 2px;border:2px solid #000;background:#fff;font:800 .62rem 'Josefin Sans',sans-serif;letter-spacing:.08em}.ng-cs-stat b{font-size:.95rem;margin-left:4px}
+.ng-cs-scontro{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ng-cs-lato{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;height:130px;border:3px solid #000;background:var(--cs);box-shadow:4px 4px 0 #000}
+.ng-cs-lato em{position:absolute;top:-12px;right:8px;padding:2px 7px 0;border:2px solid #000;background:#ffd84a;font:900 .62rem 'Josefin Sans',sans-serif;letter-spacing:.1em;font-style:normal;color:#000}
+.ng-cs-perde{background:#d9dde6;opacity:.7}
+.ng-cs-punti{display:flex;justify-content:center;gap:8px}
+.ng-cs-punto{width:12px;height:12px;padding:0;border:2px solid #000;border-radius:50%;background:#fff;cursor:pointer}.ng-cs-punto.is-on{background:#000}
 @media (max-width:900px){.ng-gp-box,.ng-gp-entrata{height:130px}.ng-gp-card{height:50px}.ng-gp-card img{height:34px}.ng-gp-vicina{height:24px}.ng-gp-team{height:56px;padding:4px}.ng-gp-team span{height:12px}.ng-gp-card-lista{gap:6px}}
 .ng-voce[data-tipo=nome] .ng-anteprima{display:flex;align-items:center;justify-content:center;background:#f3f4f8}
 .ng-nome-prova{font:900 1.2rem/1 'Josefin Sans',sans-serif;letter-spacing:-.01em;text-transform:uppercase;color:var(--pp-nome,#31c489);-webkit-text-stroke:.075em #000;paint-order:stroke fill;text-shadow:.07em .07em 0 #000}
@@ -165,6 +187,27 @@
         } else if (c.tipo === 'entrata') corpo = `<div class="ng-gp-entrata ev-palco" data-entrata="${esc(c.id)}"></div>`;
         else return '';
         return `<div class="ng-gp" data-tipo="${esc(c.tipo)}">${corpo}<p class="ng-gp-nota"><b>${esc(c.nome)}</b> ${esc(c.descr || '')}</p></div>`;
+    }
+
+    /**
+     * La prova di un colore firma (pura): una presentazione di quattro cose in cui il colore compare davvero (la riga nella classifica, il palco, la card dell'allenatore, il Match of the week),
+     * una alla volta; shop.js le fa girare ogni pochi secondi (data-ng-slide). La prima è già visibile: senza JavaScript resta quella.
+     */
+    function provaColoreHtml(o = {}) {
+        const colore = /^#[0-9a-f]{6}$/i.test(String(o.colore || '')) ? o.colore : '#6b93b0';
+        const avatar = esc(o.avatar || 'immagini/magikarp.png');
+        const nome = esc(String(o.nome || 'Trainer').toUpperCase());
+        const img = `<img src="${avatar}" alt="" onerror="this.style.visibility='hidden'">`;
+        const grigia = '<div class="ng-gp-vicina" aria-hidden="true"><span></span><span></span><i></i></div>';
+        const slide = [
+            ['Season standings', `<div class="ng-cs-lista">${grigia}<div class="ng-cs-riga"><span class="ng-gp-pos">#1</span>${img}<b>${nome}</b><i>1,240</i></div>${grigia}</div>`],
+            ['Your stage', `<div class="ng-cs-palco"><span class="ng-cs-pedana"></span>${img}</div>`],
+            ['Trainer card', `<div class="ng-cs-carta">${img}<div><span class="ng-cs-tag">${nome}</span><div class="ng-cs-stat"><span>WIN % <b>72%</b></span><span>ELO <b>1,240</b></span></div></div></div>`],
+            ['Match of the week', `<div class="ng-cs-scontro"><div class="ng-cs-lato ng-cs-vince"><em>WINNER</em>${img}<span class="ng-cs-tag">${nome}</span></div><div class="ng-cs-lato ng-cs-perde" aria-hidden="true"><span class="ng-cs-tag">TEAM</span></div></div>`]
+        ];
+        const corpo = slide.map(([titolo, html], i) => `<figure class="ng-cs-slide${i === 0 ? ' is-on' : ''}" data-ng-slide="${i}"><div class="ng-cs-scena">${html}</div><figcaption>${titolo}</figcaption></figure>`).join('');
+        const punti = slide.map(([titolo], i) => `<button type="button" class="ng-cs-punto${i === 0 ? ' is-on' : ''}" data-ng-punto="${i}" aria-label="${esc(titolo)}"></button>`).join('');
+        return `<div class="ng-cs" style="--cs:${colore}">${corpo}<div class="ng-cs-punti">${punti}</div></div>`;
     }
 
     /** Una riga del negozio (pura): la voce, com'è per chi guarda (sua, da comprare, in arrivo, finita). Toccando la riga si prova sulla pagina (data-ng="prova"), i tasti comprano e mettono */
@@ -305,5 +348,5 @@
         return fuori;
     }
 
-    return { TIPI_PROVA_GRANDE, FUOCO_PROVA, provaGrandeHtml, catalogoHtml, movimentiHtml, premiHtml, shinyTeamHtml, frasiAcquisto, frasiRilascio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
+    return { TIPI_PROVA_GRANDE, FUOCO_PROVA, provaGrandeHtml, provaColoreHtml, catalogoHtml, movimentiHtml, premiHtml, shinyTeamHtml, frasiAcquisto, frasiRilascio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
 });
