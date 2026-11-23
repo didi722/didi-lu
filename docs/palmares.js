@@ -4,7 +4,7 @@
 // Tutte le stagioni e le cup giocate, chiuse e in corso, con il vincitore e la data: la home ne mostra solo tre. Si legge dalle info di
 // ogni stagione (tipo-stagione.js), mai dalle stagioni intere.
 //
-//   Palmares.html(voci, giocatori, filtro)   le card (testo sempre protetto)
+//   Palmares.html(voci, giocatori, filtro)   le card (testo sempre protetto); giocatori: { id: { name, color, avatar, stileCard } }, la cornice è quella del vincitore
 //   Palmares.capoClassifica(classifica)      chi guida una stagione in corso
 //   Palmares.voci(infoStagioni)              [{ stagione, tipo, nome, data, vincitore, stato }] le più recenti per prime
 //
@@ -19,6 +19,8 @@
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const dataIt = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
+    // la cornice comprata nello Shop (stile-card.css): solo un id fatto come si deve (viene dal database), mai testo libero
+    const stileCard = v => (/^card-[a-z-]{2,30}$/.test(String(v || '')) ? String(v) : '');
 
     // Come la home: con le iscrizioni scadute la stagione è in corso
     const statoDi = info => {
@@ -70,7 +72,8 @@
             const nome = chi
                 ? `<span class="palm-vincitore">${esc(g.name || chi)}</span>`
                 : `<span class="palm-stato">${giocando ? 'In progress' : 'No winner'}</span>`;
-            return `<a class="palm-card palm-${esc(v.tipo)}${giocando ? ' palm-giocando' : ''}" href="matches.html?id=${encodeURIComponent(v.stagione)}" style="--palm-col:${esc(chi && g.color || '#fff')}">
+            const cornice = chi ? stileCard(g.stileCard) : '';      // la cornice è di chi ha vinto (o di chi guida la stagione in corso)
+            return `<a class="palm-card palm-${esc(v.tipo)}${giocando ? ' palm-giocando' : ''}"${cornice ? ` data-stile-card="${cornice}"` : ''} href="matches.html?id=${encodeURIComponent(v.stagione)}" style="--palm-col:${esc(chi && g.color || '#fff')}">
                 <h3 class="palm-nome">${esc(v.nome)}</h3>
                 <div class="palm-cerchio">${cerchio}${segno}</div>
                 ${nome}
@@ -177,7 +180,7 @@
                 const lb = await db.ref(`seasons/${v.stagione}/leaderboard`).once('value').then(x => x.val()).catch(() => null);
                 v.capo = capoClassifica(lb);
             }));
-            for (const [id, p] of Object.entries(snap.val() || {})) giocatori[idDi(id)] = { name: p && p.info && p.info.name, color: p && p.info && p.info.color, avatar: p && p.info && p.info.avatar };
+            for (const [id, p] of Object.entries(snap.val() || {})) giocatori[idDi(id)] = { name: p && p.info && p.info.name, color: p && p.info && p.info.color, avatar: p && p.info && p.info.avatar, stileCard: stileCard(p && p.info && p.info.stileCard) };
         } catch (e) { console.warn('Archive not available:', e); }
         disegna();
         montaSezioni(giocatori);

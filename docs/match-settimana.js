@@ -264,6 +264,8 @@
         return `${d.getUTCDate()} ${MESI[d.getUTCMonth()]}`;
     };
     const COLORE_NEUTRO = '#d9dde6';
+    // la cornice comprata nello Shop (stile-card.css): solo un id fatto come si deve (viene dal database), mai testo libero
+    const stileCard = v => (/^card-[a-z-]{2,30}$/.test(String(v || '')) ? String(v) : '');
     const FRECCIA = { '-1': 'M16 3 L7 12 L16 21', '1': 'M8 3 L17 12 L8 21' };
     const bottoneFreccia = (verso, attivo) => `<button type="button" class="ms-freccia ${verso < 0 ? 'ms-prec' : 'ms-succ'}" data-ms-vai="${verso}"`
         + ` aria-label="${verso < 0 ? 'Previous week' : 'Next week'}" title="${verso < 0 ? 'Previous week' : 'Next week'}"${attivo ? '' : ' disabled'}>`
@@ -275,7 +277,7 @@
      *   nella riga: i due allenatori uno di fronte all'altro (avatar, nome, i Pokémon portati), in mezzo formato e set, il Pokémon protagonista con il motivo, il replay
      * @param {object} s  il set scelto di una settimana (settimane().elenco[i].scelto)
      * @param {object} extra
-     *   giocatori   { id: { colore, avatar } }
+     *   giocatori   { id: { colore, avatar, stileCard } }   (stileCard: la cornice dell'allenatore, sulla sua scheda)
      *   gif         gif(specie): l'immagine animata di un Pokémon
      *   settimana   { titolo, intervallo } (etichettaSettimana)
      *   indice, totale  quale settimana è e quante sono: con più di una compaiono le frecce
@@ -300,7 +302,8 @@
             const pagina = `public.html?player=${encodeURIComponent(g.nome)}`;
             const avatar = extra.avatar ? `<img class="ms-av" src="${esc(extra.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>';
             // dell'allenatore resta l'avatar (il nome è nel suggerimento); il tag nero porta il nome del team (senza team, quello dell'allenatore)
-            return `<div class="ms-lato ms-l${n} ${vince ? 'ms-vince' : 'ms-perde'}" style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}" title="${esc(g.nome)} · ${vince ? 'won' : 'lost'}">`
+            const cornice = stileCard(extra.stileCard);
+            return `<div class="ms-lato ms-l${n} ${vince ? 'ms-vince' : 'ms-perde'}"${cornice ? ` data-stile-card="${cornice}"` : ''} style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}" title="${esc(g.nome)} · ${vince ? 'won' : 'lost'}">`
                 + (vince ? '<span class="ms-esito" aria-label="Winner">Winner</span>' : '')
                 + `<a class="ms-av-link" href="${esc(pagina)}" title="${esc(g.nome)}">${avatar}</a>`
                 + `<div class="ms-testi"><div class="ms-riga"><a class="ms-nome-link" href="${esc(pagina)}" title="${esc(g.team ? `${g.team} · ${g.nome}` : g.nome)}"><b class="ms-nome nome-scorrevole">${esc(g.team || g.nome)}</b></a>`
@@ -437,7 +440,7 @@
      * @param {HTMLElement} radice  il contenitore (di solito `.ms`): ci si mette dentro l'HTML del banner
      * @param {object} opzioni
      *   gif(specie)        l'immagine animata di un Pokémon (senza, niente sprite)
-     *   leggiGiocatore(id) -> Promise<{ colore, avatar }>: i colori e l'avatar di un allenatore (la pagina li legge da Firebase); ricordati dopo la prima volta
+     *   leggiGiocatore(id) -> Promise<{ colore, avatar, stileCard }>: il colore, l'avatar e la cornice di un allenatore (la pagina li legge da Firebase); ricordati dopo la prima volta
      *   caricaBadge()      -> Promise<risultato di Statistiche.calcola>: i numeri per i badge (di solito Fiocchi.carica(db)); i badge arrivano dopo il banner. Servono win.Fiocchi e win.BadgeTeam
      *   adesso()           l'ora di adesso (si cambia nelle prove)
      * @returns {{ aggiorna(esito): Promise<boolean>, vai(delta): Promise<boolean>, stato }}

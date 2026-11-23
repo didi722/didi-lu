@@ -630,6 +630,15 @@ async function getPlayersColors(p1, p2) {
 }
 
 
+// Le cornici (stile-card.css) dei due allenatori di uno showdown: due letture minuscole, come i colori. '' se non ne hanno una (e nell'app, che ha i suoi team senza riquadro)
+async function getPlayersStili(p1, p2) {
+    if (document.documentElement.classList.contains('app-shell')) return { s1: '', s2: '' };
+    const leggi = nome => db.ref(`players/${String(nome || '').toLowerCase().trim()}/info/stileCard`).once('value')
+        .then(x => (window.Cosmetici ? Cosmetici.valido(x.val(), 'card') : '')).catch(() => '');
+    const [s1, s2] = await Promise.all([leggi(p1), leggi(p2)]);
+    return { s1, s2 };
+}
+
 // Le stagioni "in corso": iscrizioni chiuse (o scadenza passata) e non concluse. Come le sceglie la Home. Più recente per ultima: [{ id, nome }]
 async function trovaStagioniInCorso() {
     const leggi = id => db.ref(`seasons/${id}/info`).once('value').then(x => [id, x.val()]).catch(() => [id, null]);
@@ -1573,19 +1582,21 @@ async function apriModaleShowdown(sdId, sdData) {
     // il passo dopo, per chi guarda un showdown, è un replay: il suo motore (Showdown, qualche MB) si prepara intanto, in silenzio (replay-carica.js)
     if (typeof ReplayCarica !== 'undefined') ReplayCarica.scalda(window);
 
-    // 1. Recuperiamo i colori base dal database
-    const colors = await getPlayersColors(info.player1, info.player2);
+    // 1. Recuperiamo i colori base dal database (e le cornici comprate nello Shop)
+    const [colors, stili] = await Promise.all([getPlayersColors(info.player1, info.player2), getPlayersStili(info.player1, info.player2)]);
 
     // 2. Generiamo il "pacchetto" colori
     const p1 = {
         base: colors.c1,
         border: pSBC(-0.6, colors.c1),
-        bg: colors.c1 + "22"
+        bg: colors.c1 + "22",
+        stile: stili.s1
     };
     const p2 = {
         base: colors.c2,
         border: pSBC(-0.6, colors.c2),
-        bg: colors.c2 + "22"
+        bg: colors.c2 + "22",
+        stile: stili.s2
     };
 
     let modalOverlay = document.getElementById('sd-modal-overlay');
@@ -1621,26 +1632,26 @@ async function apriModaleShowdown(sdId, sdData) {
         const a = Number(m.p1score), b = Number(m.p2score);
         const vince1 = a > b, vince2 = b > a;
         // un match senza team (formato Random: li dà Showdown, nuovi a ogni set) non ha un team da aprire
-        const blocco = (lato, giocatore, team, escaped, colore, vince, perde) => team ? `
-                <button type="button" class="sd-team sd-team-${lato}${vince ? ' sd-vincitore' : ''}${perde ? ' sd-perde' : ''}"
+        const blocco = (lato, giocatore, team, escaped, colore, vince, perde, stile) => team ? `
+                <button type="button" class="sd-team sd-team-${lato}${vince ? ' sd-vincitore' : ''}${perde ? ' sd-perde' : ''}"${stile ? ` data-stile-card="${stile}"` : ''}
                         style="--c: ${colore};"
                         onclick="apriDettaglioTeam('${jsq(giocatore)}', '${escaped}', '${categoriaEscaped}')">
                     ${vince ? '<span class="sd-win">WIN</span>' : ''}
                     <span class="sd-team-nome">${esc(team)}</span>
                     <span class="sd-lineup">${generaHtmlGifs(team, info.categoria)}</span>
                 </button>` : `
-                <div class="sd-team sd-team-${lato} sd-senza-team${vince ? ' sd-vincitore' : ''}${perde ? ' sd-perde' : ''}" style="--c: ${colore};">
+                <div class="sd-team sd-team-${lato} sd-senza-team${vince ? ' sd-vincitore' : ''}${perde ? ' sd-perde' : ''}"${stile ? ` data-stile-card="${stile}"` : ''} style="--c: ${colore};">
                     ${vince ? '<span class="sd-win">WIN</span>' : ''}
                     <span class="sd-team-nome">Random teams</span>
                 </div>`;
         return `
             <article class="sd-match" style="--i: ${i};">
                 <span class="sd-numero">MATCH ${esc(String(mKey).replace('match', ''))}</span>
-                ${blocco(1, info.player1, m.team1, team1Escaped, p1.base, vince1, vince2)}
+                ${blocco(1, info.player1, m.team1, team1Escaped, p1.base, vince1, vince2, p1.stile)}
                 <div class="sd-punteggio">
                     <b${vince1 ? ' class="sd-vince"' : ''}>${esc(m.p1score)}</b><i>:</i><b${vince2 ? ' class="sd-vince"' : ''}>${esc(m.p2score)}</b>
                 </div>
-                ${blocco(2, info.player2, m.team2, team2Escaped, p2.base, vince2, vince1)}
+                ${blocco(2, info.player2, m.team2, team2Escaped, p2.base, vince2, vince1, p2.stile)}
                 <button type="button" class="sd-replay"
                         onclick="apriMatch('${jsq(sdId)}', '${jsq(mKey)}', '${team1Escaped}', '${team2Escaped}', '${jsq(m.p1score)}', '${jsq(m.p2score)}')">REPLAY</button>
             </article>`;

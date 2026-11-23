@@ -131,7 +131,7 @@
         return premi;
     }
 
-    function persona(x) { return { id: x.id, nome: x.nome || x.id, colore: x.colore || '', avatar: x.avatar || '' }; }
+    function persona(x) { return { id: x.id, nome: x.nome || x.id, colore: x.colore || '', avatar: x.avatar || '', stileCard: x.stileCard || '' }; }
 
     // -----------------------------------------------------
     // Il riepilogo
@@ -154,7 +154,7 @@
 
         const classifica = Object.entries((dati && dati.leaderboard) || {}).map(([name, v]) => ({ name, ...v })).sort(confrontaClassifica).map((v, i) => {
             const p = colori.get(idDi(v.name)) || {};
-            return { posizione: i + 1, id: idDi(v.name), nome: p.nome || v.name, colore: p.colore || '', avatar: p.avatar || '', punti: num(v.points), vinti: num(v.won), persi: num(v.lost), sdVinti: num(v.sdWon), sdPersi: num(v.sdLost) };
+            return { posizione: i + 1, id: idDi(v.name), nome: p.nome || v.name, colore: p.colore || '', avatar: p.avatar || '', stileCard: p.stileCard || '', punti: num(v.points), vinti: num(v.won), persi: num(v.lost), sdVinti: num(v.sdWon), sdPersi: num(v.sdLost) };
         });
         // provvisorio: la stagione non è chiusa (anteprima con ?riepilogo=1): il "campione" è chi guida la classifica
         const provvisorio = !['closed', 'terminata'].includes(String(info.status || '').toLowerCase().trim());
@@ -234,6 +234,9 @@
         ? `<img class="${classe}" src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
         : `<span class="${classe} rs-av-vuoto"></span>`);
 
+    /** La cornice comprata nello Shop (stile-card.css) sulla scheda di un allenatore: solo un id fatto come si deve (viene dal database), e solo sul sito (`cornici`): l'app ha il suo aspetto */
+    const attributoCornice = (x, cornici) => (cornici && /^card-[a-z-]{2,30}$/.test(String((x && x.stileCard) || '')) ? ` data-stile-card="${x.stileCard}"` : '');
+
     /** Un allenatore: avatar e nome, link alla sua pagina */
     const htmlPersona = p => `<a class="rs-persona" href="${esc(linkGiocatore(p.nome))}" style="--c:${coloreSicuro(p.colore, COLORE_NEUTRO)}">${avatarImg(p, 'rs-av')}<span class="rs-nome">${esc(p.nome)}</span></a>`;
 
@@ -242,9 +245,9 @@
         ? `<span class="rs-med ${classe}" data-pkm="${esc(specie)}"><img src="${esc(gif(specie))}" alt="${esc(specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)"></span>` : '');
 
     /** Una riga della classifica finale: la stessa di quella a lato (le classi .cl-*, classifica.css) */
-    function htmlRiga(c) {
+    function htmlRiga(c, cornici) {
         const avatar = c.avatar ? `<img src="${esc(c.avatar)}" class="cl-avatar" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="cl-avatar cl-avatar-vuoto" aria-hidden="true"></span>';
-        return `<a class="cl-riga${c.posizione === 1 ? ' cl-primo' : ''}" href="${esc(linkGiocatore(c.nome))}" style="--cl-colore:${coloreSicuro(c.colore, '#31c489')}">`
+        return `<a class="cl-riga${c.posizione === 1 ? ' cl-primo' : ''}"${attributoCornice(c, cornici)} href="${esc(linkGiocatore(c.nome))}" style="--cl-colore:${coloreSicuro(c.colore, '#31c489')}">`
             + `<span class="cl-pos">#${c.posizione}</span>${avatar}<span class="cl-testi"><span class="cl-nome">${esc(c.nome)}</span>`
             + `<span class="cl-dati">SD ${c.sdVinti}-${c.sdPersi} · MATCH ${c.vinti}-${c.persi}</span></span><span class="cl-punti">${c.punti}</span></a>`;
     }
@@ -265,7 +268,7 @@
     const dato = (et, val, extra = '') => `<div class="rs-dato"><span class="rs-dato-et">${et}</span><span class="rs-dato-va">${val}</span>${extra}</div>`;
 
     /** Il riepilogo come HTML (tutto il testo che viene dal database è protetto). `gif(specie)` dà l'immagine animata di un Pokémon. */
-    function html(riep, { gif } = {}) {
+    function html(riep, { gif, cornici = false } = {}) {
         if (!riep) return '<p class="rs-vuoto">No recap available for this season.</p>';
         const v = riep.vincitore, st = v && v.stat;
         const colore = coloreSicuro(v && v.colore, COLORE_NEUTRO);
@@ -292,7 +295,7 @@
             }
         }
         const campione = v
-            ? `<section class="rs-b rs-campione ${riep.mvp || riep.mvpInCorso ? 'rs-s8' : 'rs-s12'}" style="--c:${colore}">${etichetta(riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION')}`
+            ? `<section class="rs-b rs-campione ${riep.mvp || riep.mvpInCorso ? 'rs-s8' : 'rs-s12'}"${attributoCornice(v, cornici)} style="--c:${colore}">${etichetta(riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION')}`
               + `<div class="rs-campione-testa">${avatarImg(v, 'rs-av-grande')}<div class="rs-campione-id"><a class="rs-campione-nome" href="${esc(linkGiocatore(v.nome))}">${esc(v.nome)}</a>`
               + `<span class="rs-campione-sotto">${v.punti} pts · #${v.posizione} of ${riep.classifica.length}</span></div>${htmlTrofeo(riep)}</div><div class="rs-dati">${dati.join('')}</div></section>`
             : '';
@@ -309,7 +312,7 @@
         // ---- la classifica finale
         const haColonna = riep.squadra.length || riep.piuUsati.length;
         const classifica = riep.classifica.length
-            ? `<section class="rs-b rs-classifica ${haColonna ? 'rs-s5' : 'rs-s12'}">${etichetta('FINAL STANDINGS')}<div class="rs-righe">${riep.classifica.map(htmlRiga).join('')}</div></section>`
+            ? `<section class="rs-b rs-classifica ${haColonna ? 'rs-s5' : 'rs-s12'}">${etichetta('FINAL STANDINGS')}<div class="rs-righe">${riep.classifica.map(c => htmlRiga(c, cornici)).join('')}</div></section>`
             : '';
 
         // ---- a fianco della classifica: la squadra ideale (i migliori Pokémon di ogni formato) e i più usati
@@ -330,7 +333,7 @@
         // ---- i premi: un riquadro ciascuno, sul colore di chi lo ha vinto
         const premi = riep.premi.length
             ? `<section class="rs-b rs-premi rs-s12">${etichetta('AWARDS')}<div class="rs-premi-lista">${riep.premi.map(p =>
-                `<article class="rs-premio" style="--c:${coloreSicuro(p.vincitori[0] && p.vincitori[0].colore, COLORE_NEUTRO)}"><div class="rs-premio-testa"><span class="rs-icona" aria-hidden="true">${htmlIconaPremio(p)}</span>`
+                `<article class="rs-premio"${attributoCornice(p.vincitori[0], cornici)} style="--c:${coloreSicuro(p.vincitori[0] && p.vincitori[0].colore, COLORE_NEUTRO)}"><div class="rs-premio-testa"><span class="rs-icona" aria-hidden="true">${htmlIconaPremio(p)}</span>`
                 + `<div><b>${esc(p.titolo)}</b><small>${esc(p.descrizione)}</small></div></div>`
                 + `<div class="rs-premio-pie"><div class="rs-premio-chi"><div class="rs-vincitori">${p.vincitori.map(x => `<a class="rs-nome-tag" href="${esc(linkGiocatore(x.nome))}">${esc(x.nome)}</a>`).join('')}</div>`
                 + `<span class="rs-valore">${esc(p.testoValore)}</span></div><div class="rs-avatar-premio">${p.vincitori.map(x => avatarImg(x, 'rs-av-premio')).join('')}</div></div></article>`).join('')}</div></section>`
@@ -647,7 +650,7 @@
         }
         corpo._riepilogo = riep;
         corpo._gif = gif;
-        corpo.innerHTML = html(riep, { gif });
+        corpo.innerHTML = html(riep, { gif, cornici: !doc.documentElement.classList.contains('app-shell') });      // le cornici solo sul sito: l'app ha il suo aspetto
         if (Medaglione) Medaglione.coloraMedaglioni(win, corpo);       // il colore del tipo arriva appena PokeAPI risponde
         if (doc.documentElement.classList.contains('app-shell')) {
             const rs = raggruppaInSchermate(doc, corpo);
