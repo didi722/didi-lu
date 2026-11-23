@@ -125,10 +125,19 @@
         '#FF1744', '#FF5E00', '#FFEA00', '#00FF66', '#00FFCC', '#00F0FF', '#0066FF', '#7B00FF', '#CC00FF', '#FF0099'
     ];
 
-    // Qualcuno in più: terre e scuri profondi (la riga di sotto è per sfondi e carte, non per il colore firma)
+    // Qualcuno in più. Prima terre e scuri profondi; poi altre sfumature per ogni tonalità (dai rossi ai rosa, famiglia per famiglia, dal più chiaro al più scuro), ognuna ben distinta da tutte le altre.
+    // Lo Shop le raggruppa per tonalità (Cosmetici.raggruppaColori). La riga di sotto è per sfondi e carte, non per il colore firma
     const PALETTE_EXTRA = [
         '#FF7B6B', '#F28C28', '#F4C430', '#A7C957', '#2A9D8F', '#1D7874', '#118AB2', '#264653',
-        '#5E60CE', '#6A0572', '#AB4E68', '#8D5524', '#5B3A29', '#0B3D2E', '#1B2A49', '#4A1942'
+        '#5E60CE', '#6A0572', '#AB4E68', '#8D5524', '#5B3A29', '#0B3D2E', '#1B2A49', '#4A1942',
+        '#D29589', '#EE6371', '#D21E1E', '#A14B36', '#913034', '#A80000', '#741111', '#E7B69D',
+        '#EBAD70', '#D66B00', '#C2470A', '#B37319', '#BE6F55', '#BE9255', '#856300', '#7E2E07',
+        '#FFE085', '#E0EB70', '#F0A000', '#C2940A', '#B9F98B', '#89D2B4', '#C4FF14', '#78E40C',
+        '#47C20A', '#54A008', '#159354', '#197411', '#1B6A49', '#ADF1FF', '#89C6D2', '#32E2D3',
+        '#0AB2C2', '#22876D', '#0893A0', '#076A7E', '#85C2FF', '#9985FF', '#607ED7', '#20BEF3',
+        '#001CA8', '#0070A8', '#155493', '#003785', '#E085FF', '#B69DE7', '#925CFF', '#AA6FC8',
+        '#6F42AE', '#6200A8', '#D47DCB', '#FF38DE', '#BE55A4', '#D600C1', '#A329A3', '#822B79',
+        '#FF8599', '#FF85CC', '#DDA6CB', '#F00064', '#C20A38', '#93155F', '#7E072E'
     ];
 
     // Neutri, solo per sfondi e carte
