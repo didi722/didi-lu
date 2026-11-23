@@ -496,6 +496,7 @@
             const aggiornamenti = { pagina: P.uguali(daSalvare, P.predefinita()) ? null : daSalvare };
             for (const k of cambiati) aggiornamenti[k] = k === 'title' && profilo.title === 'No Title' ? '' : profilo[k];
             await database.ref(`players/${chiave}/info`).update(aggiornamenti);
+            try { if (window.DbLeggero) window.DbLeggero.svuotaCache(); } catch (e) { /* le altre pagine rileggono il profilo nuovo (non quello ricordato 3 minuti) */ }
 
             C.salvata(daSalvare);
             C.profiloSalvato(profilo);

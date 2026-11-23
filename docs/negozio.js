@@ -266,11 +266,14 @@
     };
     const frase = motivo => FRASI[motivo] || "Couldn't do that.";
 
-    /** Chiama una funzione del server (europe-west1): le carica la prima volta, perché servono solo a chi compra */
+    /** Chiama una funzione del server (europe-west1): le carica la prima volta, perché servono solo a chi compra. Se l'operazione riesce (un acquisto, un cambio, un rilascio, uno shiny) le
+     *  altre pagine devono rileggere i profili: la cache tra le pagine (db-leggero.js) ricorda `players` per 3 minuti, e Trainers, Stats e Formats mostrerebbero ancora la vecchia cornice */
     async function chiama(win, nome, dati) {
         await caricaFunzioni(win);
         const f = win.firebase.app().functions('europe-west1');
-        return (await f.httpsCallable(nome)(dati || {})).data || {};
+        const r = (await f.httpsCallable(nome)(dati || {})).data || {};
+        if (r.ok) { try { if (win.DbLeggero && win.DbLeggero.svuotaCache) win.DbLeggero.svuotaCache(); } catch (e) { /* senza cache non c'è niente da svuotare */ } }
+        return r;
     }
     /** Indossa un avatar, un colore o una canzone che si ha (gratis; il server scrive il profilo): { tipo, id, url?, nome? }. Per togliere la canzone: tipo 'canzone' e id ''. */
     const cambia = (win, dati) => chiama(win, 'cambiaCosmetico', dati);

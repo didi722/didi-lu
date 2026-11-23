@@ -26,7 +26,8 @@
 // cache con svuotaCache(). Le pagine che devono essere sempre aggiornate (Hub, Matches, partite) non la usano.
 //   - lettura(db, percorso, opzioni)   come db.ref(percorso).once('value') ma con la cache: dà { val(), exists() }
 //   - conCache(chiave, leggi, opzioni) la cache per qualunque lettura (opzioni: ttl in ms, 0 = sempre fresca)
-//   - svuotaCache()                    dopo una scrittura che cambia ciò che le pagine di statistica mostrano
+//   - svuotaCache()                    dopo una scrittura che cambia ciò che le pagine di statistica mostrano (un match, un ricalcolo, un acquisto o un cambio nello Shop, il salvataggio della propria pagina):
+//                                      toglie anche i colori dei giocatori
 // stagioniConStats() è già con la cache.
 //
 // Funziona nel browser (window.DbLeggero) e in Node (require).
@@ -161,7 +162,7 @@
         const mem = memoria(radice);
         try {
             if (!mem) return;
-            const nomi = [];
+            const nomi = [CHIAVE_COLORI];       // anche i colori dei giocatori (5 minuti): un colore comprato o cambiato non deve restare quello vecchio nelle altre pagine
             for (let i = 0; i < mem.length; i++) { const n = mem.key(i); if (n && n.startsWith(PREFISSO_CACHE)) nomi.push(n); }
             nomi.forEach(n => mem.removeItem(n));
         } catch (e) { /* senza scheda resta quella in memoria, già svuotata */ }

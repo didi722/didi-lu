@@ -2,22 +2,64 @@
    STILE DELLE CARD — cosmetici del negozio (cosmetici.js, tipo "card"): come si vede la card di un allenatore, per tutti
    ---------------------------------------------------------------------
    Il valore (players/<id>/info/stileCard, es. "card-oro") va nell'attributo data-stile-card della card di quell'allenatore, dovunque ce ne sia una:
-   Trainers (.trainer-card), classifica di stagione (.cl-riga e .cl-tab-riga di Matches), Stats (.carta-players) e, nell'app, la scheda a scorrimento (.at-carta, .ac-carta, .as-carta).
-   Ogni stile è solo un gruppo di variabili; poi una regola sola le applica a ogni tipo di card, quindi uno stile nuovo = una voce nel catalogo + il suo gruppo qui:
+   Trainers (.trainer-card), classifica di stagione (.cl-riga e .cl-tab-riga di Matches), Stats (.carta-players), la classifica di un formato (.player-rank-row di Formats) e, nell'app, la scheda a scorrimento (.at-carta, .ac-carta, .as-carta).
+   Ogni stile è solo un gruppo di variabili; poi poche regole le applicano a ogni tipo di card, quindi uno stile nuovo = una voce nel catalogo + il suo gruppo qui:
      --sc-bordo   il colore del bordo della card
      --sc-glow    cornice e alone (box-shadow); --sc-glow2 è il secondo passo dell'alone che pulsa
      --sc-img     lo strato disegnato sopra il colore dell'allenatore (motivo o riflesso); --sc-dim la sua misura e --sc-rep come si ripete
-     --sc-anim    l'animazione (nome durata ...), se c'è
+     --sc-anim    l'animazione della card (nome durata ...), se c'è
+   Due strati in più, sopra lo sfondo e sotto il testo (pseudo-elementi, quindi non toccano la struttura delle card):
+     la CORNICE (::after): un anello che copre il bordo e la fascia subito fuori; si accende con --sc-ring-on: ""
+       --sc-ring    cosa lo riempie (di solito una fascia di metallo o di colore con sopra la luce che scorre); --sc-ring-dim, --sc-ring-rep, --sc-ring-anim
+     la DECORAZIONE (::before): scintille, fiamme, impulsi, riflessi dentro la card; si accende con --sc-deco-on: ""
+       --sc-deco    i suoi strati; --sc-deco-dim, --sc-deco-pos, --sc-deco-rep, --sc-deco-anim, --sc-deco-origin
    Il colore dell'allenatore, il testo e le misure della card non cambiano mai: cambia solo cosa le sta intorno e sopra. Va caricato dopo il foglio della pagina.
    ===================================================================== */
 
-:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .sc-campione)[data-stile-card] {      /* :root alza la priorità sopra gli stati :hover e le regole dei temi */
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .player-rank-row, .sc-campione)[data-stile-card] {      /* :root alza la priorità sopra gli stati :hover e le regole dei temi */
     border-color: var(--sc-bordo, var(--nb-ink, #000));
     box-shadow: var(--sc-glow, none);      /* senza !important: le animazioni (aloni che pulsano) non vincono su una regola importante */
     background-image: var(--sc-img, none) !important;
     background-size: var(--sc-dim, auto) !important;
     background-repeat: var(--sc-rep, repeat) !important;
     animation: var(--sc-anim, none);
+    isolation: isolate;      /* gli strati stanno dietro al testo ma sopra lo sfondo della card */
+}
+.sc-campione[data-stile-card] { position: relative; }
+
+/* gli strati: tutti dietro al contenuto (z-index -1 dentro la card, che è un contesto a sé) e mai sotto il dito */
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .player-rank-row, .sc-campione)[data-stile-card]::before,
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .player-rank-row, .sc-campione)[data-stile-card]::after {
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    box-sizing: border-box;
+    background-repeat: no-repeat;
+}
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .player-rank-row, .sc-campione)[data-stile-card]::before {      /* decorazione */
+    content: var(--sc-deco-on, none);
+    inset: 0;
+    border-radius: inherit;
+    background-image: var(--sc-deco, none);
+    background-size: var(--sc-deco-dim, auto);
+    background-position: var(--sc-deco-pos, 0 0);
+    background-repeat: var(--sc-deco-rep, no-repeat);
+    transform-origin: var(--sc-deco-origin, 50% 50%);
+    animation: var(--sc-deco-anim, none);
+}
+:root :is(.trainer-card, .cl-riga, .cl-tab-riga, .carta-players, .player-rank-row, .sc-campione)[data-stile-card]::after {       /* cornice: l'anello sul bordo (e un po' fuori), ritagliato con una maschera */
+    content: var(--sc-ring-on, none);
+    inset: -7px;
+    padding: 6px;
+    border-radius: inherit;
+    background-image: var(--sc-ring, none);
+    background-size: var(--sc-ring-dim, 100% 100%);
+    background-repeat: var(--sc-ring-rep, no-repeat);
+    animation: var(--sc-ring-anim, none);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
 }
 
 /* nell'app la card non ha un riquadro: lo stile veste la pedana tonda su cui sta l'allenatore */
@@ -27,18 +69,40 @@ html.app-shell [data-stile-card] .pal-pedana {
 }
 
 /* ---------- i riflessi e gli aloni animati (condivisi) ---------- */
-@keyframes sc-luccica { 0%, 45% { background-position: 140% 0, 0 0; } 100% { background-position: -40% 0, 0 0; } }
 /* l'olografica: il riflesso passa più spesso (ogni 3 secondi circa, con una breve pausa) */
 @keyframes sc-olo { 0%, 12% { background-position: 140% 0, 0 0; } 100% { background-position: -40% 0, 0 0; } }
 @keyframes sc-pulsa { from { box-shadow: var(--sc-glow); } to { box-shadow: var(--sc-glow2, var(--sc-glow)); } }
-@keyframes sc-deriva { from { background-position: 0 0, 0 0, 0 0; } to { background-position: -53px 0, -71px 0, -37px 0; } }
+@keyframes sc-deriva { from { background-position: 0 0, 0 0, 0 0, 0 0; } to { background-position: -53px 0, -71px 0, -37px 0, 0 0; } }
+/* la luce che attraversa la cornice (o un riflesso largo 3-4 volte la card): ferma un momento, poi da sinistra a destra. Lo strato di base (largo quanto la card) non si sposta */
+@keyframes sc-scorre { 0%, 35% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+/* una fascia che scorre senza fine (larga il doppio della card, che si ripete) */
+@keyframes sc-fluisce { from { background-position: 0 0; } to { background-position: 200% 0; } }
+/* una scintilla che compare e sparisce */
+@keyframes sc-brilla { 0%, 100% { opacity: 0; } 10% { opacity: 1; } 24% { opacity: 0.1; } 34% { opacity: 0.8; } 46% { opacity: 0; } }
+/* le fiamme che si alzano e si abbassano, ognuna un po' diversa */
+@keyframes sc-fiamme { from { transform: scaleY(0.8) translateX(-2px); opacity: 0.85; } 50% { transform: scaleY(1.04) translateX(1px); opacity: 1; } to { transform: scaleY(0.9) translateX(2px); opacity: 0.92; } }
+/* i punti di luce che corrono sulle piste del circuito */
+@keyframes sc-impulsi { from { background-position: -80px 22px, -60px 46px; } to { background-position: calc(100% + 80px) 22px, calc(100% + 60px) 46px; } }
+/* l'arcobaleno: l'alone cambia colore */
 @keyframes sc-arcobaleno {
-    0%, 100% { box-shadow: 0 0 0 3px #ff4d6d, 0 0 14px 3px #ff4d6d; }
-    17% { box-shadow: 0 0 0 3px #ffb02e, 0 0 14px 3px #ffb02e; }
-    33% { box-shadow: 0 0 0 3px #ffe94d, 0 0 14px 3px #ffe94d; }
-    50% { box-shadow: 0 0 0 3px #3be07a, 0 0 14px 3px #3be07a; }
-    67% { box-shadow: 0 0 0 3px #3ba8ff, 0 0 14px 3px #3ba8ff; }
-    83% { box-shadow: 0 0 0 3px #b04dff, 0 0 14px 3px #b04dff; }
+    0%, 100% { box-shadow: 0 0 0 1.5px #fff, 0 0 0 3.5px #ff4d6d, 0 0 14px 4px #ff4d6d, 0 0 30px 8px rgba(255, 77, 109, 0.45), inset 0 0 16px 1px rgba(255, 77, 109, 0.3); }
+    17% { box-shadow: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffb02e, 0 0 14px 4px #ffb02e, 0 0 30px 8px rgba(255, 176, 46, 0.45), inset 0 0 16px 1px rgba(255, 176, 46, 0.3); }
+    33% { box-shadow: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffe94d, 0 0 14px 4px #ffe94d, 0 0 30px 8px rgba(255, 233, 77, 0.45), inset 0 0 16px 1px rgba(255, 233, 77, 0.3); }
+    50% { box-shadow: 0 0 0 1.5px #fff, 0 0 0 3.5px #3be07a, 0 0 14px 4px #3be07a, 0 0 30px 8px rgba(59, 224, 122, 0.45), inset 0 0 16px 1px rgba(59, 224, 122, 0.3); }
+    67% { box-shadow: 0 0 0 1.5px #fff, 0 0 0 3.5px #3ba8ff, 0 0 14px 4px #3ba8ff, 0 0 30px 8px rgba(59, 168, 255, 0.45), inset 0 0 16px 1px rgba(59, 168, 255, 0.3); }
+    83% { box-shadow: 0 0 0 1.5px #fff, 0 0 0 3.5px #b04dff, 0 0 14px 4px #b04dff, 0 0 30px 8px rgba(176, 77, 255, 0.45), inset 0 0 16px 1px rgba(176, 77, 255, 0.3); }
+}
+
+/* ---------- le scintille (quattro punte) che brillano sulle cornici preziose ---------- */
+:is([data-stile-card="card-oro"], [data-stile-card="card-bagliore-oro"], [data-stile-card="card-bagliore-arcobaleno"], [data-stile-card="card-olografica"], [data-stile-card="card-stelle"]) {
+    --sc-deco-on: "";
+    --sc-deco:
+        radial-gradient(circle, #fff 0 1px, rgba(255, 255, 255, 0.7) 1.7px, transparent 3.8px), linear-gradient(90deg, transparent, #fff 50%, transparent), linear-gradient(0deg, transparent, #fff 50%, transparent),
+        radial-gradient(circle, #fff 0 1px, rgba(255, 255, 255, 0.7) 1.7px, transparent 3.8px), linear-gradient(90deg, transparent, #fff 50%, transparent), linear-gradient(0deg, transparent, #fff 50%, transparent),
+        radial-gradient(circle, #fff 0 1px, rgba(255, 255, 255, 0.7) 1.7px, transparent 3.8px), linear-gradient(90deg, transparent, #fff 50%, transparent), linear-gradient(0deg, transparent, #fff 50%, transparent);
+    --sc-deco-dim: 9px 9px, 17px 1px, 1px 17px, 7px 7px, 13px 1px, 1px 13px, 8px 8px, 15px 1px, 1px 15px;
+    --sc-deco-pos: 6% 30%, 6% 30%, 6% 30%, 47% 74%, 47% 74%, 47% 74%, 92% 24%, 92% 24%, 92% 24%;
+    --sc-deco-anim: sc-brilla 4.2s ease-in-out infinite;
 }
 
 /* ---------- gli stili ---------- */
@@ -64,103 +128,198 @@ html.app-shell [data-stile-card] .pal-pedana {
 [data-stile-card="card-pokeball"] {
     --sc-bordo: #000;
     --sc-glow: 0 0 0 3px #e8231f, 0 0 0 5px #000;
-    --sc-img:
-        radial-gradient(circle at 50% 50%, #fff 0 2px, rgba(0, 0, 0, 0.6) 2.4px 3.4px, transparent 3.8px),
-        radial-gradient(circle at 50% 50%, transparent 0 9px, rgba(0, 0, 0, 0.42) 9.4px 11px, transparent 11.4px),
-        radial-gradient(circle at 50% 36%, rgba(232, 35, 31, 0.3) 0 9px, transparent 9.4px);
-    --sc-dim: 44px 36px;
-}
-[data-stile-card="card-carbonio"] {
-    --sc-bordo: #1c1f24;
-    --sc-glow: 0 0 0 3px #1c1f24, 0 0 0 5px #9aa3ad;
-    --sc-img: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.26) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.26) 0 2px, transparent 2px 4px);
-    --sc-dim: auto;
-}
-[data-stile-card="card-stelle"] {
-    --sc-bordo: #1b1f55;
-    --sc-glow: 0 0 0 3px #1b1f55, 0 0 0 5px #b7c0ff, 0 0 16px 4px rgba(150, 165, 255, 0.55);
-    --sc-img:
-        radial-gradient(circle at 20% 30%, #fff 0 1.2px, rgba(30, 30, 110, 0.5) 1.6px 2.5px, transparent 3px),
-        radial-gradient(circle at 75% 65%, #fff 0 1px, rgba(30, 30, 110, 0.5) 1.4px 2.2px, transparent 2.7px),
-        radial-gradient(circle at 55% 15%, #fff1b0 0 1.4px, rgba(30, 30, 110, 0.5) 1.8px 2.7px, transparent 3.2px);
-    --sc-dim: 53px 41px, 71px 59px, 37px 43px;
-    --sc-anim: sc-deriva 30s linear infinite;
-}
-[data-stile-card="card-circuito"] {
-    --sc-bordo: #003c36;
-    --sc-glow: 0 0 0 3px #003c36, 0 0 0 5px #00ffc8, 0 0 14px 4px rgba(0, 255, 200, 0.55);
-    --sc-img:
-        radial-gradient(circle at 0 0, #00ffc8 0 2.2px, rgba(0, 60, 54, 0.8) 2.6px 3.4px, transparent 3.9px),
-        linear-gradient(90deg, rgba(0, 70, 60, 0.32) 1.5px, transparent 1.5px),
-        linear-gradient(0deg, rgba(0, 70, 60, 0.32) 1.5px, transparent 1.5px);
-    --sc-dim: 24px 24px;
+    --sc-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='rgba(0,0,0,.4)' stroke-width='1.6'%3E%3Cg transform='translate(11 11)'%3E%3Ccircle r='7.5'/%3E%3Cpath d='M-7.5 0H-2.6M2.6 0H7.5'/%3E%3Ccircle r='2.6'/%3E%3C/g%3E%3Cg transform='translate(33 33)'%3E%3Ccircle r='7.5'/%3E%3Cpath d='M-7.5 0H-2.6M2.6 0H7.5'/%3E%3Ccircle r='2.6'/%3E%3C/g%3E%3C/g%3E%3Cg fill='rgba(232,35,31,.3)'%3E%3Cpath transform='translate(11 11)' d='M-7.5 0A7.5 7.5 0 0 1 7.5 0H2.6A2.6 2.6 0 0 0 -2.6 0Z'/%3E%3Cpath transform='translate(33 33)' d='M-7.5 0A7.5 7.5 0 0 1 7.5 0H2.6A2.6 2.6 0 0 0 -2.6 0Z'/%3E%3C/g%3E%3C/svg%3E");      /* due Poké Ball per piastrella, in diagonale */
+    --sc-dim: 44px 44px;
 }
 
-/* cornici con il riflesso che passa */
+/* metalli: una fascia lucida al posto del bordo, con la luce che la attraversa ogni tanto */
 [data-stile-card="card-oro"] {
-    --sc-bordo: #6b4700;
-    --sc-glow: 0 0 0 3px #f6d365, 0 0 0 5px #6b4700, 0 0 14px 4px rgba(255, 200, 70, 0.55);
-    --sc-img: linear-gradient(110deg, transparent 0 40%, rgba(255, 255, 255, 0.65) 48%, transparent 56% 100%), linear-gradient(135deg, rgba(255, 215, 90, 0.28), rgba(255, 160, 20, 0.18));
-    --sc-dim: 250% 100%, 100% 100%;
+    --sc-bordo: #5a3b00;
+    --sc-glow: 0 0 0 4px #5a3b00, 0 0 16px 4px rgba(255, 200, 70, 0.55);
+    --sc-img: linear-gradient(135deg, rgba(255, 222, 120, 0.34), rgba(255, 170, 30, 0.12) 55%, rgba(255, 232, 150, 0.24));
+    --sc-dim: 100% 100%;
     --sc-rep: no-repeat;
-    --sc-anim: sc-luccica 4.5s ease-in-out infinite;
+    --sc-ring-on: "";
+    --sc-ring:
+        linear-gradient(100deg, transparent 0 44%, rgba(255, 255, 255, 0.95) 50%, transparent 56% 100%),
+        linear-gradient(135deg, #fff2ad 0%, #f4c430 20%, #a8730a 44%, #ffe680 66%, #d9a21c 84%, #fff2ad 100%);
+    --sc-ring-dim: 400% 100%, 100% 100%;
+    --sc-ring-anim: sc-scorre 5s ease-in-out infinite;
 }
 [data-stile-card="card-argento"] {
-    --sc-bordo: #3a4350;
-    --sc-glow: 0 0 0 3px #e4ebf2, 0 0 0 5px #3a4350, 0 0 10px 2px rgba(210, 225, 240, 0.6);
-    --sc-img: linear-gradient(110deg, transparent 0 40%, rgba(255, 255, 255, 0.6) 48%, transparent 56% 100%), linear-gradient(135deg, rgba(225, 233, 242, 0.32), rgba(160, 175, 190, 0.2));
-    --sc-dim: 250% 100%, 100% 100%;
+    --sc-bordo: #2d3541;
+    --sc-glow: 0 0 0 4px #2d3541, 0 0 14px 3px rgba(205, 222, 240, 0.6);
+    --sc-img: linear-gradient(135deg, rgba(235, 242, 250, 0.4), rgba(150, 165, 180, 0.12) 55%, rgba(235, 242, 250, 0.3));
+    --sc-dim: 100% 100%;
     --sc-rep: no-repeat;
-    --sc-anim: sc-luccica 6s ease-in-out infinite;
+    --sc-ring-on: "";
+    --sc-ring:
+        linear-gradient(100deg, transparent 0 44%, rgba(255, 255, 255, 1) 50%, transparent 56% 100%),
+        linear-gradient(135deg, #ffffff 0%, #c8d1db 22%, #7d8996 46%, #eef3f8 68%, #a9b3bf 86%, #ffffff 100%);
+    --sc-ring-dim: 400% 100%, 100% 100%;
+    --sc-ring-anim: sc-scorre 6s ease-in-out infinite;
+}
+[data-stile-card="card-carbonio"] {
+    --sc-bordo: #14171b;
+    --sc-glow: 0 0 0 4px #14171b, 0 0 10px 2px rgba(120, 132, 146, 0.5);
+    --sc-img: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.28) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.28) 0 2px, transparent 2px 4px);
+    --sc-dim: auto;
+    --sc-ring-on: "";
+    --sc-ring:
+        linear-gradient(100deg, transparent 0 44%, rgba(255, 255, 255, 0.75) 50%, transparent 56% 100%),
+        linear-gradient(135deg, #5b636d 0%, #1b1f24 30%, #6a737e 52%, #1b1f24 74%, #5b636d 100%);
+    --sc-ring-dim: 400% 100%, 100% 100%;
+    --sc-ring-anim: sc-scorre 7s ease-in-out infinite;
+    --sc-deco-on: "";
+    --sc-deco: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.2) 50%, transparent 62%);
+    --sc-deco-dim: 300% 100%;
+    --sc-deco-anim: sc-scorre 7s ease-in-out infinite;
 }
 [data-stile-card="card-olografica"] {
     --sc-bordo: #20204a;
-    --sc-glow: 0 0 0 3px #fff, 0 0 0 5px #20204a, 0 0 18px 3px rgba(150, 190, 255, 0.7);
+    --sc-glow: 0 0 0 4px #20204a, 0 0 18px 3px rgba(150, 190, 255, 0.7);
     --sc-img:
         linear-gradient(105deg, transparent 18%, rgba(255, 0, 140, 0.34) 30%, rgba(255, 230, 0, 0.3) 38%, rgba(0, 255, 170, 0.34) 46%, rgba(0, 160, 255, 0.34) 54%, rgba(190, 0, 255, 0.3) 62%, transparent 74%),
         linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
     --sc-dim: 300% 100%, 100% 100%;
     --sc-rep: no-repeat;
     --sc-anim: sc-olo 3s ease-in-out infinite;
+    --sc-ring-on: "";
+    --sc-ring:
+        linear-gradient(100deg, transparent 0 44%, rgba(255, 255, 255, 0.95) 50%, transparent 56% 100%),
+        linear-gradient(100deg, #ff5fa8, #ffd23f, #3be07a, #3ba8ff, #b04dff, #ff5fa8);
+    --sc-ring-dim: 400% 100%, 100% 100%;
+    --sc-ring-anim: sc-scorre 4s ease-in-out infinite;
 }
 [data-stile-card="card-arcobaleno"] {
     --sc-bordo: #000;
-    --sc-glow: 0 0 0 3px #ff4d6d, 0 0 14px 3px #ff4d6d;
-    --sc-anim: sc-arcobaleno 6s linear infinite;
+    --sc-glow: 0 0 0 4px #000, 0 0 16px 3px rgba(255, 255, 255, 0.35);
+    --sc-ring-on: "";
+    --sc-ring: linear-gradient(90deg, #ff4d6d, #ffb02e, #ffe94d, #3be07a, #3ba8ff, #b04dff, #ff4d6d);
+    --sc-ring-dim: 200% 100%;
+    --sc-ring-rep: repeat-x;
+    --sc-ring-anim: sc-fluisce 6s linear infinite;
 }
 
-/* aloni che pulsano (trasluminescenza) */
+/* natura e tecnologia */
+[data-stile-card="card-stelle"] {
+    --sc-bordo: #131850;
+    --sc-glow: 0 0 0 4px #131850, 0 0 18px 4px rgba(150, 165, 255, 0.55), inset 0 0 18px 2px rgba(20, 25, 110, 0.4);
+    --sc-img:
+        radial-gradient(circle at 20% 30%, #fff 0 1.1px, rgba(255, 255, 255, 0.3) 1.5px 2.4px, transparent 3px),
+        radial-gradient(circle at 75% 65%, #fff 0 0.9px, rgba(255, 255, 255, 0.3) 1.3px 2.1px, transparent 2.6px),
+        radial-gradient(circle at 55% 15%, #fff1b0 0 1.3px, rgba(255, 241, 176, 0.3) 1.7px 2.6px, transparent 3.2px),
+        linear-gradient(rgba(12, 16, 72, 0.34), rgba(12, 16, 72, 0.12));
+    --sc-dim: 53px 41px, 71px 59px, 37px 43px, 100% 100%;
+    --sc-anim: sc-deriva 30s linear infinite;
+    --sc-ring-on: "";
+    --sc-ring:
+        linear-gradient(100deg, transparent 0 44%, rgba(255, 255, 255, 0.9) 50%, transparent 56% 100%),
+        linear-gradient(135deg, #2b3294 0%, #94a3ff 24%, #1a1f66 50%, #bfc9ff 76%, #2b3294 100%);
+    --sc-ring-dim: 400% 100%, 100% 100%;
+    --sc-ring-anim: sc-scorre 6.5s ease-in-out infinite;
+}
+[data-stile-card="card-circuito"] {
+    --sc-bordo: #003c36;
+    --sc-glow: 0 0 0 4px #003c36, 0 0 14px 4px rgba(0, 255, 200, 0.5), inset 0 0 14px 1px rgba(0, 255, 200, 0.18);
+    --sc-img:
+        radial-gradient(circle at 0 0, #00ffc8 0 2.2px, rgba(0, 60, 54, 0.8) 2.6px 3.4px, transparent 3.9px),
+        linear-gradient(90deg, rgba(0, 70, 60, 0.32) 1.5px, transparent 1.5px),
+        linear-gradient(0deg, rgba(0, 70, 60, 0.32) 1.5px, transparent 1.5px);
+    --sc-dim: 24px 24px;
+    --sc-ring-on: "";
+    --sc-ring:
+        linear-gradient(100deg, transparent 0 44%, rgba(210, 255, 245, 0.95) 50%, transparent 56% 100%),
+        linear-gradient(90deg, #00a884, #00ffc8, #00a884);
+    --sc-ring-dim: 400% 100%, 100% 100%;
+    --sc-ring-anim: sc-scorre 4.5s ease-in-out infinite;
+    --sc-deco-on: "";
+    --sc-deco:
+        linear-gradient(90deg, transparent, rgba(110, 255, 225, 0.9) 62%, #fff 86%, transparent),
+        linear-gradient(90deg, transparent, rgba(110, 255, 225, 0.8) 62%, #fff 86%, transparent);
+    --sc-deco-dim: 70px 2px, 50px 2px;
+    --sc-deco-anim: sc-impulsi 3.4s linear infinite;
+}
+[data-stile-card="card-fiamma"] {
+    --sc-bordo: #3a0f00;
+    --sc-glow: 0 0 0 4px #3a0f00, 0 0 14px 3px #ff5a1f, 0 0 30px 8px rgba(255, 90, 20, 0.5);
+    --sc-glow2: 0 0 0 4px #3a0f00, 0 0 20px 5px #ff8a1f, 0 0 44px 13px rgba(255, 120, 20, 0.6);
+    --sc-anim: sc-pulsa 0.9s ease-in-out infinite alternate;
+    --sc-ring-on: "";
+    --sc-ring: linear-gradient(0deg, #ffd23f 0%, #ff8a1f 38%, #e8330a 72%, #7a1200 100%);
+    --sc-deco-on: "";
+    --sc-deco:
+        radial-gradient(ellipse 15px 24px at 50% 100%, rgba(255, 244, 160, 0.95) 0 22%, rgba(255, 170, 30, 0.8) 48%, rgba(255, 90, 0, 0) 74%),
+        radial-gradient(ellipse 22px 34px at 50% 100%, rgba(255, 150, 20, 0.88) 0 20%, rgba(255, 70, 0, 0.7) 52%, rgba(255, 40, 0, 0) 76%),
+        radial-gradient(ellipse 30px 44px at 50% 100%, rgba(230, 50, 0, 0.7) 0 18%, rgba(180, 20, 0, 0.42) 56%, rgba(120, 0, 0, 0) 78%);
+    --sc-deco-dim: 26px 100%, 40px 100%, 58px 100%;
+    --sc-deco-pos: 4px 0, 17px 0, 0 0;
+    --sc-deco-rep: repeat-x;
+    --sc-deco-origin: 50% 100%;
+    --sc-deco-anim: sc-fiamme 1.3s ease-in-out infinite alternate;
+}
+
+/* cornici luminose: una per colore di aura. Un tubo al neon (il bordo scuro, la linea accesa, l'alone), la luce che lo percorre ogni tanto e il respiro dell'alone */
+[data-stile-card^="card-bagliore-"] {
+    --sc-img: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 52%);
+    --sc-dim: 100% 100%;
+    --sc-rep: no-repeat;
+    --sc-anim: sc-pulsa 2.6s ease-in-out infinite alternate;
+    --sc-ring-on: "";
+    --sc-ring: linear-gradient(100deg, transparent 0 43%, rgba(255, 255, 255, 0) 44%, rgba(255, 255, 255, 0.55) 47.5%, #fff 50%, rgba(255, 255, 255, 0.55) 52.5%, rgba(255, 255, 255, 0) 56%, transparent 57% 100%);
+    --sc-ring-dim: 400% 100%;
+    --sc-ring-anim: sc-scorre 5.5s ease-in-out infinite;
+}
+[data-stile-card="card-bagliore-oro"] {
+    --sc-bordo: #4a3200;
+    --sc-glow: 0 0 0 1.5px #fff3b8, 0 0 0 3.5px #ffcc33, 0 0 11px 4px #ffcc33, 0 0 28px 8px rgba(255, 204, 51, 0.48), inset 0 0 16px 1px rgba(255, 204, 51, 0.32);
+    --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #fff3b8, 0 0 18px 6px #ffcc33, 0 0 44px 13px rgba(255, 204, 51, 0.6), inset 0 0 24px 3px rgba(255, 204, 51, 0.5);
+}
+[data-stile-card="card-bagliore-fiamma"] {
+    --sc-bordo: #4a1500;
+    --sc-glow: 0 0 0 1.5px #ffc9a0, 0 0 0 3.5px #ff5a1f, 0 0 11px 4px #ff5a1f, 0 0 28px 8px rgba(255, 90, 31, 0.48), inset 0 0 16px 1px rgba(255, 90, 31, 0.32);
+    --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffc9a0, 0 0 18px 6px #ff5a1f, 0 0 44px 13px rgba(255, 90, 31, 0.6), inset 0 0 24px 3px rgba(255, 90, 31, 0.5);
+}
 [data-stile-card="card-bagliore-ciano"] {
-    --sc-bordo: #063840;
-    --sc-glow: 0 0 0 3px #5ff0ff, 0 0 10px 3px #5ff0ff, 0 0 26px 7px rgba(95, 240, 255, 0.55);
-    --sc-glow2: 0 0 0 3px #b9fbff, 0 0 16px 5px #5ff0ff, 0 0 40px 12px rgba(95, 240, 255, 0.65);
-    --sc-anim: sc-pulsa 2.4s ease-in-out infinite alternate;
+    --sc-bordo: #06364a;
+    --sc-glow: 0 0 0 1.5px #d6f5ff, 0 0 0 3.5px #5fd4ff, 0 0 11px 4px #5fd4ff, 0 0 28px 8px rgba(95, 212, 255, 0.48), inset 0 0 16px 1px rgba(95, 212, 255, 0.32);
+    --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #d6f5ff, 0 0 18px 6px #5fd4ff, 0 0 44px 13px rgba(95, 212, 255, 0.6), inset 0 0 24px 3px rgba(95, 212, 255, 0.5);
+}
+[data-stile-card="card-bagliore-smeraldo"] {
+    --sc-bordo: #053d1a;
+    --sc-glow: 0 0 0 1.5px #cbffdc, 0 0 0 3.5px #2ee66b, 0 0 11px 4px #2ee66b, 0 0 28px 8px rgba(46, 230, 107, 0.48), inset 0 0 16px 1px rgba(46, 230, 107, 0.32);
+    --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #cbffdc, 0 0 18px 6px #2ee66b, 0 0 44px 13px rgba(46, 230, 107, 0.6), inset 0 0 24px 3px rgba(46, 230, 107, 0.5);
+}
+[data-stile-card="card-bagliore-viola"] {
+    --sc-bordo: #2b0a55;
+    --sc-glow: 0 0 0 1.5px #e8d0ff, 0 0 0 3.5px #a855ff, 0 0 11px 4px #a855ff, 0 0 28px 8px rgba(168, 85, 255, 0.48), inset 0 0 16px 1px rgba(168, 85, 255, 0.32);
+    --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #e8d0ff, 0 0 18px 6px #a855ff, 0 0 44px 13px rgba(168, 85, 255, 0.6), inset 0 0 24px 3px rgba(168, 85, 255, 0.5);
 }
 [data-stile-card="card-bagliore-rosa"] {
-    --sc-bordo: #4a0a35;
-    --sc-glow: 0 0 0 3px #ff5fc8, 0 0 10px 3px #ff5fc8, 0 0 26px 7px rgba(255, 95, 200, 0.55);
-    --sc-glow2: 0 0 0 3px #ffc4ee, 0 0 16px 5px #ff5fc8, 0 0 40px 12px rgba(255, 95, 200, 0.65);
-    --sc-anim: sc-pulsa 2.4s ease-in-out infinite alternate;
+    --sc-bordo: #4a0a2c;
+    --sc-glow: 0 0 0 1.5px #ffd2e7, 0 0 0 3.5px #ff5fa8, 0 0 11px 4px #ff5fa8, 0 0 28px 8px rgba(255, 95, 168, 0.48), inset 0 0 16px 1px rgba(255, 95, 168, 0.32);
+    --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffd2e7, 0 0 18px 6px #ff5fa8, 0 0 44px 13px rgba(255, 95, 168, 0.6), inset 0 0 24px 3px rgba(255, 95, 168, 0.5);
+}
+[data-stile-card="card-bagliore-rosso"] {
+    --sc-bordo: #4a0509;
+    --sc-glow: 0 0 0 1.5px #ffc4c9, 0 0 0 3.5px #ff2d3d, 0 0 11px 4px #ff2d3d, 0 0 28px 8px rgba(255, 45, 61, 0.48), inset 0 0 16px 1px rgba(255, 45, 61, 0.32);
+    --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #ffc4c9, 0 0 18px 6px #ff2d3d, 0 0 44px 13px rgba(255, 45, 61, 0.6), inset 0 0 24px 3px rgba(255, 45, 61, 0.5);
 }
 [data-stile-card="card-bagliore-verde"] {
     --sc-bordo: #213d00;
-    --sc-glow: 0 0 0 3px #b6ff2e, 0 0 10px 3px #b6ff2e, 0 0 26px 7px rgba(182, 255, 46, 0.55);
-    --sc-glow2: 0 0 0 3px #e8ffa6, 0 0 16px 5px #b6ff2e, 0 0 40px 12px rgba(182, 255, 46, 0.65);
-    --sc-anim: sc-pulsa 2.4s ease-in-out infinite alternate;
+    --sc-glow: 0 0 0 1.5px #f0ffbc, 0 0 0 3.5px #b6ff2e, 0 0 11px 4px #b6ff2e, 0 0 28px 8px rgba(182, 255, 46, 0.48), inset 0 0 16px 1px rgba(182, 255, 46, 0.32);
+    --sc-glow2: 0 0 0 1.5px #fff, 0 0 0 3.5px #f0ffbc, 0 0 18px 6px #b6ff2e, 0 0 44px 13px rgba(182, 255, 46, 0.6), inset 0 0 24px 3px rgba(182, 255, 46, 0.5);
 }
-[data-stile-card="card-fiamma"] {
-    --sc-bordo: #4a1500;
-    --sc-glow: 0 0 0 3px #ff8a1f, 0 0 12px 3px #ff5a1f, 0 0 28px 8px rgba(255, 90, 20, 0.55);
-    --sc-glow2: 0 0 0 3px #ffd23f, 0 0 18px 5px #ff7a1a, 0 0 42px 14px rgba(255, 120, 20, 0.6);
-    --sc-img: linear-gradient(0deg, rgba(255, 70, 0, 0.5) 0, rgba(255, 160, 0, 0.25) 38%, transparent 72%);
-    --sc-dim: 100% 100%;
-    --sc-rep: no-repeat;
-    --sc-anim: sc-pulsa 0.8s ease-in-out infinite alternate;
+
+[data-stile-card="card-bagliore-arcobaleno"] {
+    --sc-bordo: #1c1c2e;
+    --sc-glow: 0 0 0 1.5px #fff, 0 0 0 3.5px #ff4d6d, 0 0 14px 4px #ff4d6d, 0 0 30px 8px rgba(255, 77, 109, 0.45), inset 0 0 16px 1px rgba(255, 77, 109, 0.3);
+    --sc-anim: sc-arcobaleno 6s linear infinite;
 }
 
 /* un riquadro di prova (il negozio) */
 .sc-campione { display: flex; align-items: center; justify-content: center; box-sizing: border-box; border: 3px solid #000; background: var(--sc-fondo, #6b93b0); }
 
 @media (prefers-reduced-motion: reduce) {
-    [data-stile-card], [data-stile-card] .pal-pedana { animation: none !important; }
+    [data-stile-card], [data-stile-card]::before, [data-stile-card]::after, [data-stile-card] .pal-pedana { animation: none !important; }
 }
