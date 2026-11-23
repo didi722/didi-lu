@@ -78,6 +78,8 @@
 :root .hof-record ol:has(> [data-stile-card]) { gap: 18px; }
 :root .ms-scontro:has(> [data-stile-card]) { gap: 18px; }
 :root .rs-righe:has(> [data-stile-card]) { gap: calc(18 * var(--rs-u, 1)); }
+/* nella finestra dello showdown le regole del team (vincitore, passaggio del mouse) hanno un id: senza questa l'ombra piena resterebbe sotto la cornice */
+#sd-modal-overlay .sd-team[data-stile-card], #sd-modal-overlay .sd-team[data-stile-card]:is(:hover, :focus-visible, :active) { box-shadow: var(--sc-glow, none); }
 :root .lato-nome[data-stile-card] { overflow: visible; }      /* il nome che scorre sta in un riquadro interno: la cornice può uscire */
 :root .ms-perde[data-stile-card] { filter: none; }
 :root .ms-perde[data-stile-card] > * { filter: grayscale(0.8); }

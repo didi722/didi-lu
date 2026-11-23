@@ -256,3 +256,7 @@ test('aura comprata: compare sugli avatar della card delle stagioni (home e Hall
     assert.match(css, /:is\(\.winner-avatar-home, \.palm-avatar, \.hof-voce \.ms-av\)\[data-aura\] \{/);
     assert.match(css, /@keyframes aura-av-arcobaleno/);
 });
+
+test('showdown: con la cornice il team non tiene l\'ombra piena del tema (vincitore e passaggio del mouse compresi)', () => {
+    assert.match(docs('stile-card.css'), /#sd-modal-overlay \.sd-team\[data-stile-card\], #sd-modal-overlay \.sd-team\[data-stile-card\]:is\(:hover, :focus-visible, :active\) \{ box-shadow: var\(--sc-glow, none\); \}/);
+});
