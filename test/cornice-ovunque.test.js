@@ -277,7 +277,7 @@ test('liste fitte (classifica a lato, tabella estesa, righe dello showdown): pi√
         assert.equal(/--sc-glow2:/.test(b), /--sc-glow2-lieve:/.test(b), `${nome}: anche il secondo passo`);
     }
     const oro = css.slice(css.indexOf('[data-stile-card="card-bagliore-oro"] {')); 
-    assert.match(oro.slice(0, oro.indexOf('}')), /--sc-glow-lieve: 0 0 0 1\.5px #fff3b8, 0 0 0 3\.5px #ffcc33, 0 0 3px 1px rgba\(255, 204, 51, 0\.5\), 0 0 7px 2px rgba\(255, 204, 51, 0\.2\), inset 0 0 12px 0/, 'la linea al neon resta intera, cambia l\'alone');
+    assert.match(oro.slice(0, oro.indexOf('}')), /--sc-glow-lieve: 0 0 0 1\.5px #fff3b8, 0 0 0 3\.5px #ffcc33, 0 0 4px 1px rgba\(255, 204, 51, 0\.75\), 0 0 9px 2px rgba\(255, 204, 51, 0\.34\), inset 0 0 14px 1px/, 'la linea al neon resta intera, cambia l\'alone');
 });
 
 // ---------------------------------------------------------------- Formats (leader), showdown (angoli) e replay (aura)
