@@ -175,7 +175,7 @@
         if (!lista || !lista.length) return '<p class="hof-vuoto">No Match of the week yet.</p>';
         if (!MatchSettimana) return '';
         const info = {};
-        for (const [id, g] of Object.entries(giocatori)) info[id] = { colore: g.color || '', avatar: g.avatar || '', stileCard: stileCard(g.stileCard), aura: g.aura || null };
+        for (const [id, g] of Object.entries(giocatori)) info[id] = { colore: g.color || '', avatar: g.avatar || '', stileCard: stileCard(g.stileCard) };
         return `<ol class="hof-settimane">${lista.map(w => `<li class="ms hof-ms">${MatchSettimana.html(w.scelto, { giocatori: info, gif, settimana: { titolo: w.titolo, intervallo: w.intervallo }, totale: 1, da: 'hall-of-fame' })}</li>`).join('')}</ol>`;
     }
 

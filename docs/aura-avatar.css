@@ -1,12 +1,12 @@
 /* L'aura comprata nello Shop (cosmetici.js, tipo "aura") sugli avatar delle card: home (stagioni e Match of the week) e Hall of Fame.
    L'avatar porta data-aura="aura-…" e --pal-aura (il colore dell'aura); l'alone segue il disegno, e chi aveva già un'ombra piena la tiene (--aura-ombra). L'arcobaleno cambia colore. */
-:is(.winner-avatar-home, .palm-avatar, .ms-av)[data-aura] {
+:is(.winner-avatar-home, .palm-avatar, .hof-voce .ms-av)[data-aura] {
     --aura-ombra: 0 0 0 transparent;
     filter: drop-shadow(0 0 5px var(--pal-aura, transparent)) drop-shadow(0 0 16px var(--pal-aura, transparent)) drop-shadow(var(--aura-ombra));
 }
 .palm-avatar[data-aura] { --aura-ombra: 3px 3px 0 #000; }
-.ms-av[data-aura] { --aura-ombra: 2px 2px 0 #000; }
-:is(.winner-avatar-home, .palm-avatar, .ms-av)[data-aura="aura-arcobaleno"] { animation: aura-av-arcobaleno 4s linear infinite; }
+.hof-voce .ms-av[data-aura] { --aura-ombra: 2px 2px 0 #000; }
+.winner-avatar-home[data-aura="aura-arcobaleno"], .palm-avatar[data-aura="aura-arcobaleno"], .hof-voce .ms-av[data-aura="aura-arcobaleno"] { animation: aura-av-arcobaleno 4s linear infinite; }
 @keyframes aura-av-arcobaleno {
     0%, 100% { filter: drop-shadow(0 0 5px #ff3b3b) drop-shadow(0 0 16px #ff3b3b) drop-shadow(var(--aura-ombra)); }
     17% { filter: drop-shadow(0 0 5px #ffb02e) drop-shadow(0 0 16px #ffb02e) drop-shadow(var(--aura-ombra)); }
@@ -15,4 +15,4 @@
     67% { filter: drop-shadow(0 0 5px #3ba8ff) drop-shadow(0 0 16px #3ba8ff) drop-shadow(var(--aura-ombra)); }
     83% { filter: drop-shadow(0 0 5px #b04dff) drop-shadow(0 0 16px #b04dff) drop-shadow(var(--aura-ombra)); }
 }
-@media (prefers-reduced-motion: reduce) { :is(.winner-avatar-home, .palm-avatar, .ms-av)[data-aura="aura-arcobaleno"] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .winner-avatar-home[data-aura="aura-arcobaleno"], .palm-avatar[data-aura="aura-arcobaleno"], .hof-voce .ms-av[data-aura="aura-arcobaleno"] { animation: none; } }
