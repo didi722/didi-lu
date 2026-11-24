@@ -1650,9 +1650,9 @@ function contestoIntro(numeroSet) {
     const nomi = { sx: nomeDi(sx), dx: nomeDi(dx) };
     if (cpu && cpu.palestra) {
         // niente sfidante: a sinistra il capopalestra, a destra il suo Pokémon compagno (che poi sta sullo sfondo al suo posto)
-        const g = cpu.palestra, comp = g.aspetto && g.aspetto.compagno;
+        const g = cpu.palestra;
         return {
-            palestra: true, nomi: { sx: g.nome, dx: comp && comp.nome ? comp.nome : nomeDi('p1') },
+            palestra: true, nomi: { sx: g.nome, dx: '' },       // il compagno non ha il tag del nome
             dati: { tipo: 'palestra', nome: g.nome, tappa: g.tappa + 1, tappe: self.Palestra.TAPPE, vantaggio: g.vantaggio && g.vantaggio.nome, formato: g.categoria }
         };
     }
