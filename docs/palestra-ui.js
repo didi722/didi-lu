@@ -23,7 +23,7 @@
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const ricerca = new URLSearchParams(window.location.search);
 
-    const S = { uid: '', io: '', regolamenti: {}, mieiTeam: [], bozza: [], gym: '', gymNome: '', gymConfig: null, passo: 0, scelte: [], tornaARiepilogo: false,
+    const S = { uid: '', io: '', nomeIo: '', regolamenti: {}, mieiTeam: [], bozza: [], gym: '', gymNome: '', gymConfig: null, passo: 0, scelte: [], tornaARiepilogo: false,
         capo: null,         // l'aspetto del capopalestra (Palestra.aspettoCapo)
         tema: null,         // i suoi colori e i suoi effetti (Palestra.temaPalestra), se la pagina ha potuto vestirsi
         stat: null,         // players/<id>/palestraStat: le statistiche della palestra (la sua o quella che si sfida)
@@ -45,6 +45,7 @@
     async function leggiMiei() {
         const [nome, regolamenti] = await Promise.all([leggi(`users/${S.uid}/name`), leggi('regolamenti')]);
         S.io = String(nome || '').toLowerCase().trim();
+        S.nomeIo = String(nome || '').trim();
         S.regolamenti = regolamenti || {};
         const grezzi = (await leggi(`players/${S.io}/teams`)) || {};
         S.mieiTeam = Object.entries(grezzi).filter(([, t]) => t && typeof t === 'object').map(([id, t]) => ({
@@ -55,6 +56,19 @@
     const formatiDoppi = () => Object.entries(S.regolamenti).filter(([, r]) => r && r.categoria && P.eDoppio(r)).sort((a, b) => String(a[1].categoria).localeCompare(String(b[1].categoria)));
     const teamPer = categoria => S.mieiTeam.filter(t => t.categoria.toLowerCase().trim() === String(categoria || '').toLowerCase().trim() && t.quanti > 0);
     const opzioni = (lista, scelto, vuoto) => `<option value="">${esc(vuoto)}</option>` + lista.map(([v, testo]) => `<option value="${esc(v)}"${v === scelto ? ' selected' : ''}>${esc(testo)}</option>`).join('');
+
+    /**
+     * Il titolo della pagina: "Didi's gym" al posto del solo "GYM" (il sito lo scrive in maiuscolo). L'h1 è anche quello che l'app legge per il nastro in alto, e il titolo della scheda del browser.
+     * Sfidando un altro è il nome di chi tiene la palestra, nella propria è il proprio.
+     */
+    function intestazione(nome) {
+        const n = String(nome || '').replace(/\s+/g, ' ').trim();
+        if (!n) return;
+        const titolo = `${n}'s gym`;
+        const h1 = $('hub-title-display');
+        if (h1) h1.textContent = titolo;
+        document.title = titolo;
+    }
 
     // ---------------------------------------------------------------- le statistiche della palestra
     /** I tre numeri grandi: tentativi (sfide finite), volte che la palestra ha tenuto e volte che è stata espugnata */
@@ -374,6 +388,7 @@
                 const [config, stat] = await Promise.all([leggi(`players/${S.io}/info/palestra`), leggi(`players/${S.io}/palestraStat`).catch(() => null)]);
                 S.bozza = bozzaDa(config);
                 S.stat = stat;
+                intestazione(S.nomeIo);
                 $('pal-corpo').hidden = false;
                 disegnaImposta(); collegaImposta();
             } else {
@@ -382,6 +397,7 @@
                 const [info, stat, premio] = await Promise.all([leggi(`players/${altro}/info`), leggi(`players/${altro}/palestraStat`).catch(() => null), leggi(`wallet/${S.uid}/premioPalestra`).catch(() => null)]);
                 const i = info || {}, config = i.palestra;
                 S.gymConfig = config; S.gymNome = String(i.name || altro); S.stat = stat; S.premio = premio;
+                intestazione(S.gymNome);
                 // il compagno è shiny se lo è nel suo Box, come nel simulatore (team-sito.js, caricaTappaPalestra)
                 let shiny = false;
                 if (i.pkmBox && i.pkmPreferito && window.Cosmetici) { try { shiny = !!window.Cosmetici.compagnoShiny(i, (await leggi(`players/${altro}/teams`)) || {}); } catch (e) { /* senza shiny */ } }

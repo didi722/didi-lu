@@ -24,6 +24,8 @@
 
     // il titolo delle pagine che non sono una tessera del menù (le altre prendono il nome della loro tessera)
     const TITOLI = { 'public.html': 'Trainer', 'matches.html': 'Ranked', 'hub.html': 'Seasons' };
+    // il titolo di riserva delle pagine senza tessera che scrivono il proprio (la palestra: "Didi's gym"), quando quello non entra nel nastro
+    const RISERVE = { 'palestra.html': 'Gym' };
     // il colore del nastro delle pagine che non sono una tessera del menù e non seguono quella da cui si arriva
     const COLORI = {};
     // le pagine il cui titolo cambia con quello che si guarda (la stagione): il nastro porta il nome della tessera, accanto va quello della stagione
@@ -42,7 +44,7 @@
         if (voce && voce.href === p) return voce.et;
         const t = String(testo == null ? '' : testo).replace(/\s+/g, ' ').trim();
         if (t && t.length <= 28 && !/^loading/i.test(t)) return t;
-        return (voce && voce.et) || 'Sant\'Alvise';
+        return (voce && voce.et) || RISERVE[p] || 'Sant\'Alvise';
     }
 
     /** Quello che sta accanto al nastro (il nome della stagione guardata, in Matches), o '' */

@@ -9,6 +9,7 @@ const path = require('node:path');
 const P = require('../docs/palestra.js');
 const PP = require('../docs/pagina-pubblica.js');
 const C = require('../docs/cosmetici.js');
+const A = require('../docs/app.js');
 
 const leggi = (...p) => fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8');
 
@@ -136,6 +137,23 @@ test('palestra-ui.js: sfidando un altro la pagina si veste da palestra e suona l
     assert.match(ui, /Gym coins are paid once a week in total, whichever gym you conquer\./);
     // PalestraStat serve alla pagina (riassunto, tempoFa, settimane)
     assert.match(ui, /const P = window\.Palestra, ST = window\.PalestraStat;/);
+});
+
+test('titolo della pagina: "Didi\'s gym" (di chi tiene la palestra sfidandola, il proprio nella propria), anche per il nastro dell\'app e la scheda del browser', () => {
+    // l'h1 ha l'id come nelle altre pagine con il titolo che cambia: è quello che app-gioco.js legge per il nastro
+    assert.match(leggi('docs', 'palestra.html'), /<h1 class="hub-title-display" id="hub-title-display">GYM<\/h1>/);
+    const ui = leggi('docs', 'palestra-ui.js');
+    const f = ui.slice(ui.indexOf('function intestazione'), ui.indexOf('// ---------------------------------------------------------------- le statistiche della palestra'));
+    assert.match(f, /const titolo = `\$\{n\}'s gym`;/);
+    assert.match(f, /h1\.textContent = titolo;/);
+    assert.match(f, /document\.title = titolo;/);
+    assert.match(f, /if \(!n\) return;/, 'senza nome resta "GYM"');
+    assert.match(ui, /S\.nomeIo = String\(nome \|\| ''\)\.trim\(\);/, 'il proprio nome, com\'è scritto (non quello in minuscolo che serve da chiave)');
+    assert.match(ui, /intestazione\(S\.nomeIo\);\s*\$\('pal-corpo'\)\.hidden = false;/, 'nella propria palestra');
+    assert.match(ui, /S\.stat = stat; S\.premio = premio;\s*intestazione\(S\.gymNome\);/, 'sfidando un altro, anche se non ha ancora costruito la palestra');
+    // il nastro dell'app segue quel testo (la palestra non ha una tessera nel menù) e, se non entra, resta "Gym"
+    assert.equal(A.voceDi('palestra.html'), null);
+    assert.match(leggi('docs', 'app-gioco.js'), /const RISERVE = \{ 'palestra\.html': 'Gym' \};/);
 });
 
 test('style-palestra.css: dentro la palestra i colori sono i suoi (sfondo del simulatore, targa, numeri); nell\'app tutto sta in una schermata', () => {
