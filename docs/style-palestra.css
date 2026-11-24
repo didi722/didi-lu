@@ -285,6 +285,78 @@ body.pal-dentro .pal-decor .vs-compagno { left: auto; right: max(6vw, 110px); tr
 .pal-vuoto { grid-column: 1 / -1; margin: 0; padding: 14px; background: #fff6d6; color: #000; border: 3px dashed #000; font: 700 .9rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
 .pal-vuoto a { color: inherit; }
 
+/* ---------- la finestra per scegliere i team di una tappa (fuori dall'app) ---------- */
+.pal-modale { position: fixed; inset: 0; z-index: 10050; display: grid; place-items: center; padding: 20px; box-sizing: border-box; overflow-y: auto; overscroll-behavior: contain; background: rgba(8, 6, 18, .74); }
+.pal-modale[hidden] { display: none; }
+body.pal-modale-aperta { overflow: hidden; }
+.pal-aprendo { animation: pal-sfondo .22s ease-out backwards; }
+.pal-aprendo .pal-dialogo { animation: pal-finestra .34s cubic-bezier(.2, .9, .3, 1.2) backwards; }
+@keyframes pal-sfondo { from { background-color: rgba(8, 6, 18, 0); } }
+@keyframes pal-finestra { from { opacity: 0; translate: 0 22px; scale: .96; } }
+.pal-dialogo {
+    position: relative; display: flex; flex-direction: column; box-sizing: border-box; width: min(1020px, 100%); min-height: min(540px, calc(100vh - 40px)); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); padding-top: 36px; overflow: hidden;
+    background: var(--pal-sup); color: var(--pal-ink); border: 4px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 10px 10px 0 rgba(0, 0, 0, .6);
+    font-family: var(--nb-font-testo, 'Montserrat', sans-serif);
+}
+/* la striscia nera con i tre pallini, come le altre finestre del sito */
+.pal-dlg-striscia {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 2; height: 36px; box-sizing: border-box; padding: 0 56px 0 92px; overflow: hidden; white-space: nowrap; pointer-events: none;
+    background: radial-gradient(circle at 24px 50%, #ff5f57 0 6px, transparent 6.6px), radial-gradient(circle at 44px 50%, #febc2e 0 6px, transparent 6.6px), radial-gradient(circle at 64px 50%, #28c840 0 6px, transparent 6.6px), #000;
+    color: #fff; font: 800 11px/36px var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .2em; text-transform: uppercase;
+}
+.pal-dlg-x { appearance: none; position: absolute; top: 5px; right: 10px; z-index: 3; display: grid; place-items: center; width: 26px; height: 26px; margin: 0; padding: 0 0 2px; cursor: pointer; background: var(--nb-giallo, #ffbd44); color: #000; border: 2px solid #000; border-radius: 50%; font: 900 20px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.pal-dlg-x:hover { background: #fff; }
+.pal-dlg-x:focus-visible, .pal-dlg-passo:focus-visible, .pal-dlg-chiudi:focus-visible { outline: 3px solid var(--pal-acc, #ffbd44); outline-offset: 2px; }
+.pal-dlg-corpo { flex: 1 1 auto; min-height: 0; padding: 18px 24px 8px; overflow-y: auto; overscroll-behavior: contain; }
+/* le tre tappe in cima: si passa dall'una all'altra senza chiudere */
+.pal-dlg-passi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; padding: 0; list-style: none; }
+.pal-dlg-passo { appearance: none; display: flex; align-items: center; gap: 10px; box-sizing: border-box; width: 100%; margin: 0; padding: 7px 12px 5px; cursor: pointer; text-align: left; background: var(--pal-sup2); color: var(--pal-ink); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 3px 3px 0 rgba(0, 0, 0, .4); font: inherit; transition: translate .12s, box-shadow .12s; }
+.pal-dlg-passo:hover { translate: -1px -2px; box-shadow: 5px 6px 0 rgba(0, 0, 0, .4); }
+.pal-dlg-passo-attivo { background: var(--pal-acc); color: var(--pal-acc-ink); }
+.pal-dlg-num { display: grid; flex: none; place-items: center; width: 26px; height: 26px; padding-top: 2px; box-sizing: border-box; background: var(--pal-ink); color: var(--pal-sup); font: 900 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.pal-dlg-passo-attivo .pal-dlg-num { background: var(--pal-acc-ink); color: var(--pal-acc); }
+.pal-dlg-nome { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 .95rem var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); font-size: calc(.95rem / var(--pp-font-w, 1)); text-transform: uppercase; }
+.pal-dlg-spunta { display: none; flex: none; font: 900 1.1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); color: #1aa84a; }
+.pal-dlg-passo-attivo .pal-dlg-spunta { color: inherit; }
+.pal-dlg-passo-pieno .pal-dlg-spunta { display: block; }
+.pal-dialogo .pal-sel-testa { margin: 0 0 14px; }
+.pal-dialogo .pal-sel-su { display: none; }                      /* la striscia e le tre tappe in cima lo dicono già */
+.pal-dialogo .pal-sel-titolo { margin-bottom: 4px; font-size: calc(1.9rem / var(--pp-font-w, 1)); }
+.pal-dialogo .pal-sel-aiuto { max-width: none; font-size: .82rem; }
+/* tre team per riga, ognuno con i suoi sei in fila: sei team stanno in due righe e la finestra non cambia altezza passando da una tappa all'altra */
+.pal-dialogo .pal-squadre { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 0 6px 12px 0; }
+.pal-dialogo .pal-team { gap: 6px; padding: 10px 12px 11px; }
+.pal-dialogo .pal-team .pal-sprites { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; padding: 3px; }
+.pal-dialogo .pal-team .pal-sprites img { height: 46px; }
+.pal-dlg-piede { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 14px; padding: 12px 24px 16px; border-top: 3px solid var(--pal-ink); }
+.pal-dlg-piede .pal-pronti { margin-left: 0; }
+.pal-dlg-chiudi { appearance: none; margin: 0; padding: 9px 24px 7px; cursor: pointer; background: var(--pal-ink); color: var(--pal-sup); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 4px 4px 0 rgba(0, 0, 0, .45); font: 900 .95rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; transition: translate .12s, box-shadow .12s, background-color .12s, color .12s; }
+.pal-dlg-chiudi:hover { translate: -2px -2px; box-shadow: 6px 6px 0 rgba(0, 0, 0, .45); background: var(--pal-acc); color: var(--pal-acc-ink); }
+.pal-dlg-chiudi:active { translate: 2px 2px; box-shadow: 1px 1px 0 rgba(0, 0, 0, .45); }
+
+@media (max-width: 900px) {
+    .pal-modale { padding: 10px; }
+    .pal-dialogo { min-height: 0; max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); }
+    .pal-dlg-corpo { padding: 14px 14px 6px; }
+    .pal-dialogo .pal-squadre { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .pal-dlg-piede { padding: 10px 14px 12px; gap: 10px; }
+}
+@media (max-width: 620px) {
+    .pal-dlg-passi { gap: 8px; margin-bottom: 12px; }
+    .pal-dlg-passo { gap: 6px; padding: 6px 8px 4px; }
+    .pal-dlg-num { width: 22px; height: 22px; font-size: .85rem; }
+    .pal-dlg-nome { font-size: calc(.74rem / var(--pp-font-w, 1)); }
+    .pal-dialogo .pal-sel-titolo { font-size: calc(1.5rem / var(--pp-font-w, 1)); }
+    .pal-dialogo .pal-squadre { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .pal-dlg-piede { justify-content: space-between; }
+}
+@media (max-height: 520px) {
+    .pal-dlg-corpo { padding-top: 10px; }
+    .pal-dlg-passi { margin-bottom: 8px; }
+    .pal-dialogo .pal-sel-testa { margin-bottom: 8px; }
+    .pal-dialogo .pal-sel-aiuto { display: none; }
+}
+
 /* ---------- il tasto per entrare ---------- */
 .pal-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 .pal-pronti { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; padding: 7px 13px 5px; background: var(--pal-sup); color: var(--pal-ink); border: 3px solid var(--pal-ink); box-shadow: 4px 4px 0 rgba(0, 0, 0, .45); font: 900 .78rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; }
@@ -327,6 +399,47 @@ html:not(.app-shell) body.pal-dentro .pal-pagina :is(.ng-bottone:hover:not(:disa
     html:not(.app-shell) .pal-squadre { grid-template-columns: minmax(0, 1fr); gap: 16px; }
     html:not(.app-shell) .pal-via { flex: 1 1 100%; font-size: 1.25rem; }
     html:not(.app-shell) .pal-pronti { margin-left: 0; }
+}
+/* una schermata di computer sola: dalla striscia in alto al tasto per entrare tutto sta in una finestra da portatile (circa 1366 x 640), senza scorrere; i team si scelgono nella finestra.
+   Con lo schermo alto (da 840 in su) la pagina intera ha spazio e resta com'è */
+@media (min-width: 901px) and (max-height: 839px) {
+    html:not(.app-shell) body.pal-dentro .top-bar { padding: 40px 0 12px; }
+    html:not(.app-shell) body.pal-dentro .hub-title-display { padding: 3px 20px 1px; border-width: 3px; font-size: 1.7rem; box-shadow: 5px 5px 0 rgba(0, 0, 0, .3) !important; }
+    html:not(.app-shell) body.pal-dentro .pal-pagina { padding-top: 14px; padding-bottom: 26px; }
+    html:not(.app-shell) .pal-sfida { gap: 14px; }
+    html:not(.app-shell) .pal-piatto { box-shadow: 6px 6px 0 rgba(0, 0, 0, .55); }
+    html:not(.app-shell) .pal-insegna { gap: 14px; padding: 8px 22px 8px 14px; }
+    html:not(.app-shell) .pal-insegna .pal-ins-faccia { width: 62px; height: 62px; }
+    html:not(.app-shell) .pal-insegna .pal-ins-nome { margin-top: 2px; font-size: calc(2.2rem / var(--pp-font-w, 1)); }
+    html:not(.app-shell) .pal-piatto .pal-chip { min-width: 92px; padding: 6px 15px 5px; }
+    html:not(.app-shell) .pal-piatto .pal-chip b { font-size: 2.1rem; }
+    html:not(.app-shell) .pal-piatto .pal-chip span { margin-top: 4px; }
+    html:not(.app-shell) .pal-gara-testa { margin-bottom: 8px; }
+    html:not(.app-shell) .pal-banner { margin-bottom: 10px; padding: 7px 14px 5px; }
+    html:not(.app-shell) .pal-percorso { gap: 26px; padding: 14px 0 4px; }
+    html:not(.app-shell) .pal-porta + .pal-porta::before { left: -24px; }
+    html:not(.app-shell) .pal-porta-btn { gap: 6px; padding: 24px 12px 11px; }
+    html:not(.app-shell) .pal-porta-num { top: -14px; left: -11px; width: 38px; height: 38px; font-size: 1.4rem; }
+    html:not(.app-shell) .pal-porta-formato { font-size: calc(1.15rem / var(--pp-font-w, 1)); }
+    html:not(.app-shell) .pal-slot { min-height: 62px; padding: 6px; }
+    html:not(.app-shell) .pal-sprites-mini img { height: 30px; }
+    html:not(.app-shell) .pal-porta-premio { gap: 3px; padding: 14px 10px 10px; }
+    html:not(.app-shell) .pal-stella { font-size: 2.6rem; }
+    html:not(.app-shell) .pal-moneta { font-size: 1.1rem; }
+    html:not(.app-shell) .pal-via { padding: 11px 30px 9px; font-size: 1.35rem; }
+}
+@media (min-width: 901px) and (max-height: 700px) {
+    html:not(.app-shell) body.pal-dentro .top-bar { padding: 38px 0 8px; }
+    html:not(.app-shell) body.pal-dentro .hub-title-display { font-size: 1.4rem; }
+    html:not(.app-shell) body.pal-dentro .pal-pagina { padding-top: 10px; padding-bottom: 16px; }
+    html:not(.app-shell) .pal-sfida { gap: 10px; }
+    html:not(.app-shell) .pal-insegna .pal-ins-faccia { width: 52px; height: 52px; }
+    html:not(.app-shell) .pal-insegna .pal-ins-nome { font-size: calc(1.9rem / var(--pp-font-w, 1)); }
+    html:not(.app-shell) .pal-piatto .pal-chip b { font-size: 1.8rem; }
+    html:not(.app-shell) .pal-porta-segreto { display: none; }
+    html:not(.app-shell) .pal-slot { min-height: 54px; }
+    html:not(.app-shell) .pal-sprites-mini img { height: 26px; }
+    html:not(.app-shell) .pal-percorso { padding-top: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
     .pal-prima .pal-piatto, .pal-prima .pal-gara-testa, .pal-prima .pal-banner, .pal-prima .pal-porta, .pal-prima .pal-selezione, .pal-prima .pal-cta, .pal-prima .pal-dett, .pal-prima .pal-piatto::after,
