@@ -364,7 +364,7 @@ test('battle-intro.css: sta sopra a tutto ma non nell\'app; durante l\'intro gli
     assert.match(targa, /rotate: calc\(-2\.5deg \* var\(--nb-rot, 1\)\);/, 'storta quanto il tema');
     assert.match(css, /\.vi-cifra\.vi-avanti \{ color: var\(--ambra, #ffbd44\); \}/, 'chi è avanti: la cifra in ambra, come nello showdown');
     assert.match(css, /\.vi-sep::before, \.vi-sep::after \{[^}]*background: var\(--ambra[^}]*border-radius: var\(--raggio, 0px\);/, 'i due punti: quadratini ambra, tondi nei temi tondi');
-    assert.match(css, /\.vi-fascia \{[^}]*linear-gradient\(90deg, var\(--vi-c1, var\(--ambra, #ffbd44\)\) 50%, var\(--vi-c2, var\(--ambra, #ffbd44\)\) 50%\)/, 'la fascia: a metà ciascuno i colori dei due allenatori');
+    assert.doesNotMatch(css, /vi-fascia/, 'niente fascia dei colori');
     assert.match(css, /\.vi-centro \{[^}]*gap: calc\(clamp\(12px, 2\.4vh, 26px\) \+ 8px \* var\(--nb-rot, 1\)\);/, 'più storto il tema, più spazio tra targa e tabellone');
     // telefono (verticale e orizzontale)
     assert.match(css, /@media \(max-width: 720px\)/);
@@ -413,19 +413,18 @@ test('battle-intro.js: le animazioni di apertura restano al loro posto (fill for
 test('battle-intro.js: niente scritta "VS" né immagine: al centro, sulla riga nera, la targa del punteggio (le palestre, che non ne hanno, restano col solo tabellone)', () => {
     assert.doesNotMatch(battleIntro, /'VS'|IMMAGINE_VS|seasons-vs|caricaImmagineVs|vi-vs-img/);
     assert.doesNotMatch(battleIntro, /elemento\(doc, 'div', 'vi-pt'/, 'il tabellone non ripete il punteggio');
-    // la targa: due cifre (chi è avanti ha la classe vi-avanti), i due punti e la fascia con i colori delle due metà
+    // la targa: due cifre (chi è avanti ha la classe vi-avanti), e i due punti
     assert.match(battleIntro, /if \(testi\.punteggio\) \{\s*vs = elemento\(doc, 'div', 'vi-vs'\);\s*const cifre = dividiPunteggio\(testi\.punteggio\);/);
     assert.match(battleIntro, /elemento\(doc, 'span', 'vi-cifra' \+ \(\(i === 0 \? a > b : b > a\) \? ' vi-avanti' : ''\), c\)/);
-    assert.match(battleIntro, /separatore = elemento\(doc, 'i', 'vi-sep'\);\s*fascia = elemento\(doc, 'span', 'vi-fascia'\);/);
-    assert.match(battleIntro, /fascia\.style\.setProperty\(`--vi-c\$\{i \+ 1\}`, win\.getComputedStyle\(s\.reale\)\.backgroundColor\)/, 'i colori delle due metà, gli stessi dei tag');
+    assert.match(battleIntro, /separatore = elemento\(doc, 'i', 'vi-sep'\);/);
+    assert.doesNotMatch(battleIntro, /fascia/, 'niente fascia dei colori');
     assert.match(battleIntro, /vs\.appendChild\(elemento\(doc, 'span', 'vi-cifra', String\(testi\.punteggio\)\)\);/, 'se è scritto in modo strano resta com\'è');
     assert.match(battleIntro, /if \(vs\) centro\.appendChild\(vs\);/);
-    // le animazioni: la targa arriva con un colpo (storta come il tema), poi le cifre una dopo l'altra, i due punti e la fascia che si apre dal centro
+    // le animazioni: la targa arriva con un colpo (storta come il tema), poi le cifre una dopo l'altra, e i due punti
     assert.match(battleIntro, /getPropertyValue\('--nb-rot'\)/, 'quanto è storto il tema');
     assert.match(battleIntro, /A\(vs, \{ scale: \[3\.2, 0\.9, 1\], rotate: \[gradi\(-12\), gradi\(-1\.5\), gradi\(-2\.5\)\]/);
     assert.match(battleIntro, /cifreVs\.forEach\(\(c, i\) => A\(c, \{ scale: \[0\.3, 1\.28, 1\][^\n]*delay: T\.ritardoCifre \+ i \* T\.scarto/);
     assert.match(battleIntro, /if \(separatore\) A\(separatore, /);
-    assert.match(battleIntro, /if \(fascia\) A\(fascia, \{ scale: \['0 1', '1 1'\] \}/);
     assert.match(battleIntro, /if \(vs\) O\(vs, \{ scale: \[1, 1\.05\] \}/, 'in attesa la targa pulsa piano');
 });
 
@@ -433,7 +432,6 @@ test('T: le cifre della targa compaiono dopo che è arrivata e prima che la diag
     const { T } = B;
     assert.ok(T.ritardoCifre >= T.ritardoVs + T.vs * 0.5, 'la targa è già lì (a metà del suo colpo)');
     assert.ok(T.ritardoCifre + T.scarto + T.cifra < T.apertura, 'le cifre hanno finito prima che si apra');
-    assert.ok(T.ritardoCifre + T.fascia < T.apertura, 'e anche la fascia dei colori');
 });
 
 test('dividiPunteggio: "2 – 1" diventa le due cifre; ogni altra cosa null (la targa lo scrive com\'è)', () => {

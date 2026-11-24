@@ -4,7 +4,7 @@
 // Parte dalla schermata a due colori già disegnata dietro il tavolo (style-versus.css, vestiVersus in battle-ui.js) e la mette sopra a tutto:
 //   1. le due metà (il colore, il motivo e il nome gigante di ciascun allenatore) scivolano dai lati e si incontrano sulla diagonale nera;
 //   2. gli avatar entrano dal loro lato, ognuno con il tag del nome sopra la testa;
-//   3. in centro, sulla riga nera, compare il punteggio (niente scritta "VS": una targa scura con le due cifre e i colori dei due allenatori) e sotto un tabellone: nelle stagioni match, set e punteggio; contro la CPU il numero della battaglia e la
+//   3. in centro, sulla riga nera, compare il punteggio (niente scritta "VS": una targa scura con le due cifre) e sotto un tabellone: nelle stagioni match, set e punteggio; contro la CPU il numero della battaglia e la
 //      serie; nelle amichevoli (se sono al meglio di più set) set e punteggio;
 //   4. la diagonale si apre: le due metà escono ai lati e gli avatar scivolano al loro posto sullo sfondo, esattamente dove stanno ora.
 // Parte prima che la partita sia pronta e ne copre i caricamenti: la diagonale si apre solo quando la pagina lo dice (`attesa`), non prima del tempo fisso e non oltre
@@ -28,7 +28,7 @@
         entraMeta: 300,
         entraAvatar: 560, ritardoAvatar: 150,
         vs: 380, ritardoVs: 520,
-        cifra: 360, ritardoCifre: 760, scarto: 110, fascia: 380,       // le cifre della targa (poco dopo che è arrivata), una dopo l'altra, e la fascia dei colori
+        cifra: 360, ritardoCifre: 760, scarto: 110,       // le cifre della targa (poco dopo che è arrivata), una dopo l'altra
         tabellone: 320, ritardoTabellone: 800,
         apertura: 2300, durataApertura: 720,
         uscitaCentro: 300,
@@ -300,7 +300,7 @@
         const centro = elemento(doc, 'div', 'vi-centro');
         // niente "VS": al centro, grande, c'è il punteggio: una targa scura con le due cifre (come quella dello showdown, ma da tabellone) e sotto, a metà ciascuno, i colori
         // dei due allenatori; chi è avanti ha la cifra in ambra. Le palestre non hanno un punteggio e restano col solo tabellone.
-        let vs = null, cifreVs = [], separatore = null, fascia = null;
+        let vs = null, cifreVs = [], separatore = null;
         if (testi.punteggio) {
             vs = elemento(doc, 'div', 'vi-vs');
             const cifre = dividiPunteggio(testi.punteggio);
@@ -308,9 +308,7 @@
                 const [a, b] = cifre.map(Number);
                 cifreVs = cifre.map((c, i) => elemento(doc, 'span', 'vi-cifra' + ((i === 0 ? a > b : b > a) ? ' vi-avanti' : ''), c));
                 separatore = elemento(doc, 'i', 'vi-sep');
-                fascia = elemento(doc, 'span', 'vi-fascia');
-                lati.forEach((s, i) => fascia.style.setProperty(`--vi-c${i + 1}`, win.getComputedStyle(s.reale).backgroundColor));
-                [cifreVs[0], separatore, cifreVs[1], fascia].forEach(e => vs.appendChild(e));
+                [cifreVs[0], separatore, cifreVs[1]].forEach(e => vs.appendChild(e));
             } else {
                 vs.appendChild(elemento(doc, 'span', 'vi-cifra', String(testi.punteggio)));      // scritto in un modo strano: così com'è
             }
@@ -369,7 +367,7 @@
             if (entrata && p.img && win.EntrateVs) win.EntrateVs.suona(entrata, { doc, ancora: p.ancora, corpo: p.corpo, img: p.img, dir: lati[i].dir, h: lati[i].altezza * ingr, A, t0: T.ritardoAvatar + T.entraAvatar });
         });
         // 3. il punteggio e il tabellone: la targa arriva con un colpo (storta quanto è storto il tema: -2,5°, e dritta se il tema è dritto), poi le cifre scattano al
-        //    loro posto una dopo l'altra, i due puntini si accendono e la fascia dei colori si apre dal centro
+        //    loro posto una dopo l'altra, e i due puntini si accendono
         let storto = 1;
         try { const v = parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue('--nb-rot')); if (Number.isFinite(v)) storto = v; } catch (e) { /* tema senza --nb-rot: com'è */ }
         const gradi = n => `${(n * storto).toFixed(2)}deg`;
@@ -377,7 +375,6 @@
             A(vs, { scale: [3.2, 0.9, 1], rotate: [gradi(-12), gradi(-1.5), gradi(-2.5)], opacity: [0, 1, 1], offset: [0, 0.62, 1] }, { duration: T.vs, delay: T.ritardoVs, easing: CURVE.pop });
             cifreVs.forEach((c, i) => A(c, { scale: [0.3, 1.28, 1], opacity: [0, 1, 1], offset: [0, 0.6, 1] }, { duration: T.cifra, delay: T.ritardoCifre + i * T.scarto, easing: CURVE.pop }));
             if (separatore) A(separatore, { scale: [0, 1], opacity: [0, 1] }, { duration: T.cifra, delay: T.ritardoCifre + T.scarto / 2, easing: CURVE.pop });
-            if (fascia) A(fascia, { scale: ['0 1', '1 1'] }, { duration: T.fascia, delay: T.ritardoCifre, easing: CURVE.entra });
         }
         A(tabellone, { translate: ['0 46px', '0 0'], opacity: [0, 1] }, { duration: T.tabellone, delay: T.ritardoTabellone, easing: CURVE.entra });
         // 3b. dopo il tempo fisso, se la partita non è ancora pronta, tutto resta in vita: il punteggio pulsa piano e gli avatar ondeggiano
