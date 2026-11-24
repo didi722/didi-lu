@@ -165,14 +165,14 @@
     // Qui compare solo quello che hai già: i motivi dello sfondo che hai comprato e gli avatar, i colori e le canzoni che hai (nella scheda Trainer). Per averne altri c'è lo Shop (shop.html),
     // dove si provano sulla tua pagina prima di comprare. Indossare uno di quelli che hai è gratis ma lo fa il server (avatar, colore e canzone non si scrivono da qui): è subito, fuori da SAVE/Cancel/undo.
     // Il portafoglio (wallet/{uid}) si legge una volta; negozio.js (la chiamata al server) si carica solo quando serve.
-    let portafoglio = null;          // null finché non si legge; poi { posseduti, casa, pronto }
+    let portafoglio = null;          // null finché non si legge; poi { posseduti, casa, iniziali, pronto }
     function leggiPortafoglio(forza) {
         if ((portafoglio && !forza) || !window.firebase || !window.firebase.auth) return Promise.resolve();
         const u = window.firebase.auth().currentUser;
         if (!u) return Promise.resolve();
-        if (!portafoglio) portafoglio = { posseduti: {}, casa: {}, pronto: false };
+        if (!portafoglio) portafoglio = { posseduti: {}, casa: {}, iniziali: {}, pronto: false };
         return window.firebase.database().ref(`wallet/${u.uid}`).once('value')
-            .then(snap => { const w = snap.val() || {}; portafoglio = { posseduti: w.posseduti || {}, casa: w.casa || {}, pronto: true }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
+            .then(snap => { const w = snap.val() || {}; portafoglio = { posseduti: w.posseduti || {}, casa: w.casa || {}, iniziali: w.iniziali || {}, pronto: true }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
             .catch(() => { /* senza: si vede solo ciò che usi già */ });
     }
 

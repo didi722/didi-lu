@@ -204,9 +204,9 @@ const etichetta = tipo => (tipo === 'canzone' ? 'Song' : tipo === 'colore' ? 'Co
  * mettono tra i suoi posseduti (e tolgono "casa"). `escludi`: un id che sta per essere rilasciato. → { <percorso>: valore } da unire alle altre scritture.
  */
 async function fissa(db, uid, giocatore, tipo, wallet, info, adesso, escludi = '') {
-    const scritture = {}, gia = wallet.posseduti || {}, corrente = Cosmetici.idCorrente(tipo, info);
+    const scritture = {}, gia = wallet.posseduti || {}, corrente = Cosmetici.idCorrente(tipo, info), iniziale = Cosmetici.inizialeDi(tipo, wallet);
     for (const x of Cosmetici.possedutiDiTipo(tipo, { wallet, info })) {
-        if (x === escludi) continue;
+        if (x === escludi || x === iniziale) continue;       // quello dato dal server alla nascita resta "iniziale": non diventa un posseduto (il primo cambio è gratis)
         await riserva(db, x, giocatore);
         if (!gia[x]) scritture[`wallet/${uid}/posseduti/${x}`] = tipo === 'canzone' && x === corrente ? { t: adesso, url: String(info.musicaPreferita || ''), nome: String(info.musicName || 'Song') } : adesso;
     }
@@ -243,6 +243,10 @@ async function prendi({ db, uid, id, url, nome, rilascia: daRilasciare = '', ade
         const limite = Cosmetici.LIMITI[tipo];
         if (daRilasciare && !possedute.includes(daRilasciare)) return { ok: false, motivo: 'not-owned' };
         if (possedute.length >= limite && !daRilasciare) return { ok: false, motivo: 'limit', possedute, limite };
+        // chi ha solo quello che gli ha dato il server: il primo cambio è gratis e lo sostituisce (l'iniziale torna libera per tutti)
+        const iniziale = Cosmetici.inizialeDi(tipo, wallet);
+        const sostituisceIniziale = !!iniziale && !daRilasciare && possedute.length === 1 && possedute[0] === iniziale;
+        const lascia = daRilasciare || (sostituisceIniziale ? iniziale : '');
 
         const { prezzo, gratis } = Cosmetici.prezzoAcquisto(tipo, contesto);
         const riservato = await riserva(db, id, giocatore);
@@ -256,9 +260,10 @@ async function prendi({ db, uid, id, url, nome, rilascia: daRilasciare = '', ade
                 }
                 pagato = true;
             } else await scriviMovimento(db, uid, 0, `Free: ${d.titolo}`, adesso);
-            const scritture = await fissa(db, uid, giocatore, tipo, wallet, info, adesso, daRilasciare);
+            const scritture = await fissa(db, uid, giocatore, tipo, wallet, info, adesso, lascia);
             scritture[`wallet/${uid}/posseduti/${id}`] = tipo === 'canzone' ? { t: adesso, url: d.indirizzo, nome: d.titolo } : adesso;
-            if (daRilasciare) scritture[`wallet/${uid}/posseduti/${daRilasciare}`] = null;
+            if (lascia) scritture[`wallet/${uid}/posseduti/${lascia}`] = null;
+            if (lascia && lascia === iniziale) scritture[`wallet/${uid}/iniziali/${tipo}`] = null;
             for (const [k, v] of Object.entries(campiDi(tipo, d))) scritture[`players/${giocatore}/info/${k}`] = v;
             await db.ref().update(scritture);
         } catch (e) {
@@ -269,7 +274,7 @@ async function prendi({ db, uid, id, url, nome, rilascia: daRilasciare = '', ade
             if (riservato.nuovo) await libera(db, id, giocatore);
             throw e;
         }
-        if (daRilasciare) await libera(db, daRilasciare, giocatore);
+        if (lascia) await libera(db, lascia, giocatore);
         const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
         const esito = { ok: true, saldo, gratis };
         if (daRilasciare) esito.rilasciato = daRilasciare;
@@ -319,7 +324,11 @@ async function cambia({ db, uid, tipo, id, url, nome, adesso = Date.now() }) {
         const scritture = await fissa(db, uid, giocatore, tipo, wallet, info, adesso);
         const campi = vuota ? { musicaPreferita: '', musicName: '' } : campiDi(tipo, d);
         for (const [k, v] of Object.entries(campi)) scritture[`players/${giocatore}/info/${k}`] = v;
+        // se si lascia quello dato dal server (si toglie la canzone, o si indossa un altro) non serve più: torna libero per tutti
+        const iniziale = Cosmetici.inizialeDi(tipo, wallet), lasciaIniziale = !!iniziale && Cosmetici.idCorrente(tipo, info) === iniziale;
+        if (lasciaIniziale) scritture[`wallet/${uid}/iniziali/${tipo}`] = null;
         await db.ref().update(scritture);
+        if (lasciaIniziale) await libera(db, iniziale, giocatore);
         const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
         return Object.assign({ ok: true, saldo }, campi);
     });
@@ -421,4 +430,49 @@ async function equipa({ db, uid, id, attivo }) {
     return { ok: true };
 }
 
-module.exports = { PREMI, PREZZI, MAX_MOVIMENTI, premioSet, premioBadge, accredita, spendi, premiaSet, premiaBadge, acquista, prendi, rilascia, equipa, cambia, shinyPokemon, testoConShiny, uidDi, giocatoreDi, giornoDi };
+// ---------------------------------------------------------------- un account nuovo: avatar, colore e canzone a caso, tra quelli liberi
+/**
+ * Dà a un account appena creato un avatar, un colore e una canzone a caso tra quelli liberi (che nessun altro ha o porta). Si indossano subito e sono riservati a lui (cosmeticiPresi), ma sono
+ * "iniziali" (wallet/{uid}/iniziali): non contano come il primo, quindi il primo cambio di ognuno è sempre gratis e lo sostituisce (l'iniziale torna libera per tutti: vedi prendi).
+ * Solo per chi ha ancora quello di partenza e non ne possiede già uno (si può richiamare senza far danni). `canzoni`: la playlist [{ url, nome }] (la legge chi chiama: sta in un foglio online).
+ * `casuale`: () => [0, 1) (nei test, uno fisso). → { ok, assegnati: { avatar?, colore?, canzone? } } con l'id di ognuno, oppure { ok: false, motivo: no-profile | busy }.
+ */
+async function assegnaIniziali({ db, uid, canzoni = [], casuale = Math.random, adesso = Date.now() }) {
+    const giocatore = await giocatoreDi(db, uid);
+    if (!giocatore) return { ok: false, motivo: 'no-profile' };
+    return conLock(db, `iniziali-${giocatore}`, adesso, async () => {
+        const [wallet, info, giocatori] = await leggiTutto(db, uid, giocatore, '', true);
+        const presi = (await db.ref('cosmeticiPresi').once('value')).val() || {};
+        const contesto = { wallet, info };
+        // le scelte possibili di ogni tipo: id -> cosa serve a descrivere (le canzoni portano il loro indirizzo e nome)
+        const candidati = {
+            avatar: Array.from({ length: 400 }, (_, n) => `avatar-${n + 1}`).filter(id => Cosmetici.perId(id)).map(id => ({ id })),
+            colore: Cosmetici.COLORI_FIRMA.map(c => ({ id: Cosmetici.idColore(c) })).filter(x => x.id && Cosmetici.perId(x.id)),
+            canzone: (Array.isArray(canzoni) ? canzoni : []).slice(0, 500).map(c => ({ id: Cosmetici.idCanzone(c && c.url), url: c && c.url, nome: c && c.nome })).filter(x => x.id)
+        };
+        const assegnati = {}, scritture = {}, riservati = [];
+        for (const tipo of ESCLUSIVI) {
+            // chi ha già qualcosa (di partenza no, ma un posseduto o un colore scelto) non se lo vede cambiare
+            if (!Cosmetici.eDiDefault(tipo, info) || Cosmetici.possedutiDiTipo(tipo, contesto).length || Cosmetici.inizialeDi(tipo, wallet)) continue;
+            const liberi = candidati[tipo].filter(x => !presi[x.id] && !chiUsa(giocatori, giocatore, { tipo, id: x.id }));
+            for (let prova = 0; prova < 8 && liberi.length; prova++) {
+                const k = Math.min(liberi.length - 1, Math.floor(casuale() * liberi.length));
+                const scelto = liberi.splice(k, 1)[0];
+                const d = descrivi(scelto.id, scelto.url, scelto.nome);
+                if (!d || d.tipo !== tipo) continue;
+                const r = await riserva(db, scelto.id, giocatore);      // se nel frattempo lo ha preso un altro, se ne prova un altro
+                if (!r.ok) continue;
+                if (r.nuovo) riservati.push(scelto.id);
+                for (const [campo, valore] of Object.entries(campiDi(tipo, d))) scritture[`players/${giocatore}/info/${campo}`] = valore;
+                scritture[`wallet/${uid}/iniziali/${tipo}`] = scelto.id;
+                assegnati[tipo] = scelto.id;
+                break;
+            }
+        }
+        try { if (Object.keys(scritture).length) await db.ref().update(scritture); }
+        catch (e) { for (const id of riservati) await libera(db, id, giocatore); throw e; }
+        return { ok: true, assegnati };
+    });
+}
+
+module.exports = { PREMI, PREZZI, MAX_MOVIMENTI, premioSet, premioBadge, accredita, spendi, premiaSet, premiaBadge, acquista, prendi, rilascia, equipa, cambia, assegnaIniziali, shinyPokemon, testoConShiny, uidDi, giocatoreDi, giornoDi };

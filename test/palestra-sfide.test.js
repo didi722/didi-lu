@@ -138,9 +138,9 @@ test('le due copie di palestra-stat.js (sito e server) e di cosmetici.js sono id
 });
 
 // ---------------------------------------------------------------- il server
-test('una sfida intera: tre tappe vinte di fila espugnano la palestra, scrivono le statistiche e danno il premio (25 monete)', async () => {
+test('una sfida intera: tre tappe vinte di fila espugnano la palestra, scrivono le statistiche e danno il premio (10 monete)', async () => {
     const db = mondo();
-    assert.equal(C.PREMI.palestra, 25);
+    assert.equal(C.PREMI.palestra, 10);
     let t = T0;
     const prima = await tappa(db, 'u1', 0, true, t); t = prima.t;
     assert.equal(prima.a.verificata, true);
@@ -151,10 +151,10 @@ test('una sfida intera: tre tappe vinte di fila espugnano la palestra, scrivono 
     assert.equal(seconda.a.verificata, true);
     assert.equal(seconda.f.esito, 'tappa');
     const terza = await tappa(db, 'u1', 2, true, t);
-    assert.deepEqual(terza.f, { ok: true, esito: 'espugnata', premio: 25, motivoPremio: '', settimana: '2026-W48' });
-    assert.equal(saldo(db, 'u1'), 25);
-    assert.deepEqual(Object.values(db.albero.wallet.u1.movimenti).map(m => [m.importo, m.motivo]), [[25, 'Gym conquered: Capo']]);
-    assert.deepEqual(db.albero.wallet.u1.premioPalestra, { settimana: '2026-W48', gym: 'capo', t: terza.t });
+    assert.deepEqual(terza.f, { ok: true, esito: 'espugnata', premio: 10, motivoPremio: '', settimana: '2026-W48' });
+    assert.equal(saldo(db, 'u1'), 10);
+    assert.deepEqual(Object.values(db.albero.wallet.u1.movimenti).map(m => [m.importo, m.motivo]), [[10, 'Gym conquered: Capo']]);
+    assert.deepEqual(db.albero.wallet.u1.premiPalestra, { capo: { settimana: '2026-W48', t: terza.t } });
     assert.equal(db.albero.palestraSfide.u1.capo, undefined, 'la sfida è finita: lo stato si toglie');
     const r = S.riassunto(stat(db));
     assert.deepEqual([r.tentativi, r.tenuta, r.espugnata], [1, 0, 1]);
@@ -180,31 +180,31 @@ test('una tappa persa: la palestra ha tenuto, la sfida finisce e si ricomincia d
     assert.equal(dopo.verificata, false, 'la seconda tappa senza la prima non è una sfida che il server ha visto cominciare');
 });
 
-test('il premio è una volta a settimana in tutto: la seconda palestra espugnata nella stessa settimana non paga, la settimana dopo sì', async () => {
+test('il premio è una volta a settimana per ogni palestra: la stessa palestra di nuovo non paga, un\'altra sì (più palestre, più premi), la settimana dopo di nuovo', async () => {
     const db = mondo();
     db.albero.players.altra = { info: { name: 'Altra', palestra: { tappe: TAPPE } } };
-    let t = T0;
-    const conquista = async (gym, quando) => { let x = quando; let ultimo; for (const n of [0, 1, 2]) { ultimo = await tappa(db, 'u1', n, true, x, gym); x = ultimo.t; } return { f: ultimo.f, t: x }; };
-    const uno = await conquista('capo', t);
-    assert.equal(uno.f.premio, 25);
+    const conquista = async (gym, quando, uid = 'u1') => { let x = quando; let ultimo; for (const n of [0, 1, 2]) { ultimo = await tappa(db, uid, n, true, x, gym); x = ultimo.t; } return { f: ultimo.f, t: x }; };
+    const uno = await conquista('capo', T0);
+    assert.equal(uno.f.premio, 10);
     const due = await conquista('capo', uno.t + 1000);
-    assert.deepEqual([due.f.esito, due.f.premio, due.f.motivoPremio], ['espugnata', 0, 'already'], 'la stessa palestra di nuovo');
+    assert.deepEqual([due.f.esito, due.f.premio, due.f.motivoPremio], ['espugnata', 0, 'already'], 'la stessa palestra di nuovo, stessa settimana');
     const tre = await conquista('altra', due.t + 1000);
-    assert.deepEqual([tre.f.premio, tre.f.motivoPremio], [0, 'already'], 'un\'altra palestra, stessa settimana');
-    assert.equal(saldo(db, 'u1'), 25);
+    assert.deepEqual([tre.f.premio, tre.f.motivoPremio], [10, ''], 'un\'altra palestra, stessa settimana: paga');
+    assert.equal(saldo(db, 'u1'), 20);
+    assert.deepEqual(Object.keys(db.albero.wallet.u1.premiPalestra).sort(), ['altra', 'capo']);
     // le statistiche contano tutte le sfide, premio o no
     assert.equal(stat(db).espugnata, 2);
     assert.equal(db.albero.players.altra.palestraStat.espugnata, 1);
-    // un altro giocatore ha il suo premio nella stessa settimana
-    const altro = await conquista('capo', tre.t + 1000);
-    assert.equal(altro.f.premio, 0, 'di nuovo Didi');
-    for (const n of [0, 1, 2]) { const x = await tappa(db, 'u2', n, true, tre.t + 5000 + n * 100000); if (n === 2) assert.equal(x.f.premio, 25, 'Lu non l\'aveva ancora preso'); }
-    // la settimana dopo (lunedì 30 novembre) si può di nuovo
+    // un altro giocatore ha i suoi premi nella stessa settimana, per ogni palestra
+    for (const n of [0, 1, 2]) { const x = await tappa(db, 'u2', n, true, tre.t + 5000 + n * 100000); if (n === 2) assert.equal(x.f.premio, 10, 'Lu non l\'aveva ancora preso'); }
+    // la settimana dopo (lunedì 30 novembre) si può di nuovo, per ognuna
     const lunedi = S.prossimaSettimana(T0);
     const nuova = await conquista('capo', lunedi + 1000);
-    assert.deepEqual([nuova.f.premio, nuova.f.settimana], [25, '2026-W49']);
-    assert.equal(saldo(db, 'u1'), 50);
-    assert.equal(db.albero.wallet.u1.premioPalestra.settimana, '2026-W49');
+    assert.deepEqual([nuova.f.premio, nuova.f.settimana], [10, '2026-W49']);
+    const nuova2 = await conquista('altra', nuova.t + 1000);
+    assert.equal(nuova2.f.premio, 10);
+    assert.equal(saldo(db, 'u1'), 40);
+    assert.equal(db.albero.wallet.u1.premiPalestra.capo.settimana, '2026-W49');
 });
 
 test('il tempo minimo: una tappa "finita" troppo presto non conta e non si perde (si può chiudere dopo); un "fine" vale una volta sola', async () => {
@@ -250,7 +250,7 @@ test('una sfida che il server non ha visto cominciare (parte dalla seconda tappa
     let x = c.t + 1000;
     let ultimo;
     for (const n of [0, 1, 2]) { ultimo = await tappa(db, 'u1', n, true, x); x = ultimo.t; }
-    assert.equal(ultimo.f.premio, 25);
+    assert.equal(ultimo.f.premio, 10);
     // dalla prima tappa si ricomincia sempre da capo, anche se c'era un'altra sfida a metà
     await tappa(db, 'u2', 0, true, T0);
     await F.inizia({ db, uid: 'u2', gym: 'capo', tappa: 0, adesso: T0 + 9 * PASSO });
@@ -294,10 +294,10 @@ test('cablaggio: la Function palestraSfida (index.js), il saldo che la pagina le
     const srv = leggi('functions', 'palestra-sfide.js');
     assert.match(srv, /palestraSfide\/\$\{uid\}\/\$\{c\.id\}/, 'lo stato di chi sfida è privato: sta in un nodo che le regole non aprono al sito');
     assert.match(srv, /players\/\$\{c\.id\}\/palestraStat/, 'le statistiche sono pubbliche: nel nodo del capopalestra, come lo stile di gioco');
-    assert.match(srv, /chiave: `palestra-\$\{settimana\}-\$\{uid\}`/, 'una volta a settimana per giocatore');
+    assert.match(srv, /chiave: `palestra-\$\{settimana\}-\$\{uid\}-\$\{c\.id\}`/, 'una volta a settimana per giocatore e per palestra');
     assert.match(srv, /Cosmetici\.PREMI\.palestra/);
     const regole = leggi('REGOLE-DATABASE.md');
     assert.match(regole, /palestraStat/);
     assert.match(regole, /palestraSfide/);
-    assert.match(regole, /premioPalestra/);
+    assert.match(regole, /premiPalestra/);
 });

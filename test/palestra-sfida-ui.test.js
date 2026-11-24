@@ -29,7 +29,7 @@ const teamDi = (saltaFormato) => {
 };
 
 /** La pagina con i suoi dati: ritorna lo schermo (html), i clic, la memoria del browser e dove è andata a finire */
-async function apri({ stat = null, premio = null, teams = teamDi(), salvata = null, gymSenzaPalestra = false, app = false } = {}) {
+async function apri({ stat = null, premio = null, premioVecchio = null, teams = teamDi(), salvata = null, gymSenzaPalestra = false, app = false } = {}) {
     const elementi = {};
     const nuovo = id => ({
         id, innerHTML: '', hidden: true, textContent: '', style: {}, gestori: {}, dataset: {},
@@ -47,7 +47,8 @@ async function apri({ stat = null, premio = null, teams = teamDi(), salvata = nu
         'players/lukiani/info': { name: 'Lukiani', color: '#3399ff', musicaPreferita: 'https://x.example/a.mp3', musicName: 'Tema',
             palestra: gymSenzaPalestra ? null : { tappe: FORMATI.map((f, i) => ({ formato: `f${i}`, categoria: f, team: `g${i}`, vantaggio: 'rain' })) } },
         'players/lukiani/palestraStat': stat,
-        'wallet/u1/premioPalestra': premio
+        'wallet/u1/premiPalestra/lukiani': premio,
+        'wallet/u1/premioPalestra': premioVecchio
     };
     let avvia = null;
     const redirect = { href: '' };
@@ -124,8 +125,9 @@ test('sfida: una schermata sola con il tabellone, tre porte (una per format), il
     // tre porte, una per format, nell'ordine della palestra, e il distintivo
     FORMATI.forEach((f, i) => { assert.ok(porta(h, i), `porta ${i + 1}`); assert.match(h, new RegExp(`<span class="pal-porta-formato">${f}</span>`)); });
     assert.equal((h.match(/class="pal-porta pal-porta-/g) || []).length, 4, 'tre porte e il distintivo');
-    assert.match(h, /<li class="pal-porta pal-porta-premio" style="--i:3"[^>]*title="Gym coins are paid once a week in total, whichever gym you conquer\. They reset on Monday\.">/);
-    assert.match(h, new RegExp(`🪙 \\+${C.PREMI.palestra}<small>once a week</small>`), 'le monete in palio');
+    assert.match(h, /<li class="pal-porta pal-porta-premio" style="--i:3"[^>]*title="Gym coins are paid once a week for each gym you conquer\. They reset on Monday\.">/);
+    assert.match(h, new RegExp(`<span class="pal-moneta"><img class="pal-moneta-img" src="immagini/moneta\\.png" alt="coins"><b>\\+${C.PREMI.palestra}</b></span>`), 'in fondo al percorso la monetina con il premio');
+    assert.doesNotMatch(h, /pal-stella|Gym badge|once a week<\/small>/, 'niente stellina né scritta "Gym badge"');
     assert.match(h, /Secret edge: \?\?\?/, 'il vantaggio della palestra non si vede prima di entrare');
     // parte dalla prima tappa senza team, che è la porta accesa; è la prossima da giocare, le altre chiuse
     assert.equal(attiva(h), 0);
@@ -296,14 +298,15 @@ test('sfida: palestra conquistata (tre tappe vinte): tutte le porte superate, il
     assert.deepEqual([0, 1, 2].map(i => porta(h, i).stato), ['fatta', 'fatta', 'fatta']);
     assert.match(h, /🏆 You beat every stage!/);
     assert.match(h, /li class="pal-porta pal-porta-premio pal-porta-fatta"/);
-    assert.match(h, /🪙 ✓ collected<small>back on Monday<\/small>/, 'le monete di questa settimana sono già state prese');
+    assert.match(h, /<li class="pal-porta pal-porta-premio pal-porta-fatta"[^>]*>\s*<span class="pal-vinci">Win<\/span><\/li>/, 'le monete di questa settimana per questa palestra sono già state prese: niente monetina, solo "Win"');
+    assert.doesNotMatch(h, /pal-moneta-img/);
     assert.match(bottoneVia(h)[2], /Take it on again/);
     assert.doesNotMatch(h, /Start over/);
     pag.azione('via');
     assert.equal(pag.redirect.href, 'battle.html?cpu=1&palestra=lukiani&tappa=0&team=t0a', 'rifacendola si riparte dalla prima tappa');
     // il premio di una settimana scorsa non conta
-    const vecchio = await apri({ premio: { settimana: '2020-W01', gym: 'x', t: 1 } });
-    assert.match(vecchio.html(), new RegExp(`🪙 \\+${C.PREMI.palestra}<small>once a week</small>`));
+    const vecchio = await apri({ premio: { settimana: '2020-W01', t: 1 } });
+    assert.match(vecchio.html(), new RegExp(`<b>\\+${C.PREMI.palestra}</b>`));
 });
 
 test('sfida: senza un team per un format lo dice (e rimanda al Box); i team di un altro format non si offrono; un team sparito dal Box non conta', async () => {
@@ -353,4 +356,16 @@ test('la pagina tiene la finestra dei team fuori dal corpo (che si ridisegna) e 
     assert.match(css, /@media \(min-width: 901px\) and \(max-height: 839px\) \{\s*html:not\(\.app-shell\) body\.pal-dentro \.top-bar \{ padding: 40px 0 12px; \}/);
     assert.match(css, /@media \(min-width: 901px\) and \(max-height: 700px\) \{/);
     assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '..', 'docs', 'palestra-ui.js'), 'utf8'), /<small>\$\{esc\(LIVELLI\[livello\]\)\}<\/small><\/li>`;\s*\n\s*\}\s*\n\s*\n\s*\/\*\* Il pannello in cima/, 'il livello non va sotto la cifra della targa');
+});
+
+test('sfida: il premio della settimana è per palestra: quello preso in un\'altra palestra non conta (e il vecchio premio unico vale solo per la sua)', async () => {
+    const settimana = ST.settimanaDi(Date.now());
+    const altra = await apri({ premioVecchio: { settimana, gym: 'altrapalestra', t: 1 } });
+    assert.match(altra.html(), /pal-moneta-img/, 'preso per un\'altra palestra: qui le monete ci sono ancora');
+    const questa = await apri({ premioVecchio: { settimana, gym: 'lukiani', t: 1 } });
+    assert.match(questa.html(), /<span class="pal-vinci">Win<\/span>/, 'il vecchio premio unico, di questa palestra, vale');
+    const nuovo = await apri({ premio: { settimana, t: 1 } });
+    assert.match(nuovo.html(), /<span class="pal-vinci">Win<\/span>/);
+    const scaduto = await apri({ premio: { settimana: '2020-W01', t: 1 }, premioVecchio: { settimana: '2020-W01', gym: 'lukiani', t: 1 } });
+    assert.match(scaduto.html(), /pal-moneta-img/, 'di una settimana fa non conta');
 });

@@ -85,8 +85,8 @@ test('simulatore: a ogni tappa dice al server "inizia" e "fine" (Function palest
     // "fine" si ritenta una volta; "inizia" no; niente rompe la partita
     assert.match(bu, /if \(azione !== 'fine'\) return null;\s*await new Promise\(ok => setTimeout\(ok, 2500\)\);/);
     // le tre frasi del cartello: monete prese, già prese questa settimana, sfida non cominciata dalla prima tappa
-    assert.match(bu, /coins for conquering the gym! The next gym coins are up for grabs on Monday\./);
-    assert.match(bu, /You already collected your gym coins this week: they are back on Monday\./);
+    assert.match(bu, /coins for conquering the gym! The coins for this gym are up for grabs again on Monday\./);
+    assert.match(bu, /You already collected the coins for this gym this week: they are back on Monday\./);
     assert.match(bu, /No coins this time: they're paid when you clear all 3 stages in one run, starting from stage 1\./);
     assert.match(leggi('docs', 'battle.html'), /<p class="esito-premio" id="premio-vittoria" hidden><\/p>/);
     assert.match(leggi('docs', 'battle.html'), /firebase-functions-compat\.js/, 'il client delle Functions è nella pagina');
@@ -130,11 +130,12 @@ test('palestra-ui.js: sfidando un altro la pagina si veste da palestra e suona l
     assert.match(ui, /fine = \(\) => \{ suona\(S\.capo && S\.capo\.musica \? S\.capo\.musica\.url : ''\);/);
     // le statistiche (pubbliche) e il premio della settimana (il portafoglio è di chi sfida)
     assert.match(ui, /leggi\(`players\/\$\{altro\}\/palestraStat`\)\.catch\(\(\) => null\)/);
-    assert.match(ui, /leggi\(`wallet\/\$\{S\.uid\}\/premioPalestra`\)\.catch\(\(\) => null\)/);
+    assert.match(ui, /leggi\(`wallet\/\$\{S\.uid\}\/premiPalestra\/\$\{gym\}`\)/);
+    assert.match(ui, /leggiPremio\(altro\)/);
     assert.match(ui, /leggi\(`players\/\$\{S\.io\}\/palestraStat`\)\.catch\(\(\) => null\)/, 'e anche nella propria, da impostare');
     assert.match(ui, /chip\(r\.tentativi, 'Attempts'/); assert.match(ui, /chip\(r\.tenuta, 'Gym wins'/); assert.match(ui, /chip\(r\.espugnata, 'Gym beaten'/);
     assert.match(ui, /<details class="pal-dett"><summary>Stage by stage · recent challenges<\/summary>/);
-    assert.match(ui, /Gym coins are paid once a week in total, whichever gym you conquer\./);
+    assert.match(ui, /Gym coins are paid once a week for each gym you conquer\./);
     // PalestraStat serve alla pagina (riassunto, tempoFa, settimane)
     assert.match(ui, /const P = window\.Palestra, ST = window\.PalestraStat;/);
 });
@@ -180,14 +181,14 @@ test('style-palestra.css: dentro la palestra i colori sono i suoi (sfondo del si
 });
 
 test('Shop e documentazione: la riga del premio della palestra, una volta a settimana, e il catalogo uguale sul server', () => {
-    assert.equal(C.PREMI.palestra, 25);
+    assert.equal(C.PREMI.palestra, 10);
     assert.equal(leggi('docs', 'cosmetici.js'), leggi('functions', 'cosmetici.js'), 'cosmetici.js è lo stesso file sul sito e sul server');
     const neg = leggi('docs', 'negozio.js');
-    assert.match(neg, /\['Gym conquered \(once a week\)', P\.palestra\]/);
-    assert.match(neg, /it pays once a week in total, not per gym, and resets on Monday\./);
+    assert.match(neg, /\['Gym conquered \(once a week, each gym\)', P\.palestra\]/);
+    assert.match(neg, /it pays once a week for each gym you conquer, and resets on Monday\./);
     const regole = leggi('REGOLE-DATABASE.md');
     const punto = regole.slice(regole.indexOf('8. **PALESTRA**'));
-    for (const re of [/palestraSfida/, /firebase deploy --only functions/, /una volta a settimana in tutto/i, /canzone/i, /Attempts/, /Gym wins/, /Gym beaten/]) assert.match(punto.slice(0, 3000), re);
+    for (const re of [/palestraSfida/, /firebase deploy --only functions/, /una volta a settimana per ogni palestra/i, /canzone/i, /Attempts/, /Gym wins/, /Gym beaten/]) assert.match(punto.slice(0, 3000), re);
 });
 
 // ---------------------------------------------------------------- il compagno ingrandito resta nitido (come sulla pagina pubblica)

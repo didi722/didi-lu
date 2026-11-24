@@ -253,6 +253,26 @@ exports.eliminaGiocatore = onCall({ region: REGIONE, memory: '256MiB', timeoutSe
     }
 });
 
+// Un giocatore appena creato dall'admin (admin.html) riceve un avatar, un colore e una canzone a caso tra quelli liberi (functions/monete.js, assegnaIniziali). Solo un admin.
+// Dati: { uid, canzoni: [{ url, nome }] } (la playlist la legge l'admin: sta in un foglio online).
+exports.assegnaInizialiGiocatore = onCall({ region: REGIONE, memory: '256MiB', timeoutSeconds: 30, cors: true }, async richiesta => {
+    if (!richiesta.auth) throw new HttpsError('unauthenticated', 'Devi essere loggato');
+    const db = getDatabase();
+    const ruolo = (await db.ref(`users/${richiesta.auth.uid}/role`).once('value')).val();
+    if (ruolo !== 'admin') throw new HttpsError('permission-denied', 'Solo un admin può assegnare i cosmetici iniziali');
+    const dati = richiesta.data || {};
+    const uid = String(dati.uid || '');
+    if (!/^[A-Za-z0-9_-]{6,128}$/.test(uid)) throw new HttpsError('invalid-argument', 'UID non valido');
+    const canzoni = (Array.isArray(dati.canzoni) ? dati.canzoni : []).slice(0, 500)
+        .map(c => ({ url: String((c && c.url) || '').slice(0, 500), nome: String((c && c.nome) || '').slice(0, 60) }));
+    try {
+        return await require('./monete').assegnaIniziali({ db, uid, canzoni });
+    } catch (e) {
+        console.error('assegnaInizialiGiocatore', e);
+        throw new HttpsError('internal', 'Errore del server: riprova tra poco');
+    }
+});
+
 // Il negozio (functions/monete.js): comprare, mettere e (avatar, colori, canzoni) rilasciare i cosmetici. Il saldo lo scrive solo il server.
 const monete = require('./monete');
 const negozio = nome => onCall({ region: REGIONE, memory: '256MiB', timeoutSeconds: 20, cors: true }, async richiesta => {

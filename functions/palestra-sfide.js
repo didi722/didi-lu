@@ -7,15 +7,16 @@
 //   - "fine" vale solo se prima c'è stato "inizia" per quella stessa tappa e se è passato almeno PalestraStat.MIN_TAPPA_MS; un "fine" vale una volta sola;
 //   - una sfida comincia dalla prima tappa: se si trova già avviata (la seconda tappa senza aver visto la prima, un altro browser, dati cancellati) si conta nelle statistiche
 //     ma non dà monete;
-//   - il premio (PREMI.palestra) si prende una volta a settimana in tutto, non per palestra, ed è per chi espugna la palestra di un altro;
+//   - il premio (PREMI.palestra) si prende una volta a settimana per ogni palestra (di ogni giocatore): più palestre espugnate, più premi; ed è per chi espugna la palestra di un altro;
 //   - la propria palestra non si sfida, e una palestra senza le sue tre tappe nemmeno.
 //
 // Dati:
 //   palestraSfide/<uid>/<palestra> = { vinte, inizio, ok }   privato, lo scrive solo il server: tappe vinte, quando è partita l'ultima tappa (0 se è già stata chiusa) e se la
 //                                                            sfida è cominciata dalla prima sotto gli occhi del server (ok: può dare il premio)
 //   players/<palestra>/palestraStat                          le statistiche (palestra-stat.js): le leggono tutti
-//   wallet/<uid>/premioPalestra = { settimana, gym, t }      l'ultimo premio preso: il sito lo legge per dire "già preso questa settimana"
-//   walletEventi/palestra-<settimana>-<uid>                  il segno che il premio di quella settimana è stato dato (una volta sola, anche con due richieste insieme)
+//   wallet/<uid>/premiPalestra/<palestra> = { settimana, t } l'ultimo premio preso per quella palestra: il sito lo legge per dire "già preso questa settimana"
+//                                                            (wallet/<uid>/premioPalestra = { settimana, gym, t }, il vecchio premio unico, il sito lo legge ancora per la sua palestra)
+//   walletEventi/palestra-<settimana>-<uid>-<palestra>       il segno che il premio di quella palestra in quella settimana è stato dato (una volta sola, anche con due richieste insieme)
 //
 //   inizia({ db, uid, gym, tappa })          → { ok, verificata } | { ok: false, motivo }
 //   fine({ db, uid, gym, tappa, vinta })     → { ok, esito: 'tenuta' | 'tappa' | 'espugnata', premio, motivoPremio ('' | 'already' | 'unverified'), settimana } | { ok: false, motivo }
@@ -86,15 +87,15 @@ async function fine({ db, uid, gym, tappa, vinta, adesso = Date.now() }) {
         await rif.set({ vinte: c.t + 1, inizio: 0, ok: !!preso.ok });
         return { ok: true, esito: 'tappa', vinte: c.t + 1 };
     }
-    // la terza tappa: la palestra è espugnata. Il premio è di una volta a settimana in tutto (la chiave dice di chi e di quale settimana: due richieste insieme non lo pagano due volte)
+    // la terza tappa: la palestra è espugnata. Il premio è di una volta a settimana per ogni palestra (la chiave dice di chi, di quale palestra e di quale settimana: due richieste insieme non lo pagano due volte)
     await rif.remove();
     const settimana = Stat.settimanaDi(adesso);
     let premio = 0, motivoPremio = '';
     if (!preso.ok) {
         motivoPremio = 'unverified';
     } else {
-        premio = await Monete.accredita(db, uid, Cosmetici.PREMI.palestra, `Gym conquered: ${nomeGym}`, { chiave: `palestra-${settimana}-${uid}`, adesso });
-        if (premio > 0) await db.ref(`wallet/${uid}/premioPalestra`).set({ settimana, gym: c.id, t: adesso });
+        premio = await Monete.accredita(db, uid, Cosmetici.PREMI.palestra, `Gym conquered: ${nomeGym}`, { chiave: `palestra-${settimana}-${uid}-${c.id}`, adesso });
+        if (premio > 0) await db.ref(`wallet/${uid}/premiPalestra/${c.id}`).set({ settimana, t: adesso });
         else motivoPremio = 'already';
     }
     return { ok: true, esito: 'espugnata', premio, motivoPremio, settimana };

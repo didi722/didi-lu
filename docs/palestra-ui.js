@@ -33,7 +33,7 @@
         capo: null,         // l'aspetto del capopalestra (Palestra.aspettoCapo)
         tema: null,         // i suoi colori e i suoi effetti (Palestra.temaPalestra), se la pagina ha potuto vestirsi
         stat: null,         // players/<id>/palestraStat: le statistiche della palestra (la sua o quella che si sfida)
-        premio: null,       // wallet/<uid>/premioPalestra: l'ultimo premio preso ({ settimana, gym, t })
+        premio: null,       // wallet/<uid>/premiPalestra/<palestra>: l'ultimo premio preso per questa palestra ({ settimana, t })
         salvata: null,      // la mia palestra com'è salvata (players/<io>/info/palestra): la bozza che si sta modificando può essere diversa
         allena: {}          // l'allenamento della CPU della palestra (la mia o quella che sfido): { <id del team>: copione } (players/<id>/palestraAllenamento)
     };
@@ -49,6 +49,15 @@
     const categoriaDi = t => String((t && (t.categoria || t.category)) || '').toLowerCase().trim();
     const elenco = x => (Array.isArray(x) ? x : Object.values(x || {}));
     async function leggi(percorso) { return (await firebase.database().ref(percorso).once('value')).val(); }
+    /** Il premio che ho preso per la palestra di `gym` ({ settimana, t }) o null: ogni palestra ha il suo (wallet/<uid>/premiPalestra/<gym>); il vecchio premio unico (premioPalestra) vale per la sua palestra */
+    async function leggiPremio(gym) {
+        try {
+            const nuovo = await leggi(`wallet/${S.uid}/premiPalestra/${gym}`);
+            if (nuovo) return nuovo;
+            const vecchio = await leggi(`wallet/${S.uid}/premioPalestra`);
+            return vecchio && String(vecchio.gym) === String(gym) ? vecchio : null;
+        } catch (e) { return null; }
+    }
 
     async function leggiMiei() {
         const [nome, regolamenti] = await Promise.all([leggi(`users/${S.uid}/name`), leggi('regolamenti')]);
@@ -194,7 +203,7 @@
     }
 
     /** Il premio in monete: preso questa settimana? (il portafoglio è di chi sfida) */
-    const premioPresoOra = () => !!S.premio && S.premio.settimana === ST.settimanaDi(Date.now());
+    const premioPresoOra = () => !!S.premio && S.premio.settimana === ST.settimanaDi(Date.now());     // S.premio: il premio preso per QUESTA palestra
 
     /**
      * Il tabellone in cima, quando si sfida: l'insegna del capopalestra e i numeri della palestra su una targa scura con le cifre ambra (come il tabellone dell'intro prepartita) e,
@@ -368,9 +377,9 @@
         }).join('');
         const per = window.Cosmetici && window.Cosmetici.PREMI ? window.Cosmetici.PREMI.palestra : 0;
         const preso = premioPresoOra();
-        const distintivo = `<li class="pal-porta pal-porta-premio${finita ? ' pal-porta-fatta' : ''}" style="--i:${tappe.length}" title="Gym coins are paid once a week in total, whichever gym you conquer. They reset on Monday.">
-            <span class="pal-stella" aria-hidden="true">★</span><span class="pal-porta-formato">Gym badge</span>
-            ${per ? `<span class="pal-moneta">${preso ? '🪙 ✓ collected<small>back on Monday</small>' : `🪙 +${per}<small>once a week</small>`}</span>` : ''}</li>`;
+        // in fondo al percorso: la monetina con il premio; se per questa palestra la settimana è già pagata niente monete, solo "Win"
+        const distintivo = `<li class="pal-porta pal-porta-premio${finita ? ' pal-porta-fatta' : ''}" style="--i:${tappe.length}" title="Gym coins are paid once a week for each gym you conquer. They reset on Monday.">
+            ${per && !preso ? `<span class="pal-moneta"><img class="pal-moneta-img" src="immagini/moneta.png" alt="coins"><b>+${per}</b></span>` : '<span class="pal-vinci">Win</span>'}</li>`;
         const banner = finita ? '<p class="pal-banner">🏆 You beat every stage! Take it on again whenever you like.</p>'
             : vinte > 0 ? `<p class="pal-banner">Your run so far: ${vinte} of ${tappe.length} stages cleared. Stage ${vinte + 1} is waiting!</p>` : '';
 
@@ -552,7 +561,7 @@
             } else {
                 S.gym = altro;
                 // tutto quello che serve per vestire la pagina da palestra, i suoi numeri e il premio della settimana (il portafoglio è mio: lo leggo io)
-                const [info, stat, premio, allena] = await Promise.all([leggi(`players/${altro}/info`), leggi(`players/${altro}/palestraStat`).catch(() => null), leggi(`wallet/${S.uid}/premioPalestra`).catch(() => null), leggi(`players/${altro}/palestraAllenamento`).catch(() => null)]);
+                const [info, stat, premio, allena] = await Promise.all([leggi(`players/${altro}/info`), leggi(`players/${altro}/palestraStat`).catch(() => null), leggiPremio(altro), leggi(`players/${altro}/palestraAllenamento`).catch(() => null)]);
                 const i = info || {}, config = i.palestra;
                 S.gymConfig = config; S.gymNome = String(i.name || altro); S.stat = stat; S.premio = premio;
                 intestazione(S.gymNome);
