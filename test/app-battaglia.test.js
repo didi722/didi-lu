@@ -146,7 +146,10 @@ test('app-battaglia.js: "← Play" in alto a sinistra non esce con un tocco (con
     const js = docs('app-battaglia.js');
     // il tasto è intercettato prima di tutto (fase di cattura) e solo nel layout da telefono e in partita
     assert.match(js, /hub\.addEventListener\('click', e => \{\s*if \(!mq\.matches \|\| !partitaInCorso\(doc\.body\.dataset\.ab\)\) return;\s*e\.preventDefault\(\);\s*e\.stopImmediatePropagation\(\);\s*chiediUscita\(hub\.href\);\s*\}, true\);/);
-    assert.match(js, /tasto\('ab-conf-resta', 'Stay', \(\) => chiudi\(\)\), tasto\('ab-conf-esci', 'Leave', \(\) => \{ chiudi\(\); win\.location\.href = indirizzo; \}\)/);
+    assert.match(js, /tasto\('ab-conf-resta', 'Stay', \(\) => chiudi\(\)\), tasto\('ab-conf-esci', 'Leave', esci\)/);
+    // uscendo si va all'indirizzo del tasto; l'allenamento della CPU (battle-ui.js) vi aggiunge il salvataggio della lezione (win.__primaDiUscire) e il suo testo (win.__notaUscita)
+    assert.match(js, /esci = \(\) => \{ chiudi\(\); Promise\.resolve\(typeof win\.__primaDiUscire === 'function' \? win\.__primaDiUscire\(\) : null\)\.catch\(\(\) => \{\}\)\.then\(\(\) => \{ win\.location\.href = indirizzo; \}\); \};/);
+    assert.match(js, /nota\.textContent = typeof win\.__notaUscita === 'string' && win\.__notaUscita \? win\.__notaUscita : 'You can\\'t take it back\.';/);
     assert.match(js, /e\.key === 'Escape'/, 'Esc = Stay');
     assert.match(js, /if \(e\.target === velo\) chiudi\(\)/, 'il fondo = Stay');
     // "Choice sent. Waiting…" con "Cancel my choice": un Back nello stesso posto fa la stessa cosa

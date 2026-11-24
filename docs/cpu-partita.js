@@ -19,6 +19,7 @@ import './azioni-mosse.js';      // self.AzioniMosse (come le statistiche divido
 import './cpu-avversario.js';    // self.CpuAvversario (le abitudini di chi ha davanti)
 import './cpu-situazioni.js';    // self.CpuSituazioni (come cambiano le abitudini nelle varie situazioni, imparato dai replay della lega)
 import './cpu-memoria.js';       // self.CpuMemoria (cosa la CPU ricorda di come hai giocato con un team nelle partite di una serie)
+import './cpu-copione.js';       // self.CpuCopione (come il capopalestra gioca i suoi team: la CPU lo impara dalle partite di allenamento e ci si avvicina difendendo la palestra)
 import './meta-lega.js';         // self.MetaLega (cosa si gioca nella lega: Pokémon, mosse, Helping Hand, Protezioni...)
 import './cpu-ia.js';            // self.CpuIa
 import './formato-pool.js';      // self.FormatoPool
@@ -107,8 +108,10 @@ export async function caricaMetaLega(db, regolamento) {
 // si para, cambia o usa una mossa di stato; senza (null) è la CPU di sempre.
 // `memoria`: cosa la CPU ha visto di come hai giocato con questo team nelle partite di prima (cpu-memoria.js, solo per la prova di un team contro la CPU): i tuoi set,
 // cosa fanno di solito i tuoi Pokémon, chi porti e chi metti in apertura. Senza (null) la prima partita di una serie, o fuori dalla prova di un team.
-export function nuovoCervello(lato = 'p2', { piano = null, meccaniche, avversario = null, memoria = null } = {}) {
-    return self.CpuIa.crea({ Dex, lato, piano, meccaniche, avversario, memoria });
+// `copione`: come il capopalestra gioca questo team (cpu-copione.js, solo per difendere una palestra o per allenarla): in anteprima la CPU porta e apre come lui contro quella
+// squadra, in battaglia usa di più le mosse che lui usa di solito. Quanto si fida dipende da quante lezioni ha fatto. Senza (null) la CPU è quella di sempre.
+export function nuovoCervello(lato = 'p2', { piano = null, meccaniche, avversario = null, memoria = null, copione = null } = {}) {
+    return self.CpuIa.crea({ Dex, lato, piano, meccaniche, avversario, memoria, copione });
 }
 
 // Le abitudini di un giocatore, nella forma che il cervello legge (cpu-avversario.js): quelle sue tirate verso la media della lega se ha pochi set, la

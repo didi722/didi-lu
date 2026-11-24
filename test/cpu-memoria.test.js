@@ -268,7 +268,7 @@ test('la pagina: memoria solo nella prova di un team del Box, azzerata se il tea
     const ui = leggi('battle-ui.js'), partita = leggi('cpu-partita.js');
     assert.match(partita, /import '\.\/cpu-memoria\.js'/);
     assert.match(partita, /memoria = null/);
-    assert.match(partita, /CpuIa\.crea\(\{ Dex, lato, piano, meccaniche, avversario, memoria \}\)/);
+    assert.match(partita, /CpuIa\.crea\(\{ Dex, lato, piano, meccaniche, avversario, memoria, copione \}\)/);
     // l'unico posto con conMemoria: true è la prova di un team (preparaCpu); i Random e le palestre non ce l'hanno
     assert.equal((ui.match(/conMemoria: true/g) || []).length, 1);
     const blocco = (da, a) => ui.slice(ui.indexOf(da), ui.indexOf(a, ui.indexOf(da)));

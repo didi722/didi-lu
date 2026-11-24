@@ -1,0 +1,89 @@
+/* =====================================================================
+   ALLENAMENTO DELLA CPU DI UNA PALESTRA (battle-ui.js: preparaAllenamento, mostraFineAllenamento)
+   Si arriva dalla pagina di modifica della palestra: una partita contro la CPU in cui lei guarda come giochi il team di una tappa.
+   Due pezzi: l'insegna in alto (a che punto è l'allenamento, quanto manca a una lezione intera, il tasto per chiuderla) e il cartello di fine lezione
+   (la barra con quanto è salita, cosa ha notato la CPU, chi non ha ancora visto giocare). Stessi adesivi del resto del simulatore (--sh-N, --bordo, temi).
+   Nell'app le misure strette stanno in app-battaglia.css.
+   ===================================================================== */
+
+/* ---- l'insegna ---- */
+.ins-allenamento {
+    --livello: #6fa8ff;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 9px 3px;
+    background: var(--crema); border: 2px solid var(--inchiostro); box-shadow: var(--sh-3);
+    font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; white-space: nowrap;
+    transform: rotate(calc(-1 * var(--nb-rot, 1) * 1deg));
+}
+.ins-allenamento[data-livello="quasi"] { --livello: var(--ambra); }
+.ins-allenamento[data-livello="pronta"] { --livello: var(--conferma); }
+.ins-allenamento b { font-size: .9rem; }
+.ins-all-barra {
+    position: relative; box-sizing: border-box; display: block; width: 56px; height: 12px;
+    background: var(--carta); border: 2px solid var(--inchiostro); overflow: hidden;
+}
+.ins-all-riempi { position: absolute; inset: 0 auto 0 0; display: block; width: var(--p, 0%); background: var(--livello); transition: width .6s ease; }
+.ins-lezione.piena { background: var(--conferma); }
+.ins-lezione-fine {
+    padding: 5px 10px 3px; cursor: pointer;
+    background: var(--inchiostro); color: var(--carta); border: 2px solid var(--inchiostro); box-shadow: var(--sh-3);
+    font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; white-space: nowrap;
+    transform: rotate(calc(1 * var(--nb-rot, 1) * 1deg)); transition: transform var(--tempo), box-shadow var(--tempo);
+}
+.ins-lezione-fine:hover { transform: var(--alza); box-shadow: var(--sh-5); }
+.ins-lezione-fine:active { transform: var(--atterra); box-shadow: var(--sh-1); }
+.ins-lezione-fine:focus-visible { outline: 3px solid var(--ambra); outline-offset: 2px; }
+
+/* ---- il cartello di fine lezione ---- */
+.esito-corpo { margin-top: 12px; text-align: left; }
+.esito-corpo[hidden] { display: none; }
+.all-corpo { display: grid; gap: 10px; }
+.all-progresso { --livello: #6fa8ff; display: grid; gap: 6px; }
+.all-progresso[data-livello="quasi"] { --livello: var(--ambra); }
+.all-progresso[data-livello="pronta"] { --livello: var(--conferma); }
+.all-barra {
+    position: relative; box-sizing: border-box; height: 22px; overflow: hidden;
+    background: var(--carta); border: var(--bordo); box-shadow: var(--sh-3);
+}
+.all-riempi {
+    position: absolute; inset: 0 auto 0 0; width: var(--a, 0%);
+    background-color: var(--livello);
+    background-image: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--inchiostro) 14%, transparent) 0 6px, transparent 6px 12px);
+    border-right: 3px solid var(--inchiostro);
+    animation: all-riempi 1s cubic-bezier(.2, .8, .2, 1) .25s backwards;
+}
+@keyframes all-riempi { from { width: var(--da, 0%); } }
+.all-cifre { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; }
+.all-percento { font: 700 1.6rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1; }
+.all-livello { font: 700 .82rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .04em; }
+.all-lezioni { margin-left: auto; font: 700 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; opacity: .75; }
+.all-nota { padding: 8px 10px 9px; background: var(--crema); border: 2px solid var(--inchiostro); box-shadow: var(--sh-2); }
+.all-nota h3 { margin: 0 0 5px; font: 700 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .08em; }
+.all-nota ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.all-nota li { font: 600 .78rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.all-nota li b { font-weight: 800; }
+.esito-card .all-pronta, .esito-card .all-mancano { margin: 0; font: 600 .78rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.esito-card .all-pronta { font-weight: 800; }
+
+/* gli angoli dei temi */
+.ins-allenamento, .ins-lezione-fine, .all-barra, .all-nota { --raggio: min(var(--nb-raggio, 0px), 8px); border-radius: var(--raggio); }
+
+@media (max-width: 699px) {
+    .esito-corpo { margin-top: 8px; }
+    .all-corpo { gap: 6px; }
+    .all-barra { height: 16px; box-shadow: var(--sh-2); }
+    .all-percento { font-size: 1.2rem; }
+    .all-livello { font-size: .72rem; }
+    .all-lezioni { font-size: .64rem; }
+    .all-nota { padding: 5px 8px 6px; }
+    .all-nota h3 { margin-bottom: 3px; font-size: .62rem; }
+    .all-nota li { font-size: .68rem; }
+    .esito-card .all-pronta, .esito-card .all-mancano { font-size: .68rem; }
+    .ins-allenamento { padding: 3px 7px 1px; font-size: .64rem; gap: 5px; }
+    .ins-all-barra { width: 40px; height: 10px; }
+    .ins-lezione-fine { padding: 3px 8px 1px; font-size: .64rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .all-riempi { animation: none; }
+    .ins-all-riempi, .ins-lezione-fine { transition: none; }
+}

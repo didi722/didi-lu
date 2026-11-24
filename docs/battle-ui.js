@@ -11,6 +11,7 @@
 //   battle.html?cpu=1&team=ID                            -> prova del proprio team (dal Box) contro la CPU
 //   battle.html?cpu=1&random=gen9randombattle            -> Random Battle di Showdown contro la CPU: team a caso per tutti e due
 //   battle.html?cpu=1&palestra=ID&tappa=0&team=ID_TEAM   -> una tappa della palestra di un allenatore (palestra.js): il tuo team contro il suo, con il suo vantaggio
+//   battle.html?cpu=1&allenamento=0&team=ID_TEAM         -> l'allenamento della CPU della tua palestra (cpu-copione.js): giochi il team della tappa 1 e la CPU guarda come lo giochi
 //   battle.html?amichevole=ID                            -> partita amichevole tra due giocatori (niente punti, niente salvataggi)
 //   battle.html                                           -> team di prova (sviluppo)
 // =====================================================
@@ -128,6 +129,7 @@ if (!PS || !PS.Battle || !jq) {
     } else if (parametri.get('cpu')) {
         if (parametri.get('random')) preparaCpuRandom(parametri.get('random'), parametri.get('nome'));
         else if (parametri.get('palestra')) preparaPalestra(parametri.get('palestra'), parseInt(parametri.get('tappa'), 10) || 0, parametri.get('team'));
+        else if (parametri.get('allenamento') != null) preparaAllenamento(parametri.get('team'), parseInt(parametri.get('allenamento'), 10) || 0);
         else preparaCpu(parametri.get('team'));
     } else {
         config = CONFIG_PROVA;
@@ -538,6 +540,7 @@ function ricordaLaPartita() {
 // Su schermi larghi stanno nel cartello sullo schermo, sui telefoni (dove il cartello è piccolo) nel pannello sotto lo
 // schermo: vedi style-battle.css
 function azioniCpu() {
+    if (cpu.allenamento) return azioniAllenamento();
     const azioni = [];
     if (cpu.random) {       // Random Battle: due team nuovi a ogni partita, niente Box da cui modificare
         return [
@@ -569,6 +572,7 @@ function riepilogoFineCpu() {
 
 function mostraFineCpu(vincitore) {
     cpu.ultimoVincitore = vincitore;
+    if (cpu.allenamento) return mostraFineAllenamento(vincitore);      // la lezione: cosa ha imparato la CPU e a che punto è l'allenamento
     ricordaLaPartita();
     // la partita entra nel conto della sessione una volta sola (il cartello si può ridisegnare)
     if (!cpu.palestra && cpu.cerebro && !cpu.cerebro.contata) {        // il conto della serie serve anche all'intro (battaglia N, 2 – 1), Random compresi
@@ -1466,7 +1470,7 @@ async function preparaPalestra(idGym, numeroTappa, chiaveTeam) {
     cpu = {
         cerebro: null, team: { testo: gym.team.testo, specie, piano: null, numero: 1 }, giocatore: dati, errori: 0, rqid: null,
         chiaveTeam, modificabile: false, avviso: '', problemi: [], ultimoVincitore: null, generando: false,
-        palestra: { id: gym.id, nome: gym.nome, tappa: numeroTappa, categoria: gym.categoria, vantaggio: gym.vantaggio, generazione: self.Palestra.generazioneDi(gym.regolamento), tema: null, timerAnnuncio: 0, aspetto: gym.aspetto }
+        palestra: { id: gym.id, nome: gym.nome, tappa: numeroTappa, categoria: gym.categoria, vantaggio: gym.vantaggio, generazione: self.Palestra.generazioneDi(gym.regolamento), tema: null, timerAnnuncio: 0, aspetto: gym.aspetto, copione: gym.copione || null }
     };
     config = {
         formato: dati.formato,
@@ -1917,6 +1921,242 @@ function mostraFinePalestra(vincitore) {
 }
 
 // -----------------------------------------------------
+// Allenamento della CPU di una palestra (cpu-copione.js)
+// -----------------------------------------------------
+// Dalla pagina di modifica della palestra (palestra.html?edit=1): una partita contro un team della CPU, come una prova dal Box. La CPU guarda come giochi il team di quella tappa (chi
+// porti, chi mandi in campo per primo, le mosse, quando ti pari o cambi) e a fine lezione lo annota nel copione di quel team (players/<tu>/palestraAllenamento/<team>), che userà
+// difendendo la palestra. Una lezione dura quanto vuoi: da TURNI_LEZIONE_PIENA turni vale per intera, una più corta in proporzione; si chiude da sola alla fine della partita, con
+// "End lesson" o uscendo con "← Gym". Con OBIETTIVO_LEZIONI lezioni piene, e tutti i Pokémon del team visti giocare, la CPU è allenata. La CPU che si affronta è quella normale: niente
+// memoria della serie (giocheresti contro chi ti studia, e non sarebbe il tuo modo di giocare) e niente punti.
+async function preparaAllenamento(chiaveTeam, numeroTappa) {
+    $('opzione-bot').hidden = true;
+    const ritorno = $('link-hub');
+    ritorno.href = 'palestra.html?edit=1';
+    ritorno.textContent = '← Gym';
+    mostraProgresso('Loading your team…');
+
+    let dati, primo, riferimento, copione;
+    try {
+        if (!window.firebase) throw new Error('Firebase did not load: check the scripts in battle.html.');
+        await new Promise(ok => { const stop = firebase.auth().onAuthStateChanged(() => { stop(); ok(); }); });
+        const utente = firebase.auth().currentUser;
+        if (!utente) throw new Error('Log in on the site to train your gym.');
+        if (!chiaveTeam) throw new Error('No team selected: open this page from your gym.');
+        anticipaIntroCpu(leggiNomeUtente(utente));      // l'intro parte subito e copre il resto del caricamento
+        const db = firebase.database();
+        dati = await caricaPerProva(db, utente, chiaveTeam);
+        // il team deve essere quello di una tappa della palestra salvata: il copione si tiene per team, e serve a quella palestra
+        const tappa = self.Palestra.tappeDi((await db.ref(`players/${dati.id}/info/palestra`).once('value')).val())[numeroTappa];
+        if (!tappa || tappa.team !== chiaveTeam) throw new Error('That team is not in your gym: save the gym first.');
+        riferimento = db.ref(`players/${dati.id}/palestraAllenamento/${chiaveTeam}`);
+        copione = self.CpuCopione.normalizza((await riferimento.once('value')).val());
+        if (!DexSim.formats.get(dati.formato).exists) {
+            throw new Error(`The simulator format "${dati.formato}" doesn't exist. Fix the formatoSimulatore field of the ${dati.categoria} ruleset.`);
+        }
+        if (dati.problemi.length) throw new Error(`This team can't be used in ${dati.categoria}: ${dati.problemi.join('; ')}`);
+        mostraProgresso(`Building a CPU team for ${dati.categoria}…`);
+        primo = await nuovoTeamCpu(dati.regolamento, { iniziali: dati.iniziali, db: dbPerLaMeta() });
+        if (!primo.team) {
+            throw new Error(`The CPU couldn't build a team for ${dati.categoria}${primo.avvisi.length ? ' (' + primo.avvisi[0] + ')' : ''}.`);
+        }
+    } catch (errore) {
+        console.error(errore);
+        return mostraMessaggioCampo(`Couldn't start the training: ${errore.message}`);
+    }
+
+    scaldaGif(primo.team); scaldaGif(dati.team && dati.team.testo);
+    document.body.classList.add('prova-cpu');
+    cpu = {
+        cerebro: null, team: primo.team, giocatore: dati, errori: 0, rqid: null,
+        chiaveTeam, modificabile: false, avviso: '', problemi: [], ultimoVincitore: null, generando: false,
+        conMemoria: false, memoria: null,
+        allenamento: { tappa: numeroTappa, riferimento, copione, specieTeam: setDaTeam(dati.team.testo).map(x => x.species), portati: null, esito: null, salvando: null }
+    };
+    config = {
+        formato: dati.formato,
+        etichetta: `Training · Stage ${numeroTappa + 1} · ${dati.categoria}`,
+        p1: { nome: dati.nome, id: dati.id, team: dati.team.testo, nomeTeam: dati.team.nome, avatar: dati.avatar },
+        p2: { nome: 'CPU', team: '', nomeTeam: '' }
+    };
+    if (dati.colore) document.documentElement.style.setProperty('--colore-p1', dati.colore);
+    impostaPannelli();
+    collegaUscitaAllenamento();
+    iniziaContro(cpu.team);
+}
+
+const nomeSpecieDex = id => { const s = DexSim.species.get(id); return s && s.exists ? s.name : id; };
+const nomeMossaDex = id => { const m = DexSim.moves.get(id); return m && m.exists ? m.name : id; };
+
+/** La lezione di questa battaglia, fin qui (o null se è troppo presto per imparare qualcosa): quello che la CPU ha visto, chi hai portato e contro chi */
+function lezioneAllenamento() {
+    const a = cpu && cpu.allenamento, c = cpu && cpu.cerebro;
+    if (!a || !c || !c.memoriaDellaPartita || !self.CpuCopione) return null;
+    try {
+        const vista = c.memoriaDellaPartita();
+        return vista ? self.CpuCopione.lezione({ vista, avversari: (cpu.team && cpu.team.specie) || [], portati: a.portati || [], turni: c.turno, aperti: c.tipo === 'doubles' ? 2 : 1 }) : null;
+    } catch (errore) {
+        console.warn("The CPU couldn't read this lesson", errore);
+        return null;
+    }
+}
+
+/** Com'è allenata la CPU con questo team: prima di questa battaglia e adesso (con la lezione in corso, che si vede salire turno dopo turno) */
+function progressoAllenamento() {
+    const a = cpu.allenamento, P = self.CpuCopione;
+    const prima = P.progresso(a.copione, a.specieTeam);
+    if (a.esito) return { prima: a.esito.prima, ora: a.esito.dopo, lez: null };
+    const lez = lezioneAllenamento();
+    return { prima, ora: lez ? P.progresso(P.fondi(a.copione, lez), a.specieTeam) : prima, lez };
+}
+
+/** Un nodo con la barra dell'allenamento della CPU (si anima da `prima` a `dopo`): il livello, le lezioni fatte e quante ne servono */
+function barraAllenamento(prima, dopo) {
+    const livelli = { nuova: 'Not trained yet', impara: 'Learning', quasi: 'Almost there', pronta: 'Ready to defend!' };
+    const lezioni = String(Math.round(dopo.lezioni * 10) / 10);
+    return el('div', { class: 'all-progresso', 'data-livello': dopo.livello },
+        el('div', { class: 'all-barra', role: 'img', 'aria-label': `CPU training ${dopo.percento}%`, style: `--da:${prima.percento}%; --a:${dopo.percento}%` },
+            el('span', { class: 'all-riempi' })),
+        el('div', { class: 'all-cifre' },
+            el('b', { class: 'all-percento', testo: `${dopo.percento}%` }),
+            el('span', { class: 'all-livello', testo: livelli[dopo.livello] || '' }),
+            el('span', { class: 'all-lezioni', testo: `${lezioni} / ${dopo.obiettivo} lessons` })));
+}
+
+/** L'insegna in alto nel simulatore, in allenamento: la tappa, quanto è allenata la CPU (sale mentre giochi) e a che punto è la lezione */
+function vociInsegnaAllenamento() {
+    const P = self.CpuCopione, { ora, lez } = progressoAllenamento();
+    const turno = cpu.cerebro ? Math.max(0, cpu.cerebro.turno || 0) : 0;
+    const piena = turno >= P.TURNI_LEZIONE_PIENA;
+    const etichetta = el('span', { class: 'ins-formato ins-all-titolo', testo: config.etichetta, title: config.etichetta });
+    const barra = el('span', {
+        class: 'ins-allenamento', role: 'img', 'data-livello': ora.livello, style: `--p:${ora.percento}%`,
+        title: `The CPU is ${ora.percento}% trained on this team (${Math.round(ora.lezioni * 10) / 10} of ${ora.obiettivo} lessons). It learns while you play.`, 'aria-label': `CPU training ${ora.percento}%`
+    }, el('span', { class: 'ins-all-barra', 'aria-hidden': 'true' }, el('span', { class: 'ins-all-riempi' })), el('span', { class: 'ins-all-testo' }, 'CPU ', el('b', { testo: `${ora.percento}%` })));
+    const lezione = el('span', { class: `ins-match ins-lezione${piena ? ' piena' : ''}`, title: `A lesson counts in full after ${P.TURNI_LEZIONE_PIENA} turns; a shorter one counts in proportion.` },
+        'Lesson ', el('b', { testo: piena ? '✔' : `${turno}/${P.TURNI_LEZIONE_PIENA}` }));
+    const fine = lez && !finita ? el('button', { type: 'button', class: 'ins-lezione-fine', title: 'Stop here: the CPU keeps what it has seen so far', onclick: finisciLezione }, 'End lesson') : null;
+    return [etichetta, barra, lezione, fine];
+}
+
+/**
+ * Chiude la lezione: quello che la CPU ha visto entra nel copione del team (una volta sola per battaglia). Il copione si fonde dentro una transazione, quindi
+ * due schede aperte non si pestano i piedi. Ritorna { stato: 'salvata' | 'corta' | 'errore', lezione, prima, dopo }; non lancia mai.
+ */
+function salvaLezione() {
+    const a = cpu && cpu.allenamento;
+    if (!a) return Promise.resolve(null);
+    if (a.esito && a.esito.stato !== 'errore') return Promise.resolve(a.esito);
+    if (a.salvando) return a.salvando;
+    const P = self.CpuCopione;
+    const prima = P.progresso(a.copione, a.specieTeam);
+    const lezione = a.pendente || lezioneAllenamento();
+    if (!lezione) { a.esito = { stato: 'corta', lezione: null, prima, dopo: prima }; return Promise.resolve(a.esito); }
+    a.pendente = lezione;
+    a.salvando = (async () => {
+        try {
+            const r = await a.riferimento.transaction(attuale => P.fondi(attuale, lezione));
+            const nuovo = P.normalizza(r && r.snapshot && r.snapshot.val());
+            if (!r || !r.committed || !nuovo) throw new Error('the lesson was not written');
+            a.copione = nuovo;
+            a.esito = { stato: 'salvata', lezione, prima, dopo: P.progresso(nuovo, a.specieTeam) };
+            a.pendente = null;
+        } catch (errore) {
+            console.warn("Couldn't save the lesson", errore);
+            a.esito = { stato: 'errore', lezione, prima, dopo: prima, messaggio: String((errore && errore.message) || errore) };
+        }
+        a.salvando = null;
+        return a.esito;
+    })();
+    return a.salvando;
+}
+
+/** "End lesson": si smette qui (la CPU tiene quello che ha visto fin qui) e si passa al cartello di fine */
+function finisciLezione() {
+    if (!cpu || !cpu.allenamento || finita) return;
+    cpu.allenamento.anticipata = true;
+    finita = true;
+    ridisegnaComandi();
+    mostraFineCpu(null);
+}
+
+/** Uscendo con "← Gym" a lezione in corso si salva prima quello che la CPU ha visto (se c'è abbastanza da imparare) */
+function collegaUscitaAllenamento() {
+    const link = $('link-hub');
+    // nell'app uscire a metà partita chiede conferma (app-battaglia.js): si salva anche lì, e il testo dice che la CPU tiene quello che ha visto
+    window.__primaDiUscire = () => (cpu && cpu.allenamento && (!cpu.allenamento.esito || cpu.allenamento.esito.stato === 'errore') && (lezioneAllenamento() || cpu.allenamento.pendente))
+        ? Promise.race([salvaLezione(), new Promise(ok => setTimeout(ok, 4000))]) : null;
+    window.__notaUscita = 'The CPU keeps what it has seen so far.';
+    link.addEventListener('click', async ev => {
+        const a = cpu && cpu.allenamento;
+        if (!a || ev.defaultPrevented || ev.button || ev.metaKey || ev.ctrlKey || ev.shiftKey || a.uscendo) return;
+        if (a.esito && a.esito.stato !== 'errore') return;       // già salvata: si esce subito
+        if (!lezioneAllenamento() && !a.pendente) return;         // niente da salvare
+        ev.preventDefault();
+        a.uscendo = true;
+        link.textContent = 'Saving the lesson…';
+        await Promise.race([salvaLezione(), new Promise(ok => setTimeout(ok, 4000))]);
+        location.href = link.href;
+    });
+}
+
+/** Le righe di "cosa ha notato la CPU" in questa lezione: chi hai mandato in campo per primo e le mosse che usi di più con ogni Pokémon */
+function cosaHaImparato(lezione) {
+    const r = self.CpuCopione.riassuntoLezione(lezione);
+    const righe = [];
+    if (r.aperture.length) righe.push(['Leads', r.aperture.map(nomeSpecieDex).join(' + ')]);
+    for (const x of r.mosse.slice(0, 3)) righe.push([nomeSpecieDex(x.specie), x.mosse.map(m => nomeMossaDex(m.mossa) + (m.primoTurno ? ' (opens)' : '')).join(', ')]);
+    return righe;
+}
+
+/** I pulsanti dopo una lezione: un'altra battaglia di allenamento, o ritorno alla palestra */
+function azioniAllenamento() {
+    const azioni = [];
+    if (!cpu.problemi.length) {
+        azioni.push(el('button', { type: 'button', class: 'btn primario', onclick: ev => { ev.currentTarget.disabled = true; altroTeamCpu(); } }, 'Another training battle'));
+    }
+    azioni.push(el('a', { class: 'btn secondario', href: 'palestra.html?edit=1' }, 'Back to my gym'));
+    return azioni;
+}
+
+/** Il cartello di fine lezione: com'è andata la partita, cosa ha imparato la CPU e a che punto è l'allenamento */
+async function mostraFineAllenamento(vincitore) {
+    const a = cpu.allenamento;
+    if (!a.esito || a.esito.stato === 'errore') mostraEsito('Saving the lesson…', { sotto: 'The CPU is writing down how you played.' });
+    const esito = await salvaLezione();
+    if (!cpu || cpu.allenamento !== a) return;
+    const P = self.CpuCopione;
+    const vinto = !!vincitore && vincitore === config.p1.nome;
+    const partita = vincitore ? (vinto ? 'You won' : 'The CPU won') : a.anticipata ? 'Lesson ended early' : "It's a tie";
+    const nota = cpu.avviso ? ` ${cpu.avviso}` : '';
+    const lez = esito && esito.lezione;
+    const dopo = (esito && esito.dopo) || P.progresso(a.copione, a.specieTeam);
+    const prima = (esito && esito.prima) || dopo;
+    let titolo, sotto;
+    if (!esito || esito.stato === 'corta') {
+        titolo = 'Too short to learn from';
+        sotto = `Play at least ${P.MIN_TURNI} turns and make a few choices: that's what the CPU studies.${nota}`;
+    } else if (esito.stato === 'errore') {
+        titolo = "Couldn't save the lesson";
+        sotto = `Check your connection and try again. (${esito.messaggio})${nota}`;
+    } else {
+        titolo = lez.peso >= 1 ? 'Lesson learned!' : 'Lesson saved';
+        sotto = `${partita} · ${lez.turni} turns${lez.peso >= 1 ? '' : `: it counts as ${Math.round(lez.peso * 100)}% of a lesson (a full one is ${P.TURNI_LEZIONE_PIENA} turns)`}.${nota}`;
+    }
+    const corpo = el('div', { class: 'all-corpo' }, barraAllenamento(prima, dopo));
+    if (esito && esito.stato === 'salvata') {
+        const righe = cosaHaImparato(lez);
+        if (righe.length) corpo.append(el('div', { class: 'all-nota' }, el('h3', { testo: 'What the CPU noticed' }), el('ul', {}, ...righe.map(([chi, cosa]) => el('li', {}, el('b', { testo: chi }), ' ', cosa)))));
+    }
+    if (dopo.livello === 'pronta') corpo.append(el('p', { class: 'all-pronta', testo: 'The CPU is ready to defend this team. More lessons keep it sharp!' }));
+    else if (dopo.mancano.length && dopo.lezioni > 0) corpo.append(el('p', { class: 'all-mancano' }, 'Not seen yet: ', el('b', { testo: dopo.mancano.join(', ') }), '. Bring them next battle so the CPU learns them too.'));
+    const azioni = azioniAllenamento();
+    if (esito && esito.stato === 'errore') azioni.unshift(el('button', { type: 'button', class: 'btn primario', onclick: () => mostraFineAllenamento(vincitore) }, 'Try again'));
+    mostraEsito(titolo, { sotto, corpo, azioni });
+    disegnaInfo();
+    ridisegnaComandi();      // sui telefoni i pulsanti stanno anche nel pannello sotto lo schermo
+}
+
+// -----------------------------------------------------
 // Avvio di una battaglia (un set)
 // -----------------------------------------------------
 function avviaBattaglia() {
@@ -1936,9 +2176,10 @@ function avviaBattaglia() {
     // il cervello conosce la strategia del team che sta giocando (non si vede da nessuna parte: il team si chiama "Team N")
     // ...e quali meccaniche di generazione ammette il formato (Dynamax, Mosse Z, Mega, Teracristal): se è spento, la CPU non ci pensa nemmeno
     if (cpu) {
+        if (cpu.allenamento) Object.assign(cpu.allenamento, { portati: null, esito: null, salvando: null, pendente: null, anticipata: false });      // l'allenamento riparte da capo a ogni battaglia: una lezione per partita
         studiaGiocatore(config.p1 && config.p1.id);
         ricordaLaPartita();      // la partita di prima (se è stata giocata) entra nella memoria della serie
-        cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento), avversario: stileCpu.profilo || true, memoria: cpu.conMemoria ? cpu.memoria : null });
+        cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento), avversario: stileCpu.profilo || true, memoria: cpu.conMemoria ? cpu.memoria : null, copione: cpu.palestra ? cpu.palestra.copione : null });      // la palestra gioca come il suo capo l'ha allenata (caricaTappaPalestra)
         cpu.errori = 0; cpu.rqid = null;
     }
     battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2, vantaggio: cpu && cpu.palestra && cpu.palestra.vantaggio ? { id: cpu.palestra.vantaggio.id, lato: 'p2', nome: cpu.palestra.nome } : null });
@@ -2130,6 +2371,8 @@ function scegliSlot(lato, scelta) {
 
 function invia(lato, scelta) {
     const p = pannelli[lato];
+    // in allenamento la CPU annota chi porti (e in che ordine: i primi aprono) dall'anteprima, che dal log non si vede
+    if (cpu && cpu.allenamento && lato === 'p1' && p.grezza && p.grezza.teamPreview) cpu.allenamento.portati = self.CpuCopione.portatiDaScelta(p.grezza, scelta) || cpu.allenamento.portati;
     p.inviata = true;
     p.errore = '';
     battaglia.scegli(lato, scelta);
@@ -2583,7 +2826,9 @@ function aggiornaVistoInsegna() {
 function disegnaInfo() {
     if (!config) return;
     aggiornaVistoInsegna();
-    const voci = cpu && cpu.palestra ? vociInsegnaPalestra().filter(Boolean) : [el('span', { class: 'ins-formato', testo: config.etichetta, title: config.etichetta })];
+    const voci = cpu && cpu.palestra ? vociInsegnaPalestra().filter(Boolean)
+        : cpu && cpu.allenamento ? vociInsegnaAllenamento().filter(Boolean)
+            : [el('span', { class: 'ins-formato', testo: config.etichetta, title: config.etichetta })];
     if (online) {
         if (!online.amichevole) voci.push(el('span', { class: 'ins-match' }, 'Match ', el('b', { testo: `${online.info.match}/${MATCH_PER_SHOWDOWN}` })));
         if (vistoInsegna.set && !(online.amichevole && online.info.bestOf === 1)) {
@@ -2671,12 +2916,14 @@ function nascondiMessaggio() {
     if (self.__introVs && self.__introVs.stato) self.__introVs.stato('');
 }
 
-function mostraEsito(titolo, { sotto = '', azioni = [] } = {}) {
+function mostraEsito(titolo, { sotto = '', azioni = [], corpo = null } = {}) {
     $('testo-vittoria').textContent = titolo;
     $('sotto-vittoria').textContent = sotto;
     $('sotto-vittoria').hidden = !sotto;
     const premio = $('premio-vittoria');
     if (premio) premio.hidden = true;
+    const extra = $('corpo-vittoria');      // un blocco in più tra il testo e i pulsanti (la barra dell'allenamento)
+    if (extra) { extra.replaceChildren(...(corpo ? [corpo] : [])); extra.hidden = !corpo; }
     $('azioni-vittoria').replaceChildren(...azioni);
     $('azioni-vittoria').hidden = !azioni.length;
     $('vittoria').hidden = false;

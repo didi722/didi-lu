@@ -36,6 +36,42 @@ body.pg-palestra .pal-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); 
 .pal-pagina .ng-bottone:disabled { opacity: .45; cursor: default; box-shadow: none; }
 
 
+/* =====================================================================
+   L'ALLENAMENTO DELLA CPU (palestra-ui.js: allenamentoHtml, allenamentoTappaHtml; palestra.js: pianoAllenamento)
+   In cima il pannello con il totale e il tasto grande "Train CPU"; in fondo a ogni carta di tappa la barra di quel team e il suo tasto "Train".
+   Il colore della barra dice a che punto è: azzurro mentre impara, ambra quasi pronta, verde pronta.
+   ===================================================================== */
+.pal-allena-pannello, .pal-allena { --livello: #6fa8ff; }
+.pal-allena-pannello[data-livello="quasi"], .pal-allena[data-livello="quasi"] { --livello: var(--nb-giallo, #ffbd44); }
+.pal-allena-pannello[data-livello="pronta"], .pal-allena[data-livello="pronta"] { --livello: #47ea6a; }
+.pal-allena-pannello { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 12px 24px; align-items: center; margin: 0 0 24px; padding: 16px 18px; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-m, 5px 5px 0 #000); }
+.pal-allena-testa h3 { margin: 0 0 4px; font: 900 1.05rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; }
+.pal-allena-testa p { margin: 0; font: 600 .78rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .8; }
+.pal-allena-misura { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+.pal-allena-barra { position: relative; box-sizing: border-box; display: block; height: 18px; overflow: hidden; background: #fff; border: 3px solid var(--nb-ink, #000); border-radius: min(var(--nb-raggio, 0px), 8px); }
+.pal-allena-barra i { position: absolute; inset: 0 auto 0 0; background-color: var(--livello); background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, .13) 0 6px, transparent 6px 12px); border-right: 3px solid var(--nb-ink, #000); transition: width .5s ease; }
+.pal-allena-barra i[style="width:0%"] { border-right-width: 0; }
+.pal-allena-percento { font: 900 1.5rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); line-height: 1; }
+.pal-allena-livello { grid-column: 1 / -1; font: 800 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; }
+.pal-allena-azione { display: grid; gap: 5px; justify-items: stretch; text-align: center; }
+.pal-allena-nota { font: 700 .68rem/1.25 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
+.pal-pagina .pal-allena-via { padding: 11px 22px 9px; font-size: .95rem; }
+.pal-allena { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding-top: 10px; border-top: 3px dashed rgba(0, 0, 0, .2); }
+.pal-allena .pal-allena-barra { height: 12px; border-width: 2px; }
+.pal-allena .pal-allena-barra i { border-right-width: 2px; }
+.pal-allena-testo { font: 800 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+.pal-allena-testo b { font-size: .85rem; }
+.pal-pagina .pal-allena-btn { padding: 5px 12px 3px; font-size: .7rem; }
+/* la quarta cifra del tabellone di chi sfida: quanto è allenata la CPU della palestra */
+.pal-chip-allena b { color: #6fa8ff; }
+.pal-chip-allena[data-livello="quasi"] b { color: var(--nb-giallo, #ffbd44); }
+.pal-chip-allena[data-livello="pronta"] b { color: #47ea6a; }
+@media (max-width: 760px) {
+    .pal-allena-pannello { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+    .pal-pagina .pal-allena-via { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .pal-allena-barra i { transition: none; } }
+
 /* nell'app lo sfondo è scuro e il testo appoggiato direttamente sulla pagina (titolo, spiegazioni, avviso di accesso) non ha un colore suo: ereditava il nero.
    Le carte (bianche, con il loro colore: .pal-tappa, .pal-vuoto...) restano com'erano */
 html.app-shell .pal-pagina :is(.pal-titolo, .pal-aiuto, .pal-accedi) { color: #fff; }
@@ -371,3 +407,21 @@ html.app-shell .pal-pronti { padding: calc(3 * var(--u)) calc(9 * var(--u)) calc
 html.app-shell .pal-pip { width: calc(10 * var(--u)); height: calc(10 * var(--u)); border-color: rgba(255, 255, 255, .6); }
 html.app-shell .pal-via { padding: calc(6 * var(--u)) calc(22 * var(--u)) calc(4 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .55); font-size: calc(14 * var(--u)); }
 html.app-shell .pal-via:hover:not(:disabled) { translate: none; box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .55); }
+
+/* l'allenamento della CPU nell'app (palestra.html?edit=1): il totale e il tasto grande sulla riga del titolo (con i tre numeri), niente spiegazioni; nelle carte la barra e il tasto al posto della descrizione del vantaggio */
+html.app-shell .pal-allena-pannello { display: flex; flex: 1 1 auto; justify-content: flex-end; align-items: center; gap: calc(12 * var(--u)); min-width: 0; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: #fff; }
+html.app-shell .pal-allena-testa, html.app-shell .pal-allena-nota { display: none; }
+html.app-shell .pal-allena-misura { flex: 0 1 calc(190 * var(--u)); gap: calc(1 * var(--u)) calc(8 * var(--u)); }
+html.app-shell .pal-allena-azione { flex: none; }
+html.app-shell .pal-allena-barra { height: calc(13 * var(--u)); background: rgba(255, 255, 255, .85); border-width: calc(2.5 * var(--u)); border-radius: calc(7 * var(--u)); }
+html.app-shell .pal-allena-barra i { border-right-width: calc(2 * var(--u)); }
+html.app-shell .pal-allena-percento { font-size: calc(16 * var(--u)); }
+html.app-shell .pal-allena-livello { font-size: calc(7.5 * var(--u)); }
+html.app-shell .pal-pagina .pal-allena-via { padding: calc(6 * var(--u)) calc(16 * var(--u)) calc(4 * var(--u)); font-size: calc(13 * var(--u)); }
+html.app-shell .pal-tappa .pal-descr { display: none; }
+html.app-shell .pal-tappe .pal-tappa { gap: calc(4 * var(--u)); }
+html.app-shell .pal-allena { gap: calc(6 * var(--u)); padding-top: calc(3 * var(--u)); border-top: calc(2 * var(--u)) dashed rgba(255, 255, 255, .25); }
+html.app-shell .pal-allena .pal-allena-barra { height: calc(9 * var(--u)); border-width: calc(2 * var(--u)); }
+html.app-shell .pal-allena-testo { font-size: calc(8 * var(--u)); }
+html.app-shell .pal-allena-testo b { font-size: calc(10 * var(--u)); }
+html.app-shell .pal-pagina .pal-allena-btn { padding: calc(3 * var(--u)) calc(9 * var(--u)) calc(2 * var(--u)); font-size: calc(9 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }

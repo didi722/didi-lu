@@ -295,15 +295,15 @@ test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori
     const ui = leggi('battle-ui.js');
     assert.match(ui, /import \{ nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile \} from '\.\/cpu-partita\.js'/);
     assert.match(ui, /import \{ caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra, caricaAspetto \} from '\.\/team-sito\.js'/);
-    assert.match(ui, /parametri\.get\('cpu'\)[\s\S]{0,400}preparaCpu\(parametri\.get\('team'\)\)/);
+    assert.match(ui, /parametri\.get\('cpu'\)[\s\S]{0,700}preparaCpu\(parametri\.get\('team'\)\)/);
     assert.match(ui, /return !online && lato === 'p2' && \(!!cpu \|\| \$\('bot-p2'\)\.checked\)/, 'con la CPU il lato 2 è sempre automatico');
     assert.match(ui, /if \(cpu && cpu\.cerebro\) cpu\.cerebro\.osserva\(righe\)/, 'la CPU legge il log');
     assert.match(ui, /cpu\.cerebro\.scegli\(p\.grezza, \{ errori: cpu\.errori \}\)/, 'e sceglie con il numero di rifiuti');
     assert.match(ui, /if \(cpu && lato === 'p2'\) cpu\.errori\+\+/, 'dopo un rifiuto prova la scelta successiva');
     assert.match(ui, /richiesta\.rqid !== cpu\.rqid/, 'ogni richiesta nuova riparte dalla scelta migliore');
     assert.match(ui, /else if \(cpu\) \{\s*mostraFineCpu\(vincitore\);/);
-    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2', \{ piano: cpu\.team && cpu\.team\.piano, meccaniche: meccanicheDelFormato\(cpu\.giocatore && cpu\.giocatore\.regolamento\), avversario: stileCpu\.profilo \|\| true, memoria: cpu\.conMemoria \? cpu\.memoria : null \}\)/,
-        'un cervello nuovo a ogni partita, che conosce il piano del team, le meccaniche di generazione del formato e le abitudini di chi gioca');
+    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2', \{ piano: cpu\.team && cpu\.team\.piano, meccaniche: meccanicheDelFormato\(cpu\.giocatore && cpu\.giocatore\.regolamento\), avversario: stileCpu\.profilo \|\| true, memoria: cpu\.conMemoria \? cpu\.memoria : null, copione: cpu\.palestra \? cpu\.palestra\.copione : null \}\)/,
+        'un cervello nuovo a ogni partita, che conosce il piano del team, le meccaniche di generazione del formato, le abitudini di chi gioca e, in palestra, come il capo l\'ha allenata');
     // il giocatore non vede il team della CPU (solo le specie, come in una partita vera)
     assert.match(ui, /openSheet: false,\s*latiNoti: \['p1'\]/);
     // se la CPU va in errore si gioca una mossa valida a caso: la partita non si blocca

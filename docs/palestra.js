@@ -14,6 +14,8 @@
 //   Palestra.eDoppio(regolamento)          il format si gioca in doppio? (la palestra ammette solo quelli)
 //   Palestra.tappeDi(config)               le tre tappe in ordine, anche se Firebase le ha date come oggetto
 //   Palestra.problemi(config, { regolamenti, teams })   cosa non va nella configurazione ([] se è a posto)
+//   Palestra.pianoAllenamento(bozza, salvata, progressoDi)   l'allenamento della CPU tappa per tappa per il pannello "Train CPU": { tappe: [{ i, team, percento, livello, allenabile, perche }], totale, prossima }
+//   Palestra.urlAllenamento(tappa, team)   l'indirizzo della partita di allenamento di una tappa (battle.html?cpu=1&allenamento=<tappa>&team=<id>)
 //   Palestra.nuovaSfida(squadre) / avanza(sfida) / azzera(sfida) / finita(sfida)   lo stato di chi sfida (puro)
 //   Palestra.chiaveSfida / leggiSfida / salvaSfida   i progressi di chi sfida, nel suo browser (localStorage passato da fuori)
 //   Palestra.applica(battle, vantaggio)    applica il vantaggio a una battaglia del simulatore appena iniziata (prima del turno 1), annunciandolo nel log
@@ -88,6 +90,30 @@
             formato: String(t.formato || ''), categoria: String(t.categoria || ''), team: String(t.team || ''), vantaggio: String(t.vantaggio || '')
         }));
     }
+
+    /**
+     * Quanto è allenata la CPU della palestra, tappa per tappa (i dati sono quelli del copione di ogni team: cpu-copione.js). `bozza`: le tre tappe come le sta modificando chi la costruisce;
+     * `salvata`: la palestra com'è salvata (config); `progressoDi(idTeam)`: { percento, livello } di quel team (o null se non si sa). Una tappa si può allenare se ha un team e la palestra
+     * salvata ha lo stesso team nella stessa tappa (la partita di allenamento parte da lì); `perche` dice cosa manca: 'pick-team' o 'save-first'. `totale` è la media delle tappe,
+     * `prossima` la tappa allenabile più indietro (-1 se nessuna): è quella che parte con il tasto grande.
+     */
+    function pianoAllenamento(bozza, salvata, progressoDi) {
+        const salvate = tappeDi(salvata);
+        const tappe = Array.from({ length: TAPPE }, (_, i) => {
+            const t = (bozza && bozza[i]) || {};
+            const team = t.team ? String(t.team) : '';
+            const p = team && typeof progressoDi === 'function' ? progressoDi(team) : null;
+            const percento = p && Number.isFinite(p.percento) ? Math.max(0, Math.min(100, Math.round(p.percento))) : 0;
+            const salvato = !!team && !!salvate[i] && salvate[i].team === team;
+            return { i, team, percento, livello: (p && p.livello) || 'nuova', allenabile: salvato, perche: !team ? 'pick-team' : salvato ? '' : 'save-first' };
+        });
+        const totale = Math.round(tappe.reduce((s, x) => s + x.percento, 0) / TAPPE);
+        const da = tappe.filter(x => x.allenabile).sort((a, b) => a.percento - b.percento || a.i - b.i)[0];
+        return { tappe, totale, prossima: da ? da.i : -1 };
+    }
+
+    /** La partita di allenamento di una tappa (battle-ui.js: preparaAllenamento): il tuo team contro la CPU, che guarda come lo giochi */
+    const urlAllenamento = (tappa, team) => `battle.html?cpu=1&allenamento=${Math.max(0, Math.floor(Number(tappa)) || 0)}&team=${encodeURIComponent(String(team || ''))}`;
 
     /**
      * Cosa non va in una configurazione (testi per chi la imposta); [] se è a posto.
@@ -323,5 +349,5 @@
         };
     }
 
-    return { TAPPE, VANTAGGI, perId, vantaggiPer, generazioneDi, eDoppio, tappeDi, problemi, nuovaSfida, avanza, azzera, finita, chiaveSfida, leggiSfida, salvaSfida, applica, proteggi, condizioniFisse, testoAnnuncio, temaPalestra, aspettoCapo, urlMusica };
+    return { TAPPE, VANTAGGI, perId, vantaggiPer, generazioneDi, eDoppio, tappeDi, pianoAllenamento, urlAllenamento, problemi, nuovaSfida, avanza, azzera, finita, chiaveSfida, leggiSfida, salvaSfida, applica, proteggi, condizioniFisse, testoAnnuncio, temaPalestra, aspettoCapo, urlMusica };
 });

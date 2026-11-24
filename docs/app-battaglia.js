@@ -253,9 +253,11 @@
             const scheda = doc.createElement('div');
             scheda.className = 'ab-conf-scheda';
             const titolo = doc.createElement('b'); titolo.textContent = 'Leave the match?';
-            const nota = doc.createElement('span'); nota.textContent = 'You can\'t take it back.';
+            // l'allenamento della CPU (battle-ui.js) salva la lezione prima di uscire e lo dice: win.__primaDiUscire() ritorna una promessa, win.__notaUscita è il testo
+            const nota = doc.createElement('span'); nota.textContent = typeof win.__notaUscita === 'string' && win.__notaUscita ? win.__notaUscita : 'You can\'t take it back.';
             const tasti2 = doc.createElement('div'); tasti2.className = 'ab-conf-tasti';
-            tasti2.append(tasto('ab-conf-resta', 'Stay', () => chiudi()), tasto('ab-conf-esci', 'Leave', () => { chiudi(); win.location.href = indirizzo; }));
+            const esci = () => { chiudi(); Promise.resolve(typeof win.__primaDiUscire === 'function' ? win.__primaDiUscire() : null).catch(() => {}).then(() => { win.location.href = indirizzo; }); };
+            tasti2.append(tasto('ab-conf-resta', 'Stay', () => chiudi()), tasto('ab-conf-esci', 'Leave', esci));
             scheda.append(titolo, nota, tasti2);
             velo.append(scheda);
             const chiudi = () => { velo.remove(); doc.removeEventListener('keydown', tasti, true); };

@@ -85,6 +85,16 @@
     html.app .ins-formato { min-width: 0; padding: 4px 8px 2px; font-size: .9rem; transform: none; background: var(--bt-giallo); color: #000; border-radius: 6px; box-shadow: none; }
     html.app .ins-match { flex: none; padding: 3px 6px 1px; font-size: .64rem; transform: none; background: rgba(0, 0, 0, .4); color: #fff; border: 2px solid #000; border-radius: 6px; box-shadow: none; }
     html.app .ins-tabellone { flex: none; transform: none; background: rgba(0, 0, 0, .4); color: #fff; border: 2px solid #000; border-radius: 6px; box-shadow: none; overflow: hidden; }
+    /* Allenamento della CPU di una palestra (style-allenamento.css): la barra, la lezione (come il match) e il tasto per chiuderla, piccoli come le altre voci */
+    html.app .ins-allenamento { flex: none; padding: 2px 6px 1px; gap: 5px; font-size: .62rem; transform: none; color: #fff; background: rgba(0, 0, 0, .4); border: 2px solid #000; border-radius: 6px; box-shadow: none; }
+    html.app .ins-allenamento b { font-size: .74rem; }
+    html.app .ins-all-barra { width: 34px; height: 9px; border-radius: 3px; }
+    html.app .ins-lezione-fine { flex: none; padding: 3px 7px 1px; font-size: .62rem; transform: none; background: var(--bt-giallo); color: #000; border: 2px solid #000; border-radius: 6px; box-shadow: none; }
+    html.app .ins-lezione-fine:hover, html.app .ins-lezione-fine:active { transform: none; box-shadow: none; }
+    html.app .all-barra { height: 14px; border-width: 3px; border-radius: 8px; box-shadow: none; }
+    html.app .all-riempi { border-right-width: 2px; }
+    html.app .all-percento { font-size: 1.1rem; }
+    html.app .all-nota { color: #000; border-radius: 8px; box-shadow: none; }
     html.app .ins-punti { min-width: 24px; font-size: 1rem; color: #000; }
     html.app .ins-punti:first-child { border-right: 2px solid #000; }
     html.app .ins-punti:last-child { border-left: 2px solid #000; }
@@ -393,6 +403,9 @@
     html.app .info-turno { flex-direction: column; align-items: stretch; gap: 3px; }
     html.app .ins-formato { display: block; text-align: center; font-size: .72rem; padding: 3px 5px 1px; }
     html.app .ins-match { text-align: center; }
+    html.app .ins-allenamento { display: flex; justify-content: center; }
+    html.app .ins-lezione-fine { width: 100%; }
+    html.app .ins-all-titolo { white-space: normal; overflow: visible; line-height: 1.05; }
     html.app .ins-tabellone { display: flex; justify-content: center; }
     html.app .cab-campo { grid-column: 3; grid-row: 4; align-self: end; justify-content: flex-end; }
     /* chi guarda: i tasti delle reazioni stanno nella colonna di sinistra, nelle due righe di mezzo (sopra il riquadro del match, che sta nel piede): a due a due, senza titolo */

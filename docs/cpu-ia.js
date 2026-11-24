@@ -29,6 +29,12 @@
 // al primo turno in campo, chi porta e chi mette in apertura, quanto si para o cambia) e alla fine della partita dice cosa ha visto di nuovo
 // (memoriaDellaPartita). Senza l'opzione tutto è come prima.
 //
+// Il copione della palestra (cpu-copione.js): la CPU che difende una palestra gioca con i team del proprietario, che l'ha allenata facendole guardare come li gioca. Con
+// l'opzione `copione` (quello del team che gioca) il cervello si avvicina al suo modo di giocare: in anteprima porta di più i Pokémon che lui porta contro quella squadra
+// e manda in campo per primi quelli con cui apre; in battaglia dà un po' più di valore alle mosse che quel Pokémon usa di solito (al primo turno in campo, o dopo) e meno a
+// quelle che non usa mai, e cambia più o meno spesso di lui. È uno spostamento, non una regola: una mossa chiaramente migliore vince lo stesso, e quanto conta
+// dipende da quanto è stata allenata (le lezioni). Senza l'opzione tutto è come prima.
+//
 // Strategia del team: ogni team ha un piano (Tailwind, Stanza Magica, pioggia, sole, sabbia, neve, bilanciato...) deciso da
 // team-cpu.js. L'IA lo legge dai set (chi lo imposta, chi ne approfitta) e lo applica: in anteprima porta il nucleo del piano e
 // manda in campo per primo chi lo imposta; in battaglia valuta di più Tailwind, Stanza Magica e il proprio meteo, anche
@@ -40,9 +46,9 @@
 // Il Dex di @pkmn/sim arriva da fuori. Funziona nel browser (window.CpuIa) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'), require('./cpu-avversario.js'), require('./cpu-situazioni.js'), require('./cpu-memoria.js'));
-    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo, radice.CpuAvversario, radice.CpuSituazioni, radice.CpuMemoria);
-})(typeof self !== 'undefined' ? self : this, function (K, C, Avv, Sit, Mem) {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'), require('./cpu-avversario.js'), require('./cpu-situazioni.js'), require('./cpu-memoria.js'), require('./cpu-copione.js'));
+    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo, radice.CpuAvversario, radice.CpuSituazioni, radice.CpuMemoria, radice.CpuCopione);
+})(typeof self !== 'undefined' ? self : this, function (K, C, Avv, Sit, Mem, Cop) {
     'use strict';
 
     const id = K.id;
@@ -129,6 +135,19 @@
     //   memoriaForzaCategorie  quanti usi "di partenza" valgono le abitudini medie contro quelle viste di un Pokémon (attacco, protezione, altro) nel decidere cosa farà
     //   memoriaPesoPortato, memoriaPesoLead
     //                        in anteprima: quanto conta chi di solito porta e chi di solito mette in apertura (i Pokémon mai portati valgono meno nella scelta dei miei)
+    // Con il copione della palestra (opzione `copione`; tutto si moltiplica per la fiducia: 0 senza lezioni, 1 con quelle dell'obiettivo):
+    //   copione              1 = lo si usa se c'è, 0 = lo si ignora
+    //   copioneAnteprima, copioneApertura
+    //                        in anteprima: quanto pesa, nel punteggio del gruppo da portare e della coppia da mandare in campo per prima, la somiglianza con quelli che porta e
+    //                        con cui apre il proprietario contro quella squadra (conta lo scarto dalla quota media: portare 4 su 6 non dice niente)
+    //   copioneMosse         in battaglia: quanto pesa se quel Pokémon (al primo turno in campo, o dopo) si para, usa mosse di stato o attacca più o meno spesso della lega:
+    //                        il logaritmo del rapporto tra la sua quota e quella media (tirata verso la media se ha pochi dati, copioneForza), al massimo ±1, per ogni slot
+    //   copionePrimoTurno    quanto pesa, al primo turno in campo, la mossa che quel Pokémon apre di solito (per la quota oltre un terzo: Fake Out, la protezione del compagno...)
+    //   copioneFiducia, copioneForza
+    //                        dopo quanti usi osservati la sua mossa di apertura conta a metà (n / (n + copioneFiducia)); quanti usi "medi" valgono le abitudini della lega contro
+    //                        quelle viste di un Pokémon (come memoriaForzaCategorie)
+    //   copioneCambi, copioneForzaCambi
+    //                        quanto pesa se cambia più o meno spesso della lega (logaritmo del rapporto, al massimo ±1) e quante decisioni "medie" valgono la lega contro le sue
     const PARAMETRI_BASE = {
         penalitaProt: 1.5, bonusSE2: 0.4, bonusSE4: 0.6, malusRes05: 0.3, malusRes025: 0.5, pesoPosizione: 0.3,
         rispostaAlCambio: 0.4, rispostaAlCambioDoppio: 0.25, presunteDex: 0.5,
@@ -137,7 +156,8 @@
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.3, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5, priorBloccoPriorita: 6,
         pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
-        memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2
+        memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2,
+        copione: 1, copioneAnteprima: 0.8, copioneApertura: 0.8, copioneMosse: 0.5, copionePrimoTurno: 0.6, copioneFiducia: 2, copioneForza: 3, copioneCambi: 0.3, copioneForzaCambi: 30
     };
     // Abilità che agiscono quando il Pokémon entra in campo
     const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
@@ -200,6 +220,9 @@
             this.pianoDato = opzioni.piano || null;     // il piano del team deciso da chi lo ha composto (team-cpu.js), se c'è
             // le abitudini di chi ha davanti (cpu-avversario.js): il profilo da players/<id>/stile (daStile) oppure true (la media della lega); senza, nessun modello
             this.memoria = Mem && opzioni.memoria && this.par.memoria > 0 ? Mem.normalizza(opzioni.memoria) : null;      // cosa si sa dalle partite di prima (cpu-memoria.js)
+            // il copione di chi ha composto il team (la palestra): come lui lo gioca (cpu-copione.js); la fiducia sale con le lezioni della CPU
+            this.copione = Cop && opzioni.copione && this.par.copione > 0 ? Cop.normalizza(opzioni.copione) : null;
+            this.fiduciaCopione = this.copione ? Cop.fiducia(this.copione) : 0;
             this.modelloAvv = null;
             this.impostaAvversario(opzioni.avversario);
             this.meccOpzioni = leggiMeccaniche(opzioni.meccaniche);
@@ -884,6 +907,14 @@
                 return { s, v, mosse: s.p.moves.map(k => this.mossa(k)).filter(Boolean) };
             });
             const n = miei.length;
+            // il copione della palestra: chi porta di solito il proprietario contro questa squadra e con chi apre. Conta lo scarto dalla quota media (portare 4 su 6 non dice niente)
+            const cop = this.copione && this.fiduciaCopione > 0 ? this.copione : null;
+            const specieAvv = avversari.map(o => o.specie);
+            const specieMia = i => miei[i].s.m.specieOrig || miei[i].s.m.specie;
+            const spostaCopione = (idx, scelti, affinita, peso) => {
+                const a = cop && peso > 0 ? affinita(cop, specieAvv, idx.map(specieMia)) : null;
+                return a ? peso * this.fiduciaCopione * a.conf * (a.v - scelti / n) : 0;
+            };
             // chi ha un Cristallo Z (la Mossa Z si fa una volta sola: serve almeno uno in campo, non uno per ogni Pokémon)
             const conCristalloZ = miei.map(x => {
                 const it = this.gen === 7 && this.ammette('z') && x.v.strumento ? this.dex.items.get(x.v.strumento) : null;
@@ -966,8 +997,11 @@
                     s += this.par.antPiano * Math.min(2, abus) * 0.3;
                     if (strat.piano === 'trickroom') s -= this.par.antPiano * idx.filter(i => miei[i].v.basi.spe >= 100 && ruoloPiano(i) !== 'setter').length * 0.3;
                 }
-                return s + this.casuale() * 0.03;
+                const sposta = cop ? spostaCopione(idx, quanti, Cop.affinitaGruppo, this.par.copioneAnteprima) : 0;
+                if (this.debug) diario.push({ gruppo: idx.map(i => miei[i].s.indice), tattico: s, copione: sposta });
+                return s + sposta + this.casuale() * 0.03;
             };
+            const diario = [];
 
             // tutti i gruppi di `quanti` tra i miei
             const gruppi = [];
@@ -978,6 +1012,7 @@
             scelgo(0, quanti, []);
             let migliore = gruppi[0], mv = -1e9;
             for (const g of gruppi) { const v = punteggioGruppo(g); if (v > mv) { mv = v; migliore = g; } }
+            if (this.debug) this.ultimaAnteprima = { gruppi: diario, scelto: migliore.map(i => miei[i].s.indice) };
 
             // chi in campo per primo
             const nCampo = this.tipo === 'doubles' ? 2 : 1;
@@ -992,7 +1027,7 @@
                 let coppia = null, cv = -1e9;
                 for (let a = 0; a < migliore.length; a++) for (let b = a + 1; b < migliore.length; b++) {
                     const A = migliore[a], B = migliore[b];
-                    let v = aperturaContro([A, B]);
+                    let v = aperturaContro([A, B]) + spostaCopione([A, B], nCampo, Cop.affinitaApertura, this.par.copioneApertura);
                     // in campo per primi: chi ha Fake Out insieme a uno che attacca (se hanno tutti e due Fake Out, vale meno: uno solo lo usa bene)
                     const conFO = conFakeOut([A, B]);
                     // se il team ha un piano con un setter, il setter in campo viene prima: Fake Out conta per intero solo se apre con lui (lo protegge)
@@ -1014,7 +1049,7 @@
             } else {
                 let primo = migliore[0], pv = -1e9;
                 for (const i of migliore) {
-                    let v = aperturaContro([i]);
+                    let v = aperturaContro([i]) + spostaCopione([i], nCampo, Cop.affinitaApertura, this.par.copioneApertura);
                     if (haSetter && ruoloPiano(i) === 'setter') v += this.par.antLeadSetter;
                     if (v > pv) { pv = v; primo = i; }
                 }
@@ -1138,7 +1173,7 @@
                     if (new Set(cambi).size !== cambi.length) return;
                     if (scelta.filter(a => a.gimmick === 'terastallize').length > 1) return;
                     if (scelta.filter(a => a.gimmick && a.gimmick !== 'terastallize').length > 1) return;
-                    const val = this._valutaPiano(scelta, stato0, alternative) + this._bonusStile(scelta);
+                    const val = this._valutaPiano(scelta, stato0, alternative) + this._bonusStile(scelta) + this._bonusCopione(scelta, stato0);
                     migliori.push({ scelta: scelta.slice(), val });
                     return;
                 }
@@ -1183,6 +1218,48 @@
                 b += z;
             });
             return peso * b;
+        }
+
+        // Quanto il piano somiglia a come il proprietario del team (il copione della palestra, cpu-copione.js) ha giocato questi Pokémon. Tre cose, tutte "rispetto alla lega" e
+        // tirate verso la lega se i dati sono pochi: quanto quel Pokémon (al primo turno in campo, o dopo) si para, usa mosse di stato o attacca; la mossa con cui apre di solito
+        // al primo turno (Fake Out, un deviatore: se la fa quasi sempre è un piano); quanto cambia in generale. Quale attacco usare resta a chi calcola il danno: è una
+        // spinta di stile, e una mossa chiaramente migliore vince lo stesso.
+        _bonusCopione(scelta, S) {
+            if (!this.copione || !(this.fiduciaCopione > 0) || !Avv) return 0;
+            const P = this.par, fid = this.fiduciaCopione, lega = Avv.QUOTE_LEGA, resto = 1 - lega.cambio;
+            const limita = x => Math.max(-1, Math.min(1, x));
+            let b = 0;
+            scelta.forEach((a, slot) => {
+                const v = S.mie[slot];
+                if (!v || !a) return;
+                if (a.tipo === 'cambio') {
+                    const c = Cop.quotaCambio(this.copione);
+                    if (P.copioneCambi > 0 && c.n > 0) b += P.copioneCambi * fid * limita(Math.log(((c.quota * c.n + P.copioneForzaCambi * lega.cambio) / (c.n + P.copioneForzaCambi)) / lega.cambio));
+                    return;
+                }
+                if (a.tipo !== 'mossa' || !a.mossa) return;
+                const specie = (v.ref && v.ref.specieOrig) || v.specie, primo = this._primoTurnoInCampo(v.ref);
+                const cat = Avv.categoriaMossa(a.mossa.id);
+                if (P.copioneMosse > 0) {
+                    const qc = this._categorieCopione(specie, primo);
+                    const media = lega[cat] / resto;
+                    if (qc.n > 0 && media > 0) b += P.copioneMosse * fid * limita(Math.log(((qc[cat] + P.copioneForza * media) / (qc.n + P.copioneForza)) / media));
+                }
+                if (primo && P.copionePrimoTurno > 0) {
+                    const q = Cop.quotaMossa(this.copione, specie, a.mossa.id, true);
+                    if (q.n > 0) b += P.copionePrimoTurno * fid * (q.n / (q.n + P.copioneFiducia)) * Math.max(0, q.quota - 1 / 3);
+                }
+            });
+            return b;
+        }
+
+        // Come usa il proprietario un Pokémon al primo turno in campo (o dopo): quante mosse d'attacco, di protezione e di stato (con la cache: il copione non cambia in partita)
+        _categorieCopione(specie, primoTurno) {
+            const cache = this._cacheCategorieCopione || (this._cacheCategorieCopione = new Map());
+            const chiave = Cop.chiaveSpecie(specie) + (primoTurno ? '|1' : '|0');
+            let q = cache.get(chiave);
+            if (!q) { q = Cop.quoteCategorie(this.copione, specie, primoTurno, k => Avv.categoriaMossa(k)); cache.set(chiave, q); }
+            return q;
         }
 
         // Quanto è probabile che questo Pokémon riesca ad agire in questo turno, per il suo stato: addormentato non si muove il primo turno di sonno, poi si sveglia
