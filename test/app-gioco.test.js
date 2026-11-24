@@ -31,6 +31,13 @@ test('titolo: il nastro porta il nome della tessera del menù; hub e pagina dell
     assert.equal(G.titolo('/didi-lu/altra.html', undefined), 'Sant\'Alvise');
     assert.equal(G.titolo('/didi-lu/altra.html', 'x'.repeat(29)), 'Sant\'Alvise', 'troppo lungo per il nastro');
     assert.equal(G.titolo('/didi-lu/altra.html', 'Loading...'), 'Sant\'Alvise', 'la pagina non ha ancora i dati');
+    // la palestra non ha tessera: il nastro segue il titolo che scrive la pagina ("Didi's gym", il nome di chi la tiene); se non entra (o non c'è ancora) resta "Gym", non il nome dell'app
+    assert.equal(G.titolo('/didi-lu/palestra.html', 'GYM'), 'GYM');
+    assert.equal(G.titolo('/didi-lu/palestra.html', '  Didi\'s \n gym '), 'Didi\'s gym');
+    assert.equal(G.titolo('/didi-lu/palestra.html', 'x'.repeat(23) + '\'s gym'), 'Gym', 'un nome lungo non entra nel nastro');
+    assert.equal(G.titolo('/didi-lu/palestra.html', 'Loading...'), 'Gym');
+    assert.equal(G.titolo('/didi-lu/palestra.html', ''), 'Gym');
+    assert.equal(G.titolo('/didi-lu/altra.html', ''), 'Sant\'Alvise', 'la riserva è solo della palestra');
     // le pagine del sito che esistono davvero
     for (const p of Object.keys(G.TITOLI)) assert.ok(fs.existsSync(path.join(DOCS, p)), p);
 });
