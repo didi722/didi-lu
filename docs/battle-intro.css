@@ -59,11 +59,11 @@ html.app .vi { display: none; }
     display: flex; flex-direction: column; align-items: center; gap: calc(clamp(12px, 2.4vh, 26px) + 8px * var(--nb-rot, 1));      /* più storto è il tema, più spazio tra targa e tabellone */
 }
 /* il punteggio: una targa scura come quella dello showdown (cifre chiare, chi è avanti in ambra) ma grande, con un filo chiaro intorno per staccarla da qualunque colore,
-   l'ombra del tema e, in fondo, la fascia dei colori dei due allenatori (a metà ciascuno, come lo schermo). La grandezza di tutto è il suo font-size (em). */
+   l'ombra del tema. La grandezza di tutto è il suo font-size (em). */
 .vi-vs {
     position: relative; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: .03em; overflow: hidden;
     font-size: clamp(60px, min(11vw, 22vh), 170px);
-    padding: .02em .24em .2em;      /* sotto c'è posto per la fascia dei colori */
+    padding: .04em .24em .06em;
     background: var(--inchiostro, #000) radial-gradient(color-mix(in srgb, var(--carta, #fff) 16%, transparent) 1.4px, transparent 1.8px) 0 0 / 13px 13px;      /* il motivo a puntini del sito, piano */
     color: var(--carta, #fff);
     border: var(--bordo-forte, 4px solid #000); border-radius: var(--raggio, 0px);
@@ -79,11 +79,6 @@ html.app .vi { display: none; }
 /* i due punti: due quadratini ambra (tondi nei temi con gli angoli tondi) */
 .vi-sep { display: flex; flex-direction: column; justify-content: center; gap: .15em; margin: 0 .05em; }
 .vi-sep::before, .vi-sep::after { content: ''; display: block; width: .1em; height: .1em; background: var(--ambra, #ffbd44); border-radius: var(--raggio, 0px); }
-.vi-fascia {
-    position: absolute; left: 0; right: 0; bottom: 0; height: .13em; transform-origin: 50% 50%;
-    background: linear-gradient(90deg, var(--vi-c1, var(--ambra, #ffbd44)) 50%, var(--vi-c2, var(--ambra, #ffbd44)) 50%);
-    border-top: 3px solid var(--carta, #fff);
-}
 /* il tabellone ha il linguaggio delle schede del simulatore (come "esito-card"): carta, bordo, ombra, angoli e carattere del tema del giocatore */
 .vi-tabellone {
     box-sizing: border-box; min-width: clamp(150px, 22vw, 300px); max-width: min(80vw, 30rem); padding: .6em 1.1em .65em;
