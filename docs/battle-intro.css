@@ -56,15 +56,33 @@ html.app .vi { display: none; }
 /* il centro: il punteggio sulla riga nera e il tabellone sotto */
 .vi-centro {
     position: absolute; left: 50%; top: 50%; translate: -50% -54%; z-index: 5;
-    display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 1.8vh, 20px);
+    display: flex; flex-direction: column; align-items: center; gap: calc(clamp(12px, 2.4vh, 26px) + 8px * var(--nb-rot, 1));      /* più storto è il tema, più spazio tra targa e tabellone */
 }
+/* il punteggio: una targa scura come quella dello showdown (cifre chiare, chi è avanti in ambra) ma grande, con un filo chiaro intorno per staccarla da qualunque colore,
+   l'ombra del tema e, in fondo, la fascia dei colori dei due allenatori (a metà ciascuno, come lo schermo). La grandezza di tutto è il suo font-size (em). */
 .vi-vs {
-    font-family: 'Archivo Black', 'Arial Black', Impact, sans-serif;
-    font-size: clamp(64px, min(13vw, 22vh), 200px); line-height: .9; letter-spacing: -.02em; white-space: nowrap;
-    color: var(--ambra, #ffbd44);
-    -webkit-text-stroke: clamp(4px, .6vw, 9px) #000; paint-order: stroke fill;
-    text-shadow: .05em .05em 0 #000;
-    rotate: calc(-4deg * var(--nb-rot, 1));
+    position: relative; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: .03em; overflow: hidden;
+    font-size: clamp(60px, min(11vw, 22vh), 170px);
+    padding: .02em .24em .2em;      /* sotto c'è posto per la fascia dei colori */
+    background: var(--inchiostro, #000) radial-gradient(color-mix(in srgb, var(--carta, #fff) 16%, transparent) 1.4px, transparent 1.8px) 0 0 / 13px 13px;      /* il motivo a puntini del sito, piano */
+    color: var(--carta, #fff);
+    border: var(--bordo-forte, 4px solid #000); border-radius: var(--raggio, 0px);
+    box-shadow: 0 0 0 3px var(--carta, #fff), calc(9px * var(--nb-kx, 1)) calc(9px * var(--nb-ky, 1)) calc(19px * var(--nb-bk, 0)) var(--nb-shcol-titolo, rgba(0, 0, 0, .3));
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    rotate: calc(-2.5deg * var(--nb-rot, 1));
+}
+.vi-cifra {
+    display: block; min-width: .62em; padding: 0 .06em; text-align: center;
+    font-size: 1em; font-weight: 900; line-height: 1.02; letter-spacing: 0;
+}
+.vi-cifra.vi-avanti { color: var(--ambra, #ffbd44); }
+/* i due punti: due quadratini ambra (tondi nei temi con gli angoli tondi) */
+.vi-sep { display: flex; flex-direction: column; justify-content: center; gap: .15em; margin: 0 .05em; }
+.vi-sep::before, .vi-sep::after { content: ''; display: block; width: .1em; height: .1em; background: var(--ambra, #ffbd44); border-radius: var(--raggio, 0px); }
+.vi-fascia {
+    position: absolute; left: 0; right: 0; bottom: 0; height: .13em; transform-origin: 50% 50%;
+    background: linear-gradient(90deg, var(--vi-c1, var(--ambra, #ffbd44)) 50%, var(--vi-c2, var(--ambra, #ffbd44)) 50%);
+    border-top: 3px solid var(--carta, #fff);
 }
 /* il tabellone ha il linguaggio delle schede del simulatore (come "esito-card"): carta, bordo, ombra, angoli e carattere del tema del giocatore */
 .vi-tabellone {
@@ -103,13 +121,13 @@ html.app .vi { display: none; }
 @media (max-width: 720px) {
     .vi-tag { max-width: 46vw; border-width: 3px; }
     .vi-centro { top: 37%; }
-    .vi-vs { font-size: clamp(48px, 17vw, 96px); }
+    .vi-vs { font-size: clamp(44px, 15vw, 84px); }
     .vi-tabellone { border-width: 3px; padding: .45em .8em .5em; }
     .vi-righe span { font-size: .72rem; letter-spacing: .08em; }
 }
 /* schermo basso (telefono in orizzontale): il VS e il tabellone si stringono per non finire sugli avatar */
 @media (max-height: 520px) and (min-width: 721px) {
-    .vi-vs { font-size: min(12vw, 18vh); }
+    .vi-vs { font-size: min(9vw, 17vh); }
     .vi-tabellone { padding: .4em .9em .45em; }
     .vi-righe span { font-size: .7rem; }
 }
