@@ -24,6 +24,7 @@
 //                    ognuna restituisce la voce dei dati di Showdown ({ num, gen?, forme, baseSpecies, abilities... }) o null se non esiste;
 //                    learnset(id) restituisce { mossa: ["9M", "8L20", ...] } della sola specie `id` (senza gli stadi precedenti) o null; facoltativa: senza, le mosse non si controllano
 //     regole.controllaMosse === false  salta il controllo del movepool
+//     ControlloTeam.eccezioneMosse(teamDelBox, categoria)  -> true per i team di Little Cup, VGC Gen 8 e QWERTY creati prima del controllo del movepool: chi li controlla mette controllaMosse: false
 //
 // Funziona nel browser (window.ControlloTeam) e in Node (require). ATTENZIONE: questo file esiste in due copie identiche,
 // docs/controllo-team.js (Box e simulatore sul sito) e functions/controllo-team.js (Cloud Functions): modificane una e copiala sull'altra.
@@ -288,5 +289,22 @@
         return problemiDelTeam(lista, regole, fontiDaDex(Dex));
     }
 
-    return { genSpecie, genMossa, genAbilita, genStrumento, mossePossibili, problemiDelSet, problemiDelTeam, fontiDaDex, problemiDeiSetShowdown };
+    // -----------------------------------------------------
+    // 5. L'ECCEZIONE PER I TEAM GIÀ CREATI
+    // -----------------------------------------------------
+    // Little Cup, VGC Gen 8 e QWERTY avevano già i loro team quando è arrivato il controllo del movepool: alcuni hanno mosse che la specie non impara e
+    // sarebbero diventati ingiocabili. Quei team (e solo loro) non si controllano sulle mosse, in Box, nel simulatore e sul server; tutto il resto
+    // (specie, abilità, strumenti, clausole, tier) vale come per gli altri. Un team nuovo, di qualsiasi formato, è controllato per intero.
+    // Un team è "già creato" se nel Box non è stato toccato prima dell'arrivo del controllo (dataUltimaModifica) o se porta il segno `eccezioneMosse`, che il Box gli dà
+    // la prima volta che lo si modifica (altrimenti basterebbe cambiargli il nome per perdere l'eccezione).
+    const FORMATI_ECCEZIONE = ['littlecup', 'vgcgen8', 'qwerty'];
+    const DATA_CONTROLLO_MOSSE = Date.UTC(2026, 10, 16, 15, 1, 52);        // l'arrivo del controllo del movepool (16/11/2026)
+    /** `team`: il team com'è nel Box ({ dataUltimaModifica, eccezioneMosse }); `categoria`: il formato per cui lo si controlla. */
+    function eccezioneMosse(team, categoria) {
+        if (!team || typeof team !== 'object' || !FORMATI_ECCEZIONE.includes(idDi(categoria))) return false;
+        if (team.eccezioneMosse === true) return true;
+        return !(Number(team.dataUltimaModifica) >= DATA_CONTROLLO_MOSSE);
+    }
+
+    return { genSpecie, genMossa, genAbilita, genStrumento, mossePossibili, problemiDelSet, problemiDelTeam, fontiDaDex, problemiDeiSetShowdown, eccezioneMosse, FORMATI_ECCEZIONE, DATA_CONTROLLO_MOSSE };
 });

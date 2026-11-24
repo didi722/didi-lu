@@ -83,12 +83,14 @@ export function caricaDeltaFormato(regolamento) {
 // corregge nulla: se un team non è conforme, non si gioca.
 // Il controllo è lo STESSO del Box (quando salva un team) e del server (functions/partita.js): vedi controllo-team.js.
 // `delta` = caricaDeltaFormato(regolamento) (le abilità delle specie di allora).
-export function controllaTeam(testo, regolamento, delta = null) {
+// `eccezione`: il team è già creato prima del controllo del movepool (ControlloTeam.eccezioneMosse): le sue mosse non si controllano.
+export function controllaTeam(testo, regolamento, delta = null, eccezione = false) {
     const sets = Teams.import(testo) || [];
     if (!sets.length) return ['The team is empty or unreadable'];
     const regole = {
         gen: generazioneFormato(regolamento), livello: livelloFormato(regolamento), meccaniche: meccanicheAttive(regolamento),
         controllaSpecie: String(regolamento.strutturaSito || 'custom').toLowerCase().trim() !== 'anything_goes',
+        controllaMosse: !eccezione,
         delta
     };
     return self.ControlloTeam.problemiDeiSetShowdown(sets, regole, Dex);
@@ -174,7 +176,7 @@ export async function caricaMatch(db, { stagione, showdown, match }) {
             const sorgente = (iscritto && iscritto.pokemon) ? iscritto : (dalBox || {});
             const testoSalvato = (iscritto && iscritto.testoShowdown) || (dalBox && dalBox.testoShowdown) || '';
             const testo = testoShowdownDaTeam({ ...sorgente, testoShowdown: testoSalvato }, livello);
-            return { nome: nomeT, testo, completo: !!testoSalvato, problemi: controllaTeam(testo, regolamento, delta) };
+            return { nome: nomeT, testo, completo: !!testoSalvato, problemi: controllaTeam(testo, regolamento, delta, self.ControlloTeam.eccezioneMosse(dalBox || iscritto, regolamento.categoria)) };
         }).filter(t => t.nome && t.testo);
 
            giocatori[lato] = { nome, id, colore: coloreSnap.val(), avatar: avatarSnap.val() || '', teams };    }
@@ -233,7 +235,7 @@ export async function caricaPerProva(db, utente, chiaveTeam) {
     return {
         nome, id, colore: coloreSnap.val(), avatar: avatarSnap.val() || '', iniziali,
         team: { nome: nomeTeam(team), testo }, categoria: regolamento.categoria, regolamento,
-        formato: formatoSimulatore(regolamento), livello, problemi: testo ? controllaTeam(testo, regolamento, delta) : ['The team is empty']
+        formato: formatoSimulatore(regolamento), livello, problemi: testo ? controllaTeam(testo, regolamento, delta, self.ControlloTeam.eccezioneMosse(team, regolamento.categoria)) : ['The team is empty']
     };
 }
 
@@ -267,7 +269,7 @@ export async function caricaTeamAmichevoli(db, idGiocatore, info, { controlla = 
             if (controlla) {
                 const regolamentoPartita = dei(info.categoria);
                 voce.problemi = regolamentoPartita
-                    ? controllaTeam(testo, regolamentoPartita, await caricaDeltaFormato(regolamentoPartita))
+                    ? controllaTeam(testo, regolamentoPartita, await caricaDeltaFormato(regolamentoPartita), self.ControlloTeam.eccezioneMosse(team, info.categoria))
                     : ['The format of this match no longer exists'];
             }
         } else if (controlla && !(Teams.import(testo) || []).length) {
