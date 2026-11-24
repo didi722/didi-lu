@@ -11,8 +11,9 @@
 // Sfidando un altro la pagina è già dentro la sua palestra, come il simulatore (vestiSala): sfondo del suo colore con il suo motivo e il suo nome gigante, il suo avatar con l'aura
 // e il suo compagno ai lati, l'effetto del suo palco, l'insegna con il suo nome (font ed effetto compresi) e la sua canzone (palestra.html la fa suonare). Con l'insegna i numeri della
 // palestra (palestra-stat.js, scritti dal server: tentativi, quante volte ha tenuto, quante è stata espugnata, tappa per tappa) sul tabellone in cima. Chi ha la palestra vede gli
-// stessi numeri nella pagina dove la imposta. La scelta dei team è una schermata sola (disegnaSfida): le tre porte (una per format) con il distintivo e le monete della settimana in fondo,
-// i team della porta accesa e il tasto per entrare.
+// stessi numeri nella pagina dove la imposta. La schermata (disegnaSfida) sta tutta in una pagina di computer: il tabellone, le tre porte (una per format) con il distintivo e le monete della
+// settimana, il tasto per entrare. I team di una tappa si scelgono in una finestra (modale): toccando una porta si apre con i tuoi team di quel format, scelto uno si passa alla tappa che
+// ne ha ancora bisogno, e con i tre pronti si chiude da sola. Nell'app (pagina a schermo fisso) la scelta resta in riga sotto le porte.
 //
 // Dove si imposta la palestra c'è anche l'allenamento della CPU (cpu-copione.js): per ogni tappa quanto la CPU conosce il modo in cui giochi quel team (la barra) e il tasto "Train" che
 // apre una partita di allenamento (battle.html?cpu=1&allenamento=<tappa>&team=<id>, battle-ui.js: preparaAllenamento); in cima il tasto grande "Train CPU" e il totale. I numeri stanno
@@ -28,7 +29,7 @@
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const ricerca = new URLSearchParams(window.location.search);
 
-    const S = { uid: '', io: '', nomeIo: '', regolamenti: {}, mieiTeam: [], bozza: [], gym: '', gymNome: '', gymConfig: null, attivo: 0, disegnata: false, appena: -1, scelte: [],
+    const S = { uid: '', io: '', nomeIo: '', regolamenti: {}, mieiTeam: [], bozza: [], gym: '', gymNome: '', gymConfig: null, attivo: 0, disegnata: false, nuove: new Set(), scelte: [], modale: false, apertoDa: -1,
         capo: null,         // l'aspetto del capopalestra (Palestra.aspettoCapo)
         tema: null,         // i suoi colori e i suoi effetti (Palestra.temaPalestra), se la pagina ha potuto vestirsi
         stat: null,         // players/<id>/palestraStat: le statistiche della palestra (la sua o quella che si sfida)
@@ -225,7 +226,7 @@
         const tappe = tappeGym();
         const medio = Math.round(tappe.reduce((s, t) => s + (S.allena[t.team] ? CP.progresso(S.allena[t.team]).percento : 0), 0) / Math.max(1, tappe.length));
         const livello = livelloDa(medio);
-        return `<li class="pal-chip pal-chip-allena" data-livello="${livello}" title="How well ${esc(S.gymNome)} has trained the gym's CPU: the more, the more it plays like its leader."><b>${medio}%</b><span>CPU trained</span><small>${esc(LIVELLI[livello])}</small></li>`;
+        return `<li class="pal-chip pal-chip-allena" data-livello="${livello}" title="${esc(LIVELLI[livello])} · How well ${esc(S.gymNome)} has trained the gym's CPU: the more, the more it plays like its leader."><b>${medio}%</b><span>CPU trained</span></li>`;
     }
 
     /** Il pannello in cima: il totale (media delle tre tappe), cosa vuol dire e il tasto grande che allena la tappa più indietro */
@@ -343,21 +344,39 @@
     const sprites = (t, classe = '') => `<span class="pal-sprites ${classe}">${(t.pokemon || []).slice(0, 6).map(p => `<img src="${esc(SP ? SP.gif(p.nome, p.shiny) : '')}" alt="" loading="lazy" draggable="false" data-pkm="${esc(p.nome)}">`).join('')}</span>`;
     const TESTI_PORTA = { fatta: '✓ Cleared', prossima: '▶ Up next', chiusa: '🔒 Locked' };
 
+    /** Nell'app (pagina a schermo fisso, class app-shell) i team stanno in riga sotto le porte; altrove si scelgono in una finestra */
+    const inApp = () => !!(document.documentElement && document.documentElement.classList && document.documentElement.classList.contains('app-shell'));
+
+    /** I team della tappa `a` da scegliere: l'intestazione (tappa, format, aiuto) e le carte, uguali nella finestra e in riga */
+    function selezioneHtml(a) {
+        const tappe = tappeGym(), t = tappe[a], miei = teamPer(t.categoria);
+        const carte = miei.length ? miei.map(x => `<button type="button" class="pal-team${S.scelte[a] === x.id ? ' pal-team-scelto' : ''}" data-team="${esc(x.id)}" aria-pressed="${S.scelte[a] === x.id}">
+                <span class="pal-team-nome">${esc(x.nome)}</span>${sprites(x)}<span class="pal-team-timbro" aria-hidden="true">Picked</span></button>`).join('')
+            : `<p class="pal-vuoto">You don't have a team for <b>${esc(t.categoria)}</b> yet. <a href="box.html">Build one in your Box</a>, then come back!</p>`;
+        const aiuto = a === 0 ? "Doubles: bring 6 and pick 4 once you see the opposing team. You'll play against teams you've never seen, so choose the team you trust." : 'Which team do you bring to this one?';
+        return {
+            testa: `<header class="pal-sel-testa"><p class="pal-sel-su">Stage ${a + 1} of ${tappe.length}</p><h3 class="pal-sel-titolo" id="pal-dlg-titolo">${esc(t.categoria)}</h3><p class="pal-sel-aiuto">${aiuto}</p></header>`,
+            squadre: `<div class="pal-squadre">${carte}</div>`
+        };
+    }
+    const quantiPronti = () => tappeGym().filter((_, i) => sceltaValida(i)).length;
+    const pipsHtml = () => tappeGym().map((_, i) => `<i class="pal-pip${sceltaValida(i) ? ' pal-pip-pieno' : ''}"></i>`).join('');
+
     function disegnaSfida() {
-        const tappe = tappeGym(), att = stagioneDa(), vinte = att.vinte, finita = P.finita(att);
-        const pronti = tappe.filter((_, i) => sceltaValida(i)).length, pronte = pronti === tappe.length;
+        const tappe = tappeGym(), att = stagioneDa(), vinte = att.vinte, finita = P.finita(att), app = inApp();
+        const pronti = quantiPronti(), pronte = pronti === tappe.length;
         const a = Math.min(Math.max(S.attivo, 0), tappe.length - 1);
         S.attivo = a;
-        const prima = !S.disegnata, appena = S.appena;
-        S.disegnata = true; S.appena = -1;      // le entrate animate solo la prima volta (scegliere un team ridisegna la pagina, e non deve ripartire tutto); il team appena scelto ha il suo tonfo
+        const prima = !S.disegnata, nuove = S.nuove;
+        S.disegnata = true; S.nuove = new Set();      // le entrate animate solo la prima volta (scegliere un team ridisegna la pagina, e non deve ripartire tutto); i team appena scelti hanno il loro tonfo
 
-        // le tre porte (una per tappa) e in fondo il distintivo con le monete
+        // le tre porte (una per tappa) e in fondo il distintivo con le monete; toccando una porta (fuori dall'app) si apre la finestra con i suoi team
         const porte = tappe.map((t, i) => {
             const stato = i < vinte ? 'fatta' : i === vinte && !finita ? 'prossima' : 'chiusa';
             const x = sceltaValida(i) ? teamPerId(S.scelte[i]) : null;
-            const slot = x ? `<span class="pal-slot pal-slot-piena"><span class="pal-slot-nome">${esc(x.nome)}</span>${sprites(x, 'pal-sprites-mini')}</span>` : '<span class="pal-slot"><span class="pal-slot-vuoto">Pick a team</span></span>';
-            return `<li class="pal-porta pal-porta-${stato}${a === i ? ' pal-porta-attiva' : ''}${x ? ' pal-porta-piena' : ''}${appena === i ? ' pal-porta-nuova' : ''}" style="--i:${i}">
-                <button type="button" class="pal-porta-btn" data-az="vai" data-i="${i}" aria-pressed="${a === i}">
+            const slot = x ? `<span class="pal-slot pal-slot-piena"><span class="pal-slot-nome">${esc(x.nome)}</span>${sprites(x, 'pal-sprites-mini')}</span>` : '<span class="pal-slot"><span class="pal-slot-vuoto">+ Pick a team</span></span>';
+            return `<li class="pal-porta pal-porta-${stato}${a === i ? ' pal-porta-attiva' : ''}${x ? ' pal-porta-piena' : ''}${nuove.has(i) ? ' pal-porta-nuova' : ''}" style="--i:${i}">
+                <button type="button" class="pal-porta-btn" data-az="vai" data-i="${i}" aria-pressed="${a === i}"${app ? '' : ' aria-haspopup="dialog"'}>
                     <span class="pal-porta-num" aria-hidden="true">${i + 1}</span><span class="pal-porta-stato">${TESTI_PORTA[stato]}</span>
                     <span class="pal-porta-formato">${esc(t.categoria)}</span>${slot}<span class="pal-porta-segreto">Secret edge: ???</span></button></li>`;
         }).join('');
@@ -369,15 +388,11 @@
         const banner = finita ? '<p class="pal-banner">🏆 You beat every stage! Take it on again whenever you like.</p>'
             : vinte > 0 ? `<p class="pal-banner">Your run so far: ${vinte} of ${tappe.length} stages cleared. Stage ${vinte + 1} is waiting!</p>` : '';
 
-        // i tuoi team per la porta accesa
-        const t = tappe[a], miei = teamPer(t.categoria);
-        const carte = miei.length ? miei.map(x => `<button type="button" class="pal-team${S.scelte[a] === x.id ? ' pal-team-scelto' : ''}" data-team="${esc(x.id)}" aria-pressed="${S.scelte[a] === x.id}">
-                <span class="pal-team-nome">${esc(x.nome)}</span>${sprites(x)}<span class="pal-team-timbro" aria-hidden="true">Picked</span></button>`).join('')
-            : `<p class="pal-vuoto">You don't have a team for <b>${esc(t.categoria)}</b> yet. <a href="box.html">Build one in your Box</a>, then come back!</p>`;
-        const aiuto = a === 0 ? "Doubles: bring 6 and pick 4 once you see the opposing team. You'll play against teams you've never seen, so choose the team you trust." : 'Which team do you bring to this one?';
+        // nell'app i tuoi team per la porta accesa stanno in riga sotto le porte; altrove si scelgono nella finestra
+        const sel = app ? selezioneHtml(a) : null;
+        const selezione = sel ? `<section class="pal-selezione" style="--att:${a}">${sel.testa}${sel.squadre}</section>` : '';
 
         // il tasto per entrare, con quanti team sono pronti
-        const pips = tappe.map((_, i) => `<i class="pal-pip${sceltaValida(i) ? ' pal-pip-pieno' : ''}"></i>`).join('');
         const via = finita ? 'Take it on again' : vinte > 0 ? `On to stage ${vinte + 1}` : 'Enter the gym';
 
         $('pal-corpo').innerHTML = `<div class="pal-sfida${prima ? ' pal-prima' : ''}">
@@ -387,39 +402,102 @@
                 ${banner}
                 <ol class="pal-percorso">${porte}${distintivo}</ol>
             </section>
-            <section class="pal-selezione" style="--att:${a}">
-                <header class="pal-sel-testa"><p class="pal-sel-su">Stage ${a + 1} of ${tappe.length}</p><h3 class="pal-sel-titolo">${esc(t.categoria)}</h3><p class="pal-sel-aiuto">${aiuto}</p></header>
-                <div class="pal-squadre">${carte}</div>
-            </section>
+            ${selezione}
             <div class="pal-cta">
                 <a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(S.gym)}">← ${esc(S.gymNome)}'s page</a>
                 ${vinte > 0 && !finita ? '<button type="button" class="ng-bottone" data-az="da-capo">Start over</button>' : ''}
-                <span class="pal-pronti" aria-live="polite"><span class="pal-pips" aria-hidden="true">${pips}</span>${pronti}/${tappe.length} teams ready</span>
+                <span class="pal-pronti" aria-live="polite"><span class="pal-pips" aria-hidden="true">${pipsHtml()}</span>${pronti}/${tappe.length} teams ready</span>
                 <button type="button" class="pal-via" data-az="via"${pronte ? '' : ' disabled'}>${via}<span aria-hidden="true"> ▶</span></button>
             </div>
         </div>`;
     }
 
+    // ---------------------------------------------------------------- la finestra per scegliere i team di una tappa
+    const modale = () => $('pal-modale');
+    /** La finestra: le tre tappe in cima (si può passare dall'una all'altra), la tappa di adesso con i tuoi team di quel format, in fondo quanti sono pronti */
+    function modaleHtml() {
+        const tappe = tappeGym(), a = S.attivo, sel = selezioneHtml(a), pronti = quantiPronti();
+        const passi = tappe.map((t, i) => `<li><button type="button" class="pal-dlg-passo${i === a ? ' pal-dlg-passo-attivo' : ''}${sceltaValida(i) ? ' pal-dlg-passo-pieno' : ''}" data-az="tappa" data-i="${i}" aria-pressed="${i === a}" aria-label="Stage ${i + 1}: ${esc(t.categoria)}${sceltaValida(i) ? ', team picked' : ''}">
+                <span class="pal-dlg-num" aria-hidden="true">${i + 1}</span><span class="pal-dlg-nome">${esc(t.categoria)}</span><span class="pal-dlg-spunta" aria-hidden="true">✓</span></button></li>`).join('');
+        return `<section class="pal-dialogo" role="dialog" aria-modal="true" aria-labelledby="pal-dlg-titolo" style="--att:${a}">
+            <span class="pal-dlg-striscia" aria-hidden="true">Pick a team · stage ${a + 1} of ${tappe.length}</span>
+            <button type="button" class="pal-dlg-x" data-az="chiudi" aria-label="Close">&times;</button>
+            <div class="pal-dlg-corpo">
+                <ol class="pal-dlg-passi" aria-label="Stages">${passi}</ol>
+                ${sel.testa}
+                ${sel.squadre}
+            </div>
+            <footer class="pal-dlg-piede"><span class="pal-pronti" aria-live="polite"><span class="pal-pips" aria-hidden="true">${pipsHtml()}</span>${pronti}/${tappe.length} teams ready</span>
+                <button type="button" class="ng-bottone pal-dlg-chiudi" data-az="chiudi">${pronti === tappe.length ? 'Done' : 'Close'}</button></footer>
+        </section>`;
+    }
+    /** Riscrive il contenuto della finestra (cambiando tappa o scegliendo un team) e rimette il fuoco su una carta */
+    function aggiornaModale(senzaFuoco) {
+        const m = modale();
+        m.innerHTML = modaleHtml();
+        if (senzaFuoco) return;
+        const f = m.querySelector('.pal-team-scelto') || m.querySelector('.pal-team') || m.querySelector('.pal-dlg-x');
+        if (f && f.focus) f.focus({ preventScroll: true });
+    }
+    function apriModale(i, daDove) {
+        const n = tappeGym().length;
+        S.attivo = Math.min(Math.max(i, 0), n - 1);
+        S.modale = true; S.apertoDa = daDove == null ? S.attivo : daDove;
+        const m = modale();
+        m.hidden = false;
+        document.body.classList.add('pal-modale-aperta');
+        aggiornaModale();
+        // l'entrata animata solo quando si apre (non a ogni tappa)
+        m.classList.add('pal-aprendo');
+        setTimeout(() => m.classList.remove('pal-aprendo'), 450);
+    }
+    /** Chiude la finestra e ridisegna le porte (i team scelti, la porta accesa): a team pronti la porta accesa è quella da giocare e il fuoco va al tasto per entrare */
+    function chiudiModale() {
+        if (!S.modale) return;
+        S.modale = false;
+        const m = modale();
+        m.hidden = true; m.innerHTML = '';
+        document.body.classList.remove('pal-modale-aperta');
+        const n = tappeGym().length, pronti = quantiPronti() === n;
+        if (pronti) { const att = stagioneDa(); S.attivo = P.finita(att) ? 0 : Math.min(att.vinte || 0, n - 1); }
+        disegnaSfida();
+        const c = $('pal-corpo'), dove = pronti ? '.pal-via' : `.pal-porta-btn[data-i="${S.apertoDa}"]`, f = c.querySelector(dove);
+        if (f && f.focus) f.focus({ preventScroll: true });
+    }
+    /** Il team scelto per la tappa di adesso: si ricorda subito e si passa alla prima tappa che ne ha ancora bisogno (-1 se sono tutte a posto) */
+    function sceltoTeam(id) {
+        const prima = S.attivo, n = tappeGym().length;
+        S.scelte[prima] = id; S.nuove.add(prima); salvaScelte();
+        let prossima = -1;
+        for (let k = 1; k < n; k++) { const j = (prima + k) % n; if (!sceltaValida(j)) { prossima = j; break; } }
+        if (prossima !== -1) S.attivo = prossima;
+        return prossima;
+    }
+
     function collegaSfida() {
-        const c = $('pal-corpo');
+        const c = $('pal-corpo'), m = modale();
         // le GIF che non si caricano ripiegano sull'immagine del Pokédex (come nel resto del sito)
-        c.addEventListener('error', e => { const img = e.target; if (img && img.tagName === 'IMG' && SP && img.dataset.pkm) SP.riserva(img, SP.id(img.dataset.pkm)); }, true);
+        const riserva = e => { const img = e.target; if (img && img.tagName === 'IMG' && SP && img.dataset.pkm) SP.riserva(img, SP.id(img.dataset.pkm)); };
+        c.addEventListener('error', riserva, true);
+        m.addEventListener('error', riserva, true);
         // ridisegnare perde il fuoco: a chi usa la tastiera si rimette sull'elemento che si è appena usato
         const ridisegna = selettore => { disegnaSfida(); const e = selettore && c.querySelector(selettore); if (e) e.focus({ preventScroll: true }); };
         c.addEventListener('click', e => {
+            // nell'app i team stanno in riga sotto le porte: scelto il team si passa alla prima tappa che ne ha ancora bisogno (se sono tutte a posto si resta qui)
             const carta = e.target.closest('.pal-team');
             if (carta) {
                 const prima = S.attivo;
-                S.scelte[prima] = carta.dataset.team; S.appena = prima; salvaScelte();
-                // scelto il team si passa alla prima tappa che ne ha ancora bisogno (se sono tutte a posto si resta qui)
-                const n = tappeGym().length;
-                for (let k = 1; k < n; k++) { const j = (prima + k) % n; if (!sceltaValida(j)) { S.attivo = j; break; } }
+                sceltoTeam(carta.dataset.team);
                 return ridisegna(S.attivo === prima ? '.pal-team-scelto' : `.pal-porta-btn[data-i="${S.attivo}"]`);
             }
             const b = e.target.closest('button[data-az]');
             if (!b) return;
             const az = b.dataset.az;
-            if (az === 'vai') { S.attivo = Number(b.dataset.i) || 0; ridisegna(`.pal-porta-btn[data-i="${S.attivo}"]`); }
+            if (az === 'vai') {
+                const i = Number(b.dataset.i) || 0;
+                if (inApp()) { S.attivo = i; ridisegna(`.pal-porta-btn[data-i="${i}"]`); }
+                else apriModale(i);
+            }
             else if (az === 'da-capo') { P.salvaSfida(window.localStorage, P.chiaveSfida(S.io, S.gym), { squadre: S.scelte.slice(0, P.TAPPE), vinte: 0 }); S.attivo = 0; ridisegna(); msg('Back to stage 1: fresh start!'); }
             else if (az === 'via') {
                 if (S.scelte.slice(0, P.TAPPE).some((x, i) => !x || !sceltaValida(i))) return msg('Pick a team for every stage before you walk in!', true);
@@ -429,6 +507,30 @@
                 window.location.href = `battle.html?cpu=1&palestra=${encodeURIComponent(S.gym)}&tappa=${vinte}&team=${encodeURIComponent(S.scelte[vinte])}`;
             }
         });
+        // la finestra: scegliere un team, cambiare tappa, chiudere (X, "Close", un tocco fuori o Esc)
+        m.addEventListener('click', e => {
+            if (e.target === m) return chiudiModale();         // lo sfondo scuro
+            const carta = e.target.closest('.pal-team');
+            if (carta) {
+                const prossima = sceltoTeam(carta.dataset.team);
+                if (prossima === -1) return chiudiModale();    // con i tre team pronti la finestra ha finito
+                return aggiornaModale();
+            }
+            const b = e.target.closest('button[data-az]');
+            if (!b) return;
+            if (b.dataset.az === 'chiudi') chiudiModale();
+            else if (b.dataset.az === 'tappa') { S.attivo = Number(b.dataset.i) || 0; aggiornaModale(); }
+        });
+        m.addEventListener('keydown', e => {
+            if (e.key !== 'Tab') return;
+            // il fuoco resta dentro la finestra
+            const dentro = [...m.querySelectorAll('button, a[href]')].filter(x => !x.disabled);
+            if (!dentro.length) return;
+            const prima = dentro[0], ultima = dentro[dentro.length - 1], ora = document.activeElement;
+            if (e.shiftKey && (ora === prima || !m.contains(ora))) { e.preventDefault(); ultima.focus(); }
+            else if (!e.shiftKey && (ora === ultima || !m.contains(ora))) { e.preventDefault(); prima.focus(); }
+        });
+        if (document.addEventListener) document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.modale) { e.preventDefault(); chiudiModale(); } });
     }
 
     /** Da dove si parte: dalla prima tappa senza team; con i tre già scelti da quella che si deve ancora giocare (o dalla prima, a palestra conquistata) */
