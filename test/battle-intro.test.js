@@ -362,6 +362,7 @@ test('battle-intro.css: sta sopra a tutto ma non nell\'app; durante l\'intro gli
     assert.match(targa, /var\(--nb-shcol-titolo, rgba\(0, 0, 0, \.3\)\)/, 'ombra trasparente, come gli adesivi scuri');
     assert.match(targa, /font-family: var\(--nb-font-titoli,/);
     assert.match(targa, /rotate: calc\(-2\.5deg \* var\(--nb-rot, 1\)\);/, 'storta quanto il tema');
+    assert.match(targa, /padding: \.17em \.24em 0;/, 'le cifre sono al centro della targa (misurato: stesso spazio sopra e sotto)');
     assert.match(css, /\.vi-cifra\.vi-avanti \{ color: var\(--ambra, #ffbd44\); \}/, 'chi è avanti: la cifra in ambra, come nello showdown');
     assert.match(css, /\.vi-sep::before, \.vi-sep::after \{[^}]*background: var\(--ambra[^}]*border-radius: var\(--raggio, 0px\);/, 'i due punti: quadratini ambra, tondi nei temi tondi');
     assert.doesNotMatch(css, /vi-fascia/, 'niente fascia dei colori');

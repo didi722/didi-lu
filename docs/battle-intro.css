@@ -63,7 +63,7 @@ html.app .vi { display: none; }
 .vi-vs {
     position: relative; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: .03em; overflow: hidden;
     font-size: clamp(60px, min(11vw, 22vh), 170px);
-    padding: .04em .24em .06em;
+    padding: .17em .24em 0;      /* le cifre hanno più spazio sotto che sopra nella riga: così sono al centro */
     background: var(--inchiostro, #000) radial-gradient(color-mix(in srgb, var(--carta, #fff) 16%, transparent) 1.4px, transparent 1.8px) 0 0 / 13px 13px;      /* il motivo a puntini del sito, piano */
     color: var(--carta, #fff);
     border: var(--bordo-forte, 4px solid #000); border-radius: var(--raggio, 0px);
@@ -72,7 +72,7 @@ html.app .vi { display: none; }
     rotate: calc(-2.5deg * var(--nb-rot, 1));
 }
 .vi-cifra {
-    display: block; min-width: .62em; padding: 0 .06em; text-align: center;
+    display: block; padding: 0 .04em; text-align: center;
     font-size: 1em; font-weight: 900; line-height: 1.02; letter-spacing: 0;
 }
 .vi-cifra.vi-avanti { color: var(--ambra, #ffbd44); }
