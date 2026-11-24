@@ -4,11 +4,11 @@
 // Parte dalla schermata a due colori già disegnata dietro il tavolo (style-versus.css, vestiVersus in battle-ui.js) e la mette sopra a tutto:
 //   1. le due metà (il colore, il motivo e il nome gigante di ciascun allenatore) scivolano dai lati e si incontrano sulla diagonale nera;
 //   2. gli avatar entrano dal loro lato, ognuno con il tag del nome sopra la testa;
-//   3. in centro, sulla riga nera, compare il punteggio (niente scritta "VS") e sotto un tabellone: nelle stagioni match, set e punteggio; contro la CPU il numero della battaglia e la
+//   3. in centro, sulla riga nera, compare il punteggio (niente scritta "VS": una targa scura con le due cifre e i colori dei due allenatori) e sotto un tabellone: nelle stagioni match, set e punteggio; contro la CPU il numero della battaglia e la
 //      serie; nelle amichevoli (se sono al meglio di più set) set e punteggio;
 //   4. la diagonale si apre: le due metà escono ai lati e gli avatar scivolano al loro posto sullo sfondo, esattamente dove stanno ora.
 // Parte prima che la partita sia pronta e ne copre i caricamenti: la diagonale si apre solo quando la pagina lo dice (`attesa`), non prima del tempo fisso e non oltre
-// T.attesaMax. Nel frattempo il VS pulsa piano, gli avatar ondeggiano e una riga dice cosa si sta aspettando.
+// T.attesaMax. Nel frattempo il punteggio pulsa piano, gli avatar ondeggiano e una riga dice cosa si sta aspettando.
 // Chi ha comprato un'entrata nello Shop ha un effetto in più quando il suo avatar arriva (entrate-vs.js).
 // Un clic, un tocco o Invio / Spazio / Esc la saltano (non nei primi istanti). Non c'è nell'app o con "riduci movimento".
 //
@@ -28,6 +28,7 @@
         entraMeta: 300,
         entraAvatar: 560, ritardoAvatar: 150,
         vs: 380, ritardoVs: 520,
+        cifra: 360, ritardoCifre: 760, scarto: 110, fascia: 380,       // le cifre della targa (poco dopo che è arrivata), una dopo l'altra, e la fascia dei colori
         tabellone: 320, ritardoTabellone: 800,
         apertura: 2300, durataApertura: 720,
         uscitaCentro: 300,
@@ -95,6 +96,12 @@
             punteggio: trat(num(punti.sx), num(punti.dx)),
             righe: con([setRiga], formato)
         };
+    }
+
+    /** "2 – 1" → ["2", "1"]; qualunque altra cosa → null. Il punteggio arriva già scritto (testiIntro): per disegnarlo a cifre separate si rilegge */
+    function dividiPunteggio(testo) {
+        const m = /^\s*(\d+)\s*[–-]\s*(\d+)\s*$/.exec(String(testo == null ? '' : testo));
+        return m ? [m[1], m[2]] : null;
     }
 
     /**
@@ -184,7 +191,7 @@
 
     /**
      * Fa partire l'intro. opz: { win, nomi: { sx, dx }, testi: testiIntro(...), attesa?, attesaMax?, stato? }.
-     * `attesa` è una promessa: finché non si risolve (la partita non è ancora pronta, la pagina sta caricando) l'intro resta com'è, con il VS che pulsa e una
+     * `attesa` è una promessa: finché non si risolve (la partita non è ancora pronta, la pagina sta caricando) l'intro resta com'è, con il punteggio che pulsa e una
      * riga "Getting ready…" (`stato`, o `win.__introVs.stato(testo)` per cambiarla), poi la diagonale si apre. Non si apre mai prima del tempo fisso (T.apertura)
      * né oltre `attesaMax`. Senza `attesa` si apre al tempo fisso.
      * Ritorna una promessa che si risolve a intro finita (true) o subito (false) se non c'è niente da fare. Se un'intro è già in corso, quella si chiude.
@@ -289,10 +296,25 @@
             return { ancora, corpo, tag, img: imgAvatar };
         });
 
-        // il VS sulla riga nera e il tabellone sotto
+        // il punteggio sulla riga nera e il tabellone sotto
         const centro = elemento(doc, 'div', 'vi-centro');
-        // niente "VS": al centro, grande, c'è il punteggio (le palestre non ne hanno e restano col solo tabellone)
-        const vs = testi.punteggio ? elemento(doc, 'div', 'vi-vs', testi.punteggio) : null;
+        // niente "VS": al centro, grande, c'è il punteggio: una targa scura con le due cifre (come quella dello showdown, ma da tabellone) e sotto, a metà ciascuno, i colori
+        // dei due allenatori; chi è avanti ha la cifra in ambra. Le palestre non hanno un punteggio e restano col solo tabellone.
+        let vs = null, cifreVs = [], separatore = null, fascia = null;
+        if (testi.punteggio) {
+            vs = elemento(doc, 'div', 'vi-vs');
+            const cifre = dividiPunteggio(testi.punteggio);
+            if (cifre) {
+                const [a, b] = cifre.map(Number);
+                cifreVs = cifre.map((c, i) => elemento(doc, 'span', 'vi-cifra' + ((i === 0 ? a > b : b > a) ? ' vi-avanti' : ''), c));
+                separatore = elemento(doc, 'i', 'vi-sep');
+                fascia = elemento(doc, 'span', 'vi-fascia');
+                lati.forEach((s, i) => fascia.style.setProperty(`--vi-c${i + 1}`, win.getComputedStyle(s.reale).backgroundColor));
+                [cifreVs[0], separatore, cifreVs[1], fascia].forEach(e => vs.appendChild(e));
+            } else {
+                vs.appendChild(elemento(doc, 'span', 'vi-cifra', String(testi.punteggio)));      // scritto in un modo strano: così com'è
+            }
+        }
         const tabellone = elemento(doc, 'div', 'vi-tabellone');
         if (testi.etichetta) tabellone.appendChild(elemento(doc, 'div', 'vi-et', testi.etichetta));
         if (testi.righe && testi.righe.length) {
@@ -346,17 +368,26 @@
             const entrata = lati[i].avatar && lati[i].avatar.dataset ? lati[i].avatar.dataset.entrata : '';
             if (entrata && p.img && win.EntrateVs) win.EntrateVs.suona(entrata, { doc, ancora: p.ancora, corpo: p.corpo, img: p.img, dir: lati[i].dir, h: lati[i].altezza * ingr, A, t0: T.ritardoAvatar + T.entraAvatar });
         });
-        // 3. il VS e il tabellone
-        if (vs) A(vs, { scale: [3.2, 0.9, 1], rotate: ['-16deg', '-3deg', '-4deg'], opacity: [0, 1, 1], offset: [0, 0.62, 1] }, { duration: T.vs, delay: T.ritardoVs, easing: CURVE.pop });
+        // 3. il punteggio e il tabellone: la targa arriva con un colpo (storta quanto è storto il tema: -2,5°, e dritta se il tema è dritto), poi le cifre scattano al
+        //    loro posto una dopo l'altra, i due puntini si accendono e la fascia dei colori si apre dal centro
+        let storto = 1;
+        try { const v = parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue('--nb-rot')); if (Number.isFinite(v)) storto = v; } catch (e) { /* tema senza --nb-rot: com'è */ }
+        const gradi = n => `${(n * storto).toFixed(2)}deg`;
+        if (vs) {
+            A(vs, { scale: [3.2, 0.9, 1], rotate: [gradi(-12), gradi(-1.5), gradi(-2.5)], opacity: [0, 1, 1], offset: [0, 0.62, 1] }, { duration: T.vs, delay: T.ritardoVs, easing: CURVE.pop });
+            cifreVs.forEach((c, i) => A(c, { scale: [0.3, 1.28, 1], opacity: [0, 1, 1], offset: [0, 0.6, 1] }, { duration: T.cifra, delay: T.ritardoCifre + i * T.scarto, easing: CURVE.pop }));
+            if (separatore) A(separatore, { scale: [0, 1], opacity: [0, 1] }, { duration: T.cifra, delay: T.ritardoCifre + T.scarto / 2, easing: CURVE.pop });
+            if (fascia) A(fascia, { scale: ['0 1', '1 1'] }, { duration: T.fascia, delay: T.ritardoCifre, easing: CURVE.entra });
+        }
         A(tabellone, { translate: ['0 46px', '0 0'], opacity: [0, 1] }, { duration: T.tabellone, delay: T.ritardoTabellone, easing: CURVE.entra });
-        // 3b. dopo il tempo fisso, se la partita non è ancora pronta, tutto resta in vita: il VS pulsa piano e gli avatar ondeggiano
+        // 3b. dopo il tempo fisso, se la partita non è ancora pronta, tutto resta in vita: il punteggio pulsa piano e gli avatar ondeggiano
         const oscillazioni = [];
         const O = (e, keyframes, opzioni) => {
             const a = e.animate(keyframes, { fill: 'none', delay: T.apertura, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out', ...opzioni });
             animazioni.push(a);
             oscillazioni.push({ e, a });
         };
-        if (vs) O(vs, { scale: [1, 1.06] }, { duration: 700 });
+        if (vs) O(vs, { scale: [1, 1.05] }, { duration: 700 });
         personaggi.forEach((p, i) => O(p.corpo, { rotate: ['-1.2deg', '1.2deg'] }, { duration: 1100 + i * 140 }));
 
         // ---- fine, o salto ----
@@ -459,5 +490,5 @@
         return promessa;
     }
 
-    return { T, CURVE, INGRANDIMENTO, VISIBILE, testiIntro, punteggioShowdown, disposizione, ritardoApertura, testoSu, puoRiprodurre, togliCopertura, mettiCopertura, riproduci };
+    return { T, CURVE, INGRANDIMENTO, VISIBILE, testiIntro, dividiPunteggio, punteggioShowdown, disposizione, ritardoApertura, testoSu, puoRiprodurre, togliCopertura, mettiCopertura, riproduci };
 });

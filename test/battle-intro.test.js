@@ -351,9 +351,21 @@ test('battle-intro.css: sta sopra a tutto ma non nell\'app; durante l\'intro gli
     assert.match(tabellone, /background: var\(--carta/);
     assert.match(tabellone, /color: var\(--inchiostro/);
     assert.doesNotMatch(tabellone, /background: #|border: [^;]*#000(?!\))/);
-    // niente "VS": al centro c'è il punteggio, grande (la regola .vi-vs è il suo carattere), e il tabellone non lo ripete
-    assert.match(css, /\.vi-vs \{[^}]*font-size: clamp\(64px[^}]*white-space: nowrap;/);
+    // niente "VS": al centro c'è il punteggio, grande; il tabellone non lo ripete
     assert.doesNotMatch(css, /vi-vs-img|ha-img|\.vi-pt/);
+    // la targa del punteggio: scura come quella dello showdown, con i colori, i bordi, gli angoli e l'ombra del tema (niente colori scritti a mano)
+    const targa = css.match(/\.vi-vs \{([^}]*)\}/)[1];
+    assert.match(targa, /font-size: clamp\(60px, min\(11vw, 22vh\), 170px\);/);
+    assert.match(targa, /background: var\(--inchiostro, #000\)/);
+    assert.match(targa, /color: var\(--carta, #fff\);/);
+    assert.match(targa, /border: var\(--bordo-forte, 4px solid #000\); border-radius: var\(--raggio, 0px\);/);
+    assert.match(targa, /var\(--nb-shcol-titolo, rgba\(0, 0, 0, \.3\)\)/, 'ombra trasparente, come gli adesivi scuri');
+    assert.match(targa, /font-family: var\(--nb-font-titoli,/);
+    assert.match(targa, /rotate: calc\(-2\.5deg \* var\(--nb-rot, 1\)\);/, 'storta quanto il tema');
+    assert.match(css, /\.vi-cifra\.vi-avanti \{ color: var\(--ambra, #ffbd44\); \}/, 'chi è avanti: la cifra in ambra, come nello showdown');
+    assert.match(css, /\.vi-sep::before, \.vi-sep::after \{[^}]*background: var\(--ambra[^}]*border-radius: var\(--raggio, 0px\);/, 'i due punti: quadratini ambra, tondi nei temi tondi');
+    assert.match(css, /\.vi-fascia \{[^}]*linear-gradient\(90deg, var\(--vi-c1, var\(--ambra, #ffbd44\)\) 50%, var\(--vi-c2, var\(--ambra, #ffbd44\)\) 50%\)/, 'la fascia: a metà ciascuno i colori dei due allenatori');
+    assert.match(css, /\.vi-centro \{[^}]*gap: calc\(clamp\(12px, 2\.4vh, 26px\) \+ 8px \* var\(--nb-rot, 1\)\);/, 'più storto il tema, più spazio tra targa e tabellone');
     // telefono (verticale e orizzontale)
     assert.match(css, /@media \(max-width: 720px\)/);
     assert.match(css, /@media \(max-height: 520px\)/);
@@ -398,13 +410,44 @@ test('battle-intro.js: le animazioni di apertura restano al loro posto (fill for
     assert.match(battleIntro, /win\.__introVs = \{ radice, termina, stato: scriviStato \};/);
 });
 
-test('battle-intro.js: niente scritta "VS" né immagine: al centro, sulla riga nera, il punteggio (le palestre, che non ne hanno, restano col solo tabellone)', () => {
+test('battle-intro.js: niente scritta "VS" né immagine: al centro, sulla riga nera, la targa del punteggio (le palestre, che non ne hanno, restano col solo tabellone)', () => {
     assert.doesNotMatch(battleIntro, /'VS'|IMMAGINE_VS|seasons-vs|caricaImmagineVs|vi-vs-img/);
-    assert.match(battleIntro, /const vs = testi\.punteggio \? elemento\(doc, 'div', 'vi-vs', testi\.punteggio\) : null;/);
-    assert.match(battleIntro, /if \(vs\) centro\.appendChild\(vs\);/);
-    assert.match(battleIntro, /if \(vs\) A\(vs, /);
-    assert.match(battleIntro, /if \(vs\) O\(vs, /);
     assert.doesNotMatch(battleIntro, /elemento\(doc, 'div', 'vi-pt'/, 'il tabellone non ripete il punteggio');
+    // la targa: due cifre (chi è avanti ha la classe vi-avanti), i due punti e la fascia con i colori delle due metà
+    assert.match(battleIntro, /if \(testi\.punteggio\) \{\s*vs = elemento\(doc, 'div', 'vi-vs'\);\s*const cifre = dividiPunteggio\(testi\.punteggio\);/);
+    assert.match(battleIntro, /elemento\(doc, 'span', 'vi-cifra' \+ \(\(i === 0 \? a > b : b > a\) \? ' vi-avanti' : ''\), c\)/);
+    assert.match(battleIntro, /separatore = elemento\(doc, 'i', 'vi-sep'\);\s*fascia = elemento\(doc, 'span', 'vi-fascia'\);/);
+    assert.match(battleIntro, /fascia\.style\.setProperty\(`--vi-c\$\{i \+ 1\}`, win\.getComputedStyle\(s\.reale\)\.backgroundColor\)/, 'i colori delle due metà, gli stessi dei tag');
+    assert.match(battleIntro, /vs\.appendChild\(elemento\(doc, 'span', 'vi-cifra', String\(testi\.punteggio\)\)\);/, 'se è scritto in modo strano resta com\'è');
+    assert.match(battleIntro, /if \(vs\) centro\.appendChild\(vs\);/);
+    // le animazioni: la targa arriva con un colpo (storta come il tema), poi le cifre una dopo l'altra, i due punti e la fascia che si apre dal centro
+    assert.match(battleIntro, /getPropertyValue\('--nb-rot'\)/, 'quanto è storto il tema');
+    assert.match(battleIntro, /A\(vs, \{ scale: \[3\.2, 0\.9, 1\], rotate: \[gradi\(-12\), gradi\(-1\.5\), gradi\(-2\.5\)\]/);
+    assert.match(battleIntro, /cifreVs\.forEach\(\(c, i\) => A\(c, \{ scale: \[0\.3, 1\.28, 1\][^\n]*delay: T\.ritardoCifre \+ i \* T\.scarto/);
+    assert.match(battleIntro, /if \(separatore\) A\(separatore, /);
+    assert.match(battleIntro, /if \(fascia\) A\(fascia, \{ scale: \['0 1', '1 1'\] \}/);
+    assert.match(battleIntro, /if \(vs\) O\(vs, \{ scale: \[1, 1\.05\] \}/, 'in attesa la targa pulsa piano');
+});
+
+test('T: le cifre della targa compaiono dopo che è arrivata e prima che la diagonale si apra', () => {
+    const { T } = B;
+    assert.ok(T.ritardoCifre >= T.ritardoVs + T.vs * 0.5, 'la targa è già lì (a metà del suo colpo)');
+    assert.ok(T.ritardoCifre + T.scarto + T.cifra < T.apertura, 'le cifre hanno finito prima che si apra');
+    assert.ok(T.ritardoCifre + T.fascia < T.apertura, 'e anche la fascia dei colori');
+});
+
+test('dividiPunteggio: "2 – 1" diventa le due cifre; ogni altra cosa null (la targa lo scrive com\'è)', () => {
+    assert.deepEqual(B.dividiPunteggio('2 – 1'), ['2', '1']);
+    assert.deepEqual(B.dividiPunteggio('12 – 10'), ['12', '10']);
+    assert.deepEqual(B.dividiPunteggio('0 - 0'), ['0', '0'], 'anche col trattino normale');
+    assert.deepEqual(B.dividiPunteggio(' 3 – 3 '), ['3', '3']);
+    for (const no of [null, undefined, '', 'VS', '2 – ', '– 1', '2 – x', '2 – 1 – 0', 5, {}]) assert.equal(B.dividiPunteggio(no), null, String(no));
+    // quello che scrive testiIntro (sempre "a – b") si rilegge sempre
+    for (const c of [{ tipo: 'cpu' }, { tipo: 'amichevole' }, { tipo: 'ufficiale', match: 2 }, { tipo: 'cpu', serie: { v: 11, p: 9, n: 1 } }]) {
+        const t = B.testiIntro(c);
+        assert.equal(B.dividiPunteggio(t.punteggio).length, 2, JSON.stringify(c));
+    }
+    assert.equal(B.dividiPunteggio(B.testiIntro({ tipo: 'palestra' }).punteggio), null, 'la palestra non ha un punteggio');
 });
 
 // ---------- l'intro che copre i caricamenti (battle-ui.js) ----------
