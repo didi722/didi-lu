@@ -55,7 +55,8 @@
         tettoAmichevoliGiorno: 10,
         badge: [0, 25, 50, 100, 200],       // bronzo, argento, oro, platino
         stagioneVinta: 300,
-        mvp: 100
+        mvp: 100,
+        palestra: 25        // una palestra espugnata (le tre tappe di fila): una volta a settimana in tutto, non per palestra (functions/palestra-sfide.js)
     };
 
     // ---- Quanto costa -------------------------------------------------------------------------

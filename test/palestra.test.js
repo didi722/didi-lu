@@ -175,13 +175,13 @@ test('cablaggio: motore (vantaggio prima del turno 1), battle.html?cpu=1&palestr
     assert.match(ui, /Next: stage \$\{i \+ 2\} →/);
     assert.match(ui, /class="pal-squadra\$\{S\.scelte\[i\] === x\.id \? ' pal-scelta' : ''\}"/);
     assert.match(ui, /SP\.riserva\(img, SP\.id\(img\.dataset\.pkm\)\)/, 'le GIF che mancano ripiegano sul Pokédex');
-    assert.match(leggi('docs', 'palestra.html'), /<script src="sprites\/indice\.js"><\/script>\s*<script src="sprite-pkm\.js"><\/script>\s*<script src="palestra\.js">/);
+    assert.match(leggi('docs', 'palestra.html'), /<script src="sprites\/indice\.js"><\/script>\s*<script src="sprite-pkm\.js"><\/script>\s*<script src="pagina-pubblica\.js"><\/script>\s*<script src="cosmetici\.js"><\/script>\s*<script src="altezze-pkm\.js"><\/script>\s*<script src="scala-pkm\.js"><\/script>\s*<script src="palestra\.js">/);
     assert.match(leggi('docs', 'style-palestra.css'), /\.pal-passi \{/);
     // vantaggio di campo fisso: il campo mostra "all battle" invece dei turni
     assert.match(bu, /permanenti: cpu && cpu\.palestra \? self\.Palestra\.condizioniFisse\(cpu\.palestra\.vantaggio\) : \[\]/);
     assert.match(leggi('docs', 'battle-extra.js'), /S\.permanenti\.has\(idDi\(battle\.weather\)\) \? ALL_BATTLE/);
     assert.match(mb, /self\.Palestra\.proteggi\(battle, v\.id, v\.lato \|\| 'p2', v\.nome \|\| ''\)/, 'la protezione dei boost parte prima dei Pokémon d\'apertura');
-    assert.match(leggi('docs', 'palestra.html'), /<script src="palestra\.js"><\/script>\s*<script src="palestra-ui\.js"><\/script>/);
+    assert.match(leggi('docs', 'palestra.html'), /<script src="palestra\.js"><\/script>\s*<script src="palestra-stat\.js"><\/script>\s*<script src="palestra-ui\.js"><\/script>/);
     assert.match(leggi('docs', 'style-palestra.css'), /body\.pg-palestra \{ overflow-x: hidden; overflow-y: auto; \}/);
 });
 
@@ -256,12 +256,12 @@ test('cablaggio del tema: pagina di battaglia, stili, vantaggio sempre in vista 
     assert.match(bu, /colore: 'giocatore' \} \} \};\n\s*const tema = self\.Palestra\.temaPalestra/, 'la palestra ha lo stesso sfondo delle partite: colore principale e motivo');
     assert.match(bu, /document\.body\.classList\.add\('palestra'\)/);
     assert.match(bu, /voci = cpu && cpu\.palestra \? vociInsegnaPalestra\(\)/, 'l\'insegna mostra chi tiene la palestra e il vantaggio');
-    assert.match(bu, /if \(cpu && cpu\.palestra\) mostraAnnuncioPalestra\(false\);/, 'cartello intero quando si entra');
+    assert.match(bu, /if \(cpu && cpu\.palestra\) \{\s*mostraAnnuncioPalestra\(false\);/, 'cartello intero quando si entra');
     assert.ok(!/mostraAnnuncioPalestra\(true\)/.test(bu), 'il cartello non ricompare a inizio partita');
     assert.match(bu, /nome: \(cpu && config\.p2\.nome\) \|\| 'CPU'/, 'nelle colonne l\'avversario è il capopalestra, non "CPU"');
     const ts = leggi('docs', 'team-sito.js');
     assert.match(ts, /players\/\$\{id\}\/info`/);
-    assert.match(ts, /const aspetto = \{ colore: info\.color, avatar: info\.avatar, pagina: info\.pagina, aura: info\.aura, effettoNome: info\.effettoNome, effettoPalco: info\.effettoPalco, compagno: /);
+    assert.match(ts, /const aspetto = self\.Palestra\.aspettoCapo\(info, shiny\);/, 'l\'aspetto del capopalestra è quello della pagina di scelta dei team (Palestra.aspettoCapo)');
     const css = leggi('docs', 'style-palestra-battaglia.css');
     for (const re of [/body\.palestra \{ background: var\(--pp-sfondo\); \}/, /body\.palestra \.cab-insegna/, /\.pal-annuncio \{/, /\.ins-vantaggio \{/, /\.pal-effetto \{/, /prefers-reduced-motion/, /max-width: 720px/]) assert.match(css, re);
     // il nero ha ombre scure semitrasparenti (regola del sito)

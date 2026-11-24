@@ -7,9 +7,10 @@
 // Come si guadagnano (PREMI, in cosmetici.js: sono calibrati con i prezzi sulla stagione tipo, vedi stimaStagione):
 //   - ogni set giocato: in stagione 5 monete, +6 se lo si vince; nelle amichevoli 2, +3 (al massimo 10 al giorno in tutto: così non si fanno monete giocando sempre con lo stesso amico);
 //   - un badge nuovo: 25 (bronzo), 50 (argento), 100 (oro), 200 (platino); salendo di livello si prende quello dei livelli saltati;
-//   - una stagione vinta: 300; un MVP della stagione (il Pokémon di un allenatore): 100.
+//   - una stagione vinta: 300; un MVP della stagione (il Pokémon di un allenatore): 100;
+//   - una palestra espugnata (le sue tre tappe vinte di fila contro la CPU): 25, ma una volta a settimana in tutto (functions/palestra-sfide.js).
 // Ogni premio ha una chiave: lo stesso fatto (un set, un badge, una stagione) paga una volta sola (walletEventi/{chiave}).
-// Non si guadagna contro la CPU (nessun controllo possibile da qui).
+// Contro la CPU non si guadagna (il simulatore gira nel browser e da qui non si può controllare). Fa eccezione la palestra, che per questo paga poco e solo una volta a settimana.
 //
 // Come si spendono: i cosmetici del catalogo; avatar, colori e canzoni (unici, comprati: al massimo LIMITI per tipo, si rilascia gratis per prenderne un altro; il primo è gratis per chi ha
 // ancora quello di partenza); lo shiny di un Pokémon di un team (il prezzo dipende dalla specie: Cosmetici.prezzoShiny).
@@ -420,4 +421,4 @@ async function equipa({ db, uid, id, attivo }) {
     return { ok: true };
 }
 
-module.exports = { PREMI, PREZZI, MAX_MOVIMENTI, premioSet, premioBadge, accredita, spendi, premiaSet, premiaBadge, acquista, prendi, rilascia, equipa, cambia, shinyPokemon, testoConShiny, uidDi, giornoDi };
+module.exports = { PREMI, PREZZI, MAX_MOVIMENTI, premioSet, premioBadge, accredita, spendi, premiaSet, premiaBadge, acquista, prendi, rilascia, equipa, cambia, shinyPokemon, testoConShiny, uidDi, giocatoreDi, giornoDi };

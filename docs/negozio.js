@@ -131,10 +131,10 @@
             ['Season set played', o.giocato], ['Season set won', o.giocato + o.vinto],
             ['Friendly set played', a.giocato], ['Friendly set won', a.giocato + a.vinto],
             ['New bronze badge', P.badge[1]], ['New silver badge', P.badge[2]], ['New gold badge', P.badge[3]], ['New platinum badge', P.badge[4]],
-            ['Season won', P.stagioneVinta], ['Season MVP', P.mvp]
+            ['Season won', P.stagioneVinta], ['Season MVP', P.mvp], ['Gym conquered (once a week)', P.palestra]
         ];
         return `<ul class="ng-premi">${voci.map(([testo, n]) => `<li><span>${esc(testo)}</span><b>+${n} 🪙</b></li>`).join('')}</ul>`
-            + `<p class="ng-nota">Friendly sets pay up to ${P.tettoAmichevoliGiorno} 🪙 a day in total.</p>`;
+            + `<p class="ng-nota">Friendly sets pay up to ${P.tettoAmichevoliGiorno} 🪙 a day in total. Beat all three stages of another trainer's gym to earn ${P.palestra} 🪙: it pays once a week in total, not per gym, and resets on Monday.</p>`;
     }
 
     /**

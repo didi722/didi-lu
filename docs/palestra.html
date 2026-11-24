@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- l'ossatura (loader, menu, login, banner) è quella di tutte le pagine -->
     <link rel="stylesheet" href="style-schermata-base-vuota.css">
+    <link rel="stylesheet" href="style-versus.css">
+    <link rel="stylesheet" href="style-palestra-battaglia.css">
     <link rel="stylesheet" href="style-palestra.css">
     <link rel="stylesheet" href="effetti-pagina.css">
     <script src="effetti-palco.js" defer></script>
@@ -214,14 +216,25 @@ document.addEventListener('click', function (event) {
 // ---------- Musica: stessa preferenza del resto del sito ----------
 const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3";
 
+// Sfidando la palestra di un altro suona la canzone che ha scelto il capopalestra (palestra-ui.js la comunica con musicaPalestra.imposta, anche vuota se non ne ha). Finché non si sa
+// quale è, niente: così non parte prima il Pokémon Center e poi, di colpo, un'altra canzone. Impostando la propria palestra, o senza account, suona quella di sempre.
+let canzonePalestra = '';
+let musicaPronta = true;
+(function () {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('player') && q.get('edit') !== '1') musicaPronta = false;
+})();
+window.musicaPalestra = { imposta(url) { canzonePalestra = String(url || ''); musicaPronta = true; syncMusicState(); } };
+
 function syncMusicState() {
     const player = document.getElementById('bg-music-home');
     const musicBtn = document.getElementById('music-control');
 
-    if (!player) return;
+    if (!player || !musicaPronta) return;
 
-    if (player.src !== LINK_MP3_HOME) {
-        player.src = LINK_MP3_HOME;
+    const indirizzo = canzonePalestra || LINK_MP3_HOME;
+    if (player.getAttribute('src') !== indirizzo) {
+        player.src = indirizzo;
         player.volume = 0.8;
     }
 
@@ -308,14 +321,15 @@ auth.onAuthStateChanged(async (user) => {
                 if (authIcon) authIcon.className = "fas fa-user-circle";
 
                 const colorSnap = await db.ref(`players/${userName.toLowerCase().trim()}/info/color`).once('value');
-                if (colorSnap.exists()) {
+                // sfidando la palestra di un altro la barra ha il colore del capopalestra (palestra-ui.js, vestiSala)
+                if (colorSnap.exists() && !document.body.classList.contains('pal-dentro')) {
                     topBar.style.setProperty('background-color', colorSnap.val(), 'important');
                 }
             }
         } catch (e) { console.error("Errore nel recupero del profilo:", e); }
     } else {
         if (authText) authText.innerText = "Login";
-        if (topBar) topBar.style.backgroundColor = "#FFA500";
+        if (topBar && !document.body.classList.contains('pal-dentro')) topBar.style.backgroundColor = "#FFA500";
     }
 });
 
@@ -395,7 +409,12 @@ loginModal.addEventListener('click', (event) => {
 </script>
 <script src="sprites/indice.js"></script>
 <script src="sprite-pkm.js"></script>
+<script src="pagina-pubblica.js"></script>
+<script src="cosmetici.js"></script>
+<script src="altezze-pkm.js"></script>
+<script src="scala-pkm.js"></script>
 <script src="palestra.js"></script>
+<script src="palestra-stat.js"></script>
 <script src="palestra-ui.js"></script>
 <script src="controlli.js"></script>
 </body>
