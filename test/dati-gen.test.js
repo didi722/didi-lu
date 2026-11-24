@@ -296,7 +296,7 @@ test('box.html: il Team Builder, i pool, il dettaglio dei team e la validazione 
     assert.match(box, /preparaDatiTeamPerValidazione\(datiTeamDaSalvare\.pokemon, regolamento\)/);
     assert.match(box, /DatiGen\.rettificaDatiValidazione\(\{/);
     const validatore = box.slice(box.indexOf('async function validaTeamDinamico'), box.indexOf('function validaSovrapposizioneTeam'));
-    assert.match(validatore, /await validaCoerenzaGenerazione\(teamDatiPokeAPI, regolamento\)/);
+    assert.match(validatore, /await validaCoerenzaGenerazione\(teamDatiPokeAPI, regolamento(, eccezioneMosse)?\)/);
     assert.match(validatore, /validaMosseDuplicate[\s\S]*validaCoerenzaGenerazione[\s\S]*if \(regolamento\.restrizioni\)/, 'vale anche per Anything Goes: sta fuori dal blocco dei controlli standard');
     assert.match(box, /ControlloTeam\.problemiDelTeam\(sets, regole, fonti\)/, 'il Box usa la regola condivisa (controllo-team.js), che a sua volta chiama DatiGen.controllaSet');
     assert.match(fs.readFileSync(path.join(DOCS, 'controllo-team.js'), 'utf8'), /DatiGen\.controllaSet\(/);

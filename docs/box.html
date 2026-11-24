@@ -2683,7 +2683,8 @@ async function preparaDatiTeamPerValidazione(listaPokemon, regolamento = null) {
 // Ogni set è possibile nella generazione del formato? (specie, abilità, strumento e mosse esistenti; abilità fra quelle della specie di allora)
 // È LA STESSA regola del simulatore e del server (controllo-team.js): un team salvato qui non verrà rifiutato prima di giocare.
 // Legge i dati di Showdown già pronti per il Team Builder; se non si caricano non si blocca niente (restano gli altri controlli).
-async function validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento) {
+// `eccezioneMosse`: un team già creato prima del controllo del movepool (Little Cup, VGC Gen 8, QWERTY: ControlloTeam.eccezioneMosse) non si controlla sulle mosse
+async function validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento, eccezioneMosse = false) {
     const lista = Array.isArray(teamDatiPokeAPI) ? teamDatiPokeAPI : Object.values(teamDatiPokeAPI || {});
     const gen = generazioneDelRegolamento(regolamento);
     if (!lista.length) return [];
@@ -2706,6 +2707,7 @@ async function validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento) {
     const regole = {
         gen, delta,
         meccaniche: meccanicheAttiveRegolamento(regolamento),
+        controllaMosse: !eccezioneMosse,
         // i formati Anything Goes non limitano le specie (le abilità, gli strumenti e le mosse sì)
         controllaSpecie: String(regolamento?.strutturaSito || 'custom').toLowerCase().trim() !== 'anything_goes'
     };
@@ -2812,11 +2814,13 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
     // 🛡️ Estrazione ed unificazione sicura dei dati dei Pokémon
     let teamDatiPokeAPI = [];
     let currentTeamId = null;
+    let eccezioneMosse = false;
 
     if (Array.isArray(teamInput)) {
         teamDatiPokeAPI = teamInput;
     } else if (teamInput && typeof teamInput === 'object') {
         currentTeamId = teamInput.id || null;
+        eccezioneMosse = teamInput.eccezioneMosse === true;
         if (Array.isArray(teamInput.pokemon)) {
             teamDatiPokeAPI = teamInput.pokemon;
         } else if (teamInput.pokemon && typeof teamInput.pokemon === 'object') {
@@ -2961,7 +2965,7 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
 
     // Abilità, strumenti e mosse devono esistere nella generazione del formato (e l'abilità essere una di quelle della specie di allora):
     // valgono in tutti i formati, Anything Goes compreso
-    tuttiGliErrori = tuttiGliErrori.concat(await validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento));
+    tuttiGliErrori = tuttiGliErrori.concat(await validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento, eccezioneMosse));
 
     // Restrizioni del formato: valgono SEMPRE, anche in Anything Goes
     if (regolamento.restrizioni) {
@@ -3607,10 +3611,18 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
 
         const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeamDaSalvare.pokemon, regolamento);
         
+        // Little Cup, VGC Gen 8 e QWERTY: un team già creato prima del controllo del movepool si salva anche con mosse che la specie non impara (controllo-team.js, eccezioneMosse);
+        // il segno resta sul team, così cambiargli il nome non gli toglie l'eccezione. Un team nuovo è controllato per intero.
+        let eccezioneMosse = false;
+        if (editingId) {
+            try { eccezioneMosse = ControlloTeam.eccezioneMosse((await databaseRef.child(`players/${playerID}/teams/${editingId}`).once('value')).val(), regolamento.categoria); }
+            catch (e) { console.warn('Eccezione mosse non letta:', e); }
+        }
         const oggettoTeamPerValidazione = {
             id: editingId,
             nome: nomeTeamScelto,
-            pokemon: datiPokeAPI
+            pokemon: datiPokeAPI,
+            eccezioneMosse
         };
         
         const esitoValidazione = await validaTeamDinamico(oggettoTeamPerValidazione, regolamento, altriTeamEsistenti);
@@ -3623,6 +3635,7 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
         }
 
         datiTeamDaSalvare.categoria = regolamento.categoria; 
+        if (eccezioneMosse) datiTeamDaSalvare.eccezioneMosse = true;
 
         if (editingId) {
             // 🆕 Salvataggio dinamico sul player loggato in caso di modifica

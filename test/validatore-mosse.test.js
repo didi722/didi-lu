@@ -204,3 +204,51 @@ test('box.html: il salvataggio passa le mosse al controllo (fonte learnset) e l\
     assert.doesNotMatch(b, /function tbRaccogliLearnset|function tbFonteValida|function tbGenRipiegoLearnset/, 'niente più una seconda copia della regola');
     assert.match(b, /if \(r\.slot\) \{ nuovi\.push\(r\.slot\); saltati\.push\(\.\.\.\(r\.avvisi \|\| \[\]\)\); \}/);
 });
+
+// ---------------------------------------------------------------- l'eccezione per i team già creati
+test('eccezione: i team già creati di Little Cup, VGC Gen 8 e QWERTY non si controllano sulle mosse; i nuovi e gli altri formati sì', () => {
+    const prima = { dataUltimaModifica: CT.DATA_CONTROLLO_MOSSE - 1 }, dopo = { dataUltimaModifica: CT.DATA_CONTROLLO_MOSSE + 1 };
+    for (const f of ['Little Cup', 'VGC Gen 8', 'QWERTY', 'little cup', 'vgc gen8']) assert.equal(CT.eccezioneMosse(prima, f), true, f);
+    // un team creato dopo il controllo è controllato per intero, anche in quei formati
+    for (const f of ['Little Cup', 'VGC Gen 8', 'QWERTY']) assert.equal(CT.eccezioneMosse(dopo, f), false, f);
+    // gli altri formati non hanno l'eccezione, qualunque sia la data
+    for (const f of ['VGC Gen 9', 'Gen9 OU', 'Anything Goes', '', null]) assert.equal(CT.eccezioneMosse(prima, f), false, String(f));
+    // senza data il team è di prima; il segno del Box tiene l'eccezione anche dopo una modifica
+    assert.equal(CT.eccezioneMosse({}, 'QWERTY'), true);
+    assert.equal(CT.eccezioneMosse({ ...dopo, eccezioneMosse: true }, 'QWERTY'), true);
+    assert.equal(CT.eccezioneMosse({ ...prima, eccezioneMosse: true }, 'Gen9 OU'), false, 'il segno vale solo nei tre formati');
+    assert.equal(CT.eccezioneMosse(null, 'QWERTY'), false);
+    assert.equal(CT.eccezioneMosse('x', 'QWERTY'), false);
+    // le due copie del controllo (sito e server) sono identiche
+    assert.equal(leggi('docs/controllo-team.js'), leggi('functions/controllo-team.js'));
+});
+
+test('eccezione: con l\'eccezione solo le mosse non si controllano (una specie che non esiste ancora in quella generazione resta un problema)', async () => {
+    const { controllaTeam } = await caricaTeamSito();
+    const { controllaTeam: delServer } = await caricaServer();
+    const SOAK = ['Jellicent: Soak is not in its movepool in Gen 9.'];
+    assert.deepEqual(controllaTeam(JELLICENT, reg(9), null), SOAK);
+    assert.deepEqual(controllaTeam(JELLICENT, reg(9), null, true), [], 'simulatore sul sito: team già creato');
+    assert.deepEqual(await delServer(JELLICENT, reg(9)), SOAK);
+    assert.deepEqual(await delServer(JELLICENT, reg(9), true), [], 'server: team già creato');
+    const GEN9_IN_GEN8 = `Koraidon @ Choice Scarf\nAbility: Orichalcum Pulse\n- Close Combat\n- Flare Blitz\n- U-turn\n- Dragon Claw`;
+    assert.ok((await delServer(GEN9_IN_GEN8, reg(8), true)).length > 0, 'la specie fuori generazione non è coperta dall\'eccezione');
+    assert.ok(controllaTeam(GEN9_IN_GEN8, reg(8), null, true).length > 0);
+});
+
+test('eccezione: simulatore e server la leggono dal team del Box (data o segno) e solo per il formato del match; il Box la dà al salvataggio e la conserva', () => {
+    const sito = leggi('docs/team-sito.js'), srv = leggi('functions/partita.js'), box = leggi('docs/box.html');
+    assert.match(sito, /self\.ControlloTeam\.eccezioneMosse\(dalBox \|\| iscritto, regolamento\.categoria\)/, 'team iscritti');
+    assert.match(sito, /self\.ControlloTeam\.eccezioneMosse\(team, regolamento\.categoria\)/, 'il team scelto per giocare');
+    assert.match(sito, /self\.ControlloTeam\.eccezioneMosse\(team, info\.categoria\)/, 'i team del Box per il match');
+    assert.match(srv, /eccezione: ControlloTeam\.eccezioneMosse\(b \|\| t, info\.categoria\)/);
+    assert.match(srv, /controllaTeam\(scelto\.testo, reg, scelto\.eccezione\)/, 'il server rifiuta o accetta il team scelto con la stessa eccezione');
+    assert.match(srv, /ControlloTeam\.eccezioneMosse\(t, categoria\)/, 'l\'elenco dei team utilizzabili');
+    // il Box: legge il team com'era, lo valida con l'eccezione e gli lascia il segno
+    assert.match(box, /ControlloTeam\.eccezioneMosse\(\(await databaseRef\.child\(`players\/\$\{playerID\}\/teams\/\$\{editingId\}`\)\.once\('value'\)\)\.val\(\), regolamento\.categoria\)/);
+    assert.match(box, /eccezioneMosse = teamInput\.eccezioneMosse === true;/);
+    assert.match(box, /controllaMosse: !eccezioneMosse,/);
+    assert.match(box, /if \(eccezioneMosse\) datiTeamDaSalvare\.eccezioneMosse = true;/);
+    // un team nuovo non ha eccezione: si legge solo modificandone uno
+    assert.match(box, /let eccezioneMosse = false;\s*if \(editingId\) \{/);
+});

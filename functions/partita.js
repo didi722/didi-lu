@@ -139,13 +139,15 @@ const deltaDi = gen => DatiGen.carica(gen, url => JSON.parse(fs.readFileSync(pat
 
 // Il server non corregge i team: se non sono conformi, non si gioca.
 // Il controllo è lo STESSO del Box e del simulatore sul sito (controllo-team.js): un team che il Box salva non viene rifiutato qui.
-async function controllaTeam(testo, reg) {
+// `eccezione`: team già creato prima del controllo del movepool (ControlloTeam.eccezioneMosse): le sue mosse non si controllano.
+async function controllaTeam(testo, reg, eccezione = false) {
     const sets = importaTeam(testo);
     if (!sets.length) return ['Il team è vuoto o illeggibile'];
     const gen = generazioneFormato(reg);
     const regole = {
         gen, livello: livelloFormato(reg), meccaniche: meccanicheAttive(reg),
         controllaSpecie: String(reg.strutturaSito || 'custom').toLowerCase().trim() !== 'anything_goes',
+        controllaMosse: !eccezione,
         delta: await deltaDi(gen)
     };
     return ControlloTeam.problemiDeiSetShowdown(sets, regole, PS.Dex);
@@ -280,7 +282,7 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
             const b = dalBox.find(x => nomeTeam(x).toLowerCase() === nome.toLowerCase());
             const sorgente = t && t.pokemon ? t : (b || {});
             const testoSalvato = (t && t.testoShowdown) || (b && b.testoShowdown) || '';
-            return { nome, testo: testoShowdownDaTeam({ ...sorgente, testoShowdown: testoSalvato }, info.livello) };
+            return { nome, testo: testoShowdownDaTeam({ ...sorgente, testoShowdown: testoSalvato }, info.livello), eccezione: ControlloTeam.eccezioneMosse(b || t, info.categoria) };
         }).filter(t => t.nome && t.testo);
     }
 
@@ -351,7 +353,7 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
         const reg = trovaRegolamento(await leggi('regolamenti'), info.categoria);
         const scelto = (await teamIscritti(info, lato)).find(t => t.nome === team);
         if (!scelto) throw new ErroreUtente(`Il team "${team}" non è tra i tuoi iscritti in ${info.categoria}`);
-        const problemi = await controllaTeam(scelto.testo, reg);
+        const problemi = await controllaTeam(scelto.testo, reg, scelto.eccezione);
         if (problemi.length) throw new ErroreUtente(`Team non conforme: ${problemi.join('; ')}`);
 
         await db.ref(`partiteServer/${id}/team/${lato}`).set({
@@ -647,7 +649,7 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
             if (!libera) {
                 if (cat.toLowerCase() !== String(categoria).toLowerCase()) continue;
                 const regFormato = trovaRegolamento(regolamenti, categoria);
-                risultato.push({ nome, categoria: cat, testo, problemi: regFormato ? await controllaTeam(testo, regFormato) : ['The format of this team no longer exists'] });
+                risultato.push({ nome, categoria: cat, testo, problemi: regFormato ? await controllaTeam(testo, regFormato, ControlloTeam.eccezioneMosse(t, categoria)) : ['The format of this team no longer exists'] });
                 continue;
             }
             let problemi = [];
