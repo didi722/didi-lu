@@ -63,9 +63,6 @@ body.pg-palestra .pal-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); 
 .pal-allena-testo b { font-size: .85rem; }
 .pal-pagina .pal-allena-btn { padding: 5px 12px 3px; font-size: .7rem; }
 /* la quarta cifra del tabellone di chi sfida: quanto è allenata la CPU della palestra */
-.pal-chip-allena b { color: #6fa8ff; }
-.pal-chip-allena[data-livello="quasi"] b { color: var(--nb-giallo, #ffbd44); }
-.pal-chip-allena[data-livello="pronta"] b { color: #47ea6a; }
 @media (max-width: 760px) {
     .pal-allena-pannello { grid-template-columns: minmax(0, 1fr); padding: 14px; }
     .pal-pagina .pal-allena-via { width: 100%; }
