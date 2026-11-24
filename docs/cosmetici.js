@@ -29,7 +29,8 @@
 //   Cosmetici.idCorrente(tipo, info)                   l'id dell'avatar / del colore / della canzone che porta adesso ('' se è quello di partenza o nessuno)
 //   Cosmetici.LIMITI                                   quanti avatar, colori e canzoni al massimo ha un allenatore: { avatar, colore, canzone }
 //   Cosmetici.possedutiDiTipo(tipo, { wallet, info })  gli id di avatar / colori / canzoni che ha: comprati (wallet.posseduti), "di casa" delle versioni precedenti (wallet.casa) e quello che porta
-//   Cosmetici.prezzoAcquisto(tipo, { wallet, info })   { prezzo, gratis }: quanto costa prenderne un altro (0 il primo, per chi ha ancora quello di partenza)
+//   Cosmetici.prezzoAcquisto(tipo, { wallet, info })   { prezzo, gratis }: quanto costa prenderne un altro (0 il primo, per chi ha ancora quello di partenza o solo quello dato dal server)
+//   Cosmetici.inizialeDi(tipo, wallet)                  l'id che il server ha dato a un account appena creato (wallet.iniziali), '' se non c'è
 //   Cosmetici.prezzoPer(id, { wallet, info })          { prezzo, gratis }: quanto costa un cosmetico del catalogo, o prenderne un altro per gli id degli avatar, dei colori e delle canzoni
 //   Cosmetici.stimaStagione({ ... })                   quante monete fa una stagione, per tarare i prezzi
 //   Cosmetici.compagnoDelBox(info, teams)              il Pokémon del Box che è il compagno (info.pkmBox = "idTeam|posizione"), se c'è ancora e è davvero lui; altrimenti null (compagno "generico")
@@ -56,7 +57,7 @@
         badge: [0, 25, 50, 100, 200],       // bronzo, argento, oro, platino
         stagioneVinta: 300,
         mvp: 100,
-        palestra: 25        // una palestra espugnata (le tre tappe di fila): una volta a settimana in tutto, non per palestra (functions/palestra-sfide.js)
+        palestra: 10        // una palestra espugnata (le tre tappe di fila): una volta a settimana per ogni palestra, quindi più palestre = più premi: per questo è basso (functions/palestra-sfide.js)
     };
 
     // ---- Quanto costa -------------------------------------------------------------------------
@@ -374,9 +375,16 @@
         return [...fuori];
     }
 
-    /** Quanto costa prenderne un altro: PREZZI, tranne il primo avatar, il primo colore e la prima canzone di chi ha ancora quello di partenza (gratis) */
+    /**
+     * L'avatar, il colore o la canzone che il server ha dato a un account appena creato (wallet.iniziali[tipo]: a caso tra quelli liberi). Si porta finché non se ne prende un altro, ma non conta come
+     * "il primo": il primo cambio è sempre gratis e lo sostituisce (torna libero per tutti). '' se non ce n'è.
+     */
+    const inizialeDi = (tipo, wallet) => String(objOr(objOr(wallet).iniziali)[tipo] || '');
+
+    /** Quanto costa prenderne un altro: PREZZI, tranne il primo avatar, il primo colore e la prima canzone di chi ha ancora quello di partenza o solo quello che gli ha dato il server (gratis) */
     function prezzoAcquisto(tipo, contesto = {}) {
-        const gratis = !possedutiDiTipo(tipo, contesto).length;
+        const posseduti = possedutiDiTipo(tipo, contesto), iniziale = inizialeDi(tipo, contesto.wallet);
+        const gratis = !posseduti.length || (!!iniziale && posseduti.length === 1 && posseduti[0] === iniziale);
         return { prezzo: gratis ? 0 : PREZZI[tipo] || 0, gratis };
     }
 
@@ -517,5 +525,5 @@
         return { set, amichevoli, badge, stagione, mvp, totale: set + amichevoli + badge + stagione + mvp };
     }
 
-    return { PREMI, PREZZI, LIMITI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, GRUPPI_COLORI, raggruppaColori, famigliaColore, perId, valido, possiede, possedutiDa, motivoBloccato, disponibilita, stagioniEdizioni, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, possedutiDiTipo, prezzoAcquisto, prezzoPer, stimaStagione, compagnoDelBox, compagnoShiny, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
+    return { inizialeDi, PREMI, PREZZI, LIMITI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, GRUPPI_COLORI, raggruppaColori, famigliaColore, perId, valido, possiede, possedutiDa, motivoBloccato, disponibilita, stagioniEdizioni, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, possedutiDiTipo, prezzoAcquisto, prezzoPer, stimaStagione, compagnoDelBox, compagnoShiny, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
 });

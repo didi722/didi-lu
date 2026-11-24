@@ -1878,8 +1878,8 @@ async function riferisciPalestra(azione, vinta) {
 function mostraPremioPalestra(esito) {
     const riga = $('premio-vittoria');
     if (!riga || !esito || !esito.ok || esito.esito !== 'espugnata') return;
-    if (esito.premio > 0) riga.textContent = `🪙 +${esito.premio} coins for conquering the gym! The next gym coins are up for grabs on Monday.`;
-    else if (esito.motivoPremio === 'already') riga.textContent = '🪙 You already collected your gym coins this week: they are back on Monday.';
+    if (esito.premio > 0) riga.textContent = `🪙 +${esito.premio} coins for conquering the gym! The coins for this gym are up for grabs again on Monday.`;
+    else if (esito.motivoPremio === 'already') riga.textContent = '🪙 You already collected the coins for this gym this week: they are back on Monday.';
     else if (esito.motivoPremio === 'unverified') riga.textContent = "🪙 No coins this time: they're paid when you clear all 3 stages in one run, starting from stage 1.";
     else return;
     riga.classList.toggle('esito-premio-preso', esito.premio > 0);

@@ -216,7 +216,7 @@ test('cablaggio: avatar, colore e canzone si comprano nello Shop (massimo per ti
     const ed = leggi('docs', 'public-editor.js');
     assert.match(ed, /function leggiPortafoglio\(forza\)/);
     assert.match(ed, /ref\(`wallet\/\$\{u\.uid\}`\)/);
-    assert.match(ed, /portafoglio = \{ posseduti: w\.posseduti \|\| \{\}, casa: w\.casa \|\| \{\}, pronto: true \}/);
+    assert.match(ed, /portafoglio = \{ posseduti: w\.posseduti \|\| \{\}, casa: w\.casa \|\| \{\}, iniziali: w\.iniziali \|\| \{\}, pronto: true \}/);
     assert.match(ed, /possedute: tipo => \(window\.Cosmetici \? window\.Cosmetici\.possedutiDiTipo\(tipo, contestoCosmetici\(\)\) : \[\]\)/);
     assert.match(ed, /limite: tipo => \(window\.Cosmetici \? window\.Cosmetici\.LIMITI\[tipo\] : 0\)/);
     assert.match(ed, /const r = await window\.Negozio\.cambia\(window, \{ tipo, id, \.\.\.\(extra \|\| \{\}\) \}\)/, 'indossare lo fa il server');
