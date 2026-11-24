@@ -188,17 +188,12 @@ test('propria palestra: senza palestra salvata (e senza copioni) il pannello c\'
 });
 
 // ---------------------------------------------------------------- sfidare la palestra di un altro
-test('sfida: il tabellone dice quanto è allenata la CPU della palestra (media delle tre tappe), dal copione e senza leggere i team', async () => {
+test('sfida: il tabellone di chi sfida non dice quanto è allenata la CPU (e non legge i team della palestra)', async () => {
     const pag = await apri({ search: '?player=lukiani', dati: { 'players/lukiani/palestraAllenamento': { g0: copione(4, 6), g1: copione(4, 6), g2: copione(4, 3) } } });
     const h = pag.html();
-    // 100%, 100% e (4 lezioni con 3 su 6 visti = 0,5 + 0,25 = 75%): media 92
-    assert.match(h, /<li class="pal-chip pal-chip-allena" data-livello="pronta" title="Ready to defend! · [^"]*"><b>92%<\/b><span>CPU trained<\/span><\/li>/, 'la targa resta in una riga: il livello sta nel suggerimento, non sotto la cifra');
-    assert.match(h, /<li class="pal-chip pal-chip-espugnata">/, 'le altre cifre restano dove erano');
-    // mai si leggono i team della palestra per questo
-    const senza = await apri({ search: '?player=lukiani' });
-    assert.match(senza.html(), /<li class="pal-chip pal-chip-allena" data-livello="nuova" title="It doesn&#39;t know how you play yet · [^"]*"><b>0%<\/b><span>CPU trained<\/span><\/li>/);
-    // chi sfida non vede i tasti di allenamento
-    assert.doesNotMatch(h, /pal-allena-btn|pal-allena-pannello|allenamento=/);
+    assert.doesNotMatch(h, /CPU trained|pal-chip-allena/);
+    assert.match(h, /<li class="pal-chip pal-chip-espugnata">/, 'le tre cifre della palestra restano');
+    assert.doesNotMatch(h, /pal-allena-btn|pal-allena-pannello|allenamento=/, 'chi sfida non vede i tasti di allenamento');
 });
 
 test('la pagina carica i moduli dell\'allenamento prima di palestra-ui.js (e la memoria prima del copione)', () => {

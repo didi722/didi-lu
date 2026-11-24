@@ -80,14 +80,13 @@
 
     // ---------------------------------------------------------------- le statistiche della palestra
     /** I tre numeri grandi: tentativi (sfide finite), volte che la palestra ha tenuto e volte che è stata espugnata */
-    function numeriHtml(stat, titolo, extra) {
+    function numeriHtml(stat, titolo) {
         const r = ST.riassunto(stat);
         const chip = (n, etichetta, nota, classe) => `<li class="pal-chip ${classe}"><b>${n}</b><span>${etichetta}</span>${nota ? `<small>${nota}</small>` : ''}</li>`;
         return `<ul class="pal-chips" aria-label="${esc(titolo)}">`
             + chip(r.tentativi, 'Attempts', '', 'pal-chip-tentativi')
             + chip(r.tenuta, 'Gym wins', r.percTenuta === null ? '' : `${r.percTenuta}%`, 'pal-chip-tenuta')
             + chip(r.espugnata, 'Gym beaten', '', 'pal-chip-espugnata')
-            + (extra || '')
             + '</ul>';
     }
 
@@ -202,7 +201,7 @@
      * sotto, il riquadro con i dettagli (tappa per tappa, ultime sfide).
      */
     function testataHtml() {
-        return `<header class="pal-piatto">${insegnaHtml()}${numeriHtml(S.stat, `${S.gymNome}'s gym record`, chipAllenamentoHtml())}</header>`
+        return `<header class="pal-piatto">${insegnaHtml()}${numeriHtml(S.stat, `${S.gymNome}'s gym record`)}</header>`
             + dettagliHtml(S.stat, tappeGym().map(t => t.categoria), false);
     }
 
@@ -215,19 +214,6 @@
         return CP && t ? CP.progresso(S.allena[id], t.pokemon.map(p => p.nome)) : null;
     }
     const pianoAllenamento = () => P.pianoAllenamento(S.bozza, S.salvata, progressoTeam);
-
-    /**
-     * Sfidando: quanto il capopalestra ha allenato la sua CPU, come quarta cifra del tabellone (la media delle tre tappe). I team della palestra non si vedono: la barra si calcola dal
-     * copione stesso (i Pokémon che la CPU ha visto giocare nelle lezioni), senza leggere il Box di nessuno.
-     */
-    function chipAllenamentoHtml() {
-        const CP = window.CpuCopione;
-        if (!CP) return '';
-        const tappe = tappeGym();
-        const medio = Math.round(tappe.reduce((s, t) => s + (S.allena[t.team] ? CP.progresso(S.allena[t.team]).percento : 0), 0) / Math.max(1, tappe.length));
-        const livello = livelloDa(medio);
-        return `<li class="pal-chip pal-chip-allena" data-livello="${livello}" title="${esc(LIVELLI[livello])} · How well ${esc(S.gymNome)} has trained the gym's CPU: the more, the more it plays like its leader."><b>${medio}%</b><span>CPU trained</span></li>`;
-    }
 
     /** Il pannello in cima: il totale (media delle tre tappe), cosa vuol dire e il tasto grande che allena la tappa più indietro */
     function allenamentoHtml(piano) {
