@@ -283,7 +283,7 @@
                 img.className = 'vi-avatar' + (s.specchia === true ? ' vi-specchia' : s.specchia === false ? ' vi-diritto' : '') + (s.avatar.classList && s.avatar.classList.contains('sc-vola') ? ' sc-vola' : '');
                 img.alt = '';
                 img.draggable = false;
-                img.src = s.avatar.currentSrc || s.avatar.src;
+                img.src = s.avatar.currentSrc || s.avatar.src || s.avatar.dataset.src;
                 const stile = s.avatar.getAttribute('style');       // l'alone (--pal-aura) dell'avatar
                 if (stile) img.setAttribute('style', stile);
                 const aura = s.avatar.getAttribute('data-aura');        // quale aura (come sulla pagina: l'arcobaleno cambia colore)

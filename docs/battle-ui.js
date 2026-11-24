@@ -1440,7 +1440,7 @@ async function preparaPalestra(idGym, numeroTappa, chiaveTeam) {
     const ritorno = $('link-hub');
     ritorno.href = `palestra.html?player=${encodeURIComponent(idGym)}`;
     ritorno.textContent = '← Gym';
-    mostraMessaggioCampo('Loading the gym…');
+    mostraProgresso('Loading the gym…');        // un passo del caricamento, non un errore: la copertura scura di prima dell'intro resta (mostraMessaggioCampo la toglieva e si vedeva il simulatore)
 
     let dati, gym;
     try {
@@ -1530,8 +1530,11 @@ function vestiPalestra(gym) {
     window.addEventListener('resize', posiziona);
     setInterval(posiziona, 700);
     // il compagno è in scala con l'avatar del capopalestra (altezza vera del Pokémon, allenatore alto 1,70 m: ScalaPkm.scena); chi vola sta un po' sollevato
-    const avatarImg = decor.querySelector('.pal-avatar'), compImg = decor.querySelector('.vs-compagno');
-    const scala = () => (avatarImg && compImg && self.ScalaPkm) ? self.ScalaPkm.scena({ allenatore: avatarImg, pokemon: compImg, spazioPx: Math.round(window.innerHeight * 0.9) }).catch(() => {}) : Promise.resolve();
+    const avatarImg = decor.querySelector('.pal-avatar');
+    let compImg = decor.querySelector('.vs-compagno');
+    // ingrandito più del doppio della sua GIF resta nitido, come sulla pagina pubblica: pixel netti e, se si può, bordi lisci (SpriteNitido); il canvas prende il posto dell'immagine
+    const nitido = () => { if (compImg && compImg.tagName === 'IMG' && self.SpriteNitido) self.SpriteNitido.perIngrandimento(compImg).then(c => { if (c) compImg = c; }).catch(() => {}); };
+    const scala = () => (avatarImg && compImg && self.ScalaPkm) ? self.ScalaPkm.scena({ allenatore: avatarImg, pokemon: compImg, spazioPx: Math.round(window.innerHeight * 0.9) }).then(nitido).catch(() => {}) : Promise.resolve();
     scenaPalestra = scala();        // l'intro aspetta che il compagno abbia la sua misura (introVersus)
     for (const img of [avatarImg, compImg]) if (img) img.addEventListener('load', scala);
     setTimeout(scala, 1500);

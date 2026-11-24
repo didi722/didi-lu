@@ -182,3 +182,56 @@ test('Shop e documentazione: la riga del premio della palestra, una volta a sett
     const punto = regole.slice(regole.indexOf('8. **PALESTRA**'));
     for (const re of [/palestraSfida/, /firebase deploy --only functions/, /una volta a settimana in tutto/i, /canzone/i, /Attempts/, /Gym wins/, /Gym beaten/]) assert.match(punto.slice(0, 3000), re);
 });
+
+// ---------------------------------------------------------------- il compagno ingrandito resta nitido (come sulla pagina pubblica)
+test('compagno ingrandito: oltre il doppio della sua GIF pixel netti e, se si può, bordi lisci (SpriteNitido.perIngrandimento), nella scelta dei team e nel simulatore', async () => {
+    const SN = require('../docs/sprite-nitido.js');
+    assert.equal(SN.RAPPORTO_INGRANDITA, 2, 'la stessa soglia di public-card.js');
+    assert.match(leggi('docs', 'public-card.js'), /const RAPPORTO_GIF_INGRANDITA = 2;/);
+    const finta = (nat, mostrata) => { const classi = new Set(); return { naturalHeight: nat, clientHeight: mostrata, classList: { add: c => classi.add(c) }, classi, attributes: [], dataset: {}, getAttribute: () => null }; };
+    // ingrandita al massimo il doppio: l'<img> non si tocca
+    const poco = finta(100, 200);
+    assert.equal(await SN.perIngrandimento(poco), null);
+    assert.equal(poco.classi.has('pp-ingrandita'), false);
+    // più del doppio: pixel netti subito (classe) anche se la GIF non si può ricostruire (qui non c'è il browser: migliora risponde null e l'<img> resta)
+    const molto = finta(60, 300);
+    assert.equal(await SN.perIngrandimento(molto), null);
+    assert.equal(molto.classi.has('pp-ingrandita'), true);
+    assert.equal(await SN.perIngrandimento(null), null);
+    assert.equal(await SN.perIngrandimento(finta(0, 300)), null, 'immagine non ancora caricata');
+    // il canvas eredita tutti i data-* (data-colonna serve a posizionarlo, data-pkm a ScalaPkm) e l'indirizzo originale (lo ricopia l'intro)
+    const sn = leggi('docs', 'sprite-nitido.js');
+    assert.match(sn, /for \(const a of Array\.from\(img\.attributes\)\) if \(a\.name\.startsWith\('data-'\)\) c\.setAttribute\(a\.name, a\.value\);/);
+    assert.match(sn, /c\.dataset\.src = src;/);
+    // ScalaPkm sa misurare anche un canvas (altezza e larghezza dell'immagine ricostruita hanno lo stesso rapporto)
+    const sc = leggi('docs', 'scala-pkm.js');
+    assert.match(sc, /img\.tagName === 'CANVAS' \? Promise\.resolve\(\)/);
+    assert.match(sc, /pokemon\.naturalWidth \|\| pokemon\.width \|\| 1/);
+    // il cablaggio: dopo ogni misura (ScalaPkm.scena) si controlla l'ingrandimento e il canvas prende il posto dell'immagine
+    for (const [f, glob] of [['palestra-ui.js', 'window'], ['battle-ui.js', 'self']]) {
+        const src = leggi('docs', f);
+        assert.match(src, new RegExp(`${glob}\\.SpriteNitido\\.perIngrandimento\\(compImg\\)\\.then\\(c => \\{ if \\(c\\) compImg = c; \\}\\)`), f);
+        assert.match(src, /\.scena\(\{ allenatore: avatarImg, pokemon: compImg, spazioPx: Math\.round\(window\.innerHeight \* 0\.9\) \}\)\.then\(nitido\)/, f);
+        assert.match(src, /let compImg = decor\.querySelector\('\.vs-compagno'\);/, f);
+    }
+    for (const h of ['palestra.html', 'battle.html']) {
+        assert.match(leggi('docs', h), /<script src="xbr\.js"><\/script>\s*<script src="gif-frames\.js"><\/script>\s*<script src="sprite-nitido\.js"><\/script>\s*<script src="scala-pkm\.js"><\/script>/, h);
+    }
+    assert.match(leggi('docs', 'style-versus.css'), /\.vs-compagno\.pp-ingrandita \{ image-rendering: pixelated; \}/);
+    // l'intro ricopia l'immagine del compagno: se al suo posto c'è il canvas l'indirizzo sta in data-src
+    assert.match(leggi('docs', 'battle-intro.js'), /img\.src = s\.avatar\.currentSrc \|\| s\.avatar\.src \|\| s\.avatar\.dataset\.src;/);
+});
+
+// ---------------------------------------------------------------- l'intro prepartita in palestra non lascia vedere il simulatore
+test('intro in palestra: "Loading the gym…" è un passo del caricamento, non un errore (un errore toglie la copertura scura e fa vedere il simulatore fino all\'intro)', () => {
+    const bu = leggi('docs', 'battle-ui.js');
+    const prep = bu.slice(bu.indexOf('async function preparaPalestra'), bu.indexOf('function caricaFontPalestra'));
+    assert.match(prep, /mostraProgresso\('Loading the gym…'\);/);
+    assert.ok(!/mostraMessaggioCampo\('Loading the gym…'\)/.test(prep));
+    // gli errori veri invece sì (si devono leggere)
+    assert.match(prep, /return mostraMessaggioCampo\(`Couldn't start the gym battle: \$\{errore\.message\}`\);/);
+    // mostraMessaggioCampo chiude l'intro e toglie la copertura; mostraProgresso no
+    const mc = bu.slice(bu.indexOf('function mostraMessaggioCampo'), bu.indexOf('function nascondiMessaggio'));
+    assert.match(mc.slice(0, mc.indexOf('function mostraProgresso')), /introAbbandona\(\);/);
+    assert.ok(!/introAbbandona|togliCopertura/.test(mc.slice(mc.indexOf('function mostraProgresso'))));
+});
