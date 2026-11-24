@@ -219,11 +219,11 @@ test('contestoIntro, palestra: a sinistra il capopalestra, a destra il suo compa
     const S = statoBase({ config: cfg, cpu: { palestra }, self: { BattleIntro: B, Palestra: { TAPPE: 3 } } });
     const c = funzioniUi(S, 'punteggio', 'contestoIntro').contestoIntro(1);
     assert.equal(c.palestra, true);
-    assert.deepEqual(c.nomi, { sx: 'Capo', dx: 'umbreon' });
+    assert.deepEqual(c.nomi, { sx: 'Capo', dx: '' }, 'il compagno non ha il tag del nome');
     assert.deepEqual(B.testiIntro(c.dati), { etichetta: 'STAGE 2/3', punteggio: null, righe: ["CAPO'S GYM", 'EDGE: RAIN', 'VGC GEN 9'] });
     // senza compagno a destra resta chi sfida
     const senza = funzioniUi(statoBase({ config: cfg, cpu: { palestra: { ...palestra, aspetto: {} } }, self: { BattleIntro: B, Palestra: { TAPPE: 3 } } }), 'punteggio', 'contestoIntro').contestoIntro(1);
-    assert.deepEqual(senza.nomi, { sx: 'Capo', dx: 'Didi' });
+    assert.deepEqual(senza.nomi, { sx: 'Capo', dx: '' });
 });
 
 test('testiIntro, palestra: tappa, di chi è la palestra, vantaggio di campo e formato; senza il resto non si rompe', () => {

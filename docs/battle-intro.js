@@ -271,10 +271,13 @@
             const corpo = elemento(doc, 'div', 'vi-corpo');
             let imgAvatar = null;
             corpo.style.scale = String(ingr);
-            const tag = elemento(doc, 'div', 'vi-tag', String(s.nome == null ? '' : s.nome).toUpperCase());
-            tag.style.background = colore;
-            tag.style.color = testoSu(colore);
-            corpo.appendChild(tag);
+            // senza nome niente tag (in palestra il compagno non ne ha)
+            const tag = s.nome ? elemento(doc, 'div', 'vi-tag', String(s.nome).toUpperCase()) : null;
+            if (tag) {
+                tag.style.background = colore;
+                tag.style.color = testoSu(colore);
+                corpo.appendChild(tag);
+            }
             if (s.avatar) {
                 const img = doc.createElement('img');
                 img.className = 'vi-avatar' + (s.specchia === true ? ' vi-specchia' : s.specchia === false ? ' vi-diritto' : '') + (s.avatar.classList && s.avatar.classList.contains('sc-vola') ? ' sc-vola' : '');
@@ -464,7 +467,7 @@
             B(metà[1], { translate: ['0% 0', `${ritardoFuori} 0`] }, { duration: T.durataApertura, easing: CURVE.apre });
             B(centro, { opacity: [1, 0], scale: [1, 1.35] }, { duration: T.uscitaCentro, easing: 'ease-in' });
             personaggi.forEach((p, i) => {
-                B(p.tag, { opacity: [1, 0], translate: ['0 0', '0 -18px'] }, { duration: T.uscitaCentro, easing: 'ease-in' });
+                if (p.tag) B(p.tag, { opacity: [1, 0], translate: ['0 0', '0 -18px'] }, { duration: T.uscitaCentro, easing: 'ease-in' });
                 B(p.corpo, { scale: [ingr * 1.06, 1] }, { duration: T.durataApertura, easing: CURVE.apre });
                 arrivi.push(B(p.ancora, { left: [`${lati[i].riposo}px`, `${lati[i].finale()}px`] }, { duration: T.durataApertura, easing: CURVE.apre }));
             });
