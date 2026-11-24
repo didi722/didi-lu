@@ -175,7 +175,7 @@ test('cablaggio: motore (vantaggio prima del turno 1), battle.html?cpu=1&palestr
     assert.match(ui, /Next: stage \$\{i \+ 2\} →/);
     assert.match(ui, /class="pal-squadra\$\{S\.scelte\[i\] === x\.id \? ' pal-scelta' : ''\}"/);
     assert.match(ui, /SP\.riserva\(img, SP\.id\(img\.dataset\.pkm\)\)/, 'le GIF che mancano ripiegano sul Pokédex');
-    assert.match(leggi('docs', 'palestra.html'), /<script src="sprites\/indice\.js"><\/script>\s*<script src="sprite-pkm\.js"><\/script>\s*<script src="pagina-pubblica\.js"><\/script>\s*<script src="cosmetici\.js"><\/script>\s*<script src="altezze-pkm\.js"><\/script>\s*<script src="scala-pkm\.js"><\/script>\s*<script src="palestra\.js">/);
+    assert.match(leggi('docs', 'palestra.html'), /<script src="sprites\/indice\.js"><\/script>\s*<script src="sprite-pkm\.js"><\/script>\s*<script src="pagina-pubblica\.js"><\/script>\s*<script src="cosmetici\.js"><\/script>\s*<script src="altezze-pkm\.js"><\/script>\s*<script src="xbr\.js"><\/script>\s*<script src="gif-frames\.js"><\/script>\s*<script src="sprite-nitido\.js"><\/script>\s*<script src="scala-pkm\.js"><\/script>\s*<script src="palestra\.js">/);
     assert.match(leggi('docs', 'style-palestra.css'), /\.pal-passi \{/);
     // vantaggio di campo fisso: il campo mostra "all battle" invece dei turni
     assert.match(bu, /permanenti: cpu && cpu\.palestra \? self\.Palestra\.condizioniFisse\(cpu\.palestra\.vantaggio\) : \[\]/);

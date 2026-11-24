@@ -19,6 +19,7 @@
     'use strict';
 
     const MAX_BYTE = 64e6;                       // quanta memoria al massimo per i fotogrammi ingranditi di una GIF (una GIF lunga ne chiede di più: si ingrandisce meno)
+    const RAPPORTO_INGRANDITA = 2;               // oltre questo ingrandimento (altezza mostrata / altezza della GIF) la GIF si sfoca (come public-card.js)
     const MAX_GIF_IN_MEMORIA = 4;                // quante GIF si ricordano (così se la pagina ridisegna il compagno non si rifà tutto)
     const HOST_CON_CORS = ['raw.githubusercontent.com'];       // gli altri host da cui si può leggere un'immagine (oltre al sito stesso)
     const OPZIONI_XBR = { blendColors: true, scaleAlpha: true };   // anche il bordo trasparente si ammorbidisce: i contorni dello sprite sono lisci
@@ -146,5 +147,23 @@
         return c;
     }
 
-    return { fattore, leggibile, carica, riproduci, migliora, svuota: () => memoria.clear(), MAX_BYTE };
+    /**
+     * Come sul palco della pagina pubblica, per un Pokémon mostrato sulle pagine delle palestre: se la GIF è ingrandita più di RAPPORTO_INGRANDITA volte l'<img> prende la classe
+     * pp-ingrandita (pixel netti, non sfocati) e, se la GIF si può leggere, viene ricostruita con xBR su un <canvas> che prende il suo posto. Il canvas eredita lo stile (misure di
+     * ScalaPkm, --alza), tutti i data-* (data-pkm, data-colonna...) e l'indirizzo originale (data-src: serve a chi ricopia l'immagine, come l'intro). Ritorna il canvas, o null se l'<img> resta.
+     */
+    async function perIngrandimento(img, opzioni) {
+        if (!img || !img.naturalHeight || !(img.clientHeight / img.naturalHeight > RAPPORTO_INGRANDITA)) return null;
+        img.classList.add('pp-ingrandita');
+        const src = img.currentSrc || img.src;
+        const c = await migliora(img, opzioni);
+        if (!c) return null;
+        const stile = img.getAttribute('style');          // l'<img> staccato conserva lo stile che ScalaPkm gli ha dato fino a ora
+        if (stile) c.setAttribute('style', stile);
+        for (const a of Array.from(img.attributes)) if (a.name.startsWith('data-')) c.setAttribute(a.name, a.value);      // data-pkm, data-colonna, data-sc, data-aura...
+        c.dataset.src = src;
+        return c;
+    }
+
+    return { fattore, leggibile, carica, riproduci, migliora, perIngrandimento, RAPPORTO_INGRANDITA, svuota: () => memoria.clear(), MAX_BYTE };
 });

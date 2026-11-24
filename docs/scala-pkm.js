@@ -182,7 +182,7 @@
         return { h, alza, vola: d.vola };
     }
 
-    const pronta = img => (img.complete && img.naturalWidth ? Promise.resolve() : new Promise(r => {
+    const pronta = img => ((img.complete && img.naturalWidth) || img.tagName === 'CANVAS' ? Promise.resolve() : new Promise(r => {
         img.addEventListener('load', r, { once: true });
         img.addEventListener('error', r, { once: true });
         radice.setTimeout(r, 4000);
@@ -206,7 +206,7 @@
         const r = scenaConAllenatore(d.altezzaM, { allenatorePx: aPx, spazioPx, vola: d.vola, regola: regolaDi(nome) });
         let hA = r.allenatore, hP = r.pokemon;
         const q = quotaVisibile(nome);       // hP è l'altezza del Pokémon che si vede; l'immagine è più alta se ha vuoto intorno (salti, voli)
-        const wA = hA * nA.w / nA.h, wP = (hP / q) * (pokemon.naturalWidth || 1) / (pokemon.naturalHeight || 1);
+        const wA = hA * nA.w / nA.h, wP = (hP / q) * (pokemon.naturalWidth || pokemon.width || 1) / (pokemon.naturalHeight || pokemon.height || 1);
         // se non ci stanno uno accanto all'altro, prima il Pokémon si sovrappone un po' all'allenatore (fino a un terzo della sua larghezza), poi si rimpicciolisce tutto
         let sovrapposto = 0;
         if (larghezzaMax && wA + wP > larghezzaMax) {

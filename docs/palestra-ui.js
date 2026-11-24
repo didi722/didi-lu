@@ -143,8 +143,11 @@
         }, true);
         document.body.prepend(decor);
         // il compagno è in scala con l'avatar (altezza vera del Pokémon, allenatore alto 1,70 m: ScalaPkm.scena), come nel simulatore
-        const avatarImg = decor.querySelector('.pal-avatar'), compImg = decor.querySelector('.vs-compagno');
-        const scala = () => (avatarImg && compImg && window.ScalaPkm ? window.ScalaPkm.scena({ allenatore: avatarImg, pokemon: compImg, spazioPx: Math.round(window.innerHeight * 0.9) }).catch(() => {}) : Promise.resolve());
+        const avatarImg = decor.querySelector('.pal-avatar');
+        let compImg = decor.querySelector('.vs-compagno');
+        // ingrandito più del doppio della sua GIF resta nitido, come sulla pagina pubblica: pixel netti e, se si può, bordi lisci (SpriteNitido); il canvas prende il posto dell'immagine
+        const nitido = () => { if (compImg && compImg.tagName === 'IMG' && window.SpriteNitido) window.SpriteNitido.perIngrandimento(compImg).then(c => { if (c) compImg = c; }).catch(() => {}); };
+        const scala = () => (avatarImg && compImg && window.ScalaPkm ? window.ScalaPkm.scena({ allenatore: avatarImg, pokemon: compImg, spazioPx: Math.round(window.innerHeight * 0.9) }).then(nitido).catch(() => {}) : Promise.resolve());
         for (const img of [avatarImg, compImg]) if (img) img.addEventListener('load', scala);
         setTimeout(scala, 1500);
         window.addEventListener('resize', scala);
