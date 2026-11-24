@@ -27,7 +27,7 @@
     const TAB_CON_ANTEPRIMA = ['pagina', 'allenatore'];
 
     const S = {
-        uid: '', giocatore: '', saldo: 0, posseduti: {}, casa: {}, info: {}, pagina: {}, movimenti: [], stagioni: {}, nomiStagioni: {}, registro: {}, teams: [],
+        uid: '', giocatore: '', saldo: 0, posseduti: {}, casa: {}, iniziali: {}, info: {}, pagina: {}, movimenti: [], stagioni: {}, nomiStagioni: {}, registro: {}, teams: [],
         tutti: null, avatarAperti: false, shinyPkm: {}, scelta: null, canzoni: null, ricerca: '', anteprime: {}, tab: 'pagina', occupato: false, prova: {}, provando: '', squadra: '', armato: null
     };
     let ascolto = null;          // l'audio dell'anteprima di una canzone
@@ -71,7 +71,7 @@
             ...idStagioni.map(id => db.ref(`seasons/${id}/info`).once('value').then(x => x.val() || {}, () => ({})))
         ]);
         const wallet = w.val() || {};
-        S.saldo = num(wallet.saldo); S.posseduti = wallet.posseduti || {}; S.casa = wallet.casa || {}; S.shinyPkm = wallet.shinyPkm || {};
+        S.saldo = num(wallet.saldo); S.posseduti = wallet.posseduti || {}; S.casa = wallet.casa || {}; S.iniziali = wallet.iniziali || {}; S.shinyPkm = wallet.shinyPkm || {};
         S.movimenti = Object.keys(wallet.movimenti || {}).sort().map(k => wallet.movimenti[k]);
         S.info = info.val() || {}; S.pagina = S.info.pagina || {};
         S.registro = registro.val() || {};
@@ -234,7 +234,7 @@
 
     // ---------------------------------------------------------------- Trainer: avatar, colore, canzone
     // Si comprano e si hanno (massimo C.LIMITI per tipo): quelli che hai si indossano gratis o si rilasciano; per prenderne un altro a quota piena se ne rilascia uno. Sono unici: gli altri li vedono grigi.
-    const contestoW = () => ({ wallet: { posseduti: S.posseduti, casa: S.casa }, info: S.info });
+    const contestoW = () => ({ wallet: { posseduti: S.posseduti, casa: S.casa, iniziali: S.iniziali }, info: S.info });
     const possedute = tipo => C.possedutiDiTipo(tipo, contestoW());
     const presoDa = id => { const o = S.registro[id]; return o && o !== S.giocatore ? String(o) : ''; };
     const bello = t => String(t).replace(/(^|\s)([a-z])/g, (m, a, b) => a + b.toUpperCase());

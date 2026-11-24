@@ -14,6 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="pagina-pubblica.js"></script>
     <script src="risultati-match.js"></script>
     <script src="tipo-stagione.js"></script>
     <script src="formato-random.js"></script>
@@ -1408,11 +1409,21 @@ async function creaNuovoPlayerAdmin() {
             uid_riferimento: uid 
         });
         
-        await playerRef.child('teams').set({
-            descrizione: "Lista team ancora vuota" 
-        });
+        // nessun nodo "teams": un giocatore nuovo non ha team (il Box li crea quando ne salva uno), e un team finto comparirebbe nell'elenco
 
-        alert(`Player ${nome} created successfully! Info, teams and stats structure is ready.`);
+        // avatar, colore e canzone a caso tra quelli liberi (il server li riserva: il primo cambio di ognuno resta gratis)
+        let regalo = '';
+        try {
+            const canzoni = await leggiPlaylistCanzoni();
+            const r = await chiamaFunzione('assegnaInizialiGiocatore', { uid, canzoni });
+            const dati = Object.keys(r.assegnati || {});
+            regalo = r.ok ? ` Random ${dati.map(t => ({ avatar: 'avatar', colore: 'colour', canzone: 'song' }[t] || t)).join(', ') || 'items'} assigned.` : ` (No random avatar, colour and song: ${r.motivo || 'error'}.)`;
+        } catch (e) {
+            console.warn('Initial avatar, colour and song not assigned:', e);
+            regalo = ' (The random avatar, colour and song were NOT assigned: deploy the Functions and try again from the player list.)';
+        }
+
+        alert(`Player ${nome} created successfully! Info and stats structure is ready.${regalo}`);
         
         // Reset dei campi del form
         document.getElementById('new-player-name').value = "";
@@ -1424,6 +1435,15 @@ async function creaNuovoPlayerAdmin() {
         console.error("Error during player creation:", error);
         alert("Error: " + error.message);
     }
+}
+
+// La playlist delle canzoni (lo stesso foglio dello Shop): [{ url, nome }], per darne una a caso a un giocatore nuovo
+const URL_PLAYLIST_CANZONI = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=775181727&single=true&output=csv';
+async function leggiPlaylistCanzoni() {
+    try {
+        const risposta = await fetch(`${URL_PLAYLIST_CANZONI}&t=${Date.now()}`);
+        return window.PaginaPubblica ? window.PaginaPubblica.leggiCsvCanzoni(await risposta.text()) : [];
+    } catch (e) { return []; }      // senza playlist si assegnano solo avatar e colore
 }
 
 // Iscrizione manuale dei giocatori alla stagione appena creata (senza che debbano iscriversi loro)

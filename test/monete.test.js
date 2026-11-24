@@ -807,3 +807,104 @@ test('shinyPokemon: si può tornare normale (gratis) e, avendolo già comprato, 
     assert.equal((await M.shinyPokemon({ db: vecchio, uid: 'u1', team: 'T1', indice: 0 })).gratis, true);
     assert.equal(saldo(vecchio, 'u1'), prima);
 });
+
+// ---------------------------------------------------------------- un account nuovo: avatar, colore e canzone a caso tra quelli liberi
+const PLAYLIST = n => Array.from({ length: n }, (_, k) => ({ url: `https://x.test/p${k}.mp3`, nome: `Song ${k}` }));
+const nuovoGiocatore = (extra = {}) => dbFinto({
+    users: { u1: { name: 'Didi' }, u2: { name: 'Lukiani' } },
+    players: { didi: { info: { avatar: 'https://via.placeholder.com/150', color: '#31c489', musicaPreferita: '', musicName: '' } }, lukiani: { info: { avatar: INDIRIZZO(7), color: '#FF3333', musicaPreferita: 'https://x.test/p0.mp3', musicName: 'Song 0' } } },
+    wallet: { u1: { saldo: 300 }, u2: { saldo: 300 } },
+    cosmeticiPresi: { 'avatar-9': 'altro' },
+    ...extra
+});
+
+test('nuovo account: riceve un avatar, un colore e una canzone a caso tra quelli liberi, e sono riservati a lui', async () => {
+    const db = nuovoGiocatore();
+    const r = await M.assegnaIniziali({ db, uid: 'u1', canzoni: PLAYLIST(5), casuale: () => 0 });
+    assert.equal(r.ok, true);
+    assert.deepEqual(Object.keys(r.assegnati).sort(), ['avatar', 'canzone', 'colore']);
+    const info = db.albero.players.didi.info;
+    assert.match(info.avatar, /immagini\/profile\/\d+\.png$/);
+    assert.equal(C.idAvatar(info.avatar), r.assegnati.avatar);
+    assert.equal(C.idColore(info.color), r.assegnati.colore);
+    assert.equal(C.idCanzone(info.musicaPreferita), r.assegnati.canzone);
+    for (const id of Object.values(r.assegnati)) assert.equal(presi(db)[id], 'didi', `${id} è suo`);
+    assert.deepEqual(db.albero.wallet.u1.iniziali, r.assegnati);
+    assert.notEqual(r.assegnati.avatar, 'avatar-9', 'quello già preso non si dà');
+    assert.notEqual(r.assegnati.colore, C.idColore('#FF3333'), 'né il colore che porta un altro');
+    assert.notEqual(r.assegnati.canzone, C.idCanzone('https://x.test/p0.mp3'), 'né la canzone che porta un altro');
+    assert.equal(db.albero.wallet.u1.posseduti, undefined, 'non sono comprati');
+    // chiamarla di nuovo non cambia niente
+    assert.deepEqual((await M.assegnaIniziali({ db, uid: 'u1', canzoni: PLAYLIST(5) })).assegnati, {});
+    assert.equal(db.albero.players.didi.info.avatar, info.avatar);
+});
+
+test('nuovo account: a caso davvero (il valore decide) e senza playlist niente canzone; un altro account vede solo quello che resta', async () => {
+    const a = nuovoGiocatore(), b = nuovoGiocatore();
+    const ra = await M.assegnaIniziali({ db: a, uid: 'u1', canzoni: [], casuale: () => 0 });
+    const rb = await M.assegnaIniziali({ db: b, uid: 'u1', canzoni: [], casuale: () => 0.999 });
+    assert.deepEqual(Object.keys(ra.assegnati).sort(), ['avatar', 'colore'], 'senza playlist solo avatar e colore');
+    assert.notEqual(ra.assegnati.avatar, rb.assegnati.avatar);
+    assert.notEqual(ra.assegnati.colore, rb.assegnati.colore);
+    // due account di fila non prendono mai lo stesso
+    const db = nuovoGiocatore({ users: { u1: { name: 'Didi' }, u2: { name: 'Lukiani' }, u3: { name: 'Nuovo' } }, wallet: { u1: {}, u2: {}, u3: {} } });
+    db.albero.players.nuovo = { info: { avatar: 'https://via.placeholder.com/150', color: '#31c489' } };
+    const x = await M.assegnaIniziali({ db, uid: 'u1', canzoni: PLAYLIST(1), casuale: () => 0 });
+    const y = await M.assegnaIniziali({ db, uid: 'u3', canzoni: PLAYLIST(1), casuale: () => 0 });
+    assert.notEqual(x.assegnati.avatar, y.assegnati.avatar);
+    assert.notEqual(x.assegnati.colore, y.assegnati.colore);
+    // una sola canzone libera: la prima la prende, la seconda resta senza
+    assert.ok(!(x.assegnati.canzone && y.assegnati.canzone));
+});
+
+test('nuovo account: il primo cambio di ognuno è gratis e sostituisce quello dato, che torna libero per tutti', async () => {
+    const db = nuovoGiocatore();
+    const r = await M.assegnaIniziali({ db, uid: 'u1', canzoni: PLAYLIST(5), casuale: () => 0 });
+    const ctx = () => ({ wallet: db.albero.wallet.u1, info: db.albero.players.didi.info });
+    for (const tipo of ['avatar', 'colore', 'canzone']) assert.equal(C.prezzoAcquisto(tipo, ctx()).gratis, true, `${tipo}: il primo cambio è gratis`);
+    // avatar: si prende l'avatar-30, gratis; quello iniziale torna libero e il portafoglio non cambia
+    const vecchio = r.assegnati.avatar;
+    const e = await M.prendi({ db, uid: 'u1', id: 'avatar-30' });
+    assert.equal(e.ok, true); assert.equal(e.gratis, true); assert.equal(e.saldo, 300);
+    assert.equal(presi(db)[vecchio], undefined, 'l\'avatar iniziale è libero');
+    assert.equal(presi(db)['avatar-30'], 'didi');
+    assert.deepEqual(posseduti(db, 'u1'), ['avatar-30']);
+    assert.equal(db.albero.wallet.u1.iniziali.avatar, undefined);
+    // dal secondo si paga (e l'avatar preso conta come il primo)
+    assert.equal(C.prezzoAcquisto('avatar', ctx()).gratis, false);
+    assert.equal((await M.prendi({ db, uid: 'u1', id: 'avatar-31' })).gratis, false);
+    // un altro può prendere l'avatar lasciato
+    assert.equal((await M.prendi({ db, uid: 'u2', id: vecchio })).motivo === 'taken', false);
+    // colore: stessa cosa
+    const col = r.assegnati.colore;
+    const ec = await M.prendi({ db, uid: 'u1', id: C.idColore('#0055FF') });
+    assert.deepEqual([ec.ok, ec.gratis], [true, true]);
+    assert.equal(presi(db)[col], undefined);
+    assert.equal(db.albero.wallet.u1.iniziali.colore, undefined);
+    assert.equal(db.albero.wallet.u1.iniziali.canzone, r.assegnati.canzone, 'la canzone iniziale è ancora lì');
+});
+
+test('nuovo account: toglie la canzone iniziale e la lascia libera; indossare un posseduto non la tiene', async () => {
+    const db = nuovoGiocatore();
+    const r = await M.assegnaIniziali({ db, uid: 'u1', canzoni: PLAYLIST(5), casuale: () => 0 });
+    assert.deepEqual(await M.cambia({ db, uid: 'u1', tipo: 'canzone', id: '' }), { ok: true, saldo: 300, musicaPreferita: '', musicName: '' });
+    assert.equal(presi(db)[r.assegnati.canzone], undefined, 'torna libera');
+    assert.equal(db.albero.wallet.u1.iniziali.canzone, undefined);
+    assert.equal(db.albero.wallet.u1.posseduti, undefined, 'senza canzone non ne possiede');
+    assert.equal(C.prezzoAcquisto('canzone', { wallet: db.albero.wallet.u1, info: db.albero.players.didi.info }).gratis, true);
+});
+
+test('nuovo account: la Function è solo per gli admin e admin.html non crea più il team finto, ma la chiama con la playlist', () => {
+    const idx = leggi('functions', 'index.js');
+    assert.match(idx, /exports\.assegnaInizialiGiocatore = onCall\(/);
+    assert.match(idx, /ruolo !== 'admin'\) throw new HttpsError\('permission-denied', 'Solo un admin può assegnare/);
+    const adm = leggi('docs', 'admin.html');
+    assert.doesNotMatch(adm, /Lista team ancora vuota/);
+    assert.doesNotMatch(adm, /playerRef\.child\('teams'\)\.set/);
+    assert.match(adm, /chiamaFunzione\('assegnaInizialiGiocatore', \{ uid, canzoni \}\)/);
+    assert.match(adm, /<script src="pagina-pubblica\.js"><\/script>/);
+    // lo Shop e l'editor passano le iniziali al calcolo del prezzo
+    assert.match(leggi('docs', 'shop.js'), /wallet: \{ posseduti: S\.posseduti, casa: S\.casa, iniziali: S\.iniziali \}/);
+    assert.match(leggi('docs', 'public-editor.js'), /iniziali: w\.iniziali \|\| \{\}/);
+    assert.equal(leggi('docs', 'cosmetici.js'), leggi('functions', 'cosmetici.js'));
+});
