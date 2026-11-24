@@ -319,6 +319,11 @@ export async function caricaTappaPalestra(db, idGym, numeroTappa) {
     const testo = testoShowdownDaTeam(team, livelloFormato(regolamento));
     if (!testo) throw new Error("The gym leader's team is empty.");
     const vantaggio = self.Palestra.perId(tappa.vantaggio);
+    // come il capopalestra ha allenato la CPU con questo team (players/<id>/palestraAllenamento/<team>, cpu-copione.js): la CPU lo gioca come lui. Senza, o se non si legge, è la CPU di sempre
+    let copione = null;
+    if (self.CpuCopione) {
+        try { copione = self.CpuCopione.normalizza((await db.ref(`players/${id}/palestraAllenamento/${tappa.team}`).once('value')).val()); } catch (e) { copione = null; }
+    }
     // com'è fatta la sua pagina pubblica (colore, sfondo, aura, effetti): il simulatore ne veste la palestra (Palestra.temaPalestra)
     // il Pokémon compagno del capopalestra (shiny se lo è nel suo Box): sta sullo sfondo della battaglia
     let shiny = false;
@@ -326,7 +331,7 @@ export async function caricaTappaPalestra(db, idGym, numeroTappa) {
         try { shiny = !!self.Cosmetici.compagnoShiny(info, (await db.ref(`players/${id}/teams`).once('value')).val() || {}); } catch (e) { /* senza shiny */ }
     }
     const aspetto = self.Palestra.aspettoCapo(info, shiny);      // lo stesso della pagina di scelta dei team (palestra-ui.js): colori, avatar, effetti, compagno e canzone
-    return { nome: String(info.name || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria, aspetto, musica: aspetto.musica };
+    return { nome: String(info.name || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria, aspetto, musica: aspetto.musica, copione };
 }
 
 

@@ -13,6 +13,10 @@
 // palestra (palestra-stat.js, scritti dal server: tentativi, quante volte ha tenuto, quante è stata espugnata, tappa per tappa) sul tabellone in cima. Chi ha la palestra vede gli
 // stessi numeri nella pagina dove la imposta. La scelta dei team è una schermata sola (disegnaSfida): le tre porte (una per format) con il distintivo e le monete della settimana in fondo,
 // i team della porta accesa e il tasto per entrare.
+//
+// Dove si imposta la palestra c'è anche l'allenamento della CPU (cpu-copione.js): per ogni tappa quanto la CPU conosce il modo in cui giochi quel team (la barra) e il tasto "Train" che
+// apre una partita di allenamento (battle.html?cpu=1&allenamento=<tappa>&team=<id>, battle-ui.js: preparaAllenamento); in cima il tasto grande "Train CPU" e il totale. I numeri stanno
+// in players/<tu>/palestraAllenamento/<id del team>.
 // =====================================================
 (function () {
     'use strict';
@@ -28,7 +32,9 @@
         capo: null,         // l'aspetto del capopalestra (Palestra.aspettoCapo)
         tema: null,         // i suoi colori e i suoi effetti (Palestra.temaPalestra), se la pagina ha potuto vestirsi
         stat: null,         // players/<id>/palestraStat: le statistiche della palestra (la sua o quella che si sfida)
-        premio: null        // wallet/<uid>/premioPalestra: l'ultimo premio preso ({ settimana, gym, t })
+        premio: null,       // wallet/<uid>/premioPalestra: l'ultimo premio preso ({ settimana, gym, t })
+        salvata: null,      // la mia palestra com'è salvata (players/<io>/info/palestra): la bozza che si sta modificando può essere diversa
+        allena: {}          // l'allenamento della CPU della palestra (la mia o quella che sfido): { <id del team>: copione } (players/<id>/palestraAllenamento)
     };
     const SP = window.SpritePkm;
 
@@ -73,13 +79,14 @@
 
     // ---------------------------------------------------------------- le statistiche della palestra
     /** I tre numeri grandi: tentativi (sfide finite), volte che la palestra ha tenuto e volte che è stata espugnata */
-    function numeriHtml(stat, titolo) {
+    function numeriHtml(stat, titolo, extra) {
         const r = ST.riassunto(stat);
         const chip = (n, etichetta, nota, classe) => `<li class="pal-chip ${classe}"><b>${n}</b><span>${etichetta}</span>${nota ? `<small>${nota}</small>` : ''}</li>`;
         return `<ul class="pal-chips" aria-label="${esc(titolo)}">`
             + chip(r.tentativi, 'Attempts', '', 'pal-chip-tentativi')
             + chip(r.tenuta, 'Gym wins', r.percTenuta === null ? '' : `${r.percTenuta}%`, 'pal-chip-tenuta')
             + chip(r.espugnata, 'Gym beaten', '', 'pal-chip-espugnata')
+            + (extra || '')
             + '</ul>';
     }
 
@@ -194,12 +201,66 @@
      * sotto, il riquadro con i dettagli (tappa per tappa, ultime sfide).
      */
     function testataHtml() {
-        return `<header class="pal-piatto">${insegnaHtml()}${numeriHtml(S.stat, `${S.gymNome}'s gym record`)}</header>`
+        return `<header class="pal-piatto">${insegnaHtml()}${numeriHtml(S.stat, `${S.gymNome}'s gym record`, chipAllenamentoHtml())}</header>`
             + dettagliHtml(S.stat, tappeGym().map(t => t.categoria), false);
+    }
+
+    // ---------------------------------------------------------------- l'allenamento della CPU (si vede dove si imposta la palestra)
+    const LIVELLI = { nuova: "It doesn't know how you play yet", impara: 'Learning your style', quasi: 'Almost ready', pronta: 'Ready to defend!' };
+    const livelloDa = p => (p >= 90 ? 'pronta' : p >= 55 ? 'quasi' : p > 0 ? 'impara' : 'nuova');
+    /** Quanto la CPU conosce come giochi quel team del Box: { percento, livello, ... } (cpu-copione.js), o null se il modulo non c'è */
+    function progressoTeam(id) {
+        const CP = window.CpuCopione, t = teamPerId(id);
+        return CP && t ? CP.progresso(S.allena[id], t.pokemon.map(p => p.nome)) : null;
+    }
+    const pianoAllenamento = () => P.pianoAllenamento(S.bozza, S.salvata, progressoTeam);
+
+    /**
+     * Sfidando: quanto il capopalestra ha allenato la sua CPU, come quarta cifra del tabellone (la media delle tre tappe). I team della palestra non si vedono: la barra si calcola dal
+     * copione stesso (i Pokémon che la CPU ha visto giocare nelle lezioni), senza leggere il Box di nessuno.
+     */
+    function chipAllenamentoHtml() {
+        const CP = window.CpuCopione;
+        if (!CP) return '';
+        const tappe = tappeGym();
+        const medio = Math.round(tappe.reduce((s, t) => s + (S.allena[t.team] ? CP.progresso(S.allena[t.team]).percento : 0), 0) / Math.max(1, tappe.length));
+        const livello = livelloDa(medio);
+        return `<li class="pal-chip pal-chip-allena" data-livello="${livello}" title="How well ${esc(S.gymNome)} has trained the gym's CPU: the more, the more it plays like its leader."><b>${medio}%</b><span>CPU trained</span><small>${esc(LIVELLI[livello])}</small></li>`;
+    }
+
+    /** Il pannello in cima: il totale (media delle tre tappe), cosa vuol dire e il tasto grande che allena la tappa più indietro */
+    function allenamentoHtml(piano) {
+        if (!window.CpuCopione) return '';
+        const prossima = piano.prossima >= 0 ? piano.tappe[piano.prossima] : null;
+        const livello = livelloDa(piano.totale);
+        const via = prossima
+            ? `<a class="ng-bottone ng-compra pal-allena-via" href="${esc(P.urlAllenamento(prossima.i, prossima.team))}">Train CPU</a>`
+            : '<button type="button" class="ng-bottone ng-compra pal-allena-via" disabled>Train CPU</button>';
+        const mancaSalvare = piano.tappe.some(x => x.perche === 'save-first');
+        const nota = prossima ? `Next up: stage ${prossima.i + 1} · ${prossima.percento}% trained`
+            : mancaSalvare ? 'Save your gym first: the CPU trains on your gym as it is saved.' : 'Pick a team for a stage to start training.';
+        return `<section class="pal-allena-pannello" data-livello="${livello}" aria-label="Train your gym's CPU">
+            <div class="pal-allena-testa"><h3>Train your gym's CPU</h3>
+                <p>Play one of your teams against a CPU team, like a test battle from your Box. The CPU watches who you bring, who you lead with and how you play every move, then defends your gym the same way. About four battles per team does it.</p></div>
+            <div class="pal-allena-misura"><span class="pal-allena-barra" role="img" aria-label="Your CPU is ${piano.totale}% trained"><i style="width:${piano.totale}%"></i></span>
+                <b class="pal-allena-percento">${piano.totale}%</b><span class="pal-allena-livello">${esc(LIVELLI[livello])}</span></div>
+            <div class="pal-allena-azione">${via}<small class="pal-allena-nota">${esc(nota)}</small></div>
+        </section>`;
+    }
+
+    /** La riga in fondo a una carta di tappa: la barra di quel team e il tasto per allenarlo */
+    function allenamentoTappaHtml(x) {
+        if (!x.team || !window.CpuCopione) return '';
+        const tasto = x.allenabile
+            ? `<a class="ng-bottone pal-allena-btn" href="${esc(P.urlAllenamento(x.i, x.team))}">Train</a>`
+            : `<button type="button" class="ng-bottone pal-allena-btn" disabled title="${x.perche === 'save-first' ? 'Save your gym first' : ''}">Train</button>`;
+        return `<div class="pal-allena" data-livello="${x.livello}"><span class="pal-allena-barra" role="img" aria-label="Your CPU is ${x.percento}% trained on this team"><i style="width:${x.percento}%"></i></span>
+            <span class="pal-allena-testo">CPU <b>${x.percento}%</b></span>${tasto}</div>`;
     }
 
     // ---------------------------------------------------------------- impostare la propria palestra
     function disegnaImposta() {
+        const piano = pianoAllenamento();
         const tappe = S.bozza.map((t, i) => {
             const r = S.regolamenti[t.formato];
             const vantaggi = r ? P.vantaggiPer(P.generazioneDi(r)) : [];
@@ -213,10 +274,12 @@
                 <label>Team<select data-campo="team"${r ? '' : ' disabled'}>${opzioni(r ? teamPer(r.categoria).map(x => [x.id, x.nome]) : [], t.team, r ? (teamPer(r.categoria).length ? 'Pick a team from your Box' : 'You have no team for this format') : 'Pick a format first')}</select></label>
                 <label>Advantage<select data-campo="vantaggio"${r ? '' : ' disabled'}>${optV}</select></label>
                 <p class="pal-descr">${v ? esc(v.descr) : 'It starts at the beginning of the battle, before turn 1.'}</p>
+                ${allenamentoTappaHtml(piano.tappe[i])}
             </article>`;
         }).join('');
         $('pal-corpo').innerHTML = `<div class="pal-cima"><h2 class="pal-titolo">Build your gym</h2>
-            <section class="pal-record" aria-label="Your gym's record"><h3 class="pal-record-titolo">Your gym's record</h3>${numeriHtml(S.stat, "Your gym's record")}${dettagliHtml(S.stat, S.bozza.map(t => t.categoria), true)}</section></div>
+            <section class="pal-record" aria-label="Your gym's record"><h3 class="pal-record-titolo">Your gym's record</h3>${numeriHtml(S.stat, "Your gym's record")}${dettagliHtml(S.stat, S.bozza.map(t => t.categoria), true)}</section>
+            ${allenamentoHtml(piano)}</div>
             <p class="pal-aiuto">Three stages, three doubles formats, one team each: pick them, and the order challengers will face them in. Every stage also hands you an edge that kicks in before turn 1 (a tailwind, a storm, a power-up…). The CPU plays your teams straight from your Box, so tweak a team and the gym changes with it. Challengers never get to peek at your teams. Make it tough!</p>
             <div class="pal-tappe">${tappe}</div>
             <div class="pal-azioni"><button type="button" class="ng-bottone ng-compra" id="pal-salva">Save my gym</button><button type="button" class="ng-bottone" id="pal-togli">Remove my gym</button><a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(S.io)}">Back to my page</a></div>`;
@@ -256,10 +319,10 @@
                 const config = { tappe: S.bozza.map(t => ({ ...t, categoria: (S.regolamenti[t.formato] || {}).categoria || '' })) };
                 const problemi = P.problemi(config, { regolamenti: S.regolamenti, teams: S.mieiTeam.map(t => ({ id: t.id, categoria: t.categoria })) });
                 if (problemi.length) return msg(problemi[0], true);
-                try { await firebase.database().ref(`players/${S.io}/info/palestra`).set(config); msg('Your gym is open for business. Challengers, beware!'); } catch (err) { msg("Couldn't save: check your connection and try again.", true); }
+                try { await firebase.database().ref(`players/${S.io}/info/palestra`).set(config); S.salvata = config; msg('Your gym is open for business. Challengers, beware!'); disegnaImposta(); } catch (err) { msg("Couldn't save: check your connection and try again.", true); }
             }
             if (b.id === 'pal-togli') {
-                try { await firebase.database().ref(`players/${S.io}/info/palestra`).remove(); S.bozza = bozzaDa(null); msg('Your gym is closed. See you next time!'); disegnaImposta(); } catch (err) { msg("Couldn't remove it: try again.", true); }
+                try { await firebase.database().ref(`players/${S.io}/info/palestra`).remove(); S.bozza = bozzaDa(null); S.salvata = null; msg('Your gym is closed. See you next time!'); disegnaImposta(); } catch (err) { msg("Couldn't remove it: try again.", true); }
             }
         });
     }
@@ -389,19 +452,24 @@
             await leggiMiei();
             const altro = String(ricerca.get('player') || '').toLowerCase().trim();
             if (ricerca.get('edit') === '1' || !altro || altro === S.io) {
-                const [config, stat] = await Promise.all([leggi(`players/${S.io}/info/palestra`), leggi(`players/${S.io}/palestraStat`).catch(() => null)]);
+                const [config, stat, allena] = await Promise.all([leggi(`players/${S.io}/info/palestra`), leggi(`players/${S.io}/palestraStat`).catch(() => null), leggi(`players/${S.io}/palestraAllenamento`).catch(() => null)]);
                 S.bozza = bozzaDa(config);
+                S.salvata = config;
                 S.stat = stat;
+                S.allena = {};
+                if (window.CpuCopione) for (const [id, c] of Object.entries(allena || {})) { const n = window.CpuCopione.normalizza(c); if (n) S.allena[id] = n; }
                 intestazione(S.nomeIo);
                 $('pal-corpo').hidden = false;
                 disegnaImposta(); collegaImposta();
             } else {
                 S.gym = altro;
                 // tutto quello che serve per vestire la pagina da palestra, i suoi numeri e il premio della settimana (il portafoglio è mio: lo leggo io)
-                const [info, stat, premio] = await Promise.all([leggi(`players/${altro}/info`), leggi(`players/${altro}/palestraStat`).catch(() => null), leggi(`wallet/${S.uid}/premioPalestra`).catch(() => null)]);
+                const [info, stat, premio, allena] = await Promise.all([leggi(`players/${altro}/info`), leggi(`players/${altro}/palestraStat`).catch(() => null), leggi(`wallet/${S.uid}/premioPalestra`).catch(() => null), leggi(`players/${altro}/palestraAllenamento`).catch(() => null)]);
                 const i = info || {}, config = i.palestra;
                 S.gymConfig = config; S.gymNome = String(i.name || altro); S.stat = stat; S.premio = premio;
                 intestazione(S.gymNome);
+                S.allena = {};
+                if (window.CpuCopione) for (const [id, c] of Object.entries(allena || {})) { const n = window.CpuCopione.normalizza(c); if (n) S.allena[id] = n; }
                 // il compagno è shiny se lo è nel suo Box, come nel simulatore (team-sito.js, caricaTappaPalestra)
                 let shiny = false;
                 if (i.pkmBox && i.pkmPreferito && window.Cosmetici) { try { shiny = !!window.Cosmetici.compagnoShiny(i, (await leggi(`players/${altro}/teams`)) || {}); } catch (e) { /* senza shiny */ } }
