@@ -10,8 +10,9 @@
 //
 // Sfidando un altro la pagina è già dentro la sua palestra, come il simulatore (vestiSala): sfondo del suo colore con il suo motivo e il suo nome gigante, il suo avatar con l'aura
 // e il suo compagno ai lati, l'effetto del suo palco, l'insegna con il suo nome (font ed effetto compresi) e la sua canzone (palestra.html la fa suonare). Con l'insegna i numeri della
-// palestra (palestra-stat.js, scritti dal server: tentativi, quante volte ha tenuto, quante è stata espugnata, tappa per tappa) e il premio in monete della settimana. Chi ha la palestra
-// vede gli stessi numeri nella pagina dove la imposta.
+// palestra (palestra-stat.js, scritti dal server: tentativi, quante volte ha tenuto, quante è stata espugnata, tappa per tappa) sul tabellone in cima. Chi ha la palestra vede gli
+// stessi numeri nella pagina dove la imposta. La scelta dei team è una schermata sola (disegnaSfida): le tre porte (una per format) con il distintivo e le monete della settimana in fondo,
+// i team della porta accesa e il tasto per entrare.
 // =====================================================
 (function () {
     'use strict';
@@ -23,7 +24,7 @@
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const ricerca = new URLSearchParams(window.location.search);
 
-    const S = { uid: '', io: '', nomeIo: '', regolamenti: {}, mieiTeam: [], bozza: [], gym: '', gymNome: '', gymConfig: null, passo: 0, scelte: [], tornaARiepilogo: false,
+    const S = { uid: '', io: '', nomeIo: '', regolamenti: {}, mieiTeam: [], bozza: [], gym: '', gymNome: '', gymConfig: null, attivo: 0, disegnata: false, appena: -1, scelte: [],
         capo: null,         // l'aspetto del capopalestra (Palestra.aspettoCapo)
         tema: null,         // i suoi colori e i suoi effetti (Palestra.temaPalestra), se la pagina ha potuto vestirsi
         stat: null,         // players/<id>/palestraStat: le statistiche della palestra (la sua o quella che si sfida)
@@ -72,14 +73,13 @@
 
     // ---------------------------------------------------------------- le statistiche della palestra
     /** I tre numeri grandi: tentativi (sfide finite), volte che la palestra ha tenuto e volte che è stata espugnata */
-    function numeriHtml(stat, titolo, conPremio) {
+    function numeriHtml(stat, titolo) {
         const r = ST.riassunto(stat);
         const chip = (n, etichetta, nota, classe) => `<li class="pal-chip ${classe}"><b>${n}</b><span>${etichetta}</span>${nota ? `<small>${nota}</small>` : ''}</li>`;
         return `<ul class="pal-chips" aria-label="${esc(titolo)}">`
             + chip(r.tentativi, 'Attempts', '', 'pal-chip-tentativi')
             + chip(r.tenuta, 'Gym wins', r.percTenuta === null ? '' : `${r.percTenuta}%`, 'pal-chip-tenuta')
             + chip(r.espugnata, 'Gym beaten', '', 'pal-chip-espugnata')
-            + (conPremio ? premioNumeroHtml() : '')       // sfidando: nell'app, dove non c'è il cartellino del premio, è un quarto numero
             + '</ul>';
     }
 
@@ -146,7 +146,12 @@
         const avatarImg = decor.querySelector('.pal-avatar');
         let compImg = decor.querySelector('.vs-compagno');
         // ingrandito più del doppio della sua GIF resta nitido, come sulla pagina pubblica: pixel netti e, se si può, bordi lisci (SpriteNitido); il canvas prende il posto dell'immagine
-        const nitido = () => { if (compImg && compImg.tagName === 'IMG' && window.SpriteNitido) window.SpriteNitido.perIngrandimento(compImg).then(c => { if (c) compImg = c; }).catch(() => {}); };
+        let nitidoInCorso = false;
+        const nitido = () => {
+            if (nitidoInCorso || !compImg || compImg.tagName !== 'IMG' || !window.SpriteNitido) return;
+            nitidoInCorso = true;
+            window.SpriteNitido.perIngrandimento(compImg).then(c => { if (c) compImg = c; }).catch(() => {}).then(() => { nitidoInCorso = false; });
+        };
         const scala = () => (avatarImg && compImg && window.ScalaPkm ? window.ScalaPkm.scena({ allenatore: avatarImg, pokemon: compImg, spazioPx: Math.round(window.innerHeight * 0.9) }).then(nitido).catch(() => {}) : Promise.resolve());
         for (const img of [avatarImg, compImg]) if (img) img.addEventListener('load', scala);
         setTimeout(scala, 1500);
@@ -181,27 +186,16 @@
         return `<div class="pal-insegna" title="${esc(S.gymNome)}'s gym">${faccia}<span class="pal-ins-testi"><span class="pal-ins-piccolo">GYM LEADER</span><span class="pal-ins-nome"${effetto}>${esc(nome)}</span>${musica}</span></div>`;
     }
 
-    /** Il premio in monete: quanto vale e, se è già stato preso questa settimana, quando torna */
+    /** Il premio in monete: preso questa settimana? (il portafoglio è di chi sfida) */
     const premioPresoOra = () => !!S.premio && S.premio.settimana === ST.settimanaDi(Date.now());
-    function premioNumeroHtml() {
-        const per = window.Cosmetici && window.Cosmetici.PREMI ? window.Cosmetici.PREMI.palestra : 0;
-        if (!per) return '';
-        const preso = premioPresoOra();
-        return `<li class="pal-chip pal-chip-premio" title="Gym coins are paid once a week in total, whichever gym you conquer."><b>🪙${preso ? '✓' : `+${per}`}</b><span>${preso ? 'Back Monday' : 'Once a week'}</span></li>`;
-    }
-    function premioHtml() {
-        const per = window.Cosmetici && window.Cosmetici.PREMI ? window.Cosmetici.PREMI.palestra : 0;
-        if (!per) return '';
-        const presa = premioPresoOra();
-        return presa
-            ? '<p class="pal-premio pal-premio-preso" title="Gym coins are paid once a week in total, whichever gym you conquer. They reset on Monday.">🪙 Gym coins already collected this week · back on Monday</p>'
-            : `<p class="pal-premio" title="Gym coins are paid once a week in total, whichever gym you conquer. They reset on Monday.">🪙 Clear all ${P.TAPPE} stages: <b>+${per} coins</b> · once a week</p>`;
-    }
 
-    /** Sopra a tutto, quando si sfida: l'insegna, i numeri della palestra, il premio e il riquadro con i dettagli */
+    /**
+     * Il tabellone in cima, quando si sfida: l'insegna del capopalestra e i numeri della palestra su una targa scura con le cifre ambra (come il tabellone dell'intro prepartita) e,
+     * sotto, il riquadro con i dettagli (tappa per tappa, ultime sfide).
+     */
     function testataHtml() {
-        return `<header class="pal-testata">${insegnaHtml()}${numeriHtml(S.stat, `${S.gymNome}'s gym record`, true)}</header>`
-            + `<div class="pal-sotto">${premioHtml()}${dettagliHtml(S.stat, tappeGym().map(t => t.categoria), false)}</div>`;
+        return `<header class="pal-piatto">${insegnaHtml()}${numeriHtml(S.stat, `${S.gymNome}'s gym record`)}</header>`
+            + dettagliHtml(S.stat, tappeGym().map(t => t.categoria), false);
     }
 
     // ---------------------------------------------------------------- impostare la propria palestra
@@ -271,8 +265,9 @@
     }
 
     // ---------------------------------------------------------------- sfidare la palestra di un altro
-    // Un passo per format: "Stage 1 · VGC Gen 9 → scegli il team", poi il 2 e il 3, e infine il riepilogo (passo 3) con i tre team scelti e il tasto per entrare.
-    // Con una sfida già cominciata (tappe vinte) si apre direttamente il riepilogo, da cui si può cambiare il team di una tappa e tornare qui.
+    // Una schermata sola, come la scelta dei personaggi di un picchiaduro: in alto il tabellone della palestra, poi il percorso (le tre tappe come tre porte, una per format, e in fondo il
+    // distintivo con le monete), sotto i tuoi team per la porta accesa e, in fondo, il tasto per entrare. Scelto il team di una tappa si passa da solo alla prossima che ne ha bisogno; con
+    // i tre team pronti il tasto si accende. Con una sfida già cominciata (tappe vinte) le porte dicono dov'è arrivato, e il team di una tappa si può sempre cambiare.
     const stagioneDa = () => P.leggiSfida(window.localStorage, P.chiaveSfida(S.io, S.gym)) || P.nuovaSfida([]);
     const tappeGym = () => P.tappeDi(S.gymConfig);
     const teamPerId = id => S.mieiTeam.find(t => t.id === id) || null;
@@ -280,85 +275,91 @@
         const att = stagioneDa();
         P.salvaSfida(window.localStorage, P.chiaveSfida(S.io, S.gym), { squadre: S.scelte.slice(0, P.TAPPE), vinte: att.vinte || 0 });
     };
+    /** Il team scelto per la tappa i c'è ancora ed è del format giusto? */
+    const sceltaValida = i => { const tappa = tappeGym()[i], t = teamPerId(S.scelte[i]); return !!t && !!tappa && teamPer(tappa.categoria).some(x => x.id === t.id); };
     const sprites = (t, classe = '') => `<span class="pal-sprites ${classe}">${(t.pokemon || []).slice(0, 6).map(p => `<img src="${esc(SP ? SP.gif(p.nome, p.shiny) : '')}" alt="" loading="lazy" draggable="false" data-pkm="${esc(p.nome)}">`).join('')}</span>`;
+    const TESTI_PORTA = { fatta: '✓ Cleared', prossima: '▶ Up next', chiusa: '🔒 Locked' };
 
     function disegnaSfida() {
-        const tappe = tappeGym();
-        const att = stagioneDa();
-        const vinte = att.vinte;
-        const finita = P.finita(att);
-        const validi = i => { const t = teamPerId(S.scelte[i]); return !!t && tappe[i] && teamPer(tappe[i].categoria).some(x => x.id === t.id); };
-        const pronte = tappe.every((_, i) => validi(i));
-        const intro = testataHtml();
-        const passi = tappe.map((t, i) => {
-            const stato = S.passo === i ? 'ora' : validi(i) ? 'fatto' : 'resta';
-            return `<li class="pal-passo pal-passo-${stato}"><b>${i + 1}</b><span>${esc(t.categoria)}</span></li>`;
-        }).join('') + `<li class="pal-passo pal-passo-${S.passo === P.TAPPE ? 'ora' : 'resta'}"><b>★</b><span>Go!</span></li>`;
-        const barra = `<ol class="pal-passi" aria-label="Steps">${passi}</ol>`;
+        const tappe = tappeGym(), att = stagioneDa(), vinte = att.vinte, finita = P.finita(att);
+        const pronti = tappe.filter((_, i) => sceltaValida(i)).length, pronte = pronti === tappe.length;
+        const a = Math.min(Math.max(S.attivo, 0), tappe.length - 1);
+        S.attivo = a;
+        const prima = !S.disegnata, appena = S.appena;
+        S.disegnata = true; S.appena = -1;      // le entrate animate solo la prima volta (scegliere un team ridisegna la pagina, e non deve ripartire tutto); il team appena scelto ha il suo tonfo
 
-        if (S.passo < P.TAPPE) {
-            const i = S.passo, t = tappe[i], miei = teamPer(t.categoria);
-            const carte = miei.length ? miei.map(x => `<button type="button" class="pal-squadra${S.scelte[i] === x.id ? ' pal-scelta' : ''}" data-team="${esc(x.id)}" aria-pressed="${S.scelte[i] === x.id}">
-                    <span class="pal-squadra-nome">${esc(x.nome)}</span>${sprites(x)}<span class="pal-squadra-spunta" aria-hidden="true">✔</span></button>`).join('')
-                : `<p class="pal-vuoto">You don't have a team for <b>${esc(t.categoria)}</b> yet. <a href="box.html">Build one in your Box</a>, then come back!</p>`;
-            const ultimo = i === P.TAPPE - 1;
-            $('pal-corpo').innerHTML = `${intro}${barra}
-                <section class="pal-passo-corpo">
-                    <p class="pal-passo-su">Stage ${i + 1} of ${P.TAPPE}</p>
-                    <h3 class="pal-passo-titolo">${esc(t.categoria)}</h3>
-                    <p class="pal-aiuto">${i === 0 ? "Doubles, bring 6 and pick 4 once you see the opposing team. You won't know what's coming, so choose the team you trust." : 'Now the next format: which team do you bring?'}</p>
-                    <div class="pal-squadre">${carte}</div>
-                </section>
-                <div class="pal-azioni">
-                    ${i > 0 || S.tornaARiepilogo ? `<button type="button" class="ng-bottone" data-az="indietro">← ${S.tornaARiepilogo ? 'Cancel' : 'Back'}</button>` : `<a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(S.gym)}">← ${esc(S.gymNome)}'s page</a>`}
-                    <button type="button" class="ng-bottone ng-compra" data-az="avanti"${validi(i) ? '' : ' disabled'}>${S.tornaARiepilogo ? 'Done ✔' : ultimo ? 'Review →' : `Next: stage ${i + 2} →`}</button>
-                </div>`;
-            return;
-        }
-        const righe = tappe.map((t, i) => {
-            const stato = i < vinte ? 'done' : i === vinte && !finita ? 'next' : 'lock';
-            const x = teamPerId(S.scelte[i]);
-            return `<article class="pal-riga pal-${stato}"><span class="pal-riga-num">${i + 1}</span>
-                <div class="pal-riga-testo"><p class="pal-formato">${esc(t.categoria)}</p><p class="pal-riga-team">${x ? esc(x.nome) : '—'}</p></div>
-                ${x ? sprites(x, 'pal-sprites-piccoli') : ''}
-                <span class="pal-stato">${stato === 'done' ? '✓ Cleared' : stato === 'next' ? '▶ Up next' : '🔒 Locked'}</span>
-                <button type="button" class="ng-bottone" data-az="cambia" data-i="${i}">Change</button></article>`;
+        // le tre porte (una per tappa) e in fondo il distintivo con le monete
+        const porte = tappe.map((t, i) => {
+            const stato = i < vinte ? 'fatta' : i === vinte && !finita ? 'prossima' : 'chiusa';
+            const x = sceltaValida(i) ? teamPerId(S.scelte[i]) : null;
+            const slot = x ? `<span class="pal-slot pal-slot-piena"><span class="pal-slot-nome">${esc(x.nome)}</span>${sprites(x, 'pal-sprites-mini')}</span>` : '<span class="pal-slot"><span class="pal-slot-vuoto">Pick a team</span></span>';
+            return `<li class="pal-porta pal-porta-${stato}${a === i ? ' pal-porta-attiva' : ''}${x ? ' pal-porta-piena' : ''}${appena === i ? ' pal-porta-nuova' : ''}" style="--i:${i}">
+                <button type="button" class="pal-porta-btn" data-az="vai" data-i="${i}" aria-pressed="${a === i}">
+                    <span class="pal-porta-num" aria-hidden="true">${i + 1}</span><span class="pal-porta-stato">${TESTI_PORTA[stato]}</span>
+                    <span class="pal-porta-formato">${esc(t.categoria)}</span>${slot}<span class="pal-porta-segreto">Secret edge: ???</span></button></li>`;
         }).join('');
-        $('pal-corpo').innerHTML = `${intro}${barra}
-            <section class="pal-passo-corpo">
-                <p class="pal-passo-su">${finita ? 'Gym conquered!' : vinte > 0 ? 'Your run so far' : 'Ready?'}</p>
-                <h3 class="pal-passo-titolo">${finita ? 'You beat every stage 🏆' : vinte > 0 ? `Stage ${vinte + 1} is waiting` : 'Your three teams'}</h3>
-                <p class="pal-aiuto">${P.TAPPE} stages, one after the other, against teams you've never seen. One defeat sends you right back to stage 1: no pressure!</p>
-                <div class="pal-righe">${righe}</div>
+        const per = window.Cosmetici && window.Cosmetici.PREMI ? window.Cosmetici.PREMI.palestra : 0;
+        const preso = premioPresoOra();
+        const distintivo = `<li class="pal-porta pal-porta-premio${finita ? ' pal-porta-fatta' : ''}" style="--i:${tappe.length}" title="Gym coins are paid once a week in total, whichever gym you conquer. They reset on Monday.">
+            <span class="pal-stella" aria-hidden="true">★</span><span class="pal-porta-formato">Gym badge</span>
+            ${per ? `<span class="pal-moneta">${preso ? '🪙 ✓ collected<small>back on Monday</small>' : `🪙 +${per}<small>once a week</small>`}</span>` : ''}</li>`;
+        const banner = finita ? '<p class="pal-banner">🏆 You beat every stage! Take it on again whenever you like.</p>'
+            : vinte > 0 ? `<p class="pal-banner">Your run so far: ${vinte} of ${tappe.length} stages cleared. Stage ${vinte + 1} is waiting!</p>` : '';
+
+        // i tuoi team per la porta accesa
+        const t = tappe[a], miei = teamPer(t.categoria);
+        const carte = miei.length ? miei.map(x => `<button type="button" class="pal-team${S.scelte[a] === x.id ? ' pal-team-scelto' : ''}" data-team="${esc(x.id)}" aria-pressed="${S.scelte[a] === x.id}">
+                <span class="pal-team-nome">${esc(x.nome)}</span>${sprites(x)}<span class="pal-team-timbro" aria-hidden="true">Picked</span></button>`).join('')
+            : `<p class="pal-vuoto">You don't have a team for <b>${esc(t.categoria)}</b> yet. <a href="box.html">Build one in your Box</a>, then come back!</p>`;
+        const aiuto = a === 0 ? "Doubles: bring 6 and pick 4 once you see the opposing team. You'll play against teams you've never seen, so choose the team you trust." : 'Which team do you bring to this one?';
+
+        // il tasto per entrare, con quanti team sono pronti
+        const pips = tappe.map((_, i) => `<i class="pal-pip${sceltaValida(i) ? ' pal-pip-pieno' : ''}"></i>`).join('');
+        const via = finita ? 'Take it on again' : vinte > 0 ? `On to stage ${vinte + 1}` : 'Enter the gym';
+
+        $('pal-corpo').innerHTML = `<div class="pal-sfida${prima ? ' pal-prima' : ''}">
+            ${testataHtml()}
+            <section class="pal-gara" aria-label="The challenge">
+                <div class="pal-gara-testa"><h2 class="pal-gara-titolo">The challenge</h2><ul class="pal-regole"><li>Doubles</li><li>Bring 6 · pick 4</li><li>One loss: back to stage 1</li></ul></div>
+                ${banner}
+                <ol class="pal-percorso">${porte}${distintivo}</ol>
             </section>
-            <div class="pal-azioni">
-                <button type="button" class="ng-bottone ng-compra" data-az="via"${pronte ? '' : ' disabled'}>${finita ? 'Take it on again' : vinte > 0 ? `On to stage ${vinte + 1}` : 'Enter the gym'}</button>
+            <section class="pal-selezione" style="--att:${a}">
+                <header class="pal-sel-testa"><p class="pal-sel-su">Stage ${a + 1} of ${tappe.length}</p><h3 class="pal-sel-titolo">${esc(t.categoria)}</h3><p class="pal-sel-aiuto">${aiuto}</p></header>
+                <div class="pal-squadre">${carte}</div>
+            </section>
+            <div class="pal-cta">
+                <a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(S.gym)}">← ${esc(S.gymNome)}'s page</a>
                 ${vinte > 0 && !finita ? '<button type="button" class="ng-bottone" data-az="da-capo">Start over</button>' : ''}
-                <a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(S.gym)}">Back to ${esc(S.gymNome)}'s page</a>
-            </div>`;
+                <span class="pal-pronti" aria-live="polite"><span class="pal-pips" aria-hidden="true">${pips}</span>${pronti}/${tappe.length} teams ready</span>
+                <button type="button" class="pal-via" data-az="via"${pronte ? '' : ' disabled'}>${via}<span aria-hidden="true"> ▶</span></button>
+            </div>
+        </div>`;
     }
 
     function collegaSfida() {
         const c = $('pal-corpo');
         // le GIF che non si caricano ripiegano sull'immagine del Pokédex (come nel resto del sito)
         c.addEventListener('error', e => { const img = e.target; if (img && img.tagName === 'IMG' && SP && img.dataset.pkm) SP.riserva(img, SP.id(img.dataset.pkm)); }, true);
+        // ridisegnare perde il fuoco: a chi usa la tastiera si rimette sull'elemento che si è appena usato
+        const ridisegna = selettore => { disegnaSfida(); const e = selettore && c.querySelector(selettore); if (e) e.focus({ preventScroll: true }); };
         c.addEventListener('click', e => {
-            const carta = e.target.closest('.pal-squadra');
-            if (carta) { S.scelte[S.passo] = carta.dataset.team; salvaScelte(); return disegnaSfida(); }
+            const carta = e.target.closest('.pal-team');
+            if (carta) {
+                const prima = S.attivo;
+                S.scelte[prima] = carta.dataset.team; S.appena = prima; salvaScelte();
+                // scelto il team si passa alla prima tappa che ne ha ancora bisogno (se sono tutte a posto si resta qui)
+                const n = tappeGym().length;
+                for (let k = 1; k < n; k++) { const j = (prima + k) % n; if (!sceltaValida(j)) { S.attivo = j; break; } }
+                return ridisegna(S.attivo === prima ? '.pal-team-scelto' : `.pal-porta-btn[data-i="${S.attivo}"]`);
+            }
             const b = e.target.closest('button[data-az]');
             if (!b) return;
             const az = b.dataset.az;
-            if (az === 'avanti') {
-                if (S.tornaARiepilogo) { S.tornaARiepilogo = false; S.passo = P.TAPPE; }
-                else S.passo = Math.min(P.TAPPE, S.passo + 1);
-                disegnaSfida(); window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else if (az === 'indietro') {
-                if (S.tornaARiepilogo) { S.tornaARiepilogo = false; S.passo = P.TAPPE; } else S.passo = Math.max(0, S.passo - 1);
-                disegnaSfida();
-            } else if (az === 'cambia') { S.tornaARiepilogo = true; S.passo = Number(b.dataset.i) || 0; disegnaSfida(); }
-            else if (az === 'da-capo') { P.salvaSfida(window.localStorage, P.chiaveSfida(S.io, S.gym), { squadre: S.scelte.slice(0, P.TAPPE), vinte: 0 }); disegnaSfida(); msg('Back to stage 1: fresh start!'); }
+            if (az === 'vai') { S.attivo = Number(b.dataset.i) || 0; ridisegna(`.pal-porta-btn[data-i="${S.attivo}"]`); }
+            else if (az === 'da-capo') { P.salvaSfida(window.localStorage, P.chiaveSfida(S.io, S.gym), { squadre: S.scelte.slice(0, P.TAPPE), vinte: 0 }); S.attivo = 0; ridisegna(); msg('Back to stage 1: fresh start!'); }
             else if (az === 'via') {
-                if (S.scelte.slice(0, P.TAPPE).some(x => !x)) return msg('Pick a team for every stage before you walk in!', true);
+                if (S.scelte.slice(0, P.TAPPE).some((x, i) => !x || !sceltaValida(i))) return msg('Pick a team for every stage before you walk in!', true);
                 const att = stagioneDa();
                 const vinte = P.finita(att) ? 0 : att.vinte;
                 P.salvaSfida(window.localStorage, P.chiaveSfida(S.io, S.gym), { squadre: S.scelte.slice(0, P.TAPPE), vinte });
@@ -367,13 +368,13 @@
         });
     }
 
-    /** Da dove si riparte: con i tre team già scelti (e magari tappe vinte) il riepilogo, altrimenti il primo format senza team */
+    /** Da dove si parte: dalla prima tappa senza team; con i tre già scelti da quella che si deve ancora giocare (o dalla prima, a palestra conquistata) */
     function passoIniziale() {
         const tappe = tappeGym(), att = stagioneDa();
         S.scelte = tappe.map((t, i) => (att.squadre[i] && teamPer(t.categoria).some(x => x.id === att.squadre[i]) ? att.squadre[i] : ''));
         const primo = S.scelte.findIndex(x => !x);
-        S.passo = primo === -1 ? P.TAPPE : primo;
-        S.tornaARiepilogo = false;
+        S.attivo = primo !== -1 ? primo : P.finita(att) ? 0 : Math.min(att.vinte || 0, tappe.length - 1);
+        S.disegnata = false;
     }
 
     // ---------------------------------------------------------------- avvio

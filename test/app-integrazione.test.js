@@ -30,7 +30,7 @@ test('ogni pagina del sito è presa in considerazione dall\'app: nel menù, senz
 test('Palestra nell\'app: titolo e spiegazioni appoggiati sullo sfondo scuro sono bianchi (le carte restano nere su bianco)', () => {
     const css = leggi('style-palestra.css');
     assert.match(css, /html\.app-shell \.pal-pagina :is\(\.pal-titolo, \.pal-aiuto, \.pal-accedi\) \{ color: #fff; \}/);
-    assert.match(css, /html\.app-shell \.pal-pagina \.pal-passo-corpo \.pal-aiuto \{ color: #000; \}/, 'dentro la carta bianca la spiegazione resta nera');
+    assert.match(css, /html\.app-shell \.pal-sel-aiuto[^{]*\{ display: none; \}/, 'la sfida nell\'app non ha spiegazioni lunghe (le carte sono scure: niente testo nero su nero)');
 });
 
 test('Box nell\'app: il nome del team sta nella sua colonna (box-sizing: border-box) e non finisce sotto i tasti della carta', () => {
@@ -110,7 +110,7 @@ test('app: niente scorrimento in giù — Box a fila di lato, Palestra e Hub blo
     const palestra = leggi('style-palestra.css');
     assert.match(palestra, /html\.app-shell body\.pg-palestra \{ overflow: hidden !important; \}/);
     assert.match(palestra, /html\.app-shell \.pal-squadre \{ display: flex;[^}]*overflow-x: auto; overflow-y: hidden/);
-    assert.match(palestra, /html\.app-shell \.pal-pagina \.pal-aiuto, [^{]*\{ display: none; \}/);
+    assert.match(palestra, /html\.app-shell \.pal-pagina \.pal-aiuto[^{]*\{ display: none; \}/);
     // Hub e classifica/risultati (le tre schede del riepilogo): la pagina non ha 46 px di troppo
     const riep = leggi('riepilogo-stagione.css');
     assert.match(riep, /html\.app-shell\[data-mt="sd"\] body\.pg-matches[^{]*\{ overflow: hidden !important; \}/);

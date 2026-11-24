@@ -35,65 +35,17 @@ body.pg-palestra .pal-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); 
 .pal-pagina .ng-bottone:active:not(:disabled) { translate: 2px 2px; box-shadow: none; }
 .pal-pagina .ng-bottone:disabled { opacity: .45; cursor: default; box-shadow: none; }
 
-/* ---------- Sfidare una palestra: un passo per format (palestra-ui.js, disegnaSfida) ---------- */
-.pal-passi { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 22px; padding: 0; list-style: none; }
-.pal-passo { display: flex; align-items: center; gap: 8px; padding: 6px 14px 4px 6px; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 900 .78rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
-.pal-passo b { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding-top: 2px; box-sizing: border-box; background: var(--nb-ink, #000); color: #fff; font-size: .85rem; box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
-.pal-passo-ora { opacity: 1; background: var(--nb-giallo, #ffbd44); transform: rotate(-1.5deg); }
-.pal-passo-fatto { opacity: 1; background: #e9ffe9; }
-.pal-passo-fatto b { background: #1aa84a; }
-.pal-passo-corpo { margin: 0 0 8px; padding: 18px; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-m, 5px 5px 0 #000); }
-.pal-passo-su { margin: 0; font: 900 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .12em; opacity: .65; }
-.pal-passo-titolo { margin: 2px 0 6px; font: 900 1.9rem/1.05 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
-.pal-passo-corpo .pal-aiuto { margin-bottom: 16px; }
-
-.pal-squadre { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
-.pal-squadra { position: relative; display: grid; gap: 8px; justify-items: stretch; padding: 12px; text-align: left; cursor: pointer; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); transition: translate .12s ease, box-shadow .12s ease, background-color .12s ease; }
-.pal-squadra:hover { translate: -3px -3px; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); background: #fffbe6; }
-.pal-squadra:active { translate: 2px 2px; box-shadow: none; }
-.pal-squadra-nome { font: 900 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 30px; }
-.pal-squadra-spunta { position: absolute; top: -10px; right: -10px; display: none; width: 30px; height: 30px; align-items: center; justify-content: center; background: #1aa84a; color: #fff; border: 3px solid var(--nb-ink, #000); font-weight: 900; box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); transform: rotate(6deg); }
-.pal-scelta { background: #e9ffe9; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); }
-.pal-scelta .pal-squadra-spunta { display: inline-flex; }
-.pal-sprites { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 4px; background: rgba(0, 0, 0, .06); border: 2px solid rgba(0, 0, 0, .15); }
-.pal-sprites img { width: 100%; height: 56px; object-fit: contain; image-rendering: auto; }
-.pal-sprites-piccoli { grid-template-columns: repeat(6, 34px); gap: 0; padding: 2px; }
-.pal-sprites-piccoli img { height: 34px; }
-.pal-vuoto { grid-column: 1 / -1; margin: 0; padding: 14px; background: #fff6d6; border: 3px dashed var(--nb-ink, #000); font: 700 .9rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
-.pal-vuoto a { color: inherit; }
-
-.pal-righe { display: grid; gap: 14px; }
-.pal-riga { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 14px; padding: 12px; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
-.pal-riga.pal-done { background: #e9ffe9; }
-.pal-riga.pal-next { background: var(--nb-giallo, #ffbd44); }
-.pal-riga-num { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; padding-top: 3px; box-sizing: border-box; background: var(--nb-ink, #000); color: #fff; font: 900 1.2rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
-.pal-riga-testo { min-width: 0; }
-.pal-riga-testo p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pal-riga-team { font: 700 .85rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .8; }
-@media (max-width: 700px) {
-    .pal-riga { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; }
-    .pal-riga-testo p { white-space: normal; }
-    .pal-riga .pal-stato { grid-column: 3; grid-row: 1; }
-    .pal-riga .pal-sprites { grid-column: 1 / -1; grid-row: 2; }
-    .pal-riga .ng-bottone { grid-column: 1 / -1; grid-row: 3; }
-    .pal-passo-titolo { font-size: 1.5rem; }
-    .pal-passo span { display: none; }
-    .pal-passo-ora span { display: inline; }
-}
-@media (prefers-reduced-motion: reduce) { .pal-squadra, .pal-passo-ora { transition: none; transform: none; } }
 
 /* nell'app lo sfondo è scuro e il testo appoggiato direttamente sulla pagina (titolo, spiegazioni, avviso di accesso) non ha un colore suo: ereditava il nero.
-   Le carte (bianche, con il loro colore: .pal-passo-corpo, .pal-tappa, .pal-vuoto...) restano com'erano */
+   Le carte (bianche, con il loro colore: .pal-tappa, .pal-vuoto...) restano com'erano */
 html.app-shell .pal-pagina :is(.pal-titolo, .pal-aiuto, .pal-accedi) { color: #fff; }
-html.app-shell .pal-pagina .pal-passo-corpo .pal-aiuto { color: #000; }
 
 /* ---------- Nell'app: niente scorrimento in giù e niente carte bianche del sito ----------
-   La pagina sta tutta nello schermo: titolo e passi in alto, le carte (scure) al centro, i tasti sotto. I team da scegliere stanno in fila (si scorre di lato) e le
-   spiegazioni lunghe non ci sono (le dice già il gioco). */
+   La pagina sta tutta nello schermo: titolo in alto, le carte (scure) al centro, i tasti sotto, e le spiegazioni lunghe non ci sono (le dice già il gioco). */
 html.app-shell body.pg-palestra { overflow: hidden !important; }
 html.app-shell .pal-pagina { width: 100%; max-width: none; margin: 0; padding: calc(8 * var(--u)) max(calc(14 * var(--u)), env(safe-area-inset-right, 0px)) calc(10 * var(--u)) max(calc(14 * var(--u)), env(safe-area-inset-left, 0px)); box-sizing: border-box; }
 html.app-shell .pal-titolo { margin: 0 0 calc(6 * var(--u)); font-size: calc(19 * var(--u)); }
-html.app-shell .pal-pagina .pal-aiuto, html.app-shell .pal-pagina .pal-passo-corpo .pal-aiuto { display: none; }
+html.app-shell .pal-pagina .pal-aiuto { display: none; }
 /* costruire la palestra: tre carte scure una accanto all'altra */
 html.app-shell .pal-tappe { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(12 * var(--u)); }
 html.app-shell .pal-tappa { gap: calc(5 * var(--u)); padding: calc(9 * var(--u)) calc(10 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 #000; }
@@ -106,24 +58,6 @@ html.app-shell .pal-ordine .ng-bottone, html.app-shell .pal-ordine button { padd
 /* i tasti: da gioco, in fila */
 html.app-shell .pal-azioni { margin-top: calc(10 * var(--u)); gap: calc(10 * var(--u)); }
 html.app-shell .pal-pagina :is(.ng-bottone, .pal-link) { padding: calc(7 * var(--u)) calc(14 * var(--u)) calc(5 * var(--u)); font-size: calc(12 * var(--u)); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); }
-/* sfidare una palestra: passi, la carta del passo (scura) e i team in fila */
-html.app-shell .pal-passi { gap: calc(8 * var(--u)); margin: 0 0 calc(8 * var(--u)); }
-html.app-shell .pal-passo { padding: calc(4 * var(--u)) calc(11 * var(--u)) calc(2 * var(--u)) calc(4 * var(--u)); font-size: calc(11 * var(--u)); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; }
-html.app-shell .pal-passo-corpo { margin: 0 0 calc(6 * var(--u)); padding: calc(10 * var(--u)) calc(12 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 #000; }
-html.app-shell .pal-passo-corpo :is(.pal-passo-su, .pal-passo-titolo) { color: #fff; }
-html.app-shell .pal-passo-titolo { margin: 0 0 calc(6 * var(--u)); font-size: calc(18 * var(--u)); }
-html.app-shell .pal-squadre { display: flex; gap: calc(10 * var(--u)); overflow-x: auto; overflow-y: hidden; padding: calc(4 * var(--u)) calc(4 * var(--u)) calc(8 * var(--u)); scroll-snap-type: x proximity; scrollbar-width: none; overscroll-behavior-x: contain; }
-html.app-shell .pal-squadre::-webkit-scrollbar { display: none; }
-html.app-shell .pal-squadra { flex: 0 0 calc(190 * var(--u)); scroll-snap-align: start; padding: calc(9 * var(--u)); gap: calc(6 * var(--u)); background: rgba(255, 255, 255, .08); color: #fff; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .3); border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; }
-html.app-shell .pal-squadra:hover { background: rgba(255, 255, 255, .14); }
-html.app-shell .pal-squadra-nome { font-size: calc(12 * var(--u)); }
-html.app-shell .pal-sprites { background: rgba(0, 0, 0, .25); border-color: rgba(255, 255, 255, .15); }
-html.app-shell .pal-squadra .pal-sprites { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; padding: calc(2 * var(--u)); }
-html.app-shell .pal-squadra .pal-sprites img { height: calc(30 * var(--u)); }
-html.app-shell .pal-scelta { background: var(--nb-giallo, #ffbd44); color: #000; border-color: #000; }
-html.app-shell .pal-vuoto { background: rgba(255, 246, 214, .95); color: #000; }
-/* il riepilogo: i tre passi uno accanto all'altro */
-html.app-shell .pal-righe { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(10 * var(--u)); }
 
 /* =====================================================================
    I NUMERI DELLA PALESTRA (palestra-stat.js, palestra-ui.js: numeriHtml e dettagliHtml)
@@ -138,7 +72,6 @@ body.pg-palestra { --pal-sup: var(--nb-carta, #fff); --pal-ink: #000; --pal-sup2
 .pal-chip small { margin-top: 2px; font-size: .62rem; font-weight: 700; letter-spacing: .06em; opacity: .75; }
 .pal-chip-tenuta { background: var(--pal-acc); color: var(--pal-acc-ink); }
 .pal-chip-espugnata { background: var(--nb-giallo, #ffbd44); color: #000; }
-.pal-chip-premio { display: none; }       /* il premio come numero serve solo nell'app: sul sito c'è il cartellino */
 
 .pal-record { margin: 0 0 22px; padding: 14px 16px 16px; background: var(--pal-sup); color: var(--pal-ink); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
 .pal-record-titolo { margin: 0 0 10px; font: 900 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
@@ -183,8 +116,9 @@ html body.pg-palestra.pal-dentro.pal-scorre::before { inset: calc(var(--pp-perio
 /* la pagina sta intera, senza i manifesti a sinistra (qui si sta dentro la palestra) */
 html:not(.app-shell) body.pal-dentro .ads-sidebar { display: none; }
 html:not(.app-shell) body.pal-dentro .pal-pagina { width: min(940px, calc(100% - 40px)); margin: 0 auto; padding-top: 28px; font-family: var(--nb-font-testo, 'Montserrat', sans-serif); }
-/* l'effetto del suo palco, davanti a tutto, che non si tocca */
-body.pal-dentro > .pal-effetto { position: fixed; z-index: 10; }
+/* l'effetto del suo palco (neve, stelle...) cade davanti all'avatar ma dietro alle carte, che si leggono senza puntini sopra */
+body.pal-dentro > .pal-effetto { position: fixed; z-index: 1; }
+body.pal-dentro .pal-pagina { position: relative; z-index: 2; }
 
 /* l'avatar e il compagno ai lati (dietro alla pagina), come sullo sfondo del simulatore */
 body.pal-dentro .pal-decor .vs-avatar { left: max(8vw, 128px); height: min(42vh, 440px); }
@@ -194,71 +128,246 @@ body.pal-dentro .pal-decor .vs-compagno { left: auto; right: max(6vw, 110px); tr
     body.pal-dentro .pal-decor .vs-compagno { right: 8vw; }
 }
 
-/* l'insegna in cima: la sua faccia con l'aura, GYM LEADER e il suo nome (con il suo font e il suo effetto), la canzone che suona */
-.pal-testata { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 26px; margin: 0 0 18px; }
-.pal-insegna { display: inline-flex; align-items: center; gap: 14px; box-sizing: border-box; max-width: 100%; min-width: 0; padding: 8px 24px 8px 12px; background: var(--pal-sup); color: var(--pal-ink); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 6px 6px 0 rgba(0, 0, 0, .5); transform: rotate(calc(-1.2 * var(--nb-rot, 1) * 1deg)); font-family: var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); }
-.pal-insegna .pal-ins-faccia { width: 66px; height: 66px; }
-.pal-insegna .pal-ins-nome { font-size: calc(2rem / var(--pp-font-w, 1)); }
-.pal-ins-musica { display: block; max-width: 34ch; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 .66rem var(--nb-font-testo, 'Montserrat', sans-serif); letter-spacing: .05em; opacity: .75; }
-.pal-premio { display: inline-block; box-sizing: border-box; max-width: 100%; margin: 0 0 16px; padding: 8px 14px 6px; background: var(--nb-giallo, #ffbd44); color: #000; border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 4px 4px 0 rgba(0, 0, 0, .45); font: 800 .8rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); transform: rotate(calc(.6 * var(--nb-rot, 1) * 1deg)); }
-.pal-premio-preso { background: var(--pal-sup); color: var(--pal-ink); }
-/* il premio e il riquadro dei dettagli stanno su una riga; aperto, il riquadro prende tutta la larghezza */
-.pal-sotto { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 16px; margin: 0 0 20px; }
-.pal-sotto .pal-premio { margin: 0; }
-.pal-sotto .pal-dett { flex: 1 1 280px; margin: 0; box-shadow: 4px 4px 0 rgba(0, 0, 0, .45); }
-.pal-sotto .pal-dett[open] { flex-basis: 100%; }
-.pal-sotto .pal-stat-vuota { margin: 0; align-self: center; padding: 6px 12px; background: var(--pal-sup); color: var(--pal-ink); border: 2px dashed var(--pal-ink); }
+/* =====================================================================
+   LA SFIDA (palestra.html?player=…: palestra-ui.js, disegnaSfida)
+   ---------------------------------------------------------------------
+   Una schermata sola, come la scelta dei personaggi di un picchiaduro: il tabellone della palestra (targa scura con le cifre ambra, come quello dell'intro prepartita), il percorso con le
+   tre porte (una per format) e il distintivo con le monete, sotto i tuoi team per la porta accesa e infine il tasto per entrare. I colori sono quelli della pagina: --pal-sup / --pal-ink
+   (la carta) e --pal-acc (il suo colore firma); dentro la palestra sono i suoi (vestiSala), fuori quelli del sito.
+   ===================================================================== */
+.pal-sfida { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }      /* minmax(0, ..): la fila dei team (che scorre di lato) non allarga la pagina */
+.pal-prima .pal-piatto, .pal-prima .pal-gara, .pal-prima .pal-selezione, .pal-prima .pal-cta { animation: pal-entra .55s cubic-bezier(.2, .9, .3, 1.15) backwards; }
+.pal-prima .pal-dett { animation: pal-entra .55s .06s cubic-bezier(.2, .9, .3, 1.15) backwards; }
+.pal-prima .pal-gara { animation: none; }
+.pal-prima .pal-gara-testa, .pal-prima .pal-banner { animation: pal-entra .5s .12s cubic-bezier(.2, .9, .3, 1.15) backwards; }
+.pal-prima .pal-porta { animation: pal-entra .55s calc(.2s + var(--i) * .1s) cubic-bezier(.2, .9, .3, 1.25) backwards; }
+/* un lampo di luce attraversa il tabellone quando si entra */
+.pal-prima .pal-piatto::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, .2) 50%, transparent 62%); translate: -130% 0; animation: pal-lampo 1.1s .55s ease-out forwards; }
+@keyframes pal-lampo { to { translate: 130% 0; } }
+.pal-prima .pal-selezione { animation-delay: .2s; }
+.pal-prima .pal-cta { animation-delay: .3s; }
+@keyframes pal-entra { from { opacity: 0; translate: 0 30px; scale: .97; } }
 
-/* le carte, i passi e i tasti nei colori della sua carta (--pp-sup / --pp-ink) e con il suo font; lo stato si dice con il suo colore firma, non con tinte chiare che sul nero non si leggono */
-html:not(.app-shell) body.pal-dentro .pal-passo,
-html:not(.app-shell) body.pal-dentro .pal-passo-corpo,
-html:not(.app-shell) body.pal-dentro .pal-riga { background: var(--pal-sup); color: var(--pal-ink); border-color: var(--pal-ink); }
-html:not(.app-shell) body.pal-dentro .pal-passo-corpo { box-shadow: 8px 8px 0 rgba(0, 0, 0, .55); }
-html:not(.app-shell) body.pal-dentro .pal-passo { opacity: .8; font-family: var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); }
-html:not(.app-shell) body.pal-dentro .pal-passo b { background: var(--pal-ink); color: var(--pal-sup); }
-html:not(.app-shell) body.pal-dentro .pal-passo-ora { opacity: 1; background: var(--pal-acc); color: var(--pal-acc-ink); border-color: var(--pal-ink); }
-html:not(.app-shell) body.pal-dentro .pal-passo-ora b { background: var(--pal-acc-ink); color: var(--pal-acc); }
-html:not(.app-shell) body.pal-dentro .pal-passo-fatto { opacity: 1; background: var(--pal-sup2); }
-html:not(.app-shell) body.pal-dentro .pal-passo-fatto b { background: #1aa84a; color: #fff; }
-html:not(.app-shell) body.pal-dentro .pal-passo-titolo,
-html:not(.app-shell) body.pal-dentro .pal-formato { font-family: var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); }
-html:not(.app-shell) body.pal-dentro .pal-passo-titolo { font-size: calc(1.9rem / var(--pp-font-w, 1)); }
-html:not(.app-shell) body.pal-dentro .pal-squadra { background: var(--pal-sup2); color: var(--pal-ink); border-color: var(--pal-ink); }
-html:not(.app-shell) body.pal-dentro .pal-squadra:hover { background: var(--pal-sup2); }
-html:not(.app-shell) body.pal-dentro .pal-squadra.pal-scelta { background: var(--pal-acc); color: var(--pal-acc-ink); }
-html:not(.app-shell) body.pal-dentro .pal-riga.pal-done { background: var(--pal-sup2); }
-html:not(.app-shell) body.pal-dentro .pal-riga.pal-next { background: var(--pal-acc); color: var(--pal-acc-ink); }
-html:not(.app-shell) body.pal-dentro .pal-riga-num { background: var(--pal-ink); color: var(--pal-sup); }
-html:not(.app-shell) body.pal-dentro .pal-riga.pal-next .pal-riga-num { background: var(--pal-acc-ink); color: var(--pal-acc); }
-html:not(.app-shell) body.pal-dentro .pal-pagina :is(.ng-bottone, .pal-link) { background: var(--pal-sup); color: var(--pal-ink); border-color: var(--pal-ink); }
+/* ---------- il tabellone: la sua insegna e i numeri della palestra ---------- */
+.pal-piatto {
+    position: relative; display: flex; flex-wrap: wrap; align-items: stretch; justify-content: space-between; overflow: hidden;
+    background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, .045) 0 7px, transparent 7px 14px), #16131f; color: #fff;
+    border: 4px solid #000; border-radius: var(--nb-raggio, 0); box-shadow: 8px 8px 0 rgba(0, 0, 0, .55);
+    transform: rotate(calc(-.5 * var(--nb-rot, 1) * 1deg));
+}
+.pal-insegna { display: flex; align-items: center; gap: 18px; box-sizing: border-box; min-width: 0; max-width: 100%; padding: 14px 28px 14px 18px; font-family: var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); }
+.pal-insegna .pal-ins-faccia { width: 86px; height: 86px; }
+.pal-insegna .pal-ins-piccolo { font-size: .72rem; letter-spacing: .22em; color: var(--nb-giallo, #ffbd44); opacity: 1; }
+.pal-insegna .pal-ins-nome { margin-top: 5px; font-size: calc(2.7rem / var(--pp-font-w, 1)); }
+.pal-insegna .pal-ins-nome:not([data-effetto-nome]) { --pp-nome: #fff; -webkit-text-stroke: 0; text-shadow: 3px 3px 0 var(--pal-acc, #000); }
+.pal-ins-musica { display: block; max-width: 34ch; margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 .68rem var(--nb-font-testo, 'Montserrat', sans-serif); letter-spacing: .05em; color: rgba(255, 255, 255, .72); }
+.pal-piatto .pal-chips { flex-wrap: nowrap; gap: 0; border-left: 3px solid rgba(255, 255, 255, .16); }
+.pal-piatto .pal-chip { min-width: 112px; padding: 10px 20px 9px; background: transparent; color: #fff; border: 0; border-right: 3px solid rgba(255, 255, 255, .1); box-shadow: none; }
+.pal-piatto .pal-chip:last-child { border-right: 0; }
+.pal-piatto .pal-chip b { font-size: 2.7rem; line-height: .95; }
+.pal-piatto .pal-chip span { margin-top: 7px; color: rgba(255, 255, 255, .75); }
+.pal-piatto .pal-chip small { color: rgba(255, 255, 255, .6); opacity: 1; }
+.pal-piatto .pal-chip-espugnata b { color: var(--nb-giallo, #ffbd44); }
+/* il riquadro dei dettagli sta sotto il tabellone, in una riga */
+.pal-sfida > .pal-dett { --pal-sup: #16131f; --pal-ink: #fff; --pal-acc: var(--nb-giallo, #ffbd44); margin: -14px 0 0; border: 4px solid #000; box-shadow: 5px 5px 0 rgba(0, 0, 0, .45); background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, .045) 0 7px, transparent 7px 14px), #16131f; }
+.pal-sfida > .pal-dett summary { color: var(--nb-giallo, #ffbd44); }
+.pal-sfida > .pal-dett .pal-stat-nome b { background: var(--nb-giallo, #ffbd44); color: #000; }
+.pal-sfida > .pal-stat-vuota { margin: -14px 0 0; padding: 8px 14px; background: #16131f; color: rgba(255, 255, 255, .8); border: 3px dashed rgba(255, 255, 255, .35); }
+
+/* ---------- il percorso: tre porte e il distintivo ---------- */
+.pal-gara-testa { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin: 0 0 14px; }
+.pal-gara-titolo { margin: 0; padding: 7px 18px 4px; background: #000; color: #fff; box-shadow: 4px 4px 0 rgba(0, 0, 0, .4); font: 900 1.05rem var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); letter-spacing: .14em; text-transform: uppercase; transform: rotate(calc(-1.5 * var(--nb-rot, 1) * 1deg)); }
+.pal-regole { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pal-regole li { padding: 5px 11px 3px; background: var(--pal-sup); color: var(--pal-ink); border: 2px solid var(--pal-ink); box-shadow: 3px 3px 0 rgba(0, 0, 0, .45); font: 800 .68rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; }
+.pal-banner { display: inline-block; max-width: 100%; box-sizing: border-box; margin: 0 0 16px; padding: 10px 16px 8px; background: var(--nb-giallo, #ffbd44); color: #000; border: 3px solid #000; box-shadow: 5px 5px 0 rgba(0, 0, 0, .5); font: 800 .9rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); transform: rotate(calc(.5 * var(--nb-rot, 1) * 1deg)); }
+
+.pal-percorso { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(124px, .62fr); gap: 30px; margin: 0; padding: 18px 0 8px; list-style: none; }
+.pal-porta { position: relative; min-width: 0; --rot: -.9deg; }
+.pal-porta:nth-child(even) { --rot: .9deg; }
+/* la freccia tra una porta e la successiva */
+.pal-porta + .pal-porta::before { content: '▶'; position: absolute; z-index: 3; left: -27px; top: 50%; display: grid; place-items: center; width: 24px; height: 24px; margin-top: -12px; background: #000; color: #fff; box-shadow: 2px 2px 0 rgba(0, 0, 0, .4); font-size: .72rem; }
+.pal-porta-btn {
+    appearance: none; position: relative; display: grid; align-content: start; gap: 9px; box-sizing: border-box; width: 100%; height: 100%; margin: 0; padding: 28px 14px 14px; text-align: left; cursor: pointer;
+    background: var(--pal-sup); color: var(--pal-ink); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 6px 6px 0 rgba(0, 0, 0, .5);
+    font: inherit; transform: rotate(var(--rot)); transition: translate .15s, box-shadow .15s, background-color .15s;
+}
+.pal-porta-btn:hover { translate: -2px -3px; box-shadow: 9px 10px 0 rgba(0, 0, 0, .5); }
+.pal-porta-btn:focus-visible, .pal-team:focus-visible, .pal-via:focus-visible { outline: 4px solid var(--pal-acc, #ffbd44); outline-offset: 3px; }
+.pal-porta-num { position: absolute; top: -17px; left: -13px; display: grid; place-items: center; width: 44px; height: 44px; padding-top: 3px; box-sizing: border-box; background: var(--pal-ink); color: var(--pal-sup); box-shadow: 3px 3px 0 rgba(0, 0, 0, .45); font: 900 1.6rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); transform: rotate(-6deg); }
+.pal-porta-stato { position: absolute; top: -13px; right: 10px; padding: 4px 10px 2px; background: #000; color: #fff; box-shadow: 2px 2px 0 rgba(0, 0, 0, .4); font: 900 .64rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; transform: rotate(2deg); }
+.pal-porta-prossima .pal-porta-stato { background: var(--nb-giallo, #ffbd44); color: #000; }
+.pal-porta-fatta .pal-porta-stato { background: #1aa84a; }
+.pal-porta-formato { display: block; margin-top: 4px; font: 900 1.3rem/1.05 var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); font-size: calc(1.3rem / var(--pp-font-w, 1)); text-transform: uppercase; overflow-wrap: anywhere; }
+.pal-slot { display: grid; align-content: center; justify-items: stretch; min-height: 76px; box-sizing: border-box; padding: 8px; background: rgba(0, 0, 0, .07); border: 3px dashed color-mix(in srgb, var(--pal-ink) 45%, transparent); }
+.pal-slot-vuoto { justify-self: center; font: 900 .75rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; opacity: .6; }
+.pal-slot-piena { border-style: solid; border-color: var(--pal-ink); background: rgba(255, 255, 255, .55); }
+.pal-slot-nome { display: block; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 .72rem var(--nb-font-testo, 'Montserrat', sans-serif); letter-spacing: .04em; text-transform: uppercase; }
+.pal-porta-nuova .pal-slot-piena { animation: pal-pop .45s cubic-bezier(.175, .885, .32, 1.275); }
+.pal-porta-nuova .pal-sprites-mini img { animation: pal-cade .5s cubic-bezier(.175, .885, .32, 1.275) backwards; }
+.pal-porta-nuova .pal-sprites-mini img:nth-child(2) { animation-delay: .05s; } .pal-porta-nuova .pal-sprites-mini img:nth-child(3) { animation-delay: .1s; }
+.pal-porta-nuova .pal-sprites-mini img:nth-child(4) { animation-delay: .15s; } .pal-porta-nuova .pal-sprites-mini img:nth-child(5) { animation-delay: .2s; } .pal-porta-nuova .pal-sprites-mini img:nth-child(6) { animation-delay: .25s; }
+@keyframes pal-cade { from { opacity: 0; translate: 0 -16px; scale: .6; } }
+.pal-sprites-mini { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; }
+.pal-sprites-mini img { width: 100%; height: 34px; object-fit: contain; }
+.pal-porta-segreto { font: 800 .6rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; opacity: .5; }
+/* la porta accesa: nel suo colore, sollevata, e fluttua appena */
+.pal-porta-attiva .pal-porta-btn { background: var(--pal-acc); color: var(--pal-acc-ink); box-shadow: 10px 14px 0 rgba(0, 0, 0, .55); animation: pal-fluttua 2.6s ease-in-out infinite; }
+.pal-porta-attiva .pal-slot { background: rgba(255, 255, 255, .35); border-color: var(--pal-acc-ink); }
+.pal-porta-attiva .pal-slot-piena { background: rgba(255, 255, 255, .6); }
+.pal-porta-attiva .pal-porta-num { background: var(--pal-acc-ink); color: var(--pal-acc); }
+@keyframes pal-fluttua { 0%, 100% { translate: 0 -4px; } 50% { translate: 0 -10px; } }
+.pal-porta-fatta .pal-porta-btn { background: color-mix(in srgb, #1aa84a 24%, var(--pal-sup)); }
+.pal-porta-fatta.pal-porta-attiva .pal-porta-btn { background: var(--pal-acc); }
+/* il distintivo in fondo: le monete */
+.pal-porta-premio { display: grid; align-content: center; justify-items: center; gap: 6px; padding: 18px 10px 14px; text-align: center; background: var(--nb-giallo, #ffbd44); color: #000; border: 3px solid #000; box-shadow: 6px 6px 0 rgba(0, 0, 0, .5); transform: rotate(calc(1.2 * var(--nb-rot, 1) * 1deg)); }
+.pal-porta-premio .pal-porta-formato { margin: 0; font-size: 1.05rem; }
+.pal-stella { font-size: 3.4rem; line-height: 1; text-shadow: 3px 3px 0 rgba(0, 0, 0, .3); animation: pal-gira 5s ease-in-out infinite; }
+@keyframes pal-gira { 0%, 100% { rotate: -8deg; scale: 1; } 50% { rotate: 8deg; scale: 1.1; } }
+.pal-moneta { font: 900 1.25rem/1.05 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.pal-moneta small { display: block; margin-top: 3px; font: 800 .6rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+.pal-porta-premio.pal-porta-fatta { animation: pal-fluttua 2.6s ease-in-out infinite; }
+
+/* ---------- i tuoi team per la porta accesa ---------- */
+.pal-selezione { position: relative; padding: 22px 24px 24px; background: var(--pal-sup); color: var(--pal-ink); border: 4px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 10px 10px 0 rgba(0, 0, 0, .55); }
+/* la tacca in alto punta alla porta accesa (le colonne sono quelle del percorso: tre uguali e il distintivo) */
+.pal-selezione::before { --c: calc((100% - 90px) / 3.62); content: ''; position: absolute; z-index: 1; top: -19px; left: calc(var(--att) * (var(--c) + 30px) + var(--c) / 2 - 19px); width: 30px; height: 30px; background: var(--pal-sup); border: 4px solid var(--pal-ink); border-right: 0; border-bottom: 0; transform: rotate(45deg); transition: left .25s cubic-bezier(.4, 0, .2, 1); }
+.pal-sel-testa { margin: 0 0 18px; }
+.pal-sel-su { margin: 0; font: 900 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .14em; text-transform: uppercase; opacity: .65; }
+.pal-sel-titolo { margin: 2px 0 8px; font: 900 2.1rem/1 var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); font-size: calc(2.1rem / var(--pp-font-w, 1)); text-transform: uppercase; }
+.pal-sel-aiuto { max-width: 62ch; margin: 0; font: 600 .85rem/1.45 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .85; }
+.pal-squadre { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+.pal-team { appearance: none; position: relative; display: grid; gap: 8px; margin: 0; padding: 12px; text-align: left; cursor: pointer; background: var(--pal-sup2); color: var(--pal-ink); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 5px 5px 0 rgba(0, 0, 0, .45); font: inherit; transition: translate .12s, box-shadow .12s, background-color .12s; }
+.pal-team:hover { translate: -3px -3px; box-shadow: 8px 8px 0 rgba(0, 0, 0, .45); }
+.pal-team:active { translate: 2px 2px; box-shadow: 2px 2px 0 rgba(0, 0, 0, .45); }
+.pal-team-nome { padding-right: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
+.pal-team .pal-sprites { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 4px; background: rgba(0, 0, 0, .06); border: 2px solid rgba(0, 0, 0, .15); }
+.pal-team .pal-sprites img { width: 100%; height: 58px; object-fit: contain; }
+.pal-team-timbro { position: absolute; top: 9px; right: 9px; display: none; padding: 4px 9px 2px; background: var(--pal-ink); color: var(--pal-sup); box-shadow: 2px 2px 0 rgba(0, 0, 0, .35); font: 900 .64rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; transform: rotate(5deg); }
+.pal-team-scelto { background: var(--pal-acc); color: var(--pal-acc-ink); box-shadow: 8px 8px 0 rgba(0, 0, 0, .5); animation: pal-pop .3s cubic-bezier(.175, .885, .32, 1.275); }
+.pal-team-scelto .pal-team-timbro { display: block; background: var(--pal-acc-ink); color: var(--pal-acc); }
+@keyframes pal-pop { from { scale: .94; } }
+.pal-vuoto { grid-column: 1 / -1; margin: 0; padding: 14px; background: #fff6d6; color: #000; border: 3px dashed #000; font: 700 .9rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.pal-vuoto a { color: inherit; }
+
+/* ---------- il tasto per entrare ---------- */
+.pal-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.pal-pronti { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; padding: 7px 13px 5px; background: var(--pal-sup); color: var(--pal-ink); border: 3px solid var(--pal-ink); box-shadow: 4px 4px 0 rgba(0, 0, 0, .45); font: 900 .78rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; }
+.pal-pips { display: inline-flex; gap: 4px; }
+.pal-pip { width: 14px; height: 14px; box-sizing: border-box; border: 2px solid var(--pal-ink); }
+.pal-pip-pieno { background: #1aa84a; }
+.pal-via { appearance: none; margin: 0; padding: 15px 34px 12px; cursor: pointer; background: #47ea6a; color: #000; border: 4px solid #000; border-radius: var(--nb-raggio, 0); box-shadow: 7px 7px 0 rgba(0, 0, 0, .55); font: 900 1.5rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; transition: translate .12s, box-shadow .12s, background-color .12s; }
+.pal-via:not(:disabled) { animation: pal-pulsa 1.8s ease-in-out infinite; }
+.pal-via:hover:not(:disabled) { translate: -3px -3px; box-shadow: 11px 11px 0 rgba(0, 0, 0, .55); background-color: #7dff97; }
+.pal-via:active:not(:disabled) { translate: 3px 3px; box-shadow: 2px 2px 0 rgba(0, 0, 0, .55); }
+.pal-via:disabled { cursor: default; opacity: .55; background: #cfcfcf; box-shadow: 4px 4px 0 rgba(0, 0, 0, .4); }
+@keyframes pal-pulsa { 0%, 100% { outline: 0 solid rgba(71, 234, 106, 0); } 50% { outline: 10px solid rgba(71, 234, 106, .38); } }
+
+/* ---------- dentro la palestra: i colori sono i suoi ---------- */
+html:not(.app-shell) body.pal-dentro .pal-pagina .ng-bottone,
+html:not(.app-shell) body.pal-dentro .pal-pagina .pal-link { background: var(--pal-sup); color: var(--pal-ink); border-color: var(--pal-ink); }
 html:not(.app-shell) body.pal-dentro .pal-pagina :is(.ng-bottone:hover:not(:disabled), .pal-link:hover) { background-color: var(--pal-acc); color: var(--pal-acc-ink); }
-html:not(.app-shell) body.pal-dentro .pal-pagina .ng-bottone.ng-compra { background: var(--pal-acc); color: var(--pal-acc-ink); }
-html:not(.app-shell) body.pal-dentro .pal-pagina .ng-bottone.ng-compra:hover:not(:disabled) { background-color: var(--pal-sup); color: var(--pal-ink); }
 
-@media (prefers-reduced-motion: reduce) { .pal-insegna, .pal-premio { transform: none; } }
+/* ---------- schermi stretti (nell'app le misure sono sue, più sotto) ---------- */
+@media (max-width: 900px) {
+    html:not(.app-shell) .pal-selezione::before { display: none; }
+    html:not(.app-shell) .pal-percorso { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 22px; }
+    html:not(.app-shell) .pal-porta-premio { grid-column: 1 / -1; grid-auto-flow: column; justify-content: center; align-items: center; gap: 14px; padding: 12px 14px; }
+    html:not(.app-shell) .pal-porta-premio::before { display: none !important; }
+    html:not(.app-shell) .pal-stella { font-size: 2.4rem; }
+    html:not(.app-shell) .pal-piatto .pal-chips { flex: 1 1 100%; border-left: 0; border-top: 3px solid rgba(255, 255, 255, .16); }
+    html:not(.app-shell) .pal-piatto .pal-chip { flex: 1 1 0; min-width: 0; padding: 8px 10px; }
+    html:not(.app-shell) .pal-piatto .pal-chip b { font-size: 2rem; }
+    html:not(.app-shell) .pal-insegna { flex: 1 1 100%; }
+}
+@media (max-width: 620px) {
+    html:not(.app-shell) .pal-sfida { gap: 22px; }
+    html:not(.app-shell) .pal-percorso { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+    html:not(.app-shell) .pal-porta + .pal-porta::before { content: '▼'; left: 50%; top: -29px; margin: 0 0 0 -12px; }
+    html:not(.app-shell) .pal-insegna { padding: 12px 16px 12px 14px; gap: 12px; }
+    html:not(.app-shell) .pal-insegna .pal-ins-faccia { width: 64px; height: 64px; }
+    html:not(.app-shell) .pal-insegna .pal-ins-nome { font-size: calc(1.9rem / var(--pp-font-w, 1)); }
+    html:not(.app-shell) .pal-sel-titolo { font-size: calc(1.6rem / var(--pp-font-w, 1)); }
+    html:not(.app-shell) .pal-selezione { padding: 18px 14px 18px; }
+    html:not(.app-shell) .pal-squadre { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    html:not(.app-shell) .pal-via { flex: 1 1 100%; font-size: 1.25rem; }
+    html:not(.app-shell) .pal-pronti { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pal-prima .pal-piatto, .pal-prima .pal-gara-testa, .pal-prima .pal-banner, .pal-prima .pal-porta, .pal-prima .pal-selezione, .pal-prima .pal-cta, .pal-prima .pal-dett, .pal-prima .pal-piatto::after,
+    .pal-porta-attiva .pal-porta-btn, .pal-stella, .pal-porta-premio.pal-porta-fatta, .pal-via:not(:disabled), .pal-team-scelto, .pal-porta-nuova .pal-slot-piena, .pal-porta-nuova .pal-sprites-mini img { animation: none; }
+    .pal-piatto, .pal-porta-btn, .pal-porta-premio, .pal-gara-titolo { transform: none; }
+}
 
-/* nell'app lo sfondo è una versione scura del colore del capopalestra, con il suo motivo appena visibile: le carte scure dell'app ci stanno sopra */
+/* =====================================================================
+   NELL'APP (sfida): tutto in uno schermo solo, senza scorrimento. Targa e porte compatte, la scelta dei team in fila (si scorre di lato), le spiegazioni non ci sono.
+   Le carte sono scure come quelle dell'app; la porta accesa e il team scelto in ambra.
+   ===================================================================== */
+/* lo sfondo è una versione scura del colore del capopalestra, con il suo motivo appena visibile */
 html.app-shell body.pg-palestra.pal-dentro { background: color-mix(in srgb, var(--pp-sfondo, #4a3b7a) 30%, #0b0920) !important; }
 html.app-shell body.pg-palestra.pal-dentro::before { opacity: .22; }
 html.app-shell body.pg-palestra.pal-dentro .pal-scritta { opacity: .1; }
-/* Nell'app la pagina sta tutta nello schermo: lo sfondo è una versione scura del colore del capopalestra, l'insegna e i numeri stanno in una riga sola e il resto (premio,
-   dettagli) si legge sulla pagina del sito. Le carte scure restano quelle dell'app. */
-html.app-shell .pal-testata { flex-wrap: nowrap; justify-content: flex-start; gap: calc(10 * var(--u)); margin: 0 0 calc(5 * var(--u)); }
-html.app-shell .pal-insegna { padding: calc(2 * var(--u)) calc(12 * var(--u)) calc(2 * var(--u)) calc(5 * var(--u)); gap: calc(7 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; transform: none; }
-html.app-shell .pal-insegna .pal-ins-faccia { width: calc(30 * var(--u)); height: calc(30 * var(--u)); }
-html.app-shell .pal-insegna .pal-ins-nome { margin-top: calc(1 * var(--u)); font-size: calc(15 * var(--u) / var(--pp-font-w, 1)); }
-html.app-shell .pal-ins-piccolo { font-size: calc(7 * var(--u)); }
-html.app-shell .pal-ins-musica { display: none; }
-html.app-shell .pal-chips { flex-wrap: nowrap; gap: calc(8 * var(--u)); }
-html.app-shell .pal-chip { min-width: calc(62 * var(--u)); padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(2 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(8 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; }
-html.app-shell .pal-chip b { font-size: calc(16 * var(--u)); }
-html.app-shell .pal-chip span, html.app-shell .pal-chip small { font-size: calc(7.5 * var(--u)); }
-html.app-shell .pal-chip small { display: none; }
-html.app-shell .pal-premio, html.app-shell .pal-dett { display: none; }
-html.app-shell .pal-chip-premio { display: flex; background: var(--nb-giallo, #ffbd44); color: #000; }
-html.app-shell .pal-chip-premio b { font-size: calc(14 * var(--u)); white-space: nowrap; }
-/* la propria palestra: il titolo e i tre numeri su una riga (le tre carte sotto non si muovono) */
+html.app-shell .pal-sfida { gap: calc(5 * var(--u)); }
+html.app-shell .pal-piatto { flex-wrap: nowrap; border-width: calc(3 * var(--u)); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .5); transform: none; }
+html.app-shell .pal-insegna { gap: calc(9 * var(--u)); padding: calc(3 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)) calc(8 * var(--u)); }
+html.app-shell .pal-insegna .pal-ins-faccia { width: calc(34 * var(--u)); height: calc(34 * var(--u)); }
+html.app-shell .pal-insegna .pal-ins-nome { margin-top: calc(1 * var(--u)); font-size: calc(17 * var(--u) / var(--pp-font-w, 1)); text-shadow: 0 calc(2 * var(--u)) 0 var(--pal-acc, #000); }
+html.app-shell .pal-insegna .pal-ins-piccolo { font-size: calc(7 * var(--u)); }
+html.app-shell .pal-ins-musica, html.app-shell .pal-dett, html.app-shell .pal-gara-testa, html.app-shell .pal-banner, html.app-shell .pal-porta-segreto, html.app-shell .pal-sel-aiuto, html.app-shell .pal-sel-su,
+html.app-shell .pal-chip small, html.app-shell .pal-selezione::before, html.app-shell .pal-porta + .pal-porta::before { display: none; }
+/* la propria palestra (dove si imposta): il titolo e i tre numeri su una riga, le tre carte sotto non si muovono */
 html.app-shell .pal-cima { display: flex; align-items: center; justify-content: space-between; gap: calc(10 * var(--u)); margin: 0 0 calc(6 * var(--u)); }
 html.app-shell .pal-cima .pal-titolo { margin: 0; }
 html.app-shell .pal-record { margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
 html.app-shell .pal-record-titolo, html.app-shell .pal-record .pal-stat-vuota { display: none; }
+html.app-shell .pal-chips { flex-wrap: nowrap; gap: calc(8 * var(--u)); }
+html.app-shell .pal-chip { min-width: calc(62 * var(--u)); padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(2 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(8 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; }
+html.app-shell .pal-chip b { font-size: calc(16 * var(--u)); }
+html.app-shell .pal-chip span, html.app-shell .pal-chip small { font-size: calc(7.5 * var(--u)); }
+/* i numeri sul tabellone: cifre sulla targa, senza carte */
+html.app-shell .pal-piatto .pal-chips { margin-left: auto; gap: 0; border-left-width: calc(2 * var(--u)); }
+html.app-shell .pal-piatto .pal-chip { min-width: calc(66 * var(--u)); padding: calc(3 * var(--u)) calc(10 * var(--u)) calc(2 * var(--u)); border: 0; border-right: calc(2 * var(--u)) solid rgba(255, 255, 255, .1); border-radius: 0; box-shadow: none; background: transparent; }
+html.app-shell .pal-piatto .pal-chip:last-child { border-right: 0; }
+html.app-shell .pal-piatto .pal-chip b { font-size: calc(22 * var(--u)); }
+html.app-shell .pal-piatto .pal-chip span { margin-top: calc(3 * var(--u)); font-size: calc(7 * var(--u)); }
+/* le porte, in una riga: tre e il distintivo */
+html.app-shell .pal-percorso { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(calc(70 * var(--u)), .42fr); gap: calc(9 * var(--u)); padding: calc(7 * var(--u)) 0 0; }
+html.app-shell .pal-porta-btn { gap: calc(2 * var(--u)); padding: calc(13 * var(--u)) calc(8 * var(--u)) calc(5 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .45); transform: none; }
+html.app-shell .pal-porta-num { top: calc(-8 * var(--u)); left: calc(-5 * var(--u)); width: calc(20 * var(--u)); height: calc(20 * var(--u)); padding-top: calc(2 * var(--u)); font-size: calc(13 * var(--u)); background: var(--nb-giallo, #ffbd44); color: #000; box-shadow: 0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .5); }
+html.app-shell .pal-porta-stato { top: calc(-6 * var(--u)); right: calc(6 * var(--u)); padding: calc(2 * var(--u)) calc(6 * var(--u)) calc(1 * var(--u)); font-size: calc(6.5 * var(--u)); }
+html.app-shell .pal-porta-formato { margin: 0; font-size: calc(11 * var(--u) / var(--pp-font-w, 1)); line-height: 1.05; }
+html.app-shell .pal-slot { min-height: calc(22 * var(--u)); padding: calc(2 * var(--u)) calc(3 * var(--u)); border-width: calc(2 * var(--u)); border-color: rgba(255, 255, 255, .3); background: rgba(0, 0, 0, .25); }
+html.app-shell .pal-slot-piena { border-color: rgba(255, 255, 255, .45); background: rgba(0, 0, 0, .3); }
+html.app-shell .pal-slot-nome { display: none; }
+html.app-shell .pal-slot-vuoto { font-size: calc(7.5 * var(--u)); }
+html.app-shell .pal-sprites-mini img { height: calc(17 * var(--u)); }
+html.app-shell .pal-porta-attiva .pal-porta-btn { background: var(--nb-giallo, #ffbd44); color: #000; border-color: #000; box-shadow: 0 calc(5 * var(--u)) 0 rgba(0, 0, 0, .55); animation: none; translate: 0 calc(-2 * var(--u)); }
+html.app-shell .pal-porta-attiva .pal-slot, html.app-shell .pal-porta-attiva .pal-slot-piena { background: rgba(0, 0, 0, .16); border-color: rgba(0, 0, 0, .55); }
+html.app-shell .pal-porta-attiva .pal-porta-num { background: #000; color: var(--nb-giallo, #ffbd44); }
+html.app-shell .pal-porta-fatta .pal-porta-btn { background: rgba(26, 168, 74, .35); }
+html.app-shell .pal-porta-fatta.pal-porta-attiva .pal-porta-btn { background: var(--nb-giallo, #ffbd44); }
+html.app-shell .pal-porta-premio { gap: calc(1 * var(--u)); padding: calc(6 * var(--u)) calc(4 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .5); transform: none; }
+html.app-shell .pal-stella { font-size: calc(22 * var(--u)); text-shadow: none; }
+html.app-shell .pal-porta-premio .pal-porta-formato { font-size: calc(8 * var(--u)); }
+html.app-shell .pal-moneta { font-size: calc(12 * var(--u)); text-align: center; }
+html.app-shell .pal-moneta small { font-size: calc(6 * var(--u)); }
+/* la scelta dei team: una fila che si scorre di lato */
+html.app-shell .pal-selezione { padding: calc(5 * var(--u)) calc(10 * var(--u)) calc(6 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(14 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .45); }
+html.app-shell .pal-sel-testa { margin: 0 0 calc(3 * var(--u)); }
+html.app-shell .pal-sel-titolo { margin: 0; font-size: calc(13 * var(--u) / var(--pp-font-w, 1)); }
+html.app-shell .pal-squadre { display: flex; gap: calc(9 * var(--u)); overflow-x: auto; overflow-y: hidden; padding: calc(2 * var(--u)) calc(4 * var(--u)) calc(4 * var(--u)); scroll-snap-type: x proximity; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+html.app-shell .pal-squadre::-webkit-scrollbar { display: none; }
+html.app-shell .pal-team { flex: 0 0 calc(182 * var(--u)); scroll-snap-align: start; gap: calc(3 * var(--u)); padding: calc(4 * var(--u)) calc(8 * var(--u)) calc(5 * var(--u)); background: rgba(255, 255, 255, .08); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .4); }
+html.app-shell .pal-team:hover { translate: none; box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .4); background: rgba(255, 255, 255, .14); }
+html.app-shell .pal-team-nome { padding-right: calc(46 * var(--u)); font-size: calc(10.5 * var(--u)); }
+html.app-shell .pal-team .pal-sprites { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; padding: calc(2 * var(--u)); background: rgba(0, 0, 0, .25); border-color: rgba(255, 255, 255, .15); }
+html.app-shell .pal-team .pal-sprites img { height: calc(27 * var(--u)); }
+html.app-shell .pal-team-timbro { top: calc(5 * var(--u)); right: calc(6 * var(--u)); padding: calc(2 * var(--u)) calc(6 * var(--u)) calc(1 * var(--u)); font-size: calc(6.5 * var(--u)); }
+html.app-shell .pal-team-scelto, html.app-shell .pal-team-scelto:hover { background: var(--nb-giallo, #ffbd44); color: #000; border-color: #000; box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .55); }
+html.app-shell .pal-team-scelto .pal-team-timbro { background: #000; color: var(--nb-giallo, #ffbd44); }
+html.app-shell .pal-vuoto { padding: calc(8 * var(--u)); font-size: calc(10 * var(--u)); background: rgba(255, 246, 214, .95); }
+/* il tasto per entrare, in fila con il resto */
+html.app-shell .pal-cta { gap: calc(9 * var(--u)); }
+html.app-shell .pal-pronti { padding: calc(3 * var(--u)) calc(9 * var(--u)) calc(2 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .45); font-size: calc(8 * var(--u)); background: rgba(0, 0, 0, .5); color: #fff; border-color: rgba(255, 255, 255, .28); }
+html.app-shell .pal-pip { width: calc(10 * var(--u)); height: calc(10 * var(--u)); border-color: rgba(255, 255, 255, .6); }
+html.app-shell .pal-via { padding: calc(6 * var(--u)) calc(22 * var(--u)) calc(4 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .55); font-size: calc(14 * var(--u)); }
+html.app-shell .pal-via:hover:not(:disabled) { translate: none; box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .55); }
