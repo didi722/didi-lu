@@ -299,8 +299,8 @@ export async function caricaAmichevole(db, info, mioLato) {
 // -----------------------------------------------------
 // 6. PALESTRA: LA TAPPA DI UN ALLENATORE (palestra.js)
 // -----------------------------------------------------
-// I team della palestra seguono il Box di chi la tiene: si legge il team di adesso. Ritorna { nome (dell'allenatore), id, tappa, vantaggio, team: { nome, testo }, regolamento, categoria, aspetto }
-// (aspetto: colore, avatar, pagina, aura ed effetti del capopalestra, con cui il simulatore veste la palestra: Palestra.temaPalestra)
+// I team della palestra seguono il Box di chi la tiene: si legge il team di adesso. Ritorna { nome (dell'allenatore), id, tappa, vantaggio, team: { nome, testo }, regolamento, categoria, aspetto, musica }
+// (aspetto: colore, avatar, pagina, aura ed effetti del capopalestra, con cui il simulatore veste la palestra: Palestra.temaPalestra; musica: la sua canzone, { url, nome } o null)
 export async function caricaTappaPalestra(db, idGym, numeroTappa) {
     const id = String(idGym || '').toLowerCase().trim();
     if (!id) throw new Error('No gym selected.');
@@ -325,8 +325,8 @@ export async function caricaTappaPalestra(db, idGym, numeroTappa) {
     if (info.pkmBox && info.pkmPreferito && self.Cosmetici) {
         try { shiny = !!self.Cosmetici.compagnoShiny(info, (await db.ref(`players/${id}/teams`).once('value')).val() || {}); } catch (e) { /* senza shiny */ }
     }
-    const aspetto = { colore: info.color, avatar: info.avatar, pagina: info.pagina, aura: info.aura, effettoNome: info.effettoNome, effettoPalco: info.effettoPalco, compagno: info.pkmPreferito ? { nome: String(info.pkmPreferito), shiny } : null };
-    return { nome: String(info.name || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria, aspetto };
+    const aspetto = self.Palestra.aspettoCapo(info, shiny);      // lo stesso della pagina di scelta dei team (palestra-ui.js): colori, avatar, effetti, compagno e canzone
+    return { nome: String(info.name || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria, aspetto, musica: aspetto.musica };
 }
 
 

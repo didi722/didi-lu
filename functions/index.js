@@ -276,6 +276,19 @@ exports.cambiaCosmetico = negozio('cambia');             // indossare un avatar,
 exports.rilasciaCosmetico = negozio('rilascia');         // lasciare andare un avatar, un colore o una canzone (gratis): torna libero per tutti
 exports.shinyPokemonTeam = negozio('shinyPokemon');      // lo shiny di un Pokémon di un team del Box (anche bloccato)
 
+// Le palestre (functions/palestra-sfide.js): il browser riferisce l'inizio e la fine di ogni tappa contro la capopalestra; qui si scrivono le statistiche della palestra
+// (players/<id>/palestraStat) e, a chi la espugna, il premio in monete (una volta a settimana). Leggera: niente simulatore.
+const palestraSfide = require('./palestra-sfide');
+exports.palestraSfida = onCall({ region: REGIONE, memory: '256MiB', timeoutSeconds: 20, cors: true }, async richiesta => {
+    if (!richiesta.auth) throw new HttpsError('unauthenticated', 'Devi essere loggato');
+    try {
+        return await palestraSfide.sfida({ db: getDatabase(), uid: richiesta.auth.uid, dati: richiesta.data || {} });
+    } catch (e) {
+        console.error('palestraSfida', e);
+        throw new HttpsError('internal', 'Errore del server: riprova tra poco');
+    }
+});
+
 // Le iscrizioni di una stagione si aprono (la stagione nasce "open", o torna ad esserlo), o la stagione si conclude
 exports.pushStatoStagione = onValueWritten(
     { ...OPZIONI_PUSH, ref: '/seasons/{stagione}/info/status' },

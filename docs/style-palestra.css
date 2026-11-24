@@ -124,3 +124,141 @@ html.app-shell .pal-scelta { background: var(--nb-giallo, #ffbd44); color: #000;
 html.app-shell .pal-vuoto { background: rgba(255, 246, 214, .95); color: #000; }
 /* il riepilogo: i tre passi uno accanto all'altro */
 html.app-shell .pal-righe { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(10 * var(--u)); }
+
+/* =====================================================================
+   I NUMERI DELLA PALESTRA (palestra-stat.js, palestra-ui.js: numeriHtml e dettagliHtml)
+   Tre numeri grandi (tentativi, volte che la palestra ha tenuto, volte che è stata espugnata) e un riquadro che si apre con la tappa per tappa e le ultime sfide.
+   I colori vengono da --pal-sup / --pal-ink (la carta del sito; dentro la palestra quella del capopalestra) e da --pal-acc (il suo colore firma).
+   ===================================================================== */
+body.pg-palestra { --pal-sup: var(--nb-carta, #fff); --pal-ink: #000; --pal-sup2: #f2f2f2; --pal-acc: #8fd3ff; --pal-acc-ink: #000; }
+.pal-chips { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.pal-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 92px; padding: 7px 14px 6px; box-sizing: border-box; line-height: 1; text-transform: uppercase; background: var(--pal-sup); color: var(--pal-ink); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 4px 4px 0 rgba(0, 0, 0, .45); font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.pal-chip b { font-size: 1.9rem; font-weight: 900; }
+.pal-chip span { margin-top: 4px; font-size: .62rem; font-weight: 800; letter-spacing: .1em; }
+.pal-chip small { margin-top: 2px; font-size: .62rem; font-weight: 700; letter-spacing: .06em; opacity: .75; }
+.pal-chip-tenuta { background: var(--pal-acc); color: var(--pal-acc-ink); }
+.pal-chip-espugnata { background: var(--nb-giallo, #ffbd44); color: #000; }
+.pal-chip-premio { display: none; }       /* il premio come numero serve solo nell'app: sul sito c'è il cartellino */
+
+.pal-record { margin: 0 0 22px; padding: 14px 16px 16px; background: var(--pal-sup); color: var(--pal-ink); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.pal-record-titolo { margin: 0 0 10px; font: 900 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
+.pal-stat-vuota { margin: 12px 0 0; font: 700 .8rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .8; }
+
+.pal-dett { margin: 14px 0 0; background: var(--pal-sup); color: var(--pal-ink); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); }
+.pal-dett summary { padding: 8px 14px 6px; cursor: pointer; list-style: none; font: 900 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; }
+.pal-dett summary::-webkit-details-marker { display: none; }
+.pal-dett summary::before { content: '▸ '; }
+.pal-dett[open] summary::before { content: '▾ '; }
+.pal-dett-corpo { display: grid; gap: 14px; padding: 4px 14px 14px; font: 600 .8rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.pal-stat-tappe, .pal-stat-ultime { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pal-stat-tappe li { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(70px, 1fr) auto; align-items: center; gap: 12px; }
+.pal-stat-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; text-transform: uppercase; }
+.pal-stat-nome b { display: inline-block; min-width: 20px; margin-right: 6px; padding: 3px 4px 1px; box-sizing: border-box; text-align: center; background: var(--pal-ink); color: var(--pal-sup); }
+.pal-stat-barra { box-sizing: border-box; height: 14px; overflow: hidden; background: rgba(128, 128, 128, .25); border: 2px solid var(--pal-ink); }
+.pal-stat-barra i { display: block; height: 100%; background: var(--pal-acc); }
+.pal-stat-val { font-size: .72rem; white-space: nowrap; opacity: .85; }
+.pal-stat-espugn { margin: 0; }
+.pal-stat-ultime li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-top: 6px; border-top: 2px dashed rgba(128, 128, 128, .45); }
+.pal-stat-ultime time { flex: none; font-size: .7rem; opacity: .7; }
+@media (max-width: 700px) {
+    .pal-chip { flex: 1 1 0; min-width: 0; padding: 6px 8px 5px; }
+    .pal-chip b { font-size: 1.5rem; }
+    .pal-stat-tappe li { grid-template-columns: minmax(0, 1fr) auto; }
+    .pal-stat-barra { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* =====================================================================
+   DENTRO LA PALESTRA (palestra.html?player=…: palestra-ui.js, vestiSala)
+   Sfidando un altro la pagina ha l'aspetto della sua palestra, come il simulatore (style-palestra-battaglia.css e style-versus.css: sfondo del suo colore con il suo motivo e il suo nome
+   gigante, il suo avatar con l'aura e il suo compagno ai lati, l'effetto del suo palco). Le variabili --pp-* e --pal-* le scrive Palestra.temaPalestra sul <html>; la classe
+   `palestra` sul <body> accende lo sfondo del simulatore, `pal-dentro` questi stili.
+   ===================================================================== */
+html body.pg-palestra.pal-dentro { --pal-sup: var(--pp-sup, #fff); --pal-ink: var(--pp-ink, #000); --pal-sup2: var(--pp-sup-2, #f2f2f2); --pal-acc: var(--pal-colore, #ffbd44); --pal-acc-ink: var(--pal-colore-ink, #000); background: var(--pp-sfondo, #ffe5a1) !important; }
+/* lo sfondo del simulatore (body.palestra, style-palestra-battaglia.css) qui perde con quello del tema (temi.css: body.nb ha il suo sfondo con !important e la scritta fantasma nel ::before): si rimette */
+html body.pg-palestra.pal-dentro::before {
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; font: inherit; letter-spacing: normal; text-transform: none;
+    background-color: var(--pp-sfondo); background-image: var(--pp-sfondo-img); background-size: var(--pp-sfondo-dim); background-position: var(--pp-sfondo-pos);
+}
+html body.pg-palestra.pal-dentro.pal-scorre::before { inset: calc(var(--pp-periodo) * -1) 0 0 calc(var(--pp-periodo) * -1); animation: pal-scorri 7s linear infinite; }
+/* la pagina sta intera, senza i manifesti a sinistra (qui si sta dentro la palestra) */
+html:not(.app-shell) body.pal-dentro .ads-sidebar { display: none; }
+html:not(.app-shell) body.pal-dentro .pal-pagina { width: min(940px, calc(100% - 40px)); margin: 0 auto; padding-top: 28px; font-family: var(--nb-font-testo, 'Montserrat', sans-serif); }
+/* l'effetto del suo palco, davanti a tutto, che non si tocca */
+body.pal-dentro > .pal-effetto { position: fixed; z-index: 10; }
+
+/* l'avatar e il compagno ai lati (dietro alla pagina), come sullo sfondo del simulatore */
+body.pal-dentro .pal-decor .vs-avatar { left: max(8vw, 128px); height: min(42vh, 440px); }
+body.pal-dentro .pal-decor .vs-compagno { left: auto; right: max(6vw, 110px); transform: translateX(50%); }
+@media (max-width: 720px) {
+    body.pal-dentro .pal-decor .vs-avatar { left: 22vw; height: 34vh; }
+    body.pal-dentro .pal-decor .vs-compagno { right: 8vw; }
+}
+
+/* l'insegna in cima: la sua faccia con l'aura, GYM LEADER e il suo nome (con il suo font e il suo effetto), la canzone che suona */
+.pal-testata { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 26px; margin: 0 0 18px; }
+.pal-insegna { display: inline-flex; align-items: center; gap: 14px; box-sizing: border-box; max-width: 100%; min-width: 0; padding: 8px 24px 8px 12px; background: var(--pal-sup); color: var(--pal-ink); border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 6px 6px 0 rgba(0, 0, 0, .5); transform: rotate(calc(-1.2 * var(--nb-rot, 1) * 1deg)); font-family: var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); }
+.pal-insegna .pal-ins-faccia { width: 66px; height: 66px; }
+.pal-insegna .pal-ins-nome { font-size: calc(2rem / var(--pp-font-w, 1)); }
+.pal-ins-musica { display: block; max-width: 34ch; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 .66rem var(--nb-font-testo, 'Montserrat', sans-serif); letter-spacing: .05em; opacity: .75; }
+.pal-premio { display: inline-block; box-sizing: border-box; max-width: 100%; margin: 0 0 16px; padding: 8px 14px 6px; background: var(--nb-giallo, #ffbd44); color: #000; border: 3px solid var(--pal-ink); border-radius: var(--nb-raggio, 0); box-shadow: 4px 4px 0 rgba(0, 0, 0, .45); font: 800 .8rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); transform: rotate(calc(.6 * var(--nb-rot, 1) * 1deg)); }
+.pal-premio-preso { background: var(--pal-sup); color: var(--pal-ink); }
+/* il premio e il riquadro dei dettagli stanno su una riga; aperto, il riquadro prende tutta la larghezza */
+.pal-sotto { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 16px; margin: 0 0 20px; }
+.pal-sotto .pal-premio { margin: 0; }
+.pal-sotto .pal-dett { flex: 1 1 280px; margin: 0; box-shadow: 4px 4px 0 rgba(0, 0, 0, .45); }
+.pal-sotto .pal-dett[open] { flex-basis: 100%; }
+.pal-sotto .pal-stat-vuota { margin: 0; align-self: center; padding: 6px 12px; background: var(--pal-sup); color: var(--pal-ink); border: 2px dashed var(--pal-ink); }
+
+/* le carte, i passi e i tasti nei colori della sua carta (--pp-sup / --pp-ink) e con il suo font; lo stato si dice con il suo colore firma, non con tinte chiare che sul nero non si leggono */
+html:not(.app-shell) body.pal-dentro .pal-passo,
+html:not(.app-shell) body.pal-dentro .pal-passo-corpo,
+html:not(.app-shell) body.pal-dentro .pal-riga { background: var(--pal-sup); color: var(--pal-ink); border-color: var(--pal-ink); }
+html:not(.app-shell) body.pal-dentro .pal-passo-corpo { box-shadow: 8px 8px 0 rgba(0, 0, 0, .55); }
+html:not(.app-shell) body.pal-dentro .pal-passo { opacity: .8; font-family: var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); }
+html:not(.app-shell) body.pal-dentro .pal-passo b { background: var(--pal-ink); color: var(--pal-sup); }
+html:not(.app-shell) body.pal-dentro .pal-passo-ora { opacity: 1; background: var(--pal-acc); color: var(--pal-acc-ink); border-color: var(--pal-ink); }
+html:not(.app-shell) body.pal-dentro .pal-passo-ora b { background: var(--pal-acc-ink); color: var(--pal-acc); }
+html:not(.app-shell) body.pal-dentro .pal-passo-fatto { opacity: 1; background: var(--pal-sup2); }
+html:not(.app-shell) body.pal-dentro .pal-passo-fatto b { background: #1aa84a; color: #fff; }
+html:not(.app-shell) body.pal-dentro .pal-passo-titolo,
+html:not(.app-shell) body.pal-dentro .pal-formato { font-family: var(--pp-font, var(--nb-font-titoli, 'Josefin Sans', sans-serif)); }
+html:not(.app-shell) body.pal-dentro .pal-passo-titolo { font-size: calc(1.9rem / var(--pp-font-w, 1)); }
+html:not(.app-shell) body.pal-dentro .pal-squadra { background: var(--pal-sup2); color: var(--pal-ink); border-color: var(--pal-ink); }
+html:not(.app-shell) body.pal-dentro .pal-squadra:hover { background: var(--pal-sup2); }
+html:not(.app-shell) body.pal-dentro .pal-squadra.pal-scelta { background: var(--pal-acc); color: var(--pal-acc-ink); }
+html:not(.app-shell) body.pal-dentro .pal-riga.pal-done { background: var(--pal-sup2); }
+html:not(.app-shell) body.pal-dentro .pal-riga.pal-next { background: var(--pal-acc); color: var(--pal-acc-ink); }
+html:not(.app-shell) body.pal-dentro .pal-riga-num { background: var(--pal-ink); color: var(--pal-sup); }
+html:not(.app-shell) body.pal-dentro .pal-riga.pal-next .pal-riga-num { background: var(--pal-acc-ink); color: var(--pal-acc); }
+html:not(.app-shell) body.pal-dentro .pal-pagina :is(.ng-bottone, .pal-link) { background: var(--pal-sup); color: var(--pal-ink); border-color: var(--pal-ink); }
+html:not(.app-shell) body.pal-dentro .pal-pagina :is(.ng-bottone:hover:not(:disabled), .pal-link:hover) { background-color: var(--pal-acc); color: var(--pal-acc-ink); }
+html:not(.app-shell) body.pal-dentro .pal-pagina .ng-bottone.ng-compra { background: var(--pal-acc); color: var(--pal-acc-ink); }
+html:not(.app-shell) body.pal-dentro .pal-pagina .ng-bottone.ng-compra:hover:not(:disabled) { background-color: var(--pal-sup); color: var(--pal-ink); }
+
+@media (prefers-reduced-motion: reduce) { .pal-insegna, .pal-premio { transform: none; } }
+
+/* nell'app lo sfondo è una versione scura del colore del capopalestra, con il suo motivo appena visibile: le carte scure dell'app ci stanno sopra */
+html.app-shell body.pg-palestra.pal-dentro { background: color-mix(in srgb, var(--pp-sfondo, #4a3b7a) 30%, #0b0920) !important; }
+html.app-shell body.pg-palestra.pal-dentro::before { opacity: .22; }
+html.app-shell body.pg-palestra.pal-dentro .pal-scritta { opacity: .1; }
+/* Nell'app la pagina sta tutta nello schermo: lo sfondo è una versione scura del colore del capopalestra, l'insegna e i numeri stanno in una riga sola e il resto (premio,
+   dettagli) si legge sulla pagina del sito. Le carte scure restano quelle dell'app. */
+html.app-shell .pal-testata { flex-wrap: nowrap; justify-content: flex-start; gap: calc(10 * var(--u)); margin: 0 0 calc(5 * var(--u)); }
+html.app-shell .pal-insegna { padding: calc(2 * var(--u)) calc(12 * var(--u)) calc(2 * var(--u)) calc(5 * var(--u)); gap: calc(7 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; transform: none; }
+html.app-shell .pal-insegna .pal-ins-faccia { width: calc(30 * var(--u)); height: calc(30 * var(--u)); }
+html.app-shell .pal-insegna .pal-ins-nome { margin-top: calc(1 * var(--u)); font-size: calc(15 * var(--u) / var(--pp-font-w, 1)); }
+html.app-shell .pal-ins-piccolo { font-size: calc(7 * var(--u)); }
+html.app-shell .pal-ins-musica { display: none; }
+html.app-shell .pal-chips { flex-wrap: nowrap; gap: calc(8 * var(--u)); }
+html.app-shell .pal-chip { min-width: calc(62 * var(--u)); padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(2 * var(--u)); border-width: calc(2.5 * var(--u)); border-radius: calc(8 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 #000; }
+html.app-shell .pal-chip b { font-size: calc(16 * var(--u)); }
+html.app-shell .pal-chip span, html.app-shell .pal-chip small { font-size: calc(7.5 * var(--u)); }
+html.app-shell .pal-chip small { display: none; }
+html.app-shell .pal-premio, html.app-shell .pal-dett { display: none; }
+html.app-shell .pal-chip-premio { display: flex; background: var(--nb-giallo, #ffbd44); color: #000; }
+html.app-shell .pal-chip-premio b { font-size: calc(14 * var(--u)); white-space: nowrap; }
+/* la propria palestra: il titolo e i tre numeri su una riga (le tre carte sotto non si muovono) */
+html.app-shell .pal-cima { display: flex; align-items: center; justify-content: space-between; gap: calc(10 * var(--u)); margin: 0 0 calc(6 * var(--u)); }
+html.app-shell .pal-cima .pal-titolo { margin: 0; }
+html.app-shell .pal-record { margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+html.app-shell .pal-record-titolo, html.app-shell .pal-record .pal-stat-vuota { display: none; }

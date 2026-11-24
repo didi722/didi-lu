@@ -20,6 +20,8 @@
 //   Palestra.proteggi(battle, vantaggio)   i boost del vantaggio non si abbassano per abilità (da chiamare appena creata la partita)
 //   Palestra.testoAnnuncio(vantaggio, gen) il testo che avvisa chi sfida del vantaggio
 //   Palestra.temaPalestra(aspetto, PaginaPubblica, Cosmetici)   colori, sfondo ed effetti della palestra in battaglia (dalla pagina pubblica del capopalestra)
+//   Palestra.aspettoCapo(info, shiny)      l'aspetto del capopalestra (colore, avatar, pagina, aura, effetti, compagno, canzone) da players/<id>/info: lo stesso per la scelta dei team (palestra.html) e il simulatore
+//   Palestra.urlMusica(url)                l'indirizzo di una canzone, solo se è sicuro (https://, http:// o un percorso del sito); altrimenti ''
 //
 // Niente DOM, niente Firebase: si prova in Node (test/palestra.test.js).
 // =====================================================
@@ -138,7 +140,8 @@
     /**
      * Come deve sembrare la palestra di un allenatore nel simulatore: i colori, lo sfondo e gli effetti della sua pagina pubblica (players/<id>/info: color, pagina, aura,
      * effettoNome, effettoPalco). `PaginaPubblica` e `Cosmetici` sono i moduli del sito (passati da fuori: questo file non dipende da loro). Ritorna
-     *   { variabili: { '--pp-*': ..., '--pal-*': ... } (da scrivere sul <html>), colore, avatar, aura: {id, colore} | null, effettoNome, effettoPalco, scritta (testo del nome gigante o ''), scorre }
+     *   { variabili: { '--pp-*': ..., '--pal-*': ... } (da scrivere sul <html>), colore, avatar, aura: {id, colore} | null, effettoNome, effettoPalco, scritta (testo del nome gigante o ''), scorre,
+     *     font (il nome del suo carattere su Google Fonts, da caricare: uno della lista di PaginaPubblica.FONT) }
      * Qualunque cosa ci sia nel database passa dalle liste di scelte ammesse di PaginaPubblica.normalizza e dal catalogo dei cosmetici: niente testo libero arriva al CSS.
      */
     function temaPalestra(aspetto, PaginaPubblica, Cosmetici) {
@@ -159,8 +162,10 @@
         const aura = cosmetico(a.aura, 'aura');
         const nome = cosmetico(a.effettoNome, 'nome');
         const palco = cosmetico(a.effettoPalco, 'palco');
+        const carattere = P.FONT && P.FONT[config.carta.font];
         return {
             variabili, colore,
+            font: carattere && carattere.nome ? carattere.nome : '',
             avatar: typeof a.avatar === 'string' ? a.avatar : '',
             aura: aura ? { id: aura.id, colore: aura.colore || colore } : null,
             effettoNome: nome ? nome.id : null,
@@ -168,6 +173,33 @@
             scritta: config.sfondo.scritta ? 'on' : '',
             scorre: !!config.sfondo.animato && sf.periodo > 0,
             inchiostro: P.inchiostroSu(sf.colore)
+        };
+    }
+
+    /**
+     * L'indirizzo di una canzone (players/<id>/info/musicaPreferita) buono da dare a un <audio>: un indirizzo http(s) o un percorso del sito, mai javascript:, data: o testo con virgolette
+     * e spazi. Il valore lo scrive il server, ma passa dal database: nel dubbio si tace.
+     */
+    function urlMusica(url) {
+        if (typeof url !== 'string') return '';
+        const u = url.trim();
+        if (!u || u.length > 600 || /[\s<>"'`\\]/.test(u)) return '';
+        if (/^https?:\/\/[^/]/i.test(u)) return u;
+        if (/^[a-z0-9_\-./%()]+$/i.test(u) && !/^[a-z][a-z0-9+.-]*:/i.test(u) && !u.includes('..') && !u.startsWith('/')) return u;
+        return '';
+    }
+
+    /**
+     * Com'è fatto il capopalestra, da players/<id>/info: colore, avatar, pagina pubblica, aura, effetti del nome e del palco, il Pokémon compagno (shiny se `shiny`) e la sua canzone
+     * ({ url, nome } o null). La scelta dei team (palestra.html) e il simulatore (team-sito.js) lo leggono da qui, così la palestra si vede e si sente uguale. temaPalestra ne ricava i colori.
+     */
+    function aspettoCapo(info, shiny) {
+        const i = info || {};
+        const url = urlMusica(i.musicaPreferita);
+        return {
+            colore: i.color, avatar: i.avatar, pagina: i.pagina, aura: i.aura, effettoNome: i.effettoNome, effettoPalco: i.effettoPalco,
+            compagno: i.pkmPreferito ? { nome: String(i.pkmPreferito), shiny: !!shiny } : null,
+            musica: url ? { url, nome: String(i.musicName || '').slice(0, 80) } : null
         };
     }
 
@@ -291,5 +323,5 @@
         };
     }
 
-    return { TAPPE, VANTAGGI, perId, vantaggiPer, generazioneDi, eDoppio, tappeDi, problemi, nuovaSfida, avanza, azzera, finita, chiaveSfida, leggiSfida, salvaSfida, applica, proteggi, condizioniFisse, testoAnnuncio, temaPalestra };
+    return { TAPPE, VANTAGGI, perId, vantaggiPer, generazioneDi, eDoppio, tappeDi, problemi, nuovaSfida, avanza, azzera, finita, chiaveSfida, leggiSfida, salvaSfida, applica, proteggi, condizioniFisse, testoAnnuncio, temaPalestra, aspettoCapo, urlMusica };
 });

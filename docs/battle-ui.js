@@ -94,6 +94,7 @@ let versusInCorso = 0, versusPronto = Promise.resolve();     // lo sfondo "sfida
 let introSet = null, timerProntaCpu = null, introGenerazione = 0;     // (introGenerazione cambia a ogni introAbbandona: una partenza anticipata in ritardo lo vede e non parte)
 let personaAnticipata = null;   // contro la CPU: la promessa dell'avversario scelto in anticipo e dello sfondo già costruito (anticipaIntroCpu)
 let scenaPalestra = Promise.resolve();      // la palestra: il compagno ha la sua misura (vestiPalestra)
+let musicaCapo = null;          // la palestra: l'<audio> con la canzone del capopalestra (avviaMusicaPalestra)
 let ultimoProgresso = '';       // l'ultimo passo del caricamento scritto sul campo ("Loading your team…"): l'intro lo ripete finché aspetta
 let prossimaScena = null;   // righe di un nuovo set arrivato mentre il set precedente si sta ancora animando
 const attesaScena = [];     // cose da fare quando le animazioni arrivano in fondo
@@ -1475,9 +1476,20 @@ async function preparaPalestra(idGym, numeroTappa, chiaveTeam) {
     };
     if (dati.colore) document.documentElement.style.setProperty('--colore-p1', dati.colore);
     cpu.palestra.tema = vestiPalestra(gym);
+    avviaMusicaPalestra(gym.musica);        // la canzone scelta dal capopalestra, al posto di quella di Showdown (prima che la scena parta)
     impostaPannelli();
     schedeCpu();
     avviaBattaglia();
+}
+
+/** Il carattere del capopalestra (uno della lista di PaginaPubblica.FONT: niente testo libero) si carica da Google Fonts come sulla sua pagina; Josefin Sans e Montserrat ci sono già (battle.html) */
+function caricaFontPalestra(nome) {
+    if (!nome || nome === 'Josefin Sans' || nome === 'Montserrat' || document.querySelector(`link[data-pal-font="${nome}"]`)) return;
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.dataset.palFont = nome;
+    l.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(nome).replace(/%20/g, '+')}&display=swap`;
+    document.head.append(l);
 }
 
 // La palestra sembra la palestra di chi la tiene: sfondo, colori, font ed effetti della sua pagina pubblica (Palestra.temaPalestra).
@@ -1487,6 +1499,7 @@ function vestiPalestra(gym) {
     const pagina = (gym.aspetto && gym.aspetto.pagina && typeof gym.aspetto.pagina === 'object') ? gym.aspetto.pagina : {};
     const aspetto = { ...gym.aspetto, pagina: { ...pagina, sfondo: { ...((typeof pagina.sfondo === 'object' && pagina.sfondo) || {}), colore: 'giocatore' } } };
     const tema = self.Palestra.temaPalestra(aspetto, self.PaginaPubblica, self.Cosmetici);
+    caricaFontPalestra(tema.font);
     const radice = document.documentElement;
     for (const [nome, valore] of Object.entries(tema.variabili)) radice.style.setProperty(nome, valore);
     radice.style.setProperty('--colore-p2', tema.colore);
@@ -1827,11 +1840,44 @@ function nascondiAnnuncioPalestra() {
     $('pal-annuncio').hidden = true;
 }
 
+/**
+ * Dice al server come va la tappa (Function palestraSfida, functions/palestra-sfide.js): all'inizio ('inizia') e alla fine ('fine', vinta o no). Lui scrive le statistiche della palestra
+ * (quanti tentativi, quante volte ha tenuto, quante è stata espugnata) e dà il premio in monete a chi la espugna (una volta a settimana). Non blocca e non rompe mai niente: se la chiamata
+ * non riesce la sfida va avanti lo stesso (quella di "fine" si ritenta una volta). Ritorna la risposta del server, o null.
+ */
+async function riferisciPalestra(azione, vinta) {
+    const g = cpu && cpu.palestra;
+    if (!g || !window.firebase || !firebase.functions) return null;
+    const dati = { azione, gym: g.id, tappa: g.tappa };
+    if (azione === 'fine') dati.vinta = !!vinta;
+    const chiama = () => firebase.app().functions('europe-west1').httpsCallable('palestraSfida')(dati).then(r => (r && r.data) || null);
+    try {
+        return await chiama();
+    } catch (e) {
+        if (azione !== 'fine') return null;
+        await new Promise(ok => setTimeout(ok, 2500));
+        try { return await chiama(); } catch (e2) { console.warn('Gym result not recorded', e2); return null; }
+    }
+}
+
+/** La riga del premio nel cartello di fine palestra: le monete prese, o perché stavolta niente */
+function mostraPremioPalestra(esito) {
+    const riga = $('premio-vittoria');
+    if (!riga || !esito || !esito.ok || esito.esito !== 'espugnata') return;
+    if (esito.premio > 0) riga.textContent = `🪙 +${esito.premio} coins for conquering the gym! The next gym coins are up for grabs on Monday.`;
+    else if (esito.motivoPremio === 'already') riga.textContent = '🪙 You already collected your gym coins this week: they are back on Monday.';
+    else if (esito.motivoPremio === 'unverified') riga.textContent = "🪙 No coins this time: they're paid when you clear all 3 stages in one run, starting from stage 1.";
+    else return;
+    riga.classList.toggle('esito-premio-preso', esito.premio > 0);
+    riga.hidden = false;
+}
+
 /** Alla fine di una tappa: si salvano i progressi e si propone cosa fare (la tappa dopo, o ricominciare) */
 function mostraFinePalestra(vincitore) {
     const P = self.Palestra, g = cpu.palestra;
     nascondiAnnuncioPalestra();
     const vinto = !!vincitore && vincitore === config.p1.nome;
+    riferisciPalestra('fine', vinto).then(mostraPremioPalestra);
     const chiave = P.chiaveSfida(config.p1.id, g.id);
     let sfida = P.leggiSfida(localStorage, chiave) || P.nuovaSfida([cpu.chiaveTeam]);
     const alla = (testo, href, primario) => el('a', { class: `btn ${primario ? 'primario' : 'secondario'}`, href }, testo);
@@ -1888,7 +1934,10 @@ function avviaBattaglia() {
     battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2, vantaggio: cpu && cpu.palestra && cpu.palestra.vantaggio ? { id: cpu.palestra.vantaggio.id, lato: 'p2', nome: cpu.palestra.nome } : null });
     collegaEventi(battaglia);
     battaglia.avvia();
-    if (cpu && cpu.palestra) mostraAnnuncioPalestra(false);      // chi sfida deve accorgersi del vantaggio prima di scegliere i lead
+    if (cpu && cpu.palestra) {
+        mostraAnnuncioPalestra(false);      // chi sfida deve accorgersi del vantaggio prima di scegliere i lead
+        riferisciPalestra('inizia');        // il server sa che la tappa è partita (statistiche della palestra e premio in monete)
+    }
 }
 
 // Nuovo set: la logica riparte subito, il campo solo quando il set
@@ -2616,6 +2665,8 @@ function mostraEsito(titolo, { sotto = '', azioni = [] } = {}) {
     $('testo-vittoria').textContent = titolo;
     $('sotto-vittoria').textContent = sotto;
     $('sotto-vittoria').hidden = !sotto;
+    const premio = $('premio-vittoria');
+    if (premio) premio.hidden = true;
     $('azioni-vittoria').replaceChildren(...azioni);
     $('azioni-vittoria').hidden = !azioni.length;
     $('vittoria').hidden = false;
@@ -2640,6 +2691,7 @@ function preparaAudio() {
         btn.setAttribute('aria-pressed', spento ? 'false' : 'true');
         btn.title = spento ? 'Sound off' : 'Sound on';
         if (scena) scena.battle.setMute(spento);
+        suonaMusicaCapo();
     };
     btn.addEventListener('click', () => {
         try { localStorage.setItem('userMusicPref', audioSpento() ? 'on' : 'off'); } catch {}
@@ -2650,6 +2702,37 @@ function preparaAudio() {
     document.addEventListener('pointerdown', () => {
         if (PS && !audioSpento()) { PS.BattleSound.setMute(true); PS.BattleSound.setMute(false); }
     }, { once: true });
+}
+
+// La musica di una palestra è quella scelta dal capopalestra (la sua canzone preferita: la stessa che suona nella scelta dei team): un <audio> a parte, in ripetizione, che prende
+// il posto della musica di battaglia di Showdown. Quella si silenzia (bgmVolume a 0: currentBgm() non ne trova più) e i versi e gli effetti restano. Segue il bottone del volume
+// (userMusicPref) e, se il browser blocca la partenza automatica, riparte al primo tocco. Senza una canzone scelta (o se non si carica) suona quella di Showdown, come nelle altre prove.
+function avviaMusicaPalestra(musica) {
+    if (musicaCapo || !musica || !musica.url || !PS) return;
+    const audio = new Audio();
+    audio.loop = true;
+    audio.preload = 'auto';
+    audio.volume = 0.5;                     // come la musica di Showdown (BattleSound.bgmVolume, 50)
+    audio.src = musica.url;
+    // se la canzone non si carica (link morto, rete) torna la musica di Showdown
+    audio.addEventListener('error', () => {
+        if (musicaCapo !== audio) return;
+        musicaCapo = null;
+        PS.BattleSound.bgmVolume = 50;
+        PS.BattleSound.setMute(true);
+        PS.BattleSound.setMute(audioSpento());
+    });
+    musicaCapo = audio;
+    PS.BattleSound.bgmVolume = 0;
+    suonaMusicaCapo();
+}
+/** Fa suonare (o tace, se il volume del sito è spento) la musica del capopalestra; se il browser la blocca riprova al primo tocco */
+function suonaMusicaCapo() {
+    const audio = musicaCapo;
+    if (!audio) return;
+    if (audioSpento()) { audio.pause(); return; }
+    const p = audio.play();
+    if (p && typeof p.catch === 'function') p.catch(() => document.addEventListener('pointerdown', () => { if (musicaCapo === audio && !audioSpento()) audio.play().catch(() => {}); }, { once: true }));
 }
 
 
