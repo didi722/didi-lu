@@ -1533,7 +1533,14 @@ function vestiPalestra(gym) {
     const avatarImg = decor.querySelector('.pal-avatar');
     let compImg = decor.querySelector('.vs-compagno');
     // ingrandito più del doppio della sua GIF resta nitido, come sulla pagina pubblica: pixel netti e, se si può, bordi lisci (SpriteNitido); il canvas prende il posto dell'immagine
-    const nitido = () => { if (compImg && compImg.tagName === 'IMG' && self.SpriteNitido) self.SpriteNitido.perIngrandimento(compImg).then(c => { if (c) compImg = c; }).catch(() => {}); };
+    let nitidoInCorso = false, attesaIntro = 0;
+    const nitido = () => {
+        if (nitidoInCorso || !compImg || compImg.tagName !== 'IMG' || !self.SpriteNitido) return;
+        // l'intro ricopia l'immagine del compagno e ne legge la posizione: finché c'è si aspetta (al massimo una ventina di volte)
+        if (document.querySelector('.vi') && attesaIntro++ < 20) { setTimeout(nitido, 500); return; }
+        nitidoInCorso = true;
+        self.SpriteNitido.perIngrandimento(compImg).then(c => { if (c) compImg = c; }).catch(() => {}).then(() => { nitidoInCorso = false; });
+    };
     const scala = () => (avatarImg && compImg && self.ScalaPkm) ? self.ScalaPkm.scena({ allenatore: avatarImg, pokemon: compImg, spazioPx: Math.round(window.innerHeight * 0.9) }).then(nitido).catch(() => {}) : Promise.resolve();
     scenaPalestra = scala();        // l'intro aspetta che il compagno abbia la sua misura (introVersus)
     for (const img of [avatarImg, compImg]) if (img) img.addEventListener('load', scala);

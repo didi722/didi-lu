@@ -162,11 +162,18 @@ test('style-palestra.css: dentro la palestra i colori sono i suoi (sfondo del si
     assert.match(css, /html body\.pg-palestra\.pal-dentro \{[^}]*!important/);
     assert.match(css, /html body\.pg-palestra\.pal-dentro::before \{/);
     assert.match(css, /html body\.pg-palestra\.pal-dentro\.pal-scorre::before \{/);
-    for (const re of [/\.pal-insegna \{/, /\.pal-chips \{/, /\.pal-chip \{/, /\.pal-dett \{/, /\.pal-premio \{/, /html:not\(\.app-shell\) body\.pal-dentro \.ads-sidebar \{ display: none; \}/,
+    for (const re of [/\.pal-insegna \{/, /\.pal-chips \{/, /\.pal-chip \{/, /\.pal-dett \{/, /\.pal-porta-premio \{/, /\.pal-piatto \{/, /\.pal-porta-btn \{/, /\.pal-team \{/, /\.pal-via \{/, /html:not\(\.app-shell\) body\.pal-dentro \.ads-sidebar \{ display: none; \}/,
         /body\.pal-dentro \.pal-decor \.vs-avatar \{/, /body\.pal-dentro \.pal-decor \.vs-compagno \{/]) assert.match(css, re);
-    // il premio come numero (quarta targhetta) solo nell'app: sul sito c'è il cartellino
-    assert.match(css, /\.pal-chip-premio \{ display: none; \}/);
-    assert.match(css, /html\.app-shell \.pal-chip-premio \{ display: flex;/);
+    // il tabellone: targa scura con le cifre ambra, come quello dell'intro prepartita; nell'app le porte stanno in una riga (tre e il distintivo)
+    assert.match(css, /\.pal-piatto \{[^}]*background: repeating-linear-gradient[^}]*#16131f/);
+    assert.match(css, /\.pal-piatto \.pal-chip-espugnata b \{ color: var\(--nb-giallo/);
+    assert.match(css, /html\.app-shell \.pal-percorso \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) minmax\(/);
+    // l'effetto del palco cade dietro alle carte, e la fila dei team che scorre di lato non allarga la pagina
+    assert.match(css, /body\.pal-dentro > \.pal-effetto \{ position: fixed; z-index: 1; \}/);
+    assert.match(css, /\.pal-sfida \{ display: grid; grid-template-columns: minmax\(0, 1fr\);/);
+    // nell'app i rimandi dei telefoni stretti non valgono (le porte restano in riga): quelli per i telefoni sono solo per il sito
+    const stretti = css.slice(css.indexOf('/* ---------- schermi stretti'), css.indexOf('@media (prefers-reduced-motion: reduce) {\n    .pal-prima'));
+    for (const riga of stretti.split('\n').filter(r => /^    [^ ]/.test(r) && /\{/.test(r))) assert.match(riga, /^    html:not\(\.app-shell\) /, riga.trim().slice(0, 60));
     // nell'app le misure sono in unità dello schermo (--u): niente scorrimento
     assert.match(css, /html\.app-shell \.pal-insegna \{[^}]*var\(--u\)/);
     assert.match(css, /html\.app-shell \.pal-chip \{[^}]*var\(--u\)/);

@@ -170,13 +170,13 @@ test('cablaggio: motore (vantaggio prima del turno 1), battle.html?cpu=1&palestr
     assert.match(ui, /Challengers never get to peek at your teams/);
     assert.match(ui, /against teams you've never seen/);
     assert.match(ui, /battle\.html\?cpu=1&palestra=/);
-    // ingresso a passi: un format alla volta, poi il riepilogo; i team si scelgono con le carte dei propri team (con i Pokémon)
+    // una schermata sola: le tre porte (un format l'una) e i team della porta accesa, scelti con le carte dei propri team (con i Pokémon); il comportamento è in test/palestra-sfida-ui.test.js
     assert.match(ui, /function passoIniziale\(\)/);
-    assert.match(ui, /Next: stage \$\{i \+ 2\} →/);
-    assert.match(ui, /class="pal-squadra\$\{S\.scelte\[i\] === x\.id \? ' pal-scelta' : ''\}"/);
+    assert.match(ui, /<ol class="pal-percorso">/);
+    assert.match(ui, /class="pal-team\$\{S\.scelte\[a\] === x\.id \? ' pal-team-scelto' : ''\}"/);
     assert.match(ui, /SP\.riserva\(img, SP\.id\(img\.dataset\.pkm\)\)/, 'le GIF che mancano ripiegano sul Pokédex');
     assert.match(leggi('docs', 'palestra.html'), /<script src="sprites\/indice\.js"><\/script>\s*<script src="sprite-pkm\.js"><\/script>\s*<script src="pagina-pubblica\.js"><\/script>\s*<script src="cosmetici\.js"><\/script>\s*<script src="altezze-pkm\.js"><\/script>\s*<script src="xbr\.js"><\/script>\s*<script src="gif-frames\.js"><\/script>\s*<script src="sprite-nitido\.js"><\/script>\s*<script src="scala-pkm\.js"><\/script>\s*<script src="palestra\.js">/);
-    assert.match(leggi('docs', 'style-palestra.css'), /\.pal-passi \{/);
+    assert.match(leggi('docs', 'style-palestra.css'), /\.pal-percorso \{/);
     // vantaggio di campo fisso: il campo mostra "all battle" invece dei turni
     assert.match(bu, /permanenti: cpu && cpu\.palestra \? self\.Palestra\.condizioniFisse\(cpu\.palestra\.vantaggio\) : \[\]/);
     assert.match(leggi('docs', 'battle-extra.js'), /S\.permanenti\.has\(idDi\(battle\.weather\)\) \? ALL_BATTLE/);
