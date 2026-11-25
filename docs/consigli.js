@@ -30,11 +30,12 @@
         return cache[g];
     }
 
-    const vuoto = () => ({ mosse: [], oggetti: [], abilita: [] });
+    const vuoto = () => ({ mosse: [], oggetti: [], abilita: [], spread: [] });
     const conta = x => (x ? x.m.length : 0);
 
     /**
-     * I consigli per un Pokémon, dalla più consigliata.
+     * I consigli per un Pokémon, dalla più consigliata (mosse, strumenti, abilità) e, dalla 3ª generazione, gli spread più giocati:
+     * [{ n: natura, e: [hp, atk, def, spa, spd, spe], i?: { atk: 0 } (gli IV che non sono 31), m: le mosse del set che lo porta }].
      * @param {object|null} dati            quanto restituisce carica()
      * @param {string} specieId             id della specie (es. "calyrexshadow")
      * @param {{ doppio?: boolean, baseId?: string }} [opzioni]  doppio: formato a due contro due; baseId: specie base, se la forma non ha set propri
@@ -50,6 +51,8 @@
         let scelta = opzioni.doppio ? (doppio || singolo) : (singolo || doppio);
         if (!scelta) return vuoto();
         let { m, i, a } = scelta;
+        // gli spread (natura, EV, IV e mosse del set che li porta) più giocati: quelli del tipo di formato, o in mancanza quelli dell'altro
+        const spread = (scelta.p && scelta.p.length ? scelta.p : ((opzioni.doppio ? singolo : doppio) || {}).p) || [];
         // se la lista del doppio è corta si completa con quella del singolo
         const altra = opzioni.doppio ? singolo : null;
         if (altra && scelta !== altra && conta(scelta) < 5) {
@@ -58,7 +61,7 @@
             if (!i.length) i = altra.i;
             if (!a.length) a = altra.a;
         }
-        return { mosse: m.slice(), oggetti: i.slice(), abilita: a.slice() };
+        return { mosse: m.slice(), oggetti: i.slice(), abilita: a.slice(), spread: spread.slice() };
     }
 
     /**

@@ -807,13 +807,14 @@ test('doppio VGC: le mosse di cova entrano (Fake Out di Incineroar e Rillaboom),
     const regVgc = { genRuleType: 'within', genRuleValue: '9', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen9', vgcFormat: 'doubles', restrizioni: permessi };
     const conta = async parametriTeam => {
         const r = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: regVgc, caricaJson, quanti: 90, seme: 'doppio-gioco', ...(parametriTeam ? { parametriTeam } : {}) });
-        const out = { team: r.team.length, fakeout: 0, stato: 0, intimidate: 0, upperhand: 0, uso: {} };
+        const out = { team: r.team.length, fakeout: 0, stato: 0, intimidate: 0, upperhand: 0, partingshot: 0, uso: {} };
         for (const t of r.team) {
             const sets = sim.Teams.import(t.testo);
             const mosse = new Set(sets.flatMap(s => s.moves.map(id)));
             if (mosse.has('fakeout')) out.fakeout++;
             if (['willowisp', 'thunderwave', 'glare', 'nuzzle', 'spore', 'sleeppowder'].some(m => mosse.has(m))) out.stato++;
             if (mosse.has('upperhand')) out.upperhand++;
+            if (mosse.has('partingshot')) out.partingshot++;
             for (const s of sets) if (id(s.species) === 'incineroar' && s.moves.map(id).includes('fakeout')) out.uso.incineroarFakeOut = (out.uso.incineroarFakeOut || 0) + 1;
         }
         return out;
@@ -826,6 +827,7 @@ test('doppio VGC: le mosse di cova entrano (Fake Out di Incineroar e Rillaboom),
     assert.ok(nuovi.stato > precedenti.stato, `più di prima (${precedenti.stato})`);
     assert.ok((nuovi.uso.incineroarFakeOut || 0) >= 3, 'Incineroar ha Colpo Fortunato (arriva dalla cova di Litten)');
     assert.equal(nuovi.upperhand, 0, 'Mano Pesante riesce solo contro una mossa prioritaria: la CPU non la porta');
+    assert.ok(nuovi.partingshot >= 3, `Parting Shot (Incineroar, Grimmsnarl...) è un pivot come U-turn e compare in qualche team: ${nuovi.partingshot}/${nuovi.team}`);
 });
 
 test('le mosse di cova valgono dalla 6ª generazione: niente cova in Gen 5, dove due mosse di cova possono non stare insieme', async () => {
@@ -841,4 +843,94 @@ test('le mosse di cova valgono dalla 6ª generazione: niente cova in Gen 5, dove
         assert.ok(!a5.has('fakeout'), 'Gen 5: la cova non si usa');
         assert.ok(a9.has('fakeout'), 'Gen 9: Fake Out di cova');
     }
+});
+
+// ---------------------------------------------------------------- EV, natura e IV dei set veri (probSpread)
+// Misurati con coppie di team identici che cambiano solo gli EV: nel singolo gli spread di Smogon battono la distribuzione a ruoli (55% in Gen 9), nel doppio da VGC perdono (45%).
+test('spread veri: nel singolo i Pokémon hanno natura ed EV dei set di Smogon, nel doppio di base no (la distribuzione a ruoli); le manopole li accendono e li spengono', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const regVgc = { genRuleType: 'within', genRuleValue: '9', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen9', vgcFormat: 'doubles', restrizioni: permessi };
+    const dati = leggi('consigli/gen9.json');
+    assert.ok((dati.d.incineroar.p || []).length >= 2 && (dati.s.garchomp.p || []).length >= 1, 'i consigli hanno gli spread');
+    // gli stessi team (stesso seme: la manopola cambia solo gli EV e la natura) con le manopole date: quanti set sono diversi dai team con gli spread spenti
+    const set = async (regolamento, parametriTeam) => {
+        const r = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento, caricaJson, quanti: 60, seme: 'spread', ...(parametriTeam ? { parametriTeam } : {}) });
+        return r.team.flatMap(t => sim.Teams.import(t.testo)).map(s => `${s.species}|${s.item}|${s.moves.join(',')}|${s.nature}|${JSON.stringify(s.evs)}|${JSON.stringify(s.ivs)}`);
+    };
+    const quantiDiversi = (a, b) => { assert.equal(a.length, b.length); return a.filter((x, k) => x !== b[k]).length; };
+    const spentoDoppio = await set(regVgc, { probSpread: 0, probSpreadDoppio: 0 }), diBaseDoppio = await set(regVgc, null), accesoDoppio = await set(regVgc, { probSpreadDoppio: 1 });
+    assert.equal(quantiDiversi(diBaseDoppio, spentoDoppio), 0, 'nel doppio di base la distribuzione è quella a ruoli (come con gli spread spenti)');
+    assert.ok(quantiDiversi(accesoDoppio, spentoDoppio) >= accesoDoppio.length * 0.25, `con probSpreadDoppio 1 molti set cambiano: ${quantiDiversi(accesoDoppio, spentoDoppio)}/${accesoDoppio.length}`);
+    const spentoSingolo = await set(reg(), { probSpread: 0 }), diBaseSingolo = await set(reg(), null);
+    assert.ok(quantiDiversi(diBaseSingolo, spentoSingolo) >= diBaseSingolo.length * 0.25, `nel singolo di base molti set hanno lo spread vero: ${quantiDiversi(diBaseSingolo, spentoSingolo)}/${diBaseSingolo.length}`);
+    // Gen 4: di base no (i set di quegli anni non servono: misurato 47%); Little Cup (livello 5): sì, in ogni generazione
+    const spentoGen4 = await set(reg({ genRuleValue: '4' }), { probSpread: 0 }), diBaseGen4 = await set(reg({ genRuleValue: '4' }), null);
+    assert.equal(quantiDiversi(diBaseGen4, spentoGen4), 0, 'in Gen 4 la distribuzione è quella a ruoli');
+    const spentoLc = await set(reg({ baseTier: 'LC' }), { probSpread: 0 }), diBaseLc = await set(reg({ baseTier: 'LC' }), null);
+    assert.ok(quantiDiversi(diBaseLc, spentoLc) >= diBaseLc.length * 0.25, `in Little Cup di base molti set hanno lo spread vero: ${quantiDiversi(diBaseLc, spentoLc)}/${diBaseLc.length}`);
+    // Incineroar in doppio, con gli spread accesi, ha uno spread bulky di VGC (Careful, 228 HP / 92 Def...)
+    assert.ok(accesoDoppio.some(x => x.startsWith('Incineroar|') && /\|Careful\||\|Impish\||\|Adamant\|/.test(x) && !/"hp":252,"atk":252/.test(x)), 'Incineroar non è più 252 HP / 252 Atk');
+});
+
+test('spread veri: nei formati con una natura imposta la natura resta quella imposta, e i team restano legali (EV al massimo 510)', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const regolamento = reg({ restrizioni: { pokemon: { ...permessi.pokemon, nature: { mode: 'SPECIFIC', operator: 'equals', value: 'Jolly' } } } });
+    const r = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento, caricaJson, quanti: 12, seme: 'spread-natura' });
+    assert.ok(r.team.length >= 6);
+    for (const t of r.team) {
+        assert.equal((t.testo.match(/Jolly Nature/g) || []).length, 6, t.nome);
+        for (const s of sim.Teams.import(t.testo)) {
+            const tot = Object.values(s.evs || {}).reduce((a, b) => a + b, 0);
+            assert.ok(tot <= 510 && Object.values(s.evs || {}).every(x => x <= 252), `${t.nome}: ${s.species} EV ${tot}`);
+        }
+    }
+});
+
+// ---------------------------------------------------------------- Pokémon forti che restavano fuori dai team (audit del team builder)
+test('le forme che cambiano da un\'altra (Rotom-Wash, Zacian Eroe Coronato, Necrozma...) hanno le mosse della forma base, più le proprie ("R")', async () => {
+    const { sim } = await caricaSim();
+    const apprese = async (nome, gen) => T.mosseApprese(sim.Dex.forGen(gen), sim.Dex.forGen(gen).species.get(nome), gen);
+    const wash = await apprese('Rotom-Wash', 9);
+    for (const m of ['hydropump', 'voltswitch', 'thunderbolt', 'willowisp', 'protect']) assert.ok(wash.has(m), `Rotom-Wash: ${m}`);
+    const heat = await apprese('Rotom-Heat', 4);
+    assert.ok(heat.has('overheat') && heat.has('thunderbolt'), 'Rotom-Heat in Gen 4');
+    const zacian = await apprese('Zacian-Crowned', 9);
+    assert.ok(zacian.has('behemothblade') && zacian.has('swordsdance') && zacian.has('playrough'), 'Zacian Eroe Coronato');
+    const dusk = await apprese('Necrozma-Dusk-Mane', 9);
+    assert.ok(dusk.has('sunsteelstrike') && dusk.has('swordsdance'), 'Necrozma Criniera del Vespro');
+    // chi non cambia da un'altra forma non eredita niente dalla specie di base (Tauros di Paldea non ha le mosse del Tauros di Kanto)
+    const paldea = await apprese('Tauros-Paldea-Combat', 9), kanto = await apprese('Tauros', 9);
+    assert.ok([...kanto].some(m => !paldea.has(m)), 'Tauros di Paldea ha un movepool suo');
+});
+
+test('i team di Gen 4 e di VGC includono i Pokémon che prima non entravano mai: le forme di Rotom, Zacian e Zamazenta Eroi Coronati, Calyrex (As One); e restano legali', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const validatore = sim.TeamValidator.get('gen4anythinggoes');
+    const r4 = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: reg({ genRuleValue: '4' }), caricaJson, quanti: 90, seme: 'rotom' });
+    const rotom = new Set();
+    for (const t of r4.team) for (const s of sim.Teams.import(t.testo)) if (/^Rotom-/.test(s.species)) {
+        rotom.add(s.species);
+        const copia = JSON.parse(JSON.stringify(s));
+        const problemi = (validatore.validateSet(copia, {}) || []).filter(x => !/event|Hidden Ability|obtainable|tier|banned|Tera|restricted|EVs/i.test(x));
+        assert.deepEqual(problemi, [], `${s.species}`);
+    }
+    assert.ok(rotom.size >= 2, `le forme di Rotom entrano nei team della Gen 4: ${[...rotom].join(', ')}`);
+    const regVgc = { genRuleType: 'within', genRuleValue: '9', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen9', vgcFormat: 'doubles', restrizioni: permessi };
+    const r9 = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: regVgc, caricaJson, quanti: 120, seme: 'eroi' });
+    const specie = new Set();
+    for (const t of r9.team) for (const s of sim.Teams.import(t.testo)) specie.add(id(s.species));
+    for (const k of ['zaciancrowned', 'zamazentacrowned', 'calyrexshadow', 'calyrexice']) assert.ok(specie.has(k), `${k} nei team VGC (STANDARD, con gli Uber)`);
+});
+
+test('la Stanza Magica la mette solo chi non è veloce: nessun Pokémon con più di 90 di velocità di base ha Trick Room nei team in doppio', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const dex = sim.Dex.forGen(9);
+    const regVgc = { genRuleType: 'within', genRuleValue: '9', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen9', vgcFormat: 'doubles', restrizioni: permessi };
+    const r = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: regVgc, caricaJson, quanti: 150, seme: 'stanza' });
+    let conStanza = 0;
+    for (const t of r.team) for (const s of sim.Teams.import(t.testo)) if (s.moves.map(id).includes('trickroom')) {
+        conStanza++;
+        assert.ok(dex.species.get(s.species).baseStats.spe <= 90, `${t.nome}: ${s.species} (${dex.species.get(s.species).baseStats.spe} di velocità) con Trick Room`);
+    }
+    assert.ok(conStanza >= 10, `ci sono team con la Stanza Magica: ${conStanza}`);
 });

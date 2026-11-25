@@ -195,6 +195,8 @@
     // Abilità che annullano le mosse prioritarie dirette a chi le ha o ai suoi compagni; e abilità che ignorano quelle degli altri (il blocco è "breakable")
     const ABILITA_BLOCCA_PRIORITA = new Set(['armortail', 'queenlymajesty', 'dazzling']);
     const ABILITA_IGNORA_ABILITA = new Set(['moldbreaker', 'teravolt', 'turboblaze']);
+    // Abilità che impediscono a un avversario di abbassare le statistiche (Parting Shot, Charm...); Mirror Armor le rimanda indietro
+    const ABILITA_CONTRO_CALI = new Set(['clearbody', 'whitesmoke', 'fullmetalbody', 'mirrorarmor']);
     const ABILITA_CONTRO_INTIMIDATE = new Set(['clearbody', 'whitesmoke', 'hypercutter', 'innerfocus', 'oblivious', 'owntempo', 'scrappy', 'guarddog', 'fullmetalbody', 'mirrorarmor']);
     const boostVuoti = () => ({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 });
     const campoVuoto = () => ({ tailwind: 0, reflect: 0, lightscreen: 0, auroraveil: 0, rocce: 0, punte: 0, tossine: 0, ragnatela: 0 });
@@ -1876,6 +1878,18 @@
             // Una singola azione dell'ordine, applicata allo stato. `f` = probabilità che l'attore agisca (per i tentennamenti).
             // chi sta per vincere (all'avversario restano al massimo due Pokémon e io ne ho di più) non ha motivo di proteggersi: il costo della protezione cresce con il vantaggio
             const costoInVantaggio = viviLoroPrima <= 2 ? 1 + this.par.protezioneInVantaggio * Math.max(0, viviMieiPrima - viviLoroPrima) : 1;
+            // Dopo una mossa con "perno" (U-turn, Volt Switch, Flip Turn, Parting Shot) chi l'ha usata esce e al suo posto entra, senza perdere un turno, chi regge meglio
+            // (è il cambio sicuro per eccellenza: gli attacchi che seguono colpiscono lui)
+            const cambioPerno = (x) => {
+                const s = this._sostitutoPerno(x.slot, S, mie, avv, usatiDaPerno);
+                if (!s) { bonus += 0.04; return; }
+                usatiDaPerno.add(s.indice);
+                const nuovo = this._clona(Object.assign(this.vista(s.m, s.info), { indice: s.indice, slot: x.slot, moves: s.p.moves }));
+                mie[x.slot] = nuovo;
+                peso.mie[x.slot] = this._pesoMon(nuovo);
+                nuovo.hp = Math.max(0, nuovo.hp - this._dannoTrappole(nuovo, campoMio, ctx));
+                bonus += this._abilitaIngresso(nuovo, ctx, avv) - 0.05 + this.par.bonusPerno;
+            };
             const eseguiAzione = (x, lato, a, me, m, f) => {
                 // ---- protezioni ----
                 if (m.protezione) {
@@ -1900,7 +1914,7 @@
 
                 // ---- mosse di stato e di supporto ----
                 if (m.categoria === 'Status') {
-                    // una mossa di stato resa prioritaria (Prankster) contro gli avversari è annullata da Dazzling & co.
+                    // una mossa di stato resa prioritaria (Prankster) contro gli avversari è annullata da Dazzling & co.; e, dalla 7ª generazione, non ha effetto sui tipi Buio
                     let pBlocco = 0;
                     if (['normal', 'any', 'adjacentFoe', 'allAdjacentFoes'].includes(m.target) && priorita(x) > 0) {
                         const t = a.bersaglio;
@@ -1909,9 +1923,31 @@
                             const vs = nemici(lato).filter(o => o && o.hp > 0);
                             const colpito = lato === 'mie' ? (t > 0 ? nemici(lato)[t - 1] : nemici(lato)[0]) : insiemi('mie')[a.bersaglio];
                             pBlocco = this._pBloccoPriorita(priorita(x), me, vs, colpito || vs[0], ctx);
+                            if (pBlocco < 1 && me.abilita === 'prankster' && m.priorita <= 0 && m.target !== 'allAdjacentFoes' && (this.gen || 9) >= 7 && colpito && colpito.tipi.includes('Dark')) pBlocco = 1;
                         }
                     }
                     if (pBlocco >= 0.98) { bonus -= lato === 'mie' ? 0.3 : -0.3; return; }
+                    // le mosse che abbassano le statistiche del bersaglio (Parting Shot, Charm, Screech...): il bersaglio ne subisce gli effetti per il resto del turno (e dei turni del piano).
+                    // Parting Shot poi fa uscire chi la usa, come U-turn: lì sta gran parte del suo valore (se il bersaglio si para la mossa non fa niente e si resta in campo)
+                    if (m.boostBersaglio) {
+                        const t = a.bersaglio;
+                        let bersagliCalo = [];
+                        if (m.target === 'allAdjacentFoes') bersagliCalo = nemici(lato).filter(o => o && o.hp > 0);
+                        else {
+                            const o = lato === 'mie' ? (t != null && t > 0 ? avv[t - 1] : avv.find(q => q && q.hp > 0)) : mie[a.bersaglio];
+                            if (o && o.hp > 0) bersagliCalo = [o];
+                        }
+                        const colpiti = bersagliCalo.filter(o => !o.protetto && !(o.protettoDaDiffusi && m.target === 'allAdjacentFoes'));
+                        let riesce = 0;
+                        for (const o of colpiti) {
+                            const subito = this._boostSubito(o, m.boostBersaglio);
+                            riesce = Math.max(riesce, subito.riesce);
+                            for (const [k, v] of Object.entries(subito.boost)) o.boost[k] = Math.max(-6, Math.min(6, (o.boost[k] || 0) + v));
+                        }
+                        if (pBlocco > 0 && colpiti.length) bonus -= (lato === 'mie' ? 0.3 : -0.3) * pBlocco;
+                        if (m.perno && lato === 'mie' && me.hp > 0 && riesce >= 0.5) cambioPerno(x);
+                        return;
+                    }
                     const prima = bonus;
                     // la mossa che dà uno stato vale per il bersaglio che si è scelto (non per il migliore: prima un Will-O-Wisp mandato sul bersaglio sbagliato valeva lo stesso)
                     let vittima = null;
@@ -1979,6 +2015,8 @@
                         const riesce = m.id === 'upperhand' ? attacca && prioT > 0 : attacca && prioT < 1;
                         if (!riesce) { bonus -= lato === 'mie' ? 0.4 : -0.4; continue; }
                     }
+                    // Poltergeist riesce solo contro chi ha uno strumento: se si sa che non ce l'ha più (Colpo di Scena, bacca mangiata) il turno è sprecato
+                    if (m.id === 'poltergeist' && !dif.strumento && (lato !== 'mie' || (dif.ref && dif.ref.strumento === ''))) { bonus -= lato === 'mie' ? 0.4 : -0.4; continue; }
                     // una mossa prioritaria contro la squadra avversaria: Armor Tail, Queenly Majesty o Dazzling (di chiunque stia in campo da quella parte) o
                     // Psychic Terrain la annullano; se l'abilità non è nota si pesa quella che la specie può avere
                     const pBlocco = b.lato !== keyL(lato) ? this._pBloccoPriorita(priorita(x), me, insiemi(b.lato), dif, ctx) : 0;
@@ -2051,17 +2089,7 @@
                 }
                 // le mosse con "perno" (U-turn, Volt Switch, Flip Turn): dopo il colpo chi le usa esce e al suo posto entra, senza
                 // perdere un turno, chi regge meglio (è il cambio sicuro per eccellenza: gli attacchi che seguono colpiscono lui)
-                if (m.perno && lato === 'mie' && me.hp > 0) {
-                    const s = this._sostitutoPerno(x.slot, S, mie, avv, usatiDaPerno);
-                    if (s) {
-                        usatiDaPerno.add(s.indice);
-                        const nuovo = this._clona(Object.assign(this.vista(s.m, s.info), { indice: s.indice, slot: x.slot, moves: s.p.moves }));
-                        mie[x.slot] = nuovo;
-                        peso.mie[x.slot] = this._pesoMon(nuovo);
-                        nuovo.hp = Math.max(0, nuovo.hp - this._dannoTrappole(nuovo, campoMio, ctx));
-                        bonus += this._abilitaIngresso(nuovo, ctx, avv) - 0.05 + this.par.bonusPerno;
-                    } else bonus += 0.04;
-                }
+                if (m.perno && lato === 'mie' && me.hp > 0) cambioPerno(x);
                 // il potenziamento che accompagna l'attacco (Flame Charge...) è già nella mossa
                 if (m.boostSelf && lato === 'mie') {
                     for (const k of Object.keys(m.boostSelf)) bonus += (m.boostSelf[k] > 0 ? 0.1 : -0.12) * Math.abs(m.boostSelf[k]);
@@ -2148,6 +2176,32 @@
                 if (val > mv) { mv = val; migliore = s; }
             }
             return migliore;
+        }
+
+        // Le variazioni di statistiche che subisce davvero chi viene colpito da una mossa che le abbassa (`boosts`, es. { atk: -1, spa: -1 }): Corpo Puro e simili le annullano,
+        // Contrarian le rovescia, Spavalderia e Competitività rispondono con +2 al calo. Se l'abilità non si conosce si pesa quella che la specie può avere.
+        // Restituisce { boost: le variazioni medie, riesce: la probabilità che la mossa "riesca" (con Parting Shot chi la usa cambia solo se il calo è riuscito, o Mirror Armor lo riflette) }
+        _boostSubito(o, boosts) {
+            const possibili = o.abilita ? [o.abilita] : (o.abilitaPossibili && o.abilitaPossibili.length ? o.abilitaPossibili : [null]);
+            const boost = {};
+            const n = possibili.length;
+            let riesce = 0;
+            for (const ab of possibili) {
+                const blocca = ab && ABILITA_CONTRO_CALI.has(ab);
+                let cala = false;
+                for (const [k, v] of Object.entries(boosts)) {
+                    if (!(v < 0)) continue;
+                    let d = v;
+                    if (blocca || (ab === 'hypercutter' && k === 'atk') || (ab === 'bigpecks' && k === 'def')) d = 0;
+                    else if (ab === 'contrary') d = -v;
+                    if (d !== 0) cala = true;
+                    boost[k] = (boost[k] || 0) + d / n;
+                    if (d < 0 && ab === 'defiant') boost.atk = (boost.atk || 0) + 2 / n;
+                    if (d < 0 && ab === 'competitive') boost.spa = (boost.spa || 0) + 2 / n;
+                }
+                if (cala || ab === 'mirrorarmor') riesce += 1 / n;
+            }
+            return { boost, riesce };
         }
 
         // Cosa fa un Pokémon mio quando entra in campo (la simulazione lo applica a `ctx` e ai potenziamenti degli avversari):

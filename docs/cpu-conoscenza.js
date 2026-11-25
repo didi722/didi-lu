@@ -64,10 +64,10 @@
         'darkvoid', 'fissure', 'sheercold', 'horndrill', 'guillotine',          // KO in un colpo / addormenta tutti
         'explosion', 'selfdestruct', 'mistyexplosion', 'memento', 'finalgambit', 'healingwish', 'lunardance', 'destinybond',
         'perishsong', 'curse', 'transform', 'sketch', 'mimic', 'metronome', 'copycat', 'mirrormove', 'assist', 'sleeptalk',
-        'rest', 'focuspunch', 'dreameater', 'lastresort', 'belch', 'steelroller', 'icespinner', 'poltergeist', 'synchronoise',
+        'rest', 'focuspunch', 'dreameater', 'lastresort', 'belch', 'steelroller', 'synchronoise',
         'counter', 'mirrorcoat', 'metalburst', 'bide', 'endeavor', 'substitute', 'batonpass', 'rage', 'present',
         'upperhand', 'splash', 'celebrate', 'holdhands', 'happyhour', 'afteryou', 'allyswitch', 'instruct', 'bestow', 'trick', 'switcheroo',
-        'covet', 'thief', 'fling', 'naturalgift', 'spitup', 'swallow', 'stockpile', 'hiddenpower', 'return', 'frustration',
+        'covet', 'thief', 'fling', 'naturalgift', 'spitup', 'swallow', 'stockpile', 'hiddenpower', 'frustration',
         'skydrop', 'beatup', 'psywave', 'wringout', 'crushgrip', 'electricterrain', 'grassyterrain', 'mistyterrain', 'psychicterrain',
         'raindance', 'sunnyday', 'sandstorm', 'hail', 'snowscape', 'chillyreception', 'haze', 'painsplit', 'sandattack'
     );
@@ -105,7 +105,10 @@
     const PIANO_METEO = { pioggia: 'rain', sole: 'sun', sabbia: 'sand', neve: 'snow' };
 
     // Abilità da evitare nei team della CPU
-    const ABILITA_SCARTATE = insieme('truant', 'slowstart', 'defeatist', 'stall', 'klutz', 'normalize', 'zenmode', 'schooling', 'shieldsdown', 'powerconstruct', 'hungerswitch', 'gulpmissile', 'disguise', 'iceface', 'commander', 'zerotohero', 'imposter', 'trace', 'receiver', 'powerofalchemy', 'illusion', 'wonderguard', 'minds', 'multitype', 'rkssystem', 'battlebond', 'stancechange', 'neutralizinggas', 'asone', 'asoneglastrier', 'asonespectrier');
+    const ABILITA_SCARTATE = insieme('truant', 'slowstart', 'defeatist', 'stall', 'klutz', 'normalize', 'zenmode', 'schooling', 'shieldsdown', 'powerconstruct', 'hungerswitch', 'gulpmissile', 'disguise', 'iceface', 'commander', 'zerotohero', 'imposter', 'trace', 'receiver', 'powerofalchemy', 'illusion', 'wonderguard', 'minds', 'battlebond', 'stancechange', 'neutralizinggas');
+    // As One (Calyrex Cavaliere Glaciale e Spettrale), Multitype (Arceus) e RKS System (Silvally) non sono più tra le scartate: sono abilità che il simulatore gestisce da sole (Unnerve più un +1 a ogni
+    // KO; il tipo che dipende dalla Lastra o dal Disco, già fissata dallo strumento obbligato) e il cervello non ha niente da sapere. Calyrex-Ice e Calyrex-Shadow, tra i Pokémon più forti del VGC,
+    // e le diciassette forme di Arceus, i più forti negli Uber, non entravano in nessun team della CPU
 
     // Strumenti: li sceglie team-cpu.js dal Dex; qui l'elenco di quelli che la CPU sa usare
     const STRUMENTI_OFFENSIVI = ['Life Orb', 'Expert Belt', 'Muscle Band', 'Wise Glasses', 'Focus Sash'];
@@ -141,6 +144,9 @@
         return TIPI.filter(t => !(t === 'Fairy' && gen < 6) && !((t === 'Dark' || t === 'Steel') && gen < 2));
     }
 
+    // Le mosse di stato che abbassano le statistiche del bersaglio con un effetto nel codice e non nei dati (il Dex non ha `boosts`): Parting Shot
+    const BOOST_BERSAGLIO_SPECIALI = { partingshot: { atk: -1, spa: -1 } };
+
     // Caratteristiche utili di una mossa, lette dal Dex una volta
     function descriviMossa(dex, nome) {
         const m = dex.moves.get(nome);
@@ -155,6 +161,8 @@
             rinculo: m.recoil || null, rinculoMax: m.mindBlownRecoil ? 0.5 : 0, assorbe: m.drain || null, multi: m.multihit || null,
             ohko: !!m.ohko, dannoFisso: m.damage || null,
             boostSelf: (m.self && m.self.boosts) || null,
+            // le mosse di stato che abbassano le statistiche del bersaglio (Parting Shot, Charm, Screech...)
+            boostBersaglio: BOOST_BERSAGLIO_SPECIALI[k] || ((m.category === 'Status' && m.boosts && ['normal', 'any', 'adjacentFoe', 'allAdjacentFoes'].includes(m.target)) ? m.boosts : null),
             protezione: PROTEZIONI.has(k), recupero: RECUPERO.has(k), potenziamento: POTENZIAMENTI[k] || null,
             stato: STATI[k] || null, perno: PERNO.has(k), redirezione: REDIREZIONE.has(k), schermo: SCHERMI.has(k),
             trappola: TRAPPOLE.has(k), velocitaSquadra: VELOCITA_DI_SQUADRA.has(k), terra: MOSSE_TERRA.has(k),
@@ -168,7 +176,7 @@
     // (descriviMossa) e da ciò che offre il simulatore nella richiesta, così l'IA le valuta come qualunque altra mossa.
     const NEUTRE = {
         secondari: null, assorbe: null, rinculo: null, rinculoMax: 0, multi: null, dannoFisso: null, ohko: false, ricarica: false, dueTurni: false,
-        perno: false, boostSelf: null, flags: {}, stato: null, potenziamento: null, recupero: false, redirezione: false, schermo: false,
+        perno: false, boostSelf: null, boostBersaglio: null, flags: {}, stato: null, potenziamento: null, recupero: false, redirezione: false, schermo: false,
         trappola: false, velocitaSquadra: false, terra: false, colpisceAlleato: false, esclusa: false, protezione: false
     };
     // Se il Dex non dà la potenza (mosse di partenza a potenza variabile): le tabelle di Showdown
@@ -240,7 +248,7 @@
         if (!d || d.esclusa || d.dueTurni || d.ricarica || d.ohko || d.dannoFisso) return false;
         if (d.categoria === 'Status') {
             return d.protezione || !!d.potenziamento || d.recupero || !!d.stato || d.velocitaSquadra || d.schermo || d.trappola
-                || d.redirezione || ['helpinghand', 'taunt', 'leechseed', 'wideguard'].includes(d.id);
+                || d.redirezione || ['helpinghand', 'taunt', 'leechseed', 'wideguard', 'partingshot'].includes(d.id);
         }
         return d.potenza > 0;
     }
@@ -252,7 +260,8 @@
         bodypress: 80, terrainpulse: 70, weatherball: 50, flail: 50, reversal: 50, seismictoss: 0, nightshade: 0,
         eruption: 150, waterspout: 150, dragonenergy: 150, boltbeak: 85, fishiousrend: 85, payback: 50, revenge: 60,
         avalanche: 60, assurance: 60, suckerpunch: 70, thunderclap: 70, hardpress: 60, ragefist: 50, lastrespects: 50,
-        trumpcard: 40, naturalpower: 80, ficklebeam: 80
+        trumpcard: 40, naturalpower: 80, ficklebeam: 80,
+        return: 102        // con la massima amicizia (255), come nei team della CPU: dalla 2ª alla 7ª generazione è l'attacco di Normale di Snorlax, Ambipom, Azumarill...
     };
 
     return {
