@@ -96,6 +96,7 @@
     //                       fa perdere partite)
     //   costoProtezione     proteggersi non fa niente da solo: un costo fisso per ogni protezione. Tarato sulla lega: con 0,08 la CPU si parava il 13-16% delle volte
     //                       (le persone il 10%); con 0,3 l'11%, senza perdere partite contro se stessa (provato con tools/tara-cpu.cjs e tools/stile-cpu.cjs)
+    //                       Ora 0,5: alzarlo ancora (0,8 o 1,1 per tutte le situazioni) toglie partite; nel finale in vantaggio ci pensa protezioneInVantaggio
     //   sogliaRecupero      curarsi vale solo per gli HP che mancano oltre questa frazione (con quasi tutta la salute non serve)
     //   bonusDinamax, spesaDinamax
     //                       il Dynamax dura tre turni (HP doppi, mosse Max che non sbagliano): il turno in cui si fa vale subito per i danni
@@ -126,6 +127,8 @@
     //                       chi lo subisce (la sua minaccia). Prima era 0,3 uguale per tutti
     //   valoreRallenta      un attacco che abbassa la velocità dei bersagli (Vento Gelato, Rete Elettrica, Fangata...): per ogni sorpasso che crea ai miei Pokémon vale questo
     //                       (per ogni livello, per la parte di probabilità dell'effetto), quanto Tailwind a metà: dura finché il bersaglio resta in campo
+    //   protezioneInVantaggio   quando restano al massimo due Pokémon all'avversario e io ne ho di più, proteggersi costa di più: il costo fisso cresce di questo per ogni Pokémon di vantaggio
+    //                       (chi sta per vincere attacca; 0 = com'era, sempre uguale)
     //   bonusPerno          chi usa un pivot (U-turn, Volt Switch, Flip Turn) e fa entrare un compagno guadagna questo in più (0 = com'era: conta solo il danno e chi entra)
     //   moltStati, moltVelocita, moltCampo
     //                       moltiplicano quanto valgono gli stati (Fuocopira, Onda Tuono, Fungospora), il controllo della velocità (Vento in Poppa, Stanza Magica, Vento Gelato, Rete
@@ -176,7 +179,7 @@
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.5, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5, priorBloccoPriorita: 6,
-        bonusPerno: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
+        protezioneInVantaggio: 1.5, bonusPerno: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
         memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2,
         copione: 1, copioneAnteprima: 0.8, copioneApertura: 0.8, copioneMosse: 0.5, copionePrimoTurno: 0.9, copioneFiducia: 2, copioneForza: 3, copioneCambi: 0.3, copioneForzaCambi: 30
     };
@@ -1871,12 +1874,14 @@
             const statiDati = [];      // gli stati dati in questo turno (bersaglio e valore): se il bersaglio cade nello stesso turno lo stato non serve a niente
 
             // Una singola azione dell'ordine, applicata allo stato. `f` = probabilità che l'attore agisca (per i tentennamenti).
+            // chi sta per vincere (all'avversario restano al massimo due Pokémon e io ne ho di più) non ha motivo di proteggersi: il costo della protezione cresce con il vantaggio
+            const costoInVantaggio = viviLoroPrima <= 2 ? 1 + this.par.protezioneInVantaggio * Math.max(0, viviMieiPrima - viviLoroPrima) : 1;
             const eseguiAzione = (x, lato, a, me, m, f) => {
                 // ---- protezioni ----
                 if (m.protezione) {
                     // proteggersi non fa mai niente da solo: il valore sta nei danni evitati
                     if (lato !== 'mie' || (riesceProtezione || {})[x.slot] !== false) me.protetto = 1;
-                    bonus -= lato === 'mie' ? this.par.costoProtezione : 0.08;
+                    bonus -= lato === 'mie' ? this.par.costoProtezione * costoInVantaggio : 0.08;
                     return;
                 }
                 // la stessa mossa è appena fallita (stesso Pokémon, turno prima): di rado le condizioni sono cambiate
