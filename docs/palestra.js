@@ -5,14 +5,15 @@
 // che si attiva a inizio partita. Chi la sfida porta un suo team per ogni format e li affronta di fila contro la CPU (che gioca i team
 // della palestra): se perde una partita si ricomincia da capo. Le battaglie sono sempre doppie, portando 6 e scegliendo 4.
 //
-// Dati (players/<id>/info/palestra):  { tappe: [ { formato: <chiave del regolamento>, categoria: <nome del format>, team: <id del team nel Box>, vantaggio: <id> } x3 ] }
-// (in ordine: la prima tappa si affronta per prima). I team seguono il Box: se si modificano, cambia anche la palestra.
+// Dati (players/<id>/info/palestra):  { tappe: [ { formato: <chiave del regolamento>, categoria: <nome del format>, team: <id del team nel Box>, vantaggio: <id>, personalita?: <id> } x3 ] }
+// (in ordine: la prima tappa si affronta per prima). I team seguono il Box: se si modificano, cambia anche la palestra. `personalita` (facoltativa) è lo stile con cui la CPU gioca
+// quella tappa (cpu-personalita.js); senza, la CPU sceglie da sola quello che somiglia di più a come l'hai allenata.
 //
 //   Palestra.VANTAGGI                      il catalogo dei vantaggi: { id, tipo: 'campo' | 'boost', nome, descr, gen (generazione minima) ... }
 //   Palestra.vantaggiPer(gen)              quelli che esistono in quella generazione
 //   Palestra.perId(id)
 //   Palestra.eDoppio(regolamento)          il format si gioca in doppio? (la palestra ammette solo quelli)
-//   Palestra.tappeDi(config)               le tre tappe in ordine, anche se Firebase le ha date come oggetto
+//   Palestra.tappeDi(config)               le tre tappe in ordine, anche se Firebase le ha date come oggetto (con `personalita` solo se il capopalestra ne ha scelta una)
 //   Palestra.problemi(config, { regolamenti, teams })   cosa non va nella configurazione ([] se è a posto)
 //   Palestra.pianoAllenamento(bozza, salvata, progressoDi)   l'allenamento della CPU tappa per tappa per il pannello "Train CPU": { tappe: [{ i, team, percento, livello, allenabile, perche }], totale, prossima }
 //   Palestra.urlAllenamento(tappa, team)   l'indirizzo della partita di allenamento di una tappa (battle.html?cpu=1&allenamento=<tappa>&team=<id>)
@@ -84,10 +85,11 @@
 
     const valori = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? Object.keys(x).sort((a, b) => num(a) - num(b)).map(k => x[k]) : []);
 
-    /** Le tre tappe in ordine: [{ formato, categoria, team, vantaggio }] (anche se Firebase ha dato un oggetto) */
+    /** Le tre tappe in ordine: [{ formato, categoria, team, vantaggio, personalita? }] (anche se Firebase ha dato un oggetto) */
     function tappeDi(config) {
         return valori(config && config.tappe).filter(t => t && typeof t === 'object').slice(0, TAPPE).map(t => ({
-            formato: String(t.formato || ''), categoria: String(t.categoria || ''), team: String(t.team || ''), vantaggio: String(t.vantaggio || '')
+            formato: String(t.formato || ''), categoria: String(t.categoria || ''), team: String(t.team || ''), vantaggio: String(t.vantaggio || ''),
+            ...(t.personalita ? { personalita: String(t.personalita) } : {})
         }));
     }
 

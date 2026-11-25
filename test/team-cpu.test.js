@@ -800,3 +800,45 @@ test('un team alla volta: con la memoria della sessione i team cambiano davvero 
     assert.ok(specie >= 45, `specie diverse in 30 team: ${specie}`);
     assert.ok(top10 / (team.length * 6) < 0.36, `i dieci più usati occupano il ${(100 * top10 / (team.length * 6)).toFixed(0)}% degli slot`);
 });
+
+// ---------------------------------------------------------------- i team in doppio hanno il gioco del doppio (Fake Out, stati)
+test('doppio VGC: le mosse di cova entrano (Fake Out di Incineroar e Rillaboom), un team su due ha Colpo Fortunato e alcuni portano uno stato; Mano Pesante mai', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    const regVgc = { genRuleType: 'within', genRuleValue: '9', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen9', vgcFormat: 'doubles', restrizioni: permessi };
+    const conta = async parametriTeam => {
+        const r = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: regVgc, caricaJson, quanti: 90, seme: 'doppio-gioco', ...(parametriTeam ? { parametriTeam } : {}) });
+        const out = { team: r.team.length, fakeout: 0, stato: 0, intimidate: 0, upperhand: 0, uso: {} };
+        for (const t of r.team) {
+            const sets = sim.Teams.import(t.testo);
+            const mosse = new Set(sets.flatMap(s => s.moves.map(id)));
+            if (mosse.has('fakeout')) out.fakeout++;
+            if (['willowisp', 'thunderwave', 'glare', 'nuzzle', 'spore', 'sleeppowder'].some(m => mosse.has(m))) out.stato++;
+            if (mosse.has('upperhand')) out.upperhand++;
+            for (const s of sets) if (id(s.species) === 'incineroar' && s.moves.map(id).includes('fakeout')) out.uso.incineroarFakeOut = (out.uso.incineroarFakeOut || 0) + 1;
+        }
+        return out;
+    };
+    const nuovi = await conta(null), precedenti = await conta(T.PARAMETRI_TEAM_PRECEDENTI);
+    assert.equal(nuovi.team, 90);
+    assert.ok(nuovi.fakeout >= 0.4 * nuovi.team, `Colpo Fortunato in almeno due team su cinque: ${nuovi.fakeout}/${nuovi.team}`);
+    assert.ok(nuovi.fakeout > precedenti.fakeout, `più di prima (${precedenti.fakeout})`);
+    assert.ok(nuovi.stato >= 0.12 * nuovi.team, `uno stato (Fuocopira, Onda Tuono, Fungospora...) in almeno un team su otto: ${nuovi.stato}/${nuovi.team}`);
+    assert.ok(nuovi.stato > precedenti.stato, `più di prima (${precedenti.stato})`);
+    assert.ok((nuovi.uso.incineroarFakeOut || 0) >= 3, 'Incineroar ha Colpo Fortunato (arriva dalla cova di Litten)');
+    assert.equal(nuovi.upperhand, 0, 'Mano Pesante riesce solo contro una mossa prioritaria: la CPU non la porta');
+});
+
+test('le mosse di cova valgono dalla 6ª generazione: niente cova in Gen 5, dove due mosse di cova possono non stare insieme', async () => {
+    const { sim } = await caricaSim();
+    // Litten è di Gen 7: in un formato di Gen 5 non c'è; Aipom ha Fake Out di cova ("5E"): in Gen 5 non la porta, in Gen 9 sì
+    const dex5 = sim.Dex.forGen(5), dex9 = sim.Dex.forGen(9);
+    const apprese = async (dex, gen) => {
+        const { mosseApprese } = T;
+        return mosseApprese ? mosseApprese(dex, dex.species.get('Aipom'), gen) : null;
+    };
+    const a5 = await apprese(dex5, 5), a9 = await apprese(dex9, 9);
+    if (a5 && a9) {
+        assert.ok(!a5.has('fakeout'), 'Gen 5: la cova non si usa');
+        assert.ok(a9.has('fakeout'), 'Gen 9: Fake Out di cova');
+    }
+});

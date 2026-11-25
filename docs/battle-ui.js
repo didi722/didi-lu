@@ -22,7 +22,7 @@ import {
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
 import { caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra, caricaAspetto } from './team-sito.js';
-import { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile } from './cpu-partita.js';
+import { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile, pescaPersonalita } from './cpu-partita.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
 import './formato-random.js';   // self.FormatoRandom: i formati Random Battle di Showdown
@@ -1470,7 +1470,7 @@ async function preparaPalestra(idGym, numeroTappa, chiaveTeam) {
     cpu = {
         cerebro: null, team: { testo: gym.team.testo, specie, piano: null, numero: 1 }, giocatore: dati, errori: 0, rqid: null,
         chiaveTeam, modificabile: false, avviso: '', problemi: [], ultimoVincitore: null, generando: false,
-        palestra: { id: gym.id, nome: gym.nome, tappa: numeroTappa, categoria: gym.categoria, vantaggio: gym.vantaggio, generazione: self.Palestra.generazioneDi(gym.regolamento), tema: null, timerAnnuncio: 0, aspetto: gym.aspetto, copione: gym.copione || null }
+        palestra: { id: gym.id, nome: gym.nome, tappa: numeroTappa, categoria: gym.categoria, vantaggio: gym.vantaggio, generazione: self.Palestra.generazioneDi(gym.regolamento), tema: null, timerAnnuncio: 0, aspetto: gym.aspetto, copione: gym.copione || null, personalita: gym.personalita || null }
     };
     config = {
         formato: dati.formato,
@@ -2179,7 +2179,7 @@ function avviaBattaglia() {
         if (cpu.allenamento) Object.assign(cpu.allenamento, { portati: null, esito: null, salvando: null, pendente: null, anticipata: false });      // l'allenamento riparte da capo a ogni battaglia: una lezione per partita
         studiaGiocatore(config.p1 && config.p1.id);
         ricordaLaPartita();      // la partita di prima (se è stata giocata) entra nella memoria della serie
-        cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento), avversario: stileCpu.profilo || true, memoria: cpu.conMemoria ? cpu.memoria : null, copione: cpu.palestra ? cpu.palestra.copione : null });      // la palestra gioca come il suo capo l'ha allenata (caricaTappaPalestra)
+        cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento), avversario: stileCpu.profilo || true, memoria: cpu.conMemoria ? cpu.memoria : null, copione: cpu.palestra ? cpu.palestra.copione : null, personalita: personalitaDellaPartita() });      // la palestra gioca come il suo capo l'ha allenata (caricaTappaPalestra)
         cpu.errori = 0; cpu.rqid = null;
     }
     battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2, vantaggio: cpu && cpu.palestra && cpu.palestra.vantaggio ? { id: cpu.palestra.vantaggio.id, lato: 'p2', nome: cpu.palestra.nome } : null });
@@ -2189,6 +2189,23 @@ function avviaBattaglia() {
         mostraAnnuncioPalestra(false);      // chi sfida deve accorgersi del vantaggio prima di scegliere i lead
         riferisciPalestra('inizia');        // il server sa che la tappa è partita (statistiche della palestra e premio in monete)
     }
+}
+
+/**
+ * Lo stile (cpu-personalita.js) con cui la CPU gioca questa partita. Nella palestra è quello scelto dal capopalestra (o quello che la CPU gli suggerisce dal suo allenamento: team-sito.js);
+ * altrove è quello per cui è stato composto il team della CPU (pescato a sorte quando il team è nato); nei Random, dove i team li fa Showdown, si pesca a sorte a ogni partita (di più
+ * gli stili che si adattano ai Pokémon che ha avuto).
+ */
+function personalitaDellaPartita() {
+    const P = self.CpuPersonalita;
+    if (!P || !cpu) return null;
+    if (cpu.palestra) return P.esiste(cpu.palestra.personalita) ? cpu.palestra.personalita : null;
+    if (cpu.team && P.esiste(cpu.team.personalita)) return cpu.team.personalita;
+    if (cpu.random) {
+        const sets = (Array.isArray(config.p2.team) ? config.p2.team : []).map(x => ({ mosse: Array.isArray(x.moves) ? x.moves : [] }));
+        return pescaPersonalita(null, undefined, P.pesiDaAffinita(P.affinita(sets, { doppio: /double/i.test(cpu.random.id) })));
+    }
+    return pescaPersonalita(null);
 }
 
 // Nuovo set: la logica riparte subito, il campo solo quando il set

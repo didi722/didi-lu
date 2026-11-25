@@ -20,6 +20,9 @@ body.pg-palestra .pal-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); 
 .pal-tappa label { display: grid; gap: 3px; font: 800 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; }
 .pal-tappa select { width: 100%; box-sizing: border-box; padding: 8px 9px; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: 0; font: 600 .85rem var(--nb-font-testo, 'Montserrat', sans-serif); }
 .pal-tappa select:disabled { opacity: .5; }
+/* il vantaggio e lo stile della CPU: sul sito uno sotto l'altro (con le loro spiegazioni); nell'app, dove la carta deve stare in uno schermo basso, affiancati */
+.pal-duo { display: contents; }
+.pal-stile { margin: 0; }
 .pal-descr { margin: 0; font: 600 .75rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
 .pal-formato { margin: 0; font: 900 1.05rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
 .pal-stato { padding: 2px 8px 0; background: var(--nb-ink, #000); color: #fff; font: 900 .68rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
@@ -529,6 +532,7 @@ html.app-shell .pal-allena-percento { font-size: calc(16 * var(--u)); }
 html.app-shell .pal-allena-livello { font-size: calc(7.5 * var(--u)); }
 html.app-shell .pal-pagina .pal-allena-via { padding: calc(6 * var(--u)) calc(16 * var(--u)) calc(4 * var(--u)); font-size: calc(13 * var(--u)); }
 html.app-shell .pal-tappa .pal-descr { display: none; }
+html.app-shell .pal-tappa .pal-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(6 * var(--u)); }
 html.app-shell .pal-tappe .pal-tappa { gap: calc(4 * var(--u)); }
 html.app-shell .pal-allena { gap: calc(6 * var(--u)); padding-top: calc(3 * var(--u)); border-top: calc(2 * var(--u)) dashed rgba(255, 255, 255, .25); }
 html.app-shell .pal-allena .pal-allena-barra { height: calc(9 * var(--u)); border-width: calc(2 * var(--u)); }
