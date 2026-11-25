@@ -38,6 +38,13 @@
 // La personalità (cpu-personalita.js): con l'opzione `personalita` (aggressiva, pivot, campo, velocita, stato; senza o `equilibrata` è la CPU di sempre) il cervello sposta le sue
 // manopole: quanto costa proteggersi o cambiare, quanto valgono gli stati, il controllo della velocità e del campo, i perni. Non cambia il calcolo: cambia i pesi.
 //
+// Le mosse di utilità (MOSSE_UTILI in cpu-conoscenza.js), che il team builder porta solo dove i consigli le hanno: Encore (blocca l'avversario sull'ultima mossa: vale quanto danno gli
+// toglie, tutto se era di stato, e sul turno in corso se muove dopo di noi), Trick e Switcheroo (lo Scelta a chi usa mosse di stato), Substitute (prende un colpo intero per il 25% degli HP;
+// il sostituto, anche quello dell'avversario, si segue dal log e ferma stati e colpi), Rest (cura piena, due turni di sonno sicuri: costa poco con Sleep Talk o la Bacca Chesto) e Sleep Talk (da
+// addormentati usa a caso una delle altre mosse), Wish (cura chi è nel posto a fine del turno dopo: si segue dal log), Baton Pass (chi entra tiene i potenziamenti e il sostituto, anche nel
+// cambio forzato che segue), Heal Pulse (sull'alleato), Coaching (+1 Attacco e Difesa all'alleato), Explosion e simili (chi le usa cade: si fanno per chiudere o con pochi HP) e Hidden Power, che
+// nella richiesta ha il suo tipo nel nome. La manopola moltUtilita le pesa tutte.
+//
 // Strategia del team: ogni team ha un piano (Tailwind, Stanza Magica, pioggia, sole, sabbia, neve, bilanciato...) deciso da
 // team-cpu.js. L'IA lo legge dai set (chi lo imposta, chi ne approfitta) e lo applica: in anteprima porta il nucleo del piano e
 // manda in campo per primo chi lo imposta; in battaglia valuta di più Tailwind, Stanza Magica e il proprio meteo, anche
@@ -152,6 +159,13 @@
     //                       si para con uno, il successivo con l'altro). 0 = sempre il migliore
     //   antMeccanica        anteprima: portare chi ha il Cristallo Z (se il formato ammette le Mosse Z) vale questo; chi ha la Megapietra
     //                       si valuta già con le statistiche della Mega (se il formato ammette la Mega Evoluzione)
+    //   costoSostituto      un Substitute che nello stesso turno viene rotto non ha cambiato niente: l'avversario ha perso un turno ma io pure, e in più ho perso il 25% degli HP (come una
+    //                       protezione, costa un turno). Senza questo la CPU lo rifaceva a ogni turno contro chi colpisce forte (33 usi in 13 partite, il 57% di fila, il 91% rotto subito) e
+    //                       perdeva (44% nei team gemelli di Gen 7)
+    //   costoEsplosione     Explosion, Self-Destruct e Misty Explosion mandano KO chi le usa: oltre agli HP che gli restano, perdere il Pokémon costa questo in più (i turni che avrebbe ancora giocato).
+    //                       Il KO del bersaglio conta come certo solo se è quasi sicuro (90%): chi esplode per chiudere la partita e il bersaglio resta in piedi ha perso un Pokémon per niente
+    //   moltUtilita         moltiplica quanto valgono le mosse di utilità (Encore, Trick, Substitute, Rest, Wish, Baton Pass, Heal Pulse, Coaching: vedi MOSSE_UTILI in cpu-conoscenza.js).
+    //                       1 = come stimate; 0 = non le sceglie mai (restano le mosse che il team ha, ma il cervello non le gioca)
     // Con la memoria della serie (opzione `memoria`):
     //   memoria              1 = la si usa se c'è, 0 = la si ignora
     //   memoriaPesoMosse     quanto pesa, nella mossa che si prevede da un suo Pokémon, ciò che di solito gioca (al massimo questo valore in più, in unità di "danno")
@@ -179,7 +193,7 @@
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.5, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5, priorBloccoPriorita: 6,
-        protezioneInVantaggio: 1.5, bonusPerno: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
+        protezioneInVantaggio: 1.5, bonusPerno: 0, moltUtilita: 1, costoSostituto: 0.5, costoEsplosione: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
         memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2,
         copione: 1, copioneAnteprima: 0.8, copioneApertura: 0.8, copioneMosse: 0.5, copionePrimoTurno: 0.9, copioneFiducia: 2, copioneForza: 3, copioneCambi: 0.3, copioneForzaCambi: 30
     };
@@ -350,7 +364,8 @@
         ammette(meccanica) { return this.mecc[meccanica] !== false; }
 
         _latoVuoto() {
-            return { mons: {}, attivi: [null, null, null], squadra: [], campo: campoVuoto(), caduti: 0 };
+            // desiderio: per ogni posto, il Wish in arrivo ({ turno in cui è stato usato, nome di chi l'ha usato }): cura chi è in quel posto a fine del turno dopo
+            return { mons: {}, attivi: [null, null, null], squadra: [], campo: campoVuoto(), caduti: 0, desiderio: [null, null, null] };
         }
 
         // ---------- dati statici ----------
@@ -429,7 +444,10 @@
                 tipiCambiati: null, tipoAggiunto: null,
                 // per la memoria della serie (solo dell'avversario): la specie con cui è entrato (le Mega cambiano), quante volte ha usato ogni mossa
                 // (e quante al primo turno in campo), se ha aperto la partita, lo strumento che aveva, e cosa ricordavo di lui dalle partite di prima
-                specieOrig: specie, usi: {}, usiT1: {}, apertura: false, strumentoVisto: null, memoria: null
+                specieOrig: specie, usi: {}, usiT1: {}, apertura: false, strumentoVisto: null, memoria: null,
+                // quanto resta del sostituto (Substitute) in frazione degli HP massimi, 0 = nessuno; la mossa su cui Encore lo tiene bloccato; se dorme per Rest (due turni
+                // sicuri, non da uno a tre). Sostituto ed Encore si perdono uscendo dal campo (non con Baton Pass, che passa il sostituto)
+                sostituto: 0, encore: null, riposo: false
             };
             if (this.memoria && lato !== this.lato) {
                 const r = this.memoria.specie[id(specie)];
@@ -448,7 +466,11 @@
             switch (cmd) {
                 case 'gen': this.impostaGenerazione(parseInt(p[1], 10) || 9); break;
                 case 'gametype': this.tipo = p[1] === 'doubles' ? 'doubles' : 'singles'; break;
-                case 'turn': this.turno = parseInt(p[1], 10); this.fase = 'scelte'; break;
+                case 'turn':
+                    this.turno = parseInt(p[1], 10); this.fase = 'scelte';
+                    // un Wish cura a fine del turno dopo quello in cui è stato usato: se non l'ha fatto (posto vuoto) non conta più
+                    for (const l of Object.values(this.lati)) l.desiderio = l.desiderio.map(d => (d && d.turno >= this.turno - 1 ? d : null));
+                    break;
                 case 'upkeep': this.fase = 'fine'; break;
                 case 'teamsize': { const l = this.lati[p[1]]; if (l) l.dimSquadra = parseInt(p[2], 10) || 0; break; }
                 case 'rule': {
@@ -477,10 +499,15 @@
                     if (cmd !== 'replace') {
                         // chi esce dal campo perde potenziamenti e il conto delle protezioni; chi entra parte pulito
                         const uscente = l.attivi[pos.slot] && l.attivi[pos.slot] !== pos.nome ? l.mons[l.attivi[pos.slot]] : null;
-                        if (uscente) { uscente.boost = boostVuoti(); uscente.protezioniDiFila = 0; uscente.ultimaProtezione = -9; uscente.immuneTipi.clear(); uscente.immuneMosse.clear(); uscente.dinamax = false; uscente.tipiCambiati = null; uscente.tipoAggiunto = null; }
+                        // Baton Pass ("[from] Baton Pass" sulla riga del cambio): chi entra tiene i potenziamenti e il sostituto di chi esce. Il log non li ripete
+                        const staffetta = cmd === 'switch' && uscente && p.slice(4).some(x => /\[from\] Baton Pass/i.test(String(x)));
+                        const passati = staffetta ? { boost: Object.assign({}, uscente.boost), sostituto: uscente.sostituto } : null;
+                        if (uscente) { uscente.boost = boostVuoti(); uscente.protezioniDiFila = 0; uscente.ultimaProtezione = -9; uscente.immuneTipi.clear(); uscente.immuneMosse.clear(); uscente.dinamax = false; uscente.tipiCambiati = null; uscente.tipoAggiunto = null; uscente.sostituto = 0; uscente.encore = null; }
                         m.boost = boostVuoti(); m.turnoEntrata = this.turno; m.ultimaMossa = null; m.posto = pos.slot; m.dinamax = false;
                         m.tipiCambiati = null; m.tipoAggiunto = null;      // chi entra ha i tipi della sua specie
                         m.protezioniDiFila = 0; m.ultimaProtezione = -9;
+                        m.sostituto = 0; m.encore = null;
+                        if (passati) { m.boost = passati.boost; m.sostituto = passati.sostituto; }
                     }
                     if (this.turno === 0 && pos.lato !== this.lato && cmd === 'switch') m.apertura = true;      // in campo prima del turno 1: l'apertura
                     m.specie = d.specie; m.livello = d.livello;
@@ -514,6 +541,9 @@
                         if (/typechange/i.test(p[2])) { m.tipiCambiati = tipi; m.tipoAggiunto = null; }
                         else if (tipi.length) m.tipoAggiunto = tipi[0];
                     }
+                    // un sostituto (Substitute: il 25% degli HP) e un blocco su una mossa (Encore: l'ultima che ha fatto)
+                    if (m && /^(move: )?Substitute$/i.test(p[2] || '')) m.sostituto = 0.25;
+                    if (m && /^Encore$/i.test(p[2] || '')) m.encore = m.ultimaMossa || null;
                     // Dynamax: per tre turni gli HP sono doppi e le mosse diventano Max. Si fa una volta sola per partita e per lato
                     if (m && /^Dynamax/i.test(p[2] || '')) {
                         m.dinamax = true;
@@ -525,6 +555,8 @@
                 case '-end': {
                     const m = this._mon(p[1]);
                     if (m && /^Dynamax/i.test(p[2] || '')) m.dinamax = false;
+                    if (m && /^(move: )?Substitute$/i.test(p[2] || '')) m.sostituto = 0;
+                    if (m && /^Encore$/i.test(p[2] || '')) m.encore = null;
                     break;
                 }
                 case '-zpower': { const pos = posizione(p[1]); if (pos) this.lati[pos.lato].zUsata = true; break; }
@@ -545,6 +577,8 @@
                         if (this._primoTurnoInCampo(m)) m.usiT1[mossa] = (m.usiT1[mossa] || 0) + 1;
                     }
                     m.ultimaMossa = mossa; m.turnoUltimaMossa = this.turno;
+                    // Wish: chi sta in quel posto a fine del turno dopo riprende metà degli HP di chi l'ha usato
+                    if (mossa === 'wish' && chi && !p.some(x => String(x).startsWith('[from]'))) this.lati[chi.lato].desiderio[chi.slot] = { turno: this.turno, da: m.nome };
                     if (K.PROTEZIONI.has(mossa) || K.PROTEZIONI_DI_AREA.has(mossa)) {
                         this._registraProtezione(m);
                         if (K.PROTEZIONI.has(mossa)) m.protettoNelTurno = this.turno;
@@ -570,6 +604,8 @@
                 case '-damage': case '-heal': case '-sethp': {
                     const m = this._mon(p[1]);
                     if (m) { const h = leggiHp(p[2]); if (h.pct != null) m.pct = h.pct; if (h.stato) m.stato = h.stato; }
+                    // il Wish è arrivato: il posto non ha più niente in attesa
+                    if (cmd === '-heal' && p.some(x => /\[from\] move: Wish/i.test(String(x)))) { const c = posizione(p[1]); if (c) this.lati[c.lato].desiderio[c.slot] = null; }
                     break;
                 }
                 case 'faint': {
@@ -579,8 +615,12 @@
                     if (pos) { this.lati[pos.lato].caduti++; if (this.lati[pos.lato].attivi[pos.slot] === pos.nome) this.lati[pos.lato].attivi[pos.slot] = null; }
                     break;
                 }
-                case '-status': { const m = this._mon(p[1]); if (m) { m.stato = p[2]; m.sonnoTentativi = 0; } break; }
-                case '-curestatus': { const m = this._mon(p[1]); if (m) { m.stato = ''; m.sonnoTentativi = 0; } break; }
+                case '-status': {
+                    const m = this._mon(p[1]);
+                    if (m) { m.stato = p[2]; m.sonnoTentativi = 0; m.riposo = p[2] === 'slp' && p.slice(3).some(x => /\[from\] move: Rest/i.test(String(x))); }
+                    break;
+                }
+                case '-curestatus': { const m = this._mon(p[1]); if (m) { m.stato = ''; m.sonnoTentativi = 0; m.riposo = false; } break; }
                 // "non può muoversi": ogni turno di sonno già passato (serve a sapere quanto è probabile che si svegli, _probAgire)
                 case 'cant': {
                     const m = this._mon(p[1]);
@@ -664,6 +704,8 @@
                     const m = this._mon(p[1]);
                     const trovato = p.slice(2).join('|').match(/ability: ([^|\]]+)/i);
                     if (m && trovato) m.abilita = id(trovato[1]);
+                    // un colpo sul sostituto che regge (senza numeri nel log): ne resta meno, la metà è la stima
+                    if (m && cmd === '-activate' && /^(move: )?Substitute$/i.test(p[2] || '') && /\[damage\]/.test(p.slice(3).join('|')) && m.sostituto > 0) m.sostituto = Math.max(0.03, m.sostituto / 2);
                     // "|-immune|p1a: Nome" da solo (senza abilità né altro): la mossa non ha effetto per il suo tipo
                     if (cmd === '-immune' && m && p.length === 2) this._imparaImmunita(m);
                     break;
@@ -723,7 +765,9 @@
                 hp, hpMax: Math.max(1, hpMax), boost: m.boost, stato: m.stato === 'fnt' ? '' : m.stato, abilita: abilita || null,
                 abilitaPossibili: Object.values(sp.abilities || {}).map(id), strumento: strumento || null, tera: tera || null,
                 peso: sp.weightkg, nfe: !!(sp.nfe), caduti: this.lati[m.lato].caduti, ref: m, basi,
-                immuneTipi: m.immuneTipi, immuneMosse: m.immuneMosse, dinamax: !!m.dinamax
+                immuneTipi: m.immuneTipi, immuneMosse: m.immuneMosse, dinamax: !!m.dinamax,
+                // il sostituto che ha (frazione degli HP massimi, 0 = nessuno) e la mossa su cui Encore lo tiene bloccato
+                sub: m.sostituto || 0, encore: m.encore || null
             };
             if (!vista.abilita && vista.abilitaPossibili.length === 1) vista.abilita = vista.abilitaPossibili[0];
             return vista;
@@ -735,6 +779,14 @@
 
         // Le mosse che si presume abbia un Pokémon avversario: quelle viste, più i suoi attacchi tipici (STAB)
         mosseAvversario(v) {
+            // bloccato da Encore: gioca solo l'ultima mossa che aveva fatto (se è di stato non fa danno)
+            if (v.encore) {
+                const forzata = this.mossa(v.encore);
+                if (forzata) {
+                    const solo = forzata.categoria === 'Status' ? [] : [forzata];
+                    return v.dinamax ? solo.map(d => this._mossaMax(d)) : solo;
+                }
+            }
             const out = Array.from(v.ref.mosseViste).map(k => this.mossa(k)).filter(m => m && m.categoria !== 'Status');
             if (out.length < 4) {
                 const fisico = v.stat.atk >= v.stat.spa;
@@ -805,7 +857,7 @@
             for (const nome of this._mosseImparabili(nomeSpecie)) {
                 const m = this.mossa(nome);
                 if (!m || m.categoria === 'Status' || m.tipo !== tipo) continue;
-                if (!(m.potenza > 0) || m.esclusa || m.dueTurni || m.ricarica || m.ohko || m.dannoFisso || m.id === 'fakeout' || m.id === 'firstimpression') continue;
+                if (!(m.potenza > 0) || m.esclusa || m.dueTurni || m.ricarica || m.ohko || m.dannoFisso || m.autoKo || m.id === 'hiddenpower' || m.id === 'fakeout' || m.id === 'firstimpression') continue;
                 let val = m.potenza * (m.precisione / 100) * (m.categoria === 'Physical' ? stat.atk : stat.spa);
                 if (m.rinculo) val *= 0.9;
                 if (m.boostSelf && Object.values(m.boostSelf).some(x => x < 0)) val *= 0.85;
@@ -1121,9 +1173,14 @@
                 }
                 const liberi = squadra.filter(s => !s.attivo && !s.esausto && !s.comanda && !usati.has(s.indice));
                 if (!liberi.length) return 'pass';
+                // dopo Baton Pass chi entra tiene i potenziamenti di chi è uscito: si sceglie chi ne approfitta di più
+                const lm = this.lati[this.lato];
+                const uscente = lm.attivi[slot] ? lm.mons[lm.attivi[slot]] : null;
+                const staffetta = uscente && uscente.vivo && uscente.ultimaMossa === 'batonpass' && uscente.turnoUltimaMossa === this.turno ? uscente.boost : null;
                 let migliore = null, mv = -1e9;
                 for (const s of liberi) {
                     const v = this.vista(s.m, s.info);
+                    if (staffetta) v.boost = Object.assign({}, staffetta);
                     let val = this._valoreEntrata(v, nemici, ctx, s.p.moves.map(k => this.mossa(k)).filter(Boolean));
                     // cosa fa entrando (meteo, terreno, Intimidazione) e se serve al piano
                     val += this._abilitaIngresso(this._clona(v), Object.assign({}, ctx), nemici.map(o => this._clona(o)));
@@ -1306,6 +1363,7 @@
             if (!st) return 1;
             if (st === 'slp') {
                 const n = ((v.ref && v.ref.sonnoTentativi) || 0) + 1;       // il tentativo di muoversi di questo turno
+                if (v.ref && v.ref.riposo) return n <= 2 ? 0 : 1;           // il sonno di Rest dura due turni, sempre
                 return n <= 1 ? 0 : n === 2 ? 1 / 3 : n === 3 ? 0.5 : 1;
             }
             if (st === 'frz') return 0.2;
@@ -1439,9 +1497,12 @@
             if (req.canTerastallize && !this.teraUsata && this.ammette('tera')) gimmicks.push('terastallize');
 
             const daParte = [];         // le mosse senza effetto su nessun bersaglio: tornano solo se non resta altro da fare (mossa obbligata)
+            const altroSlot = slot === 0 ? 1 : 0;
             for (const { m, j } of usabili) {
-                const d = this.mossa(m.id || m.move);
+                const d = this._mossaDiRichiesta(m);
                 if (!d) { azioni.push({ tipo: 'mossa', testo: `move ${j + 1}`, slot, mossa: null, nome: m.move, mossaIdx: j + 1 }); continue; }
+                // una mossa che sul momento non può riuscire (Sleep Talk da sveglio, Rest a HP pieni, un secondo sostituto...): solo se non c'è altro
+                if (!inDynamax && this._nonPuoRiuscire(v, d, doppio)) { daParte.push({ j, d, tutti: this._bersagli(m.target, slot, doppio, avv, mie) }); continue; }
                 const voceMax = maxMosse ? maxMosse[j] : null;
                 // in Dynamax si gioca la mossa Max al posto di quella normale (la scelta resta "move N": è il simulatore a trasformarla)
                 if (inDynamax) {
@@ -1452,7 +1513,8 @@
                     }
                     continue;
                 }
-                const tutti = this._bersagli(m.target, slot, doppio, avv, mie);
+                // Heal Pulse cura chi colpisce: solo l'alleato (nel singolo non c'è). Coaching e simili hanno già l'alleato per bersaglio
+                const tutti = d.curaAltri > 0 ? (doppio ? [-(altroSlot + 1)] : []) : this._bersagli(m.target, slot, doppio, avv, mie);
                 // contro un bersaglio su cui di sicuro non ha effetto (immunità di tipo, abilità nota) una mossa non si prova: nel piano poteva "non servire" (il compagno ha già
                 // eliminato il bersaglio) e, a parità di valore, la scelta cadeva a caso anche su di lei; se poi l'ordine non è quello previsto il turno va sprecato
                 const bersagli = tutti.filter(t => !this._senzaEffetto(v, d, t, avv, ctx));
@@ -1501,6 +1563,38 @@
                 }
             }
             return azioni;
+        }
+
+        // La mossa di una richiesta come descrittore. Hidden Power ha un tipo (e fino alla 5ª generazione una potenza) che sta nel nome ("Hidden Power Ice", "Hidden Power Ice 70"):
+        // il Dex la conosce solo come una mossa Normale da 60
+        _mossaDiRichiesta(m) {
+            const nome = m.id || m.move;
+            if (nome === 'hiddenpower' && m.move) {
+                const t = /^Hidden Power ([A-Za-z]+)(?: (\d+))?$/.exec(m.move);
+                if (t) {
+                    const k = 'hp|' + m.move;
+                    let d = this.cacheMosse.get(k);
+                    if (d === undefined) {
+                        d = K.descriviMossa(this.dex, 'hiddenpower' + t[1].toLowerCase());
+                        if (d && t[2]) d = Object.assign({}, d, { potenza: parseInt(t[2], 10) });
+                        this.cacheMosse.set(k, d);
+                    }
+                    if (d) return d;
+                }
+            }
+            return this.mossa(nome);
+        }
+
+        // Le mosse di utilità che in questo momento non possono riuscire a chi le ha: Sleep Talk se non dorme, Rest con gli HP pieni, già addormentato o con un'abilità che
+        // lo impedisce, un sostituto quando ce n'è già uno o servono più del 25% degli HP, un Wish mentre uno è già in arrivo, Coaching senza un alleato (nel singolo)
+        _nonPuoRiuscire(v, d, doppio) {
+            switch (d.utile) {
+                case 'parlasonno': return v.stato !== 'slp' && v.abilita !== 'comatose';
+                case 'riposo': return v.stato === 'slp' || v.hp >= v.hpMax || ['insomnia', 'vitalspirit', 'comatose'].includes(v.abilita);
+                case 'sostituto': return v.sub > 0 || v.hp * 4 <= v.hpMax;
+                case 'desiderio': return !!this.lati[this.lato].desiderio[v.slot];
+                default: return !!d.boostAlleato && !doppio;
+            }
         }
 
         // La mossa d (di v) non può fare niente al bersaglio t (numerazione del simulatore; null = chi c'è davanti o tutti gli avversari): immunità di tipo o abilità nota
@@ -1657,6 +1751,8 @@
                     // le mie abilità sono note e Psychic Terrain si vede: chi gioca una mossa prioritaria contro un Armor Tail o in un terreno Psychic la spreca, e non la sceglie
                     if (m.priorita > 0) v *= 1 - this._pBloccoPriorita(m.priorita, o, S.mie, dif, ctx);
                     if (m.priorita > 0) v *= 1.1;
+                    // Explosion e simili mandano KO chi le usa: si fanno per chiudere (o quando non c'è altro), non a ogni turno
+                    if (m.autoKo) v *= d.frazMax >= dif.hp / dif.hpMax ? 0.8 : 0.3;
                     // chi si farebbe male da solo (rinculo) non usa quella mossa se rischia di cadere per questo
                     if (m.rinculoMax && o.hp <= o.hpMax * m.rinculoMax) v *= 0.1;
                     else if (m.rinculo && o.abilita !== 'rockhead' && o.abilita !== 'magicguard' && d.medio * m.rinculo[0] / m.rinculo[1] >= o.hp) v *= 0.4;
@@ -1874,6 +1970,17 @@
             const perStato = { mie: mie.map(v => (v ? this._probAgire(v) : 1)), avv: avv.map(v => (v ? this._probAgire(v) : 1)) };
             const usatiDaPerno = new Set(scelta.filter(a => a.tipo === 'cambio').map(a => a.verso));
             const statiDati = [];      // gli stati dati in questo turno (bersaglio e valore): se il bersaglio cade nello stesso turno lo stato non serve a niente
+            const ultimeSim = { mie: [], avv: [] };      // per posto: la mossa che ha già fatto in questo turno (serve a Encore: blocca l'ultima mossa fatta)
+            const subFatti = [];                          // i Pokémon che in questo turno fanno un sostituto (se a fine turno è già rotto, costa un turno: costoSostituto)
+            // Esegue `fn` con probabilità `p`: valore, bonus e HP sono la media tra "avviene" e "non avviene"
+            const mescola = (p, fn) => {
+                const prima = { valore, bonus, mie: mie.map(v => v && v.hp), avv: avv.map(v => v && v.hp) };
+                fn();
+                valore = prima.valore + p * (valore - prima.valore);
+                bonus = prima.bonus + p * (bonus - prima.bonus);
+                mie.forEach((v, i) => { if (v && prima.mie[i] != null) v.hp = prima.mie[i] + p * (v.hp - prima.mie[i]); });
+                avv.forEach((v, i) => { if (v && prima.avv[i] != null) v.hp = prima.avv[i] + p * (v.hp - prima.avv[i]); });
+            };
 
             // Una singola azione dell'ordine, applicata allo stato. `f` = probabilità che l'attore agisca (per i tentennamenti).
             // chi sta per vincere (all'avversario restano al massimo due Pokémon e io ne ho di più) non ha motivo di proteggersi: il costo della protezione cresce con il vantaggio
@@ -1889,6 +1996,163 @@
                 peso.mie[x.slot] = this._pesoMon(nuovo);
                 nuovo.hp = Math.max(0, nuovo.hp - this._dannoTrappole(nuovo, campoMio, ctx));
                 bonus += this._abilitaIngresso(nuovo, ctx, avv) - 0.05 + this.par.bonusPerno;
+            };
+            // ---- le mosse di utilità (MOSSE_UTILI in cpu-conoscenza.js: Encore, Trick, Substitute, Rest, Sleep Talk, Wish, Baton Pass, Heal Pulse, Coaching) ----
+            // Solo le mie: dell'avversario si prevedono gli attacchi. Restituisce true se la mossa è stata gestita
+            const eseguiUtilita = (x, lato, a, me, m, f) => {
+                if (lato !== 'mie') return false;
+                const mult = this.par.moltUtilita;
+                const pesoMio = peso.mie[x.slot] || 1;
+                const fallisce = c => { bonus -= c; return true; };      // la mossa non riesce: un turno sprecato
+                const bersaglioAvv = () => { const t = a.bersaglio; return t != null && t > 0 ? avv[t - 1] : (avv.find(q => q && q.hp > 0) || null); };
+                const alleato = () => {
+                    const i = a.bersaglio != null && a.bersaglio < 0 ? (-a.bersaglio) - 1 : (x.slot === 0 ? 1 : 0);
+                    return doppio && i !== x.slot && mie[i] ? { v: mie[i], i } : null;
+                };
+                const vivi = mie.filter(q => q && q.hp > 0);
+                // quanto male farebbe `o` ai miei Pokémon in campo con le mosse date: la migliore tra i miei bersagli
+                const minacciaSu = (o, mosse) => Math.max(0, ...vivi.map(q => this._miglioreSu(o, q, mosse, ctx)));
+
+                // Encore: l'avversario resta tre turni sull'ultima mossa che ha fatto. Vale quanto danno gli toglie: tutto se era una mossa di stato (Protezione, Stanza Magica, Fake Out
+                // che dopo il primo turno non riesce più...), niente se era un buon attacco. Se muove dopo di me la sua mossa di questo turno diventa subito quella
+                if (m.utile === 'encore') {
+                    const o = bersaglioAvv();
+                    if (!o || o.hp <= 0 || o.protetto || o.encore) return fallisce(0.35);        // Encore passa attraverso il sostituto
+                    const slotO = avv.indexOf(o);
+                    const gia = ultimeSim.avv[slotO];
+                    const F = gia || (o.ref && o.ref.ultimaMossa ? this.mossa(o.ref.ultimaMossa) : null);
+                    if (!F || (F.flags && F.flags.failencore) || F.id === 'struggle') return fallisce(0.35);
+                    const normale = minacciaSu(o, this.mosseAvversario(o));
+                    const forzata = F.categoria === 'Status' ? 0 : minacciaSu(o, [F]);
+                    const perdita = Math.max(0, normale - forzata);
+                    // una mossa che ripetuta lo rafforza (Swords Dance) o lo cura (Recover) è un favore: per ogni turno
+                    const favore = F.potenziamento ? 0.2 : (F.recupero ? 0.15 : 0);
+                    const turniTot = doppio ? 2.2 : 1.6;       // tre turni di blocco, meno quelli in cui l'avversario cambia (Encore finisce uscendo dal campo)
+                    const futuri = gia ? turniTot : turniTot - 1;
+                    // il turno in corso: se muove dopo di me la sua mossa diventa quella bloccata
+                    if (!gia && normale > 0) agisce.avv[slotO] *= Math.min(1, forzata / normale);
+                    const pesoO = peso.avv[slotO] || 1;
+                    const mediaMiei = vivi.reduce((s, q) => s + (peso.mie[mie.indexOf(q)] || 1), 0) / Math.max(1, vivi.length);
+                    bonus += mult * 0.9 * futuri * ((perdita * mediaMiei) * (0.6 + 0.4 * pesoO) - favore * pesoO);
+                    o.encore = F.id;
+                    return true;
+                }
+
+                // Trick e Switcheroo: scambiano gli strumenti. Con uno Scelta in mano è la mossa che libera me e blocca lui su una sola mossa (di più se ha mosse di stato o la
+                // sua mossa di prima non faceva male ai miei); senza, non serve a niente
+                if (m.utile === 'trick') {
+                    const o = bersaglioAvv();
+                    if (!o || o.hp <= 0 || o.protetto || o.sub > 0 || o.abilita === 'stickyhold' || o.abilita === 'magicbounce') return fallisce(0.35);
+                    const mio = me.strumento, suo = o.strumento;
+                    const scambiabile = s => { if (!s) return true; const it = this.dex.items.get(s); return !!it && it.exists && !it.megaStone && !it.zMove && !it.forcedForme; };
+                    if ((!mio && !suo) || !scambiabile(mio) || !scambiabile(suo)) return fallisce(0.35);
+                    if (!K.STRUMENTI_SCELTA.has(mio) || K.STRUMENTI_SCELTA.has(suo)) return fallisce(0.1);
+                    const slotO = avv.indexOf(o);
+                    const F = ultimeSim.avv[slotO] || (o.ref && o.ref.ultimaMossa ? this.mossa(o.ref.ultimaMossa) : null);
+                    let base = 0.4;
+                    if (F && F.categoria === 'Status') base = 0.85;
+                    else if (F) base = 0.3 + 0.5 * Math.max(0, 1 - minacciaSu(o, [F]) / Math.max(0.05, minacciaSu(o, this.mosseAvversario(o))));
+                    const nStato = o.ref ? Array.from(o.ref.mosseViste).filter(k => { const d = this.mossa(k); return d && d.categoria === 'Status'; }).length : 0;
+                    base += 0.1 * Math.min(3, nStato);
+                    bonus += mult * 0.9 * base * (0.6 + 0.4 * (peso.avv[slotO] || 1));
+                    me.strumento = suo || null; o.strumento = mio;
+                    return true;
+                }
+
+                // Substitute: il 25% degli HP per un sostituto che prende il colpo (anche uno più forte di lui). Il valore sta nei colpi che si prende e in ciò che resta a fine turno
+                if (m.utile === 'sostituto') {
+                    if (me.sub > 0 || me.hp * 4 <= me.hpMax) return fallisce(0.4);
+                    me.hp -= me.hpMax * 0.25; me.sub = 0.25;
+                    valore -= 0.9 * 0.25 * pesoMio;
+                    subFatti.push(me);
+                    // rifarlo il turno dopo che l'altro è stato rotto è il circolo vizioso del sostituto: ogni turno il 25% in meno senza far niente
+                    if (me.ref && me.ref.ultimaMossa === 'substitute' && me.ref.turnoUltimaMossa === this.turno - 1) bonus -= 0.4 * pesoMio;
+                    return true;
+                }
+
+                // Rest: cura piena e due turni di sonno; costa poco con Sleep Talk (muove lo stesso) o la Bacca Chesto (si sveglia subito), tanto altrimenti
+                if (m.utile === 'riposo') {
+                    if (me.stato === 'slp' || me.hp >= me.hpMax || ['insomnia', 'vitalspirit', 'comatose'].includes(me.abilita)) return fallisce(0.4);
+                    const utile = Math.max(0, 1 - me.hp / me.hpMax - this.par.sogliaRecupero);
+                    const conParla = (me.moves || []).some(k => id(k) === 'sleeptalk');
+                    const chesto = me.strumento === 'chestoberry';
+                    const costo = chesto ? 0.1 : conParla ? 0.22 : 0.5;
+                    me.hp = me.hpMax;
+                    me.stato = chesto ? '' : 'slp';
+                    if (chesto) me.strumento = null;
+                    bonus += mult * (0.9 * utile - costo) * pesoMio;
+                    return true;
+                }
+
+                // Sleep Talk: da addormentati si usa una delle altre mosse a caso (tra quelle che può chiamare)
+                if (m.utile === 'parlasonno') {
+                    if (me.stato !== 'slp') return fallisce(0.4);
+                    const chiamabili = (me.moves || []).map(k => this.mossa(k)).filter(d => d && d.utile !== 'parlasonno' && !d.dueTurni && d.id !== 'focuspunch');
+                    if (!chiamabili.length) return fallisce(0.4);
+                    const t = doppio ? ((avv.findIndex(q => q && q.hp > 0) + 1) || 1) : null;
+                    for (const d of chiamabili) {
+                        if (d.categoria === 'Status') continue;
+                        mescola(1 / chiamabili.length, () => eseguiAzione(x, lato, { tipo: 'mossa', slot: x.slot, mossa: d, bersaglio: t }, me, d, f / chiamabili.length));
+                    }
+                    return true;
+                }
+
+                // Wish: a fine del turno dopo chi sta in questo posto riprende metà degli HP massimi di chi l'ha usato (il Wish in arrivo si conta alla fine della simulazione)
+                if (m.utile === 'desiderio') {
+                    if (this.lati[this.lato].desiderio[x.slot]) return fallisce(0.4);
+                    const utile = Math.min(0.5, Math.max(0, 1 - me.hp / me.hpMax + 0.05));
+                    bonus += mult * 0.9 * utile * 0.7 * pesoMio;
+                    return true;
+                }
+
+                // Baton Pass: chi la usa esce e chi entra tiene i potenziamenti e il sostituto. Il valore sono i potenziamenti passati a chi ne approfitta (già nel bilancio finale)
+                if (m.utile === 'passaboost') {
+                    const s = this._sostitutoPerno(x.slot, S, mie, avv, usatiDaPerno, me.boost);
+                    if (!s) return fallisce(0.35);
+                    usatiDaPerno.add(s.indice);
+                    const nuovo = this._clona(Object.assign(this.vista(s.m, s.info), { indice: s.indice, slot: x.slot, moves: s.p.moves }));
+                    nuovo.boost = Object.assign({}, me.boost);
+                    nuovo.sub = me.sub ? Math.min(0.25, me.sub * me.hpMax / nuovo.hpMax) : 0;
+                    mie[x.slot] = nuovo;
+                    peso.mie[x.slot] = this._pesoMon(nuovo);
+                    nuovo.hp = Math.max(0, nuovo.hp - this._dannoTrappole(nuovo, campoMio, ctx));
+                    bonus += this._abilitaIngresso(nuovo, ctx, avv) - 0.05 + this.par.bonusPerno;
+                    // passare i potenziamenti a chi li usa (attacco, attacco speciale, velocità) vale più che tenerli: ogni livello è un turno risparmiato a chi entra
+                    const livelli = Math.max(0, nuovo.boost.atk || 0, nuovo.boost.spa || 0) + Math.max(0, nuovo.boost.spe || 0);
+                    bonus += mult * 0.07 * livelli * (peso.mie[x.slot] || 1);
+                    // senza potenziamenti né sostituto da passare è solo un cambio che non toglie niente a chi esce: non serve
+                    if (!Object.keys(me.boost).some(k => me.boost[k] > 0) && !me.sub) bonus -= 0.2;
+                    return true;
+                }
+
+                // Heal Pulse e simili: curano l'alleato (metà dei suoi HP; tre quarti con Mega Launcher). Come un recupero, per gli HP che gli mancano oltre la soglia
+                if (m.curaAltri > 0) {
+                    const al = alleato();
+                    if (!al || al.v.hp <= 0 || al.v.protetto) return fallisce(0.3);
+                    const quota = m.curaAltri * (me.abilita === 'megalauncher' ? 1.5 : 1);
+                    const manca = 1 - al.v.hp / al.v.hpMax;
+                    if (manca <= 0.03) return fallisce(0.3);
+                    const utile = Math.min(quota, Math.max(0, manca - this.par.sogliaRecupero));
+                    al.v.hp = Math.min(al.v.hpMax, al.v.hp + quota * al.v.hpMax);
+                    bonus += mult * 0.9 * utile * (peso.mie[al.i] || 1);
+                    return true;
+                }
+
+                // Coaching: +1 Attacco e Difesa all'alleato (di più se attacca coi colpi fisici)
+                if (m.boostAlleato) {
+                    const al = alleato();
+                    if (!al || al.v.hp <= 0) return fallisce(0.3);
+                    const fisico = al.v.stat.atk >= al.v.stat.spa * 0.8;
+                    let guadagno = 0;
+                    for (const [k, n] of Object.entries(m.boostAlleato)) {
+                        const residuo = Math.max(0, Math.min(n, 6 - (al.v.boost[k] || 0)));
+                        guadagno += residuo * (k === 'atk' ? (fisico ? 0.2 : 0.03) : k === 'def' ? 0.1 : 0.05);
+                        al.v.boost[k] = Math.max(-6, Math.min(6, (al.v.boost[k] || 0) + n));
+                    }
+                    bonus += mult * guadagno * (peso.mie[al.i] || 1);
+                    return true;
+                }
+                return false;
             };
             const eseguiAzione = (x, lato, a, me, m, f) => {
                 // ---- protezioni ----
@@ -1911,6 +2175,7 @@
                     return;
                 }
                 if (m.redirezione) { deviatore[keyL(lato)] = x.slot; return; }
+                if ((m.utile || m.curaAltri > 0 || m.boostAlleato) && eseguiUtilita(x, lato, a, me, m, f)) return;
 
                 // ---- mosse di stato e di supporto ----
                 if (m.categoria === 'Status') {
@@ -1966,6 +2231,8 @@
                 }
 
                 // ---- attacchi ----
+                // Explosion, Self-Destruct e Misty Explosion non riescono con Damp in campo (e chi le usa non cade)
+                if (m.autoKo && mie.concat(avv).some(q => q && q.hp > 0 && q.abilita === 'damp')) { bonus -= lato === 'mie' ? 0.4 : -0.4; return; }
                 const avversari = nemici(lato);
                 let bersagli = [];
                 const tutti = ['allAdjacent', 'allAdjacentFoes'].includes(m.target);
@@ -2030,10 +2297,20 @@
                         bonus -= (lato === 'mie' ? 0.3 : -0.3) * pBlocco;
                     }
                     if (dif.parata) { colpo.atteso *= 1 - dif.parata; colpo.pKO *= 1 - dif.parata; }      // chi sta cambiando (vedi sopra)
+                    // il sostituto prende il colpo al posto degli HP (anche uno più forte di lui: il resto va perso) e si rompe se non regge; il suono e chi ha Infiltrator lo scavalcano.
+                    // Niente KO, niente tentennamento, niente effetti secondari. Rompere quello altrui vale un po' (il colpo dopo passa); il mio l'ho già pagato quando l'ho fatto
+                    if (dif.sub > 0 && !(m.flags && (m.flags.sound || m.flags.bypasssub)) && me.abilita !== 'infiltrator') {
+                        const regge = dif.sub * dif.hpMax;
+                        const assorbito = Math.min(colpo.atteso, regge);
+                        dif.sub = colpo.atteso >= regge ? 0 : dif.sub - colpo.atteso / dif.hpMax;
+                        if (b.lato === 'avv') valore += 0.4 * this._puntiDanno(b, dif, assorbito, peso);
+                        continue;
+                    }
                     const prima = dif.hp;
-                    // un KO probabile (>= 50%) si considera avvenuto; altrimenti il bersaglio scende del danno atteso
-                    const preso = colpo.pKO >= 0.5 ? prima : Math.min(prima - 1, colpo.atteso);
-                    dif.hp = colpo.pKO >= 0.5 ? 0 : Math.max(1, prima - colpo.atteso);
+                    // un KO probabile (>= 50%) si considera avvenuto; altrimenti il bersaglio scende del danno atteso. Per chi cade con la mossa (Explosion) serve che sia quasi certo
+                    const koCerto = colpo.pKO >= (m.autoKo ? 0.9 : 0.5);
+                    const preso = koCerto ? prima : Math.min(prima - 1, colpo.atteso);
+                    dif.hp = koCerto ? 0 : Math.max(1, prima - colpo.atteso);
                     // recupero/rinculo/drenaggio dell'attaccante
                     if (m.assorbe) me.hp = Math.min(me.hpMax, me.hp + preso * m.assorbe[0] / m.assorbe[1]);
                     if (m.rinculo && me.abilita !== 'rockhead' && me.abilita !== 'magicguard') me.hp = Math.max(0, me.hp - preso * m.rinculo[0] / m.rinculo[1]);
@@ -2080,6 +2357,11 @@
                         }
                     }
                 }
+                // Explosion, Self-Destruct, Misty Explosion: chi le usa cade (anche se il colpo non arriva). Cade con la stessa valutazione di un KO subito
+                if (m.autoKo) {
+                    valore += (lato === 'mie' ? -1 : 1) * (0.7 + 0.45 * Math.min(1, me.hp / me.hpMax) + this.par.costoEsplosione) * (peso[keyL(lato)][x.slot] || 1) * kMat[keyL(lato)];
+                    me.hp = 0;
+                }
                 // Steel Beam e simili: chi attacca perde metà dei propri HP
                 if (m.rinculoMax && me.abilita !== 'magicguard') {
                     const perso = Math.min(me.hp, me.hpMax * m.rinculoMax);
@@ -2108,17 +2390,33 @@
                 const dormeEUsa = (m.id === 'sleeptalk' || m.id === 'snore') && ((lato === 'mie' ? mie : avv)[x.slot] || {}).stato === 'slp';
                 const f = agisce[keyL(lato)][x.slot] * (dormeEUsa ? 1 : perStato[keyL(lato)][x.slot]);
                 if (f <= 0.02) continue;
-                if (f >= 0.98) { eseguiAzione(x, lato, a, me, m, 1); continue; }
-                // agisce solo con probabilità f: stato e valore sono la media tra "agisce" e "non agisce"
-                const prima = { valore, bonus, mie: mie.map(v => v && v.hp), avv: avv.map(v => v && v.hp) };
-                eseguiAzione(x, lato, a, me, m, f);
-                valore = prima.valore + f * (valore - prima.valore);
-                bonus = prima.bonus + f * (bonus - prima.bonus);
-                mie.forEach((v, i) => { if (v && prima.mie[i] != null) v.hp = prima.mie[i] + f * (v.hp - prima.mie[i]); });
-                avv.forEach((v, i) => { if (v && prima.avv[i] != null) v.hp = prima.avv[i] + f * (v.hp - prima.avv[i]); });
+                if (f >= 0.98) eseguiAzione(x, lato, a, me, m, 1);
+                else mescola(f, () => eseguiAzione(x, lato, a, me, m, f));      // agisce solo con probabilità f
+                ultimeSim[keyL(lato)][x.slot] = m;
             }
 
             for (const x of statiDati) if (x.vittima.hp <= 0) bonus -= x.valore;
+            // Wish in arrivo (usato il turno scorso): a fine turno chi sta nel posto riprende metà degli HP massimi di chi l'aveva usato. Per i miei si sa quanti sono, per gli avversari si stima
+            for (const chi of ['mie', 'avv']) {
+                const campo = chi === 'mie' ? this.lati[this.lato] : lAvv;
+                (campo.desiderio || []).forEach((d, slot) => {
+                    const v = (chi === 'mie' ? mie : avv)[slot];
+                    if (!d || d.turno !== this.turno - 1 || !v || v.hp <= 0) return;
+                    let hpDesiderio = v.hpMax / 2;
+                    if (chi === 'mie') { const sq = S.squadra.find(q => q.nome === d.da); if (sq && sq.info.hpMax) hpDesiderio = sq.info.hpMax / 2; }
+                    else if (campo.mons[d.da]) hpDesiderio = this.vista(campo.mons[d.da]).hpMax / 2;
+                    const cura = Math.min(v.hpMax - v.hp, hpDesiderio);
+                    if (!(cura > 0)) return;
+                    v.hp += cura;
+                    bonus += (chi === 'mie' ? 1 : -1) * 0.9 * (cura / v.hpMax) * (peso[chi][slot] || 1);
+                });
+            }
+            // un sostituto fatto in questo turno e già rotto non ha cambiato niente: l'avversario ha perso un turno, ma io pure, e in più ho perso il 25% degli HP
+            for (const v of subFatti) if (v.hp > 0 && !(v.sub > 0)) bonus -= this.par.costoSostituto * (peso.mie[mie.indexOf(v)] || 1) * this.par.moltUtilita;
+            // il sostituto che resta in piedi a fine turno prende ancora un colpo al prossimo: vale quasi quanto è costato farlo (anche rotto a metà regge un colpo intero)
+            const valoreSub = v => 0.9 * (0.18 + 0.2 * v.sub) * this._pesoMon(v);
+            for (const v of mie) if (v && v.hp > 0 && v.sub > 0) bonus += valoreSub(v);
+            for (const v of avv) if (v && v.hp > 0 && v.sub > 0) bonus -= valoreSub(v);
             // 3) bilancio finale: i potenziamenti che restano a chi sopravvive (i danni sono già contati)
             for (const v of mie) if (v && v.hp > 0) bonus += this._valoreBoost(v);
             for (const v of avv) if (v && v.hp > 0) bonus -= this._valoreBoost(v);
@@ -2159,15 +2457,21 @@
 
         // Chi entra dopo un U-turn/Volt Switch/Flip Turn: il compagno in panchina che regge meglio gli attacchi che stanno per
         // arrivare e che risponde meglio (cambi sicuri). null se non c'è nessuno.
-        _sostitutoPerno(slot, S, mie, avv, usati) {
+        // `passati`: i potenziamenti che chi esce passa a chi entra (Baton Pass): contano nel danno che fa e in quanto regge
+        _sostitutoPerno(slot, S, mie, avv, usati, passati) {
             let migliore = null, mv = -1e9;
             const inCampo = new Set(mie.filter(v => v).map(v => v.indice));
+            const conBoost = passati && Object.keys(passati).some(k => passati[k]);
             for (const s of S.squadra) {
                 if (s.attivo || s.esausto || s.comanda || usati.has(s.indice) || inCampo.has(s.indice)) continue;
                 let val = 0, n = 0;
+                const vp = conBoost ? Object.assign(this.vista(s.m, s.info), { boost: Object.assign({}, passati), moves: s.p.moves }) : null;
+                const mossep = vp ? s.p.moves.map(k => this.mossa(k)).filter(Boolean) : null;
                 avv.forEach((o, j) => {
                     if (!o || o.hp <= 0) return;
-                    const d = S.matrice.get(s.indice + '|' + j);
+                    const d = vp
+                        ? { dato: this._miglioreSu(vp, o, mossep, S.ctx), preso: this._miglioreSu(o, vp, this.mosseAvversario(o), S.ctx), prima: C.confrontoVelocita(vp, o, S.ctx) > 0 }
+                        : S.matrice.get(s.indice + '|' + j);
                     if (!d) return;
                     val += Math.min(1.2, d.dato) * 0.6 - Math.min(1.5, d.preso) - (d.prima ? 0 : 0.1);
                     n++;
@@ -2403,7 +2707,7 @@
                 const bersagli = E.vittima ? (E.vittima.hp > 0 ? [E.vittima] : []) : avversari;
                 let best = 0;
                 for (const o of bersagli) {
-                    if (o.stato) continue;
+                    if (o.stato || o.sub > 0) continue;      // chi ha un sostituto non prende lo stato
                     if (m.stato.immuni.some(t => (o.tipi || []).includes(t))) continue;
                     if (o.immuneMosse && o.immuneMosse.has(`${me.nome}|${m.id}`)) continue;      // già provata: non ha effetto su di lui
                     if (m.stato.polvere && (o.abilita === 'overcoat' || o.strumento === 'safetygoggles')) continue;

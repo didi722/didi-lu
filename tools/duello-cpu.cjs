@@ -18,6 +18,8 @@
 //                                  prima delle personalità (la scelta dei candidati)
 //        --parametri-team-vecchi '{..}'   con --team-uguali: le manopole dei team dell'altra serie (di base quelle di sempre)
 //        --gemelli                 ogni team nuovo gioca contro il suo gemello (stessi membri e mosse, per esempio con una manopola che cambia solo gli EV): confronto a coppie, molto meno rumore
+//        --solo-diversi            con --gemelli: si giocano solo le coppie in cui i due gemelli sono diversi (una manopola che tocca pochi set lascia identici quasi tutti i team: quelle coppie
+//                                  valgono 50% per caso e diluiscono l'effetto). Servono più squadre e più coppie: quelle identiche si saltano senza giocarle
 //        --nuova cartella          la cartella docs/ della CPU nuova (di base quella del repository): una copia congelata permette di modificare i file mentre la prova gira
 //        --squadre N               quanti team compone ogni versione (di base 60): con più team il rumore dovuto ai team campionati scende (con 200 team e 960 coppie, circa ±2,5)
 // Ogni coppia sono due partite con gli stessi due team a lati scambiati: il risultato è la media (0, 0,5, 1). Con 200 coppie l'intervallo al 95% è di circa ±3,5 punti.
@@ -34,7 +36,7 @@ const a = process.argv.slice(2);
 const val = (nome, predefinito) => { const i = a.indexOf('--' + nome); return i >= 0 && a[i + 1] && !a[i + 1].startsWith('--') ? a[i + 1] : predefinito; };
 const opz = {
     vecchia: val('vecchia', ''), coppie: parseInt(val('coppie', '200'), 10), formato: val('formato', 'vgc'), seme: val('seme', 'A'), parametri: val('parametri', '{}'), personalita: val('personalita', ''),
-    squadre: parseInt(val('squadre', '60'), 10), parametriTeam: val('parametri-team', '{}'), parametriTeamVecchi: val('parametri-team-vecchi', '{}'), gemelli: a.includes('--gemelli'), teamUguali: a.includes('--team-uguali'), cervelloUguale: a.includes('--cervello-uguale'), senzaTeam: a.includes('--senza-team'), senzaCervello: a.includes('--senza-cervello'), ritocchi: val('ritocchi', ''), lavoratore: val('lavoratore', ''), lavoratori: parseInt(val('lavoratori', '4'), 10)
+    squadre: parseInt(val('squadre', '60'), 10), parametriTeam: val('parametri-team', '{}'), parametriTeamVecchi: val('parametri-team-vecchi', '{}'), gemelli: a.includes('--gemelli'), soloDiversi: a.includes('--solo-diversi'), teamUguali: a.includes('--team-uguali'), cervelloUguale: a.includes('--cervello-uguale'), senzaTeam: a.includes('--senza-team'), senzaCervello: a.includes('--senza-cervello'), ritocchi: val('ritocchi', ''), lavoratore: val('lavoratore', ''), lavoratori: parseInt(val('lavoratori', '4'), 10)
 };
 
 function regolamento(f) {
@@ -83,6 +85,7 @@ async function lavora() {
         // con --gemelli ogni team nuovo gioca contro il suo gemello (stessa posizione nella serie): se le due serie differiscono solo per una manopola che non cambia i membri
         // (gli EV, lo strumento) è un confronto a coppie, senza il rumore di team diversi
         const tN = teamNuovi[p % N], tV = opz.gemelli ? teamVecchi[p % N] : teamVecchi[(p * 7 + 3) % N];
+        if (opz.soloDiversi && opz.gemelli && tN.testo === tV.testo) continue;
         const gioca = async (latoN, seme) => {
             const latoV = latoN === 'p1' ? 'p2' : 'p1';
             const cn = IAnuova.crea({ Dex: sim.Dex, lato: latoN, casuale: creaCasuale(p * 13 + seme), parametri, piano: tN.piano, ...(stileCervello ? { personalita: stileCervello } : {}) });
@@ -104,7 +107,7 @@ async function principale() {
     const risultati = await new Promise((ok, no) => {
         const out = []; let finiti = 0;
         for (let k = 0; k < opz.lavoratori; k++) {
-            const figlio = fork(__filename, ['--lavoratore', `${k}/${opz.lavoratori}`, '--vecchia', opz.vecchia, '--coppie', String(opz.coppie), '--formato', opz.formato, '--seme', opz.seme, '--parametri', opz.parametri, '--squadre', String(opz.squadre), '--parametri-team', opz.parametriTeam, '--parametri-team-vecchi', opz.parametriTeamVecchi, ...(opz.gemelli ? ['--gemelli'] : []), ...(a0.includes('--nuova') ? ['--nuova', NUOVA] : []),
+            const figlio = fork(__filename, ['--lavoratore', `${k}/${opz.lavoratori}`, '--vecchia', opz.vecchia, '--coppie', String(opz.coppie), '--formato', opz.formato, '--seme', opz.seme, '--parametri', opz.parametri, '--squadre', String(opz.squadre), '--parametri-team', opz.parametriTeam, '--parametri-team-vecchi', opz.parametriTeamVecchi, ...(opz.gemelli ? ['--gemelli'] : []), ...(opz.soloDiversi ? ['--solo-diversi'] : []), ...(a0.includes('--nuova') ? ['--nuova', NUOVA] : []),
                 ...(opz.personalita ? ['--personalita', opz.personalita] : []), ...(opz.teamUguali ? ['--team-uguali'] : []), ...(opz.cervelloUguale ? ['--cervello-uguale'] : []), ...(opz.senzaTeam ? ['--senza-team'] : []), ...(opz.senzaCervello ? ['--senza-cervello'] : []), ...(opz.ritocchi ? ['--ritocchi', opz.ritocchi] : [])]);
             figlio.on('message', m => out.push(m));
             figlio.on('error', no);

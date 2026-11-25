@@ -78,6 +78,28 @@
     //                     con quale probabilità un Pokémon con soli attacchi (tre o quattro, nessuna Protezione né altra mossa di stato, niente Colpo Fortunato) porta lo strumento Scelta
     //                     (Choice Band, Specs, Scarf) se i consigli ce l'hanno tra i primi tre, nel singolo e nel doppio. Misurato con coppie di team identici che cambiano solo lo strumento:
     //                     nel singolo vince il 51% in Gen 9, il 52% in Gen 7 e il 53% in Gen 4; nel doppio da VGC pareggia (pochi Pokémon senza Protezione): di base 1 nel singolo, 0 nel doppio
+    //   probEncore, probTrick, probSostituto, probRiposo, probDesiderio, probPassaBoost, probEsplosione, probCura, probCoaching
+    //                     le mosse di utilità che il cervello sa giocare (Encore; Trick e Switcheroo; Substitute; Rest con Sleep Talk; Wish; Baton Pass; Explosion, Self-Destruct e Misty Explosion;
+    //                     Heal Pulse e Floral Healing; Coaching: MOSSE_UTILI in cpu-conoscenza.js). Un Pokémon le porta solo se i consigli (consigli.js) le hanno tra le prime `utiliTop`
+    //                     consigliate, con questa probabilità per ognuna, e nei limiti di `maxUtili` per team (`maxEsplosione` per Explosion e simili). Trick vuole anche lo strumento Scelta tra i primi tre
+    //                     consigliati (e lo porta); Baton Pass solo a chi ha una mossa di potenziamento (singolo); Sleep Talk solo con Rest; Heal Pulse e Coaching solo nel doppio. 0 = mai.
+    //                     Misurate una per volta con team gemelli (stessi sei Pokémon, cambia solo chi porta quella mossa; si contano le sole coppie in cui i gemelli differiscono, stesso
+    //                     cervello; tools/duello-cpu.cjs --gemelli --solo-diversi), percentuale di vittorie dei team con la mossa:
+    //                       Trick            Gen 4 56%, Gen 5 52%, Gen 7 55%, Gen 9 53%, VGC 54%    -> accesa
+    //                       Wish             Gen 7 51%, Gen 9 52%                                  -> accesa
+    //                       Baton Pass       Gen 4 51%                                             -> accesa (rara)
+    //                       Heal Pulse       VGC 52%                                               -> accesa
+    //                       Coaching         VGC 50% e 48%, doppio OU 48% e 50%                    -> accesa (neutra, rara)
+    //                       Encore           Gen 9 singolo 49%, VGC 51% e 49%, doppio OU 47% e 42% -> spenta: il posto nel set rende meno di un attacco, anche pesando meno la mossa
+    //                       Rest/Sleep Talk  Gen 5 48%, Gen 7 44%, Gen 9 51%                       -> spenta: i due posti nel set rendono meno di due attacchi
+    //                       Substitute       Gen 4 46%, Gen 7 44% (anche con costoSostituto)       -> spenta: quasi mai conviene a una scelta fatta un turno alla volta
+    //                       Explosion        Gen 4 46%, Gen 7 42% (anche con costoEsplosione)      -> spenta
+    //                     Il cervello le gioca tutte (anche quando le porta un team fatto da una persona): spente sono solo nei team che compone la CPU
+    //   hiddenPower, bonusHiddenPower
+    //                     (1 = sì) nella 3ª-7ª generazione Hidden Power è un attacco del tipo che i consigli indicano ("Hidden Power Fire": gli IV seguono il tipo); prima non c'era.
+    //                     bonusHiddenPower scala quanto i consigli la fanno preferire agli altri attacchi (1 = come per ogni mossa consigliata, 0 = vale solo per la copertura che dà). Misurato nel
+    //                     singolo di Gen 7 con coppie di team identici tranne i set con Hidden Power: con il peso dei consigli intero perde (44% su 1886 coppie), con 0,4 perde ancora (40%),
+    //                     a 0 vince il 57% (468 coppie): i consigli la mettono in alto perché nei set di Smogon accompagna mosse che la CPU non porta, e una CPU che la preferisce a un attacco da 90 perde
     //   candFissi, candMax, candFissiDoppio, candMaxDoppio
     //                     i candidati da cui la CPU compone i team: i `candFissi` migliori del formato (per tier e statistiche) più, a caso, altri fino a `candMax`; nel singolo e nel doppio.
     //                     Nel doppio i tier dicono poco (quasi tutti i Pokémon da VGC sono "(DUU)"): con 110 e 170 metà dei Pokémon da VGC (Volcarona, Iron Bundle, Heatran, Corviknight...) non usciva
@@ -86,15 +108,18 @@
     const PARAMETRI_TEAM = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.6, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
         probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1,
         maxStato: 2, probStato: 0.85, offesaMaxStato: 125, bonusFakeOut: 2.1, bonusStato: 1.2, bonusIntimidazione: 0.5, bonusRedirezione: 0.9,
-        pesoStato: 1, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 170, candMaxDoppio: 260, probSpread: 1, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 1, probSceltaDoppio: 0 };
+        pesoStato: 1, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 170, candMaxDoppio: 260, probSpread: 1, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 1, probSceltaDoppio: 0,
+        probEncore: 0, probTrick: 1, probSostituto: 0, probRiposo: 0, probDesiderio: 1, probPassaBoost: 1, probEsplosione: 0, probCura: 1, probCoaching: 1, utiliTop: 4, maxUtili: 3, maxEsplosione: 1, hiddenPower: 1, bonusHiddenPower: 0 };
     // com'era prima (per i confronti)
     const PARAMETRI_TEAM_VECCHI = { maxAiuto: 99, probAiuto: 1, probProtezione: 1, maxSenzaProt: 0, priorita: 0, sogliaPriorita: 40, bonusPriorita: 0, probPerno: 0, maxPerno: 0, sogliaPerno: 50, bonusPerno: 0,
         maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
-        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0 };
+        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0,
+        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1 };
     // com'erano prima dei ruoli di stato, di Intimidate e del peso maggiore di Colpo Fortunato (per confrontare team vecchi e nuovi con tools/prova-team.cjs --confronto precedenti)
     const PARAMETRI_TEAM_PRECEDENTI = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.1, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
         probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1, maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
-        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0 };
+        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0,
+        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1 };
 
     // =================================================
     // UTILITÀ
@@ -321,6 +346,29 @@
         return Consigli.per(dati, cand.id, { doppio: ctx.doppio, baseId: id(cand.base.baseSpecies || cand.base.name) });
     }
 
+    // Hidden Power con il tipo (3ª-7ª generazione). Nel Dex i Pokémon imparano "Hidden Power" (Normale, 60) e basta: "Hidden Power Fire" è una mossa a parte che nessuno ha tra quelle che
+    // impara. Si aggiunge ai suoi attacchi, per i tipi che i consigli indicano (non per tutti i diciassette), così partecipa alla scelta della copertura come un attacco qualunque
+    function tipiHiddenPower(c, dex, ctx, mosseBandite, restrizioni) {
+        if (!c.haHP || !c.cons) return;
+        let nuovi = 0;
+        for (const k of c.cons.mosse) {
+            if (!/^hiddenpower[a-z]+$/.test(k) || c.mosseDa.has(k)) continue;
+            const d0 = K.descriviMossa(dex, k);
+            if (!d0 || !(d0.potenza > 0) || d0.tipo === 'Normal' || !K.mossaUsabile(dex, k)) continue;
+            // nel Dex tutte le Hidden Power con il tipo hanno id "hiddenpower": qui ognuna ha il suo ("hiddenpowerfire"), con il nome per il testo del set ("Hidden Power Fire")
+            const d = Object.assign({}, d0, { id: k });
+            if (c.tipiBase.includes(d.tipo) || mosseBandite(d.nome) || !mossaAmmessa(dex, d, restrizioni)) continue;
+            c.mosseDa.set(d.id, d);
+            c.mosse.push(d);
+            c.attacchi.push({ m: d, v: valoreAttacco(d, c, ctx) });
+            nuovi++;
+        }
+        if (nuovi) {
+            c.attacchi.sort((x, y) => y.v - x.v);
+            c.tipiAttacco = Array.from(new Set(c.attacchi.slice(0, 5).filter(a => a.v >= 40).map(a => a.m.tipo)));
+        }
+    }
+
     async function analizza(dex, validatore, voce, ctx, restrizioni, mosseBandite, abilitaBandite, pokedexBase) {
         const specie = dex.species.get(voce.id);
         if (!specie.exists || specie.isNonstandard === 'CAP') return null;
@@ -357,19 +405,29 @@
             mosse.push(m);
         }
 
+        // Hidden Power: fino alla 5ª generazione nel Dex ha potenza 0 (dipende dagli IV) e non passa per "usabile"; qui si ricorda solo se il Pokémon la impara (legale per questa generazione),
+        // poi tipiHiddenPower aggiunge le versioni con il tipo che i consigli indicano
+        let haHP = false;
+        if (ctx.gen >= 3 && ctx.gen <= 7 && apprese.has('hiddenpower') && !mosseBandite('Hidden Power')) {
+            const mHP = dex.moves.get('hiddenpower');
+            haHP = mHP.exists && !(validatore && validatore.checkCanLearn(mHP, base, validatore.allSources(base), { species: base.name, moves: ['Hidden Power'], level: ctx.livello }));
+        }
+
         const abilita = Object.values(base.abilities || {}).filter(a => a && !abilitaBandite(a) && !K.ABILITA_SCARTATE.has(id(a)));
         if (ctx.gen >= 3 && !abilita.length) return null;
 
         const cand = {
             id: voce.id, nome: base.name, specie, base, isMega, richiesto,
             tipiBase: base.types.slice(), tipi: specie.types.slice(), basi: specie.baseStats, bst: specie.bst || 0,
-            tier: ctx.doppio ? specie.doublesTier : specie.tier, abilita, mosse,
+            tier: ctx.doppio ? specie.doublesTier : specie.tier, abilita, mosse, haHP,
             mosseDa: new Map(mosse.map(m => [m.id, m])), soloUova: apprese.soloUova || new Set()
         };
         cand.basi = { hp: specie.baseStats.hp, atk: specie.baseStats.atk, def: specie.baseStats.def, spa: specie.baseStats.spa, spd: specie.baseStats.spd, spe: specie.baseStats.spe };
         cand.valore = valoreSpecie(specie, ctx);
 
-        const attacchi = mosse.filter(m => m.categoria !== 'Status' && m.potenza > 0 && m.id !== 'fakeout' && m.id !== 'firstimpression' && !m.perno)
+        // Explosion e simili (chi le usa cade) e l'Hidden Power senza tipo (Normale da 60) non sono attacchi comuni: Explosion si porta solo dove i consigli la vogliono (assegnaUtili),
+        // l'Hidden Power solo con il suo tipo (tipiHiddenPower)
+        const attacchi = mosse.filter(m => m.categoria !== 'Status' && m.potenza > 0 && m.id !== 'fakeout' && m.id !== 'firstimpression' && !m.perno && !m.autoKo && m.id !== 'hiddenpower')
             .map(m => ({ m, v: valoreAttacco(m, cand, ctx) })).sort((a, b) => b.v - a.v);
         // i perni: gli attacchi che fanno uscire chi li usa (U-turn, Volt Switch, Flip Turn) e Parting Shot, che non fa danno ma abbassa Attacco e Att. Sp. del bersaglio
         // prima di cambiare (il pivot di Incineroar e Grimmsnarl): vale come un U-turn da 70 di potenza
@@ -533,7 +591,10 @@
     // =================================================
     function mosseDelSet(cand, ruolo, ctx, piano) {
         const scelte = [];
-        const aggiungi = m => { if (m && !scelte.some(x => x.id === m.id) && scelte.length < 4) scelte.push(m); };
+        // una sola Hidden Power per Pokémon (ha un tipo solo)
+        const eHP = m => /^hiddenpower[a-z]+$/.test(m.id);
+        const giaPresa = m => scelte.some(x => x.id === m.id) || (eHP(m) && scelte.some(eHP));
+        const aggiungi = m => { if (m && !giaPresa(m) && scelte.length < 4) scelte.push(m); };
         const get = k => cand.mosseDa.get(k) || null;
         const o = cand.opz;
         // le mosse consigliate che la CPU può davvero usare (legali, ammesse dal formato, che sa giocare), dalla più consigliata
@@ -542,7 +603,10 @@
         // le mosse che la lega gioca su questo Pokémon (meta-lega.js), se ci sono i dati: quota dei suoi set che le hanno
         const pesoMeta = (ctx.parametriTeam || PARAMETRI_TEAM).pesoMossaMeta;
         const quotaMeta = m => (cand.metaMosse && cand.metaMosse[m.id]) || 0;
-        const bonusCons = m => (posCons.has(m.id) ? Math.max(0.3, 0.9 - posCons.get(m.id) * 0.06) : 0) + pesoMeta * quotaMeta(m);
+        // Hidden Power ha 60 di potenza: i consigli la mettono in alto perché in quei set serve alla copertura, ma una CPU che la sceglie al posto di un attacco da 90 perde (Gen 7: -4,5 punti);
+        // il suo peso nei consigli si scala con `bonusHiddenPower`
+        const pesoHP = (ctx.parametriTeam || PARAMETRI_TEAM).bonusHiddenPower;
+        const bonusCons = m => ((posCons.has(m.id) ? Math.max(0.3, 0.9 - posCons.get(m.id) * 0.06) : 0) + pesoMeta * quotaMeta(m)) * (eHP(m) ? pesoHP : 1);
         // il pivot del set: tra quelli che il Pokémon ha, il più consigliato (Parting Shot per Incineroar, non U-turn); senza consigli, il più forte
         const pivotDelSet = () => {
             const consigliato = cand.perni.filter(p => posCons.has(p.m.id)).sort((a, b) => posCons.get(a.m.id) - posCons.get(b.m.id))[0];
@@ -567,12 +631,14 @@
             if (ruolo.rallenta) supporto(get(o.rallenta));
             if (ruolo.stato) supporto((ruolo.statoMossa && get(ruolo.statoMossa)) || get(o.paralisi) || get(o.sonno) || get('willowisp'));
             if (ruolo.perno) supporto(pivotDelSet());
+            for (const m of ruolo.utili || []) supporto(m);
         } else {
             if (ruolo.trappola) aggiungi(get(o.roccia ? 'stealthrock' : 'spikes'));
             if (ruolo.recupero) aggiungi(o.recupero);
             if (ruolo.setup) aggiungi(ruolo.setup);
             if (ruolo.stato) aggiungi(get(o.sonno) || get(o.paralisi) || get('willowisp') || get('toxic'));
             if (ruolo.perno) aggiungi(pivotDelSet());
+            for (const m of ruolo.utili || []) aggiungi(m);
         }
 
         // attacchi: i due migliori STAB, poi copertura sui tipi che ancora non si colpiscono bene
@@ -587,7 +653,7 @@
         // STAB: il migliore per ogni tipo (il valore tiene già conto della categoria)
         for (const t of cand.tipiBase) {
             if (presi >= daFare || scelte.length >= 4) break;
-            const dellTipo = usabili.filter(x => x.m.tipo === t && !scelte.some(s => s.id === x.m.id));
+            const dellTipo = usabili.filter(x => x.m.tipo === t && !giaPresa(x.m));
             // tra gli attacchi di quel tipo vince quello consigliato, se non è molto più debole del migliore
             const chiave = x => (posCons.has(x.m.id) ? posCons.get(x.m.id) : 30 - quotaMeta(x.m) * 30);       // prima i consigliati, poi quelli della lega
             const consigliato = dellTipo.filter(x => (posCons.has(x.m.id) || quotaMeta(x.m) >= 0.4) && dellTipo[0] && x.v >= dellTipo[0].v * 0.6)
@@ -600,7 +666,7 @@
             let migliore = null, mv = -1;
             const tipiScelti = new Set(scelte.filter(m => m.categoria !== 'Status').map(m => m.tipo));
             for (const a of usabili) {
-                if (scelte.some(s => s.id === a.m.id)) continue;
+                if (giaPresa(a.m)) continue;
                 if (a.m.categoria !== preferita && cand.offesa > 0 && (a.m.categoria === 'Physical' ? cand.basi.atk : cand.basi.spa) < cand.offesa * 0.8) continue;
                 let nuovi = 0;
                 for (const t of K.TIPI) if (!coperti.has(t) && K.moltiplicatoreTipo(ruolo.dex, a.m.tipo, [t]) > 1) nuovi++;
@@ -612,13 +678,15 @@
             aggiungi(migliore.m); copre(migliore.m); presi++;
         }
         // se mancano mosse: prima le consigliate che attaccano (o potenziano chi attacca), poi qualunque attacco, poi qualunque mossa utile
+        // (le mosse di utilità, Explosion e Hidden Power senza tipo non riempiono i posti rimasti: le porta solo chi le ha avute dai ruoli)
+        const daRuolo = m => !!(m.utile || m.curaAltri > 0 || m.boostAlleato || m.autoKo || m.id === 'hiddenpower');
         for (const m of consigliate) {
             if (scelte.length >= 4) break;
-            if (m.categoria !== 'Status' && !m.perno) aggiungi(m);
+            if (m.categoria !== 'Status' && !m.perno && !daRuolo(m)) aggiungi(m);
         }
         for (const a of cand.attacchi) { if (scelte.length >= 4) break; aggiungi(a.m); }
         for (const a of cand.perni) { if (scelte.length >= 4) break; aggiungi(a.m); }
-        for (const m of cand.mosse) { if (scelte.length >= 4) break; if (m.categoria === 'Status') aggiungi(m); }
+        for (const m of cand.mosse) { if (scelte.length >= 4) break; if (m.categoria === 'Status' && !daRuolo(m)) aggiungi(m); }
         return scelte;
     }
 
@@ -637,8 +705,9 @@
             r.priorita = (assegnati.priorita || {})[cand.id] || null;
             r.senzaProt = (assegnati.senzaProt || []).includes(cand.id);
             r.perno = (assegnati.perni || []).includes(cand.id);
+            r.utili = (assegnati.utili || {})[cand.id] || [];
             // il pivot è un attacco che fa anche cambiare: ma occupa un posto che altrimenti sarebbe di un altro attacco
-            const nSupp = [r.fakeout, r.velocita, r.redirezione, r.schermi, r.aiuto, r.rallenta, r.stato, r.perno].filter(Boolean).length;
+            const nSupp = [r.fakeout, r.velocita, r.redirezione, r.schermi, r.aiuto, r.rallenta, r.stato, r.perno].filter(Boolean).length + r.utili.length;
             // senza Protezione c'è una mossa in più per attaccare
             r.attacchi = ctx.goose ? Math.max(2, 4 - nSupp) : Math.max(1, (r.senzaProt ? 4 : 3) - nSupp);
             r.supporto = nSupp > 0;
@@ -648,10 +717,83 @@
             r.setup = assegnati.setup[cand.id] || null;
             r.stato = assegnati.stato.includes(cand.id);
             r.perno = assegnati.perno === cand.id;
-            const nUtili = [r.trappola, r.recupero, r.setup, r.stato, r.perno].filter(Boolean).length;
-            r.attacchi = Math.max(2, 4 - nUtili);
+            r.utili = (assegnati.utili || {})[cand.id] || [];
+            const nUtili = [r.trappola, r.recupero, r.setup, r.stato, r.perno].filter(Boolean).length + r.utili.length;
+            r.attacchi = Math.max(r.utili.length ? 1 : 2, 4 - nUtili);
         }
         return r;
+    }
+
+    // Le mosse di utilità (Encore, Trick, Substitute, Rest e Sleep Talk, Wish, Baton Pass, Explosion, Heal Pulse, Coaching): il cervello le sa giocare (cpu-ia.js), ma un Pokémon le porta
+    // solo dove i consigli (le prime `utiliTop` mosse consigliate) le hanno, con la probabilità della loro manopola e nei limiti di quante ne vuole un team. Ogni classe: il nome della
+    // manopola, le mosse (in ordine di preferenza), quante per team al massimo, in che stile di partita.
+    const CLASSI_UTILI = [
+        { k: 'Encore', mosse: ['encore'], max: 2 },
+        { k: 'Trick', mosse: ['trick', 'switcheroo'], max: 1, scelta: true },
+        { k: 'Sostituto', mosse: ['substitute'], max: 2 },
+        { k: 'Riposo', mosse: ['rest'], max: 2, con: 'sleeptalk' },
+        { k: 'Desiderio', mosse: ['wish'], max: 2 },
+        { k: 'PassaBoost', mosse: ['batonpass'], max: 1, singolo: true, setup: true },
+        { k: 'Esplosione', mosse: ['explosion', 'selfdestruct', 'mistyexplosion'], max: 1, tetto: 'maxEsplosione' },
+        { k: 'Cura', mosse: ['healpulse', 'floralhealing'], max: 1, doppio: true },
+        { k: 'Coaching', mosse: ['coaching'], max: 1, doppio: true }
+    ];
+    function assegnaUtili(membri, ctx, a, rnd, par) {
+        const out = {};
+        // niente nei formati a livello 5 (Little Cup): Trick, l'unica che lì compare, perde (41% su 98 coppie) e i consigli di quei formati vengono da altre partite
+        if (ctx.goose || ctx.livello <= 10 || !(par.maxUtili > 0)) return out;
+        const top = par.utiliTop || 4;
+        // quante mosse hanno già per ruolo (così resta sempre almeno un attacco)
+        const occupate = c => {
+            if (ctx.doppio) {
+                return [c.id === a.fakeout, !!a.velocita[c.id], c.id === a.redirezione, c.id === a.schermi, a.aiuto.includes(c.id), a.rallenta.includes(c.id), a.stato.includes(c.id), (a.perni || []).includes(c.id),
+                    !(a.senzaProt || []).includes(c.id) && !(ctx.goose)].filter(Boolean).length;
+            }
+            return [a.trappola === c.id, a.recupero.includes(c.id), !!a.setup[c.id], a.stato.includes(c.id), a.perno === c.id].filter(Boolean).length;
+        };
+        const proposte = [];
+        for (const c of membri) {
+            const mosseConsigliate = (c.cons && c.cons.mosse) || [];
+            for (const classe of CLASSI_UTILI) {
+                if (par['prob' + classe.k] <= 0) continue;
+                if (classe.doppio && !ctx.doppio) continue;
+                if (classe.singolo && ctx.doppio) continue;
+                // la mossa consigliata più in alto tra quelle della classe che il Pokémon ha davvero
+                let pos = -1, mossa = null;
+                for (const k of classe.mosse) {
+                    const i = mosseConsigliate.indexOf(k);
+                    if (i >= 0 && i < top && c.mosseDa.has(k) && (pos < 0 || i < pos)) { pos = i; mossa = c.mosseDa.get(k); }
+                }
+                if (!mossa) continue;
+                const moves = [mossa];
+                if (classe.con) {
+                    // Rest va con Sleep Talk (se il Pokémon ce l'ha e i consigli la vogliono): da solo (con la Bacca Chesto) funziona lo stesso
+                    const j = mosseConsigliate.indexOf(classe.con);
+                    if (c.mosseDa.has(classe.con) && j >= 0 && j < top + 2) moves.push(c.mosseDa.get(classe.con));
+                }
+                if (classe.scelta && !(c.cons.oggetti || []).slice(0, 3).some(k => K.STRUMENTI_SCELTA.has(k))) continue;      // Trick vale con lo strumento Scelta
+                if (classe.setup && !a.setup[c.id]) continue;                                                                // Baton Pass: serve qualcosa da passare
+                if (classe.k === 'Riposo' && (a.recupero || []).includes(c.id)) continue;                                    // un solo modo di curarsi
+                proposte.push({ c, classe, moves, pos: pos + rnd() * 1.5 });
+            }
+        }
+        proposte.sort((x, y) => x.pos - y.pos);
+        const perClasse = {}, perMembro = {};
+        let totale = 0;
+        for (const p of proposte) {
+            if (totale >= par.maxUtili) break;
+            const { c, classe, moves } = p;
+            if ((perClasse[classe.k] || 0) >= Math.min(classe.max, classe.tetto ? par[classe.tetto] : 99)) continue;
+            // al massimo due classi per Pokémon, e un attacco resta sempre
+            const gia = perMembro[c.id] || [];
+            if (gia.length >= 2 || occupate(c) + gia.reduce((s, q) => s + q.length, 0) + moves.length > 3) continue;
+            if (rnd() >= par['prob' + classe.k]) continue;
+            perClasse[classe.k] = (perClasse[classe.k] || 0) + 1;
+            perMembro[c.id] = gia.concat([moves]);
+            totale++;
+        }
+        for (const [cid, gruppi] of Object.entries(perMembro)) out[cid] = [].concat(...gruppi);
+        return out;
     }
 
     // Chi fa cosa: la squadra decide quale membro ha le mosse di supporto
@@ -745,6 +887,9 @@
             const perno = per(membri.filter(c => c.opz.pivot && !a.setup[c.id]), c => c.basi.spe)[0];
             if (perno) a.perno = perno.id;
         }
+        // le mosse di utilità si scelgono con un generatore a parte, che parte dai membri (non dal generatore del team: non ne consuma estrazioni): così due team composti con manopole
+        // diverse hanno gli stessi membri e cambia solo chi porta quelle mosse (il confronto a coppie di tools/duello-cpu.cjs --gemelli), e i team senza novità restano quelli di prima
+        a.utili = assegnaUtili(membri, ctx, a, creaCasuale('utili|' + membri.map(c => c.id).join('|')), par);
         return a;
     }
 
@@ -792,6 +937,14 @@
         const qualunqueStato = mosse.some(m => m.categoria === 'Status');          // il Gilet d'assalto vieta anche la Protezione
         const fragile = cand.basi.hp + cand.basi.def + cand.basi.spd < 230;
         const nomi = [];
+        // Trick e Switcheroo: servono con uno strumento Scelta in mano (scambiato, blocca l'avversario su una mossa): il primo dei consigli che il formato ammette
+        if (mosse.some(m => m.utile === 'trick')) {
+            for (const k of ((cand.cons && cand.cons.oggetti) || []).slice(0, 4)) {
+                if (!K.STRUMENTI_SCELTA.has(k)) continue;
+                const v = itemValido(dex, k, ctx, restrizioni, usati, true);
+                if (v) return v;
+            }
+        }
         // lo strumento Scelta: solo a chi ha soli attacchi (la mossa bloccata non è mai una Protezione o uno stato inutile), se i consigli ce l'hanno tra i primi tre
         const par = ctx.parametriTeam || PARAMETRI_TEAM;
         const probScelta = ctx.doppio ? par.probSceltaDoppio : par.probScelta;
@@ -932,6 +1085,14 @@
         if (strumento) usati.add(id(strumento));
         const abilita = scegliAbilita(cand, piano, ctx, ruolo);
         const { evs, nat, ivs } = distribuzione(cand, ruolo, ctx, mosse, piano, natura, rnd);
+        // Hidden Power con un tipo (3ª-7ª generazione): gli IV sono quelli che danno quel tipo. Un IV a 0 scelto sopra (Attacco a un attaccante speciale, Velocità per la Stanza Magica)
+        // li contraddirebbe, e dalla 3ª alla 6ª generazione il validatore rifiuta il set
+        const conHP = mosse.find(m => /^hiddenpower[a-z]+$/.test(m.id));
+        if (conHP) {
+            const t = dex.types.get(conHP.tipo);
+            for (const k of Object.keys(ivs)) delete ivs[k];
+            if (t && t.HPivs) Object.assign(ivs, t.HPivs);
+        }
         const righe = [];
         righe.push(strumento ? `${cand.nome} @ ${strumento}` : cand.nome);
         if (abilita) righe.push(`Ability: ${abilita}`);
@@ -1238,6 +1399,7 @@
             const c = await analizza(dex, validatore, voce, ctx, restrizioni, mosseBandite, abilitaBandite, opzioni.pokedexBase);
             if (c) {
                 c.cons = consigliDi(opzioni.consigli, c, ctx);
+                if (parametriTeam.hiddenPower > 0 && ctx.gen >= 3 && ctx.gen <= 7) tipiHiddenPower(c, dex, ctx, mosseBandite, restrizioni);
                 if (meta) { c.uso = meta.specie[id(c.id)] || 0; c.metaMosse = (meta.mosse || {})[id(c.id)] || null; }
                 cand.push(c);
             }
