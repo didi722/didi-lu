@@ -60,17 +60,29 @@
     const PERNO = insieme('uturn', 'voltswitch', 'flipturn', 'partingshot', 'teleport', 'batonpass');
 
     // Mosse che la CPU non sa usare bene: fuori dai suoi team
+    // (Explosion e Self-Destruct, Substitute, Rest e Sleep Talk, Baton Pass, Trick, Hidden Power, Wish, Encore, Coaching e Heal Pulse non ci sono più: il cervello le sa giocare, vedi MOSSE_UTILI)
     const ESCLUSE = insieme(
         'darkvoid', 'fissure', 'sheercold', 'horndrill', 'guillotine',          // KO in un colpo / addormenta tutti
-        'explosion', 'selfdestruct', 'mistyexplosion', 'memento', 'finalgambit', 'healingwish', 'lunardance', 'destinybond',
-        'perishsong', 'curse', 'transform', 'sketch', 'mimic', 'metronome', 'copycat', 'mirrormove', 'assist', 'sleeptalk',
-        'rest', 'focuspunch', 'dreameater', 'lastresort', 'belch', 'steelroller', 'synchronoise',
-        'counter', 'mirrorcoat', 'metalburst', 'bide', 'endeavor', 'substitute', 'batonpass', 'rage', 'present',
-        'upperhand', 'splash', 'celebrate', 'holdhands', 'happyhour', 'afteryou', 'allyswitch', 'instruct', 'bestow', 'trick', 'switcheroo',
-        'covet', 'thief', 'fling', 'naturalgift', 'spitup', 'swallow', 'stockpile', 'hiddenpower', 'frustration',
+        'memento', 'finalgambit', 'healingwish', 'lunardance', 'destinybond',
+        'perishsong', 'curse', 'transform', 'sketch', 'mimic', 'metronome', 'copycat', 'mirrormove', 'assist',
+        'focuspunch', 'dreameater', 'lastresort', 'belch', 'steelroller', 'synchronoise',
+        'counter', 'mirrorcoat', 'metalburst', 'bide', 'endeavor', 'rage', 'present',
+        'upperhand', 'splash', 'celebrate', 'holdhands', 'happyhour', 'afteryou', 'allyswitch', 'instruct', 'bestow',
+        'covet', 'thief', 'fling', 'naturalgift', 'spitup', 'swallow', 'stockpile', 'frustration',
         'skydrop', 'beatup', 'psywave', 'wringout', 'crushgrip', 'electricterrain', 'grassyterrain', 'mistyterrain', 'psychicterrain',
         'raindance', 'sunnyday', 'sandstorm', 'hail', 'snowscape', 'chillyreception', 'haze', 'painsplit', 'sandattack'
     );
+    // Le mosse "di utilità" che la CPU sa giocare in battaglia (cpu-ia.js) ma che il team builder dà solo dove i consigli le hanno (team-cpu.js): ognuna con ciò che è
+    //   encore        bloccare l'avversario sull'ultima mossa che ha fatto per tre turni
+    //   trick         scambiare gli strumenti (Trick e Switcheroo): lo Scelta a chi non attacca, o il suo strumento a chi lo usa male
+    //   sostituto     Substitute: 25% degli HP per un sostituto che prende i colpi e ferma gli stati
+    //   riposo        Rest: cura piena e due turni di sonno; parlasonno (Sleep Talk) è la sua metà, usabile solo da addormentati
+    //   desiderio     Wish: al turno dopo chi sta in quel posto riprende metà degli HP di chi l'ha usata
+    //   passaboost    Baton Pass: chi la usa esce e chi entra tiene i suoi potenziamenti
+    //   curaAltri     Heal Pulse e Floral Healing: curano il bersaglio (di solito l'alleato)
+    //   boostAlleato  Coaching: +1 Attacco e Difesa all'alleato
+    const MOSSE_UTILI = { encore: 'encore', trick: 'trick', switcheroo: 'trick', substitute: 'sostituto', rest: 'riposo', sleeptalk: 'parlasonno', wish: 'desiderio', batonpass: 'passaboost' };
+    const CURA_ALTRI = { healpulse: 0.5, floralhealing: 0.5 };
     // Mosse in due turni o che costringono a fermarsi
     const DUE_TURNI = insieme('solarbeam', 'solarblade', 'fly', 'dig', 'dive', 'bounce', 'phantomforce', 'shadowforce', 'skullbash',
         'razorwind', 'skyattack', 'freezeshock', 'iceburn', 'geomancy', 'meteorbeam', 'electroshot', 'gigaimpact', 'hyperbeam',
@@ -161,6 +173,11 @@
             rinculo: m.recoil || null, rinculoMax: m.mindBlownRecoil ? 0.5 : 0, assorbe: m.drain || null, multi: m.multihit || null,
             ohko: !!m.ohko, dannoFisso: m.damage || null,
             boostSelf: (m.self && m.self.boosts) || null,
+            // Explosion, Self-Destruct, Misty Explosion: chi le usa cade
+            autoKo: m.selfdestruct === 'always',
+            // le mosse di utilità (vedi MOSSE_UTILI), quelle che curano il bersaglio e quelle che potenziano l'alleato
+            utile: MOSSE_UTILI[k] || null, curaAltri: CURA_ALTRI[k] || 0,
+            boostAlleato: (m.category === 'Status' && m.boosts && m.target === 'adjacentAlly') ? m.boosts : null,
             // le mosse di stato che abbassano le statistiche del bersaglio (Parting Shot, Charm, Screech...)
             boostBersaglio: BOOST_BERSAGLIO_SPECIALI[k] || ((m.category === 'Status' && m.boosts && ['normal', 'any', 'adjacentFoe', 'allAdjacentFoes'].includes(m.target)) ? m.boosts : null),
             protezione: PROTEZIONI.has(k), recupero: RECUPERO.has(k), potenziamento: POTENZIAMENTI[k] || null,
@@ -176,7 +193,7 @@
     // (descriviMossa) e da ciò che offre il simulatore nella richiesta, così l'IA le valuta come qualunque altra mossa.
     const NEUTRE = {
         secondari: null, assorbe: null, rinculo: null, rinculoMax: 0, multi: null, dannoFisso: null, ohko: false, ricarica: false, dueTurni: false,
-        perno: false, boostSelf: null, boostBersaglio: null, flags: {}, stato: null, potenziamento: null, recupero: false, redirezione: false, schermo: false,
+        perno: false, boostSelf: null, boostBersaglio: null, autoKo: false, utile: null, curaAltri: 0, boostAlleato: null, flags: {}, stato: null, potenziamento: null, recupero: false, redirezione: false, schermo: false,
         trappola: false, velocitaSquadra: false, terra: false, colpisceAlleato: false, esclusa: false, protezione: false
     };
     // Se il Dex non dà la potenza (mosse di partenza a potenza variabile): le tabelle di Showdown
@@ -248,7 +265,8 @@
         if (!d || d.esclusa || d.dueTurni || d.ricarica || d.ohko || d.dannoFisso) return false;
         if (d.categoria === 'Status') {
             return d.protezione || !!d.potenziamento || d.recupero || !!d.stato || d.velocitaSquadra || d.schermo || d.trappola
-                || d.redirezione || ['helpinghand', 'taunt', 'leechseed', 'wideguard', 'partingshot'].includes(d.id);
+                || d.redirezione || ['helpinghand', 'taunt', 'leechseed', 'wideguard', 'partingshot'].includes(d.id)
+                || !!d.utile || d.curaAltri > 0 || !!d.boostAlleato;
         }
         return d.potenza > 0;
     }
@@ -266,7 +284,7 @@
 
     return {
         id, TIPI, PROTEZIONI, PROTEZIONI_DI_AREA, POTENZIAMENTI, RECUPERO, STATI, VELOCITA_DI_SQUADRA, SCHERMI, TRAPPOLE,
-        REDIREZIONE, PERNO, ESCLUSE, DUE_TURNI, MOSSE_TERRA, IMMUNITA_ABILITA, ABILITA_PERICOLOSE, ABILITA_SCARTATE,
+        REDIREZIONE, PERNO, ESCLUSE, MOSSE_UTILI, CURA_ALTRI, DUE_TURNI, MOSSE_TERRA, IMMUNITA_ABILITA, ABILITA_PERICOLOSE, ABILITA_SCARTATE,
         STRUMENTI_OFFENSIVI, STRUMENTI_TIPO, STRUMENTI_SCELTA, POTENZA_STIMATA,
         METEO_SETTER, METEO_SFRUTTATORI, METEO_TIPO, PIANO_METEO,
         moltiplicatoreTipo, tipiDellaGenerazione, descriviMossa, mossaUsabile, mossaMax, mossaZ, maxGuard, potenzaMaxDaTabella, potenzaZDaTabella, MOSSE_MAX
