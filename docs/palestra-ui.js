@@ -67,7 +67,7 @@
         const grezzi = (await leggi(`players/${S.io}/teams`)) || {};
         S.mieiTeam = Object.entries(grezzi).filter(([, t]) => t && typeof t === 'object').map(([id, t]) => ({
             id, nome: nomeTeam(t), categoria: String(t.categoria || t.category || ''), quanti: elenco(t.pokemon).filter(p => p && p.nome).length,
-            pokemon: elenco(t.pokemon).filter(p => p && p.nome).map(p => ({ nome: String(p.nome), shiny: !!p.shiny }))
+            pokemon: elenco(t.pokemon).filter(p => p && p.nome).map(p => ({ nome: String(p.nome), shiny: !!p.shiny, mosse: elenco(p.mosse).map(m => String(m || '').trim()).filter(m => m && m !== '-') }))
         }));
     }
     const formatiDoppi = () => Object.entries(S.regolamenti).filter(([, r]) => r && r.categoria && P.eDoppio(r)).sort((a, b) => String(a[1].categoria).localeCompare(String(b[1].categoria)));
@@ -254,6 +254,31 @@
             <span class="pal-allena-testo">CPU <b>${x.percento}%</b></span>${tasto}</div>`;
     }
 
+    // ---------------------------------------------------------------- lo stile di gioco della CPU (cpu-personalita.js)
+    /** Il team della bozza con le sue mosse (per capire che stile si presta), o null se la tappa non ha ancora un team */
+    const mosseDelTeam = id => { const t = teamPerId(id); return t ? t.pokemon.map(p => ({ mosse: p.mosse || [] })) : null; };
+    /** Lo stile che la CPU suggerisce per quel team: dall'allenamento (come l'hai giocato) e dalle sue mosse */
+    function stileSuggerito(idTeam) {
+        const CS = window.CpuPersonalita;
+        if (!CS || !idTeam) return null;
+        try { return CS.suggerisci({ copione: S.allena[idTeam] || null, team: mosseDelTeam(idTeam), doppio: true }); } catch (e) { return null; }
+    }
+    /** La scelta dello stile di una tappa: "Auto" (con il suggerimento) o uno stile; sotto, cosa vuol dire */
+    function stileTappaHtml(t) {
+        const CS = window.CpuPersonalita;
+        if (!CS) return '';
+        const scelta = CS.sceltaDellaTappa(t.personalita);
+        const sug = stileSuggerito(t.team);
+        const nomeSug = sug ? CS.info(sug.id).nome : '';
+        const opzioniStile = [`<option value=""${scelta === 'auto' ? ' selected' : ''}>${esc(sug ? `Auto · ${nomeSug}` : 'Auto')}</option>`]
+            .concat(CS.ELENCO.map(id => `<option value="${esc(id)}"${scelta === id ? ' selected' : ''}>${esc(CS.info(id).nome)}</option>`)).join('');
+        const attivo = CS.info(scelta === 'auto' ? (sug ? sug.id : CS.PREDEFINITA) : scelta);
+        // sotto: cosa fa lo stile e, se lo propone la CPU, da cosa lo ha capito
+        const perche = scelta === 'auto' && sug && sug.motivi.length ? ` ${sug.motivi[0].charAt(0).toUpperCase()}${sug.motivi[0].slice(1)}.` : '';
+        const nota = scelta === 'auto' && !sug ? 'Pick a team and the CPU suggests the style that fits it best.' : `${attivo.nome}: ${attivo.breve}.${perche}`;
+        return `<label>CPU style<select data-campo="personalita" title="${esc(attivo.descrizione)}"${t.team ? '' : ' disabled'}>${opzioniStile}</select></label><p class="pal-descr pal-stile">${esc(nota)}</p>`;
+    }
+
     // ---------------------------------------------------------------- impostare la propria palestra
     function disegnaImposta() {
         const piano = pianoAllenamento();
@@ -268,8 +293,11 @@
                 <header><h3>Stage ${i + 1}</h3><span class="pal-ordine"><button type="button" class="ng-bottone" data-az="su" aria-label="Move stage ${i + 1} up"${i === 0 ? ' disabled' : ''}>▲</button><button type="button" class="ng-bottone" data-az="giu" aria-label="Move stage ${i + 1} down"${i === S.bozza.length - 1 ? ' disabled' : ''}>▼</button></span></header>
                 <label>Format<select data-campo="formato">${opzioni(formatiDoppi().map(([k, x]) => [k, x.categoria]), t.formato, 'Pick a format')}</select></label>
                 <label>Team<select data-campo="team"${r ? '' : ' disabled'}>${opzioni(r ? teamPer(r.categoria).map(x => [x.id, x.nome]) : [], t.team, r ? (teamPer(r.categoria).length ? 'Pick a team from your Box' : 'You have no team for this format') : 'Pick a format first')}</select></label>
-                <label>Advantage<select data-campo="vantaggio"${r ? '' : ' disabled'}>${optV}</select></label>
-                <p class="pal-descr">${v ? esc(v.descr) : 'It starts at the beginning of the battle, before turn 1.'}</p>
+                <div class="pal-duo">
+                    <label>Advantage<select data-campo="vantaggio"${r ? '' : ' disabled'}>${optV}</select></label>
+                    <p class="pal-descr">${v ? esc(v.descr) : 'It starts at the beginning of the battle, before turn 1.'}</p>
+                    ${stileTappaHtml(t)}
+                </div>
                 ${allenamentoTappaHtml(piano.tappe[i])}
             </article>`;
         }).join('');
@@ -282,8 +310,10 @@
     }
 
     function bozzaDa(config) {
-        const salvate = P.tappeDi(config);
-        return Array.from({ length: P.TAPPE }, (_, i) => salvate[i] || { formato: '', categoria: '', team: '', vantaggio: '' });
+        const salvate = P.tappeDi(config), CS = window.CpuPersonalita;
+        // lo stile salvato: uno che esiste resta, uno che non esiste (o che non si riconosce) vale Auto, cioè vuoto, e non si riscrive
+        const stile = x => { const s = CS ? CS.sceltaDellaTappa(x) : 'auto'; return s === 'auto' ? '' : s; };
+        return Array.from({ length: P.TAPPE }, (_, i) => salvate[i] ? { ...salvate[i], personalita: stile(salvate[i].personalita) } : { formato: '', categoria: '', team: '', vantaggio: '', personalita: '' });
     }
 
     function collegaImposta() {
@@ -312,7 +342,7 @@
                 return disegnaImposta();
             }
             if (b.id === 'pal-salva') {
-                const config = { tappe: S.bozza.map(t => ({ ...t, categoria: (S.regolamenti[t.formato] || {}).categoria || '' })) };
+                const config = { tappe: S.bozza.map(({ personalita, ...t }) => ({ ...t, categoria: (S.regolamenti[t.formato] || {}).categoria || '', ...(personalita ? { personalita } : {}) })) };      // senza scelta niente campo: "Auto" è l'assenza
                 const problemi = P.problemi(config, { regolamenti: S.regolamenti, teams: S.mieiTeam.map(t => ({ id: t.id, categoria: t.categoria })) });
                 if (problemi.length) return msg(problemi[0], true);
                 try { await firebase.database().ref(`players/${S.io}/info/palestra`).set(config); S.salvata = config; msg('Your gym is open for business. Challengers, beware!'); disegnaImposta(); } catch (err) { msg("Couldn't save: check your connection and try again.", true); }

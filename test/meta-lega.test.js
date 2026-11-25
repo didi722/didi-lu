@@ -166,7 +166,8 @@ test('team con la meta: i Pokémon e le mosse che la lega gioca si vedono di pi�
     // le mosse tipiche su un Pokémon della lega (Incineroar con Fake Out e Knock Off...)
     const quoteMossa = (ts, specie, mossa) => { const tutti = ts.flatMap(t => mosseDi(sim, t)).filter(s => s.specie === specie); return tutti.length ? tutti.filter(s => s.mosse.includes(mossa)).length / tutti.length : null; };
     const knockCon = quoteMossa(con, 'incineroar', 'knockoff');
-    assert.ok(knockCon == null || knockCon >= 0.5, `Knock Off su Incineroar: ${knockCon}`);
+    // (con Colpo Fortunato e Protezione, che Incineroar ora ha sempre, resta un solo posto per Knock Off, U-turn e le altre mosse della lega)
+    assert.ok(knockCon == null || knockCon >= 0.3, `Knock Off su Incineroar: ${knockCon}`);
 
     // niente copie: nessun team uguale (per specie) a uno della lega, e di solito ne ha in comune al massimo quattro
     const leghe = lega.map(t => new Set(t.pokemon.map(p => p.nome.toLowerCase().replace(/[^a-z0-9]/g, ''))));
@@ -217,7 +218,8 @@ test('manopole del team: Helping Hand al massimo uno, Protect non per tutti, mos
     assert.ok(vecchi.aiuto > nuovi.aiuto + 0.5, `prima: ${vecchi.aiuto.toFixed(2)}`);
     assert.ok(nuovi.prot < 0.95 && nuovi.prot > 0.6, `Protect sul ${(nuovi.prot * 100).toFixed(0)}% dei Pokémon`);
     assert.ok(vecchi.prot > 0.97, 'prima su tutti');
-    assert.ok(nuovi.prio > vecchi.prio + 0.15, `mosse prioritarie a team: ${nuovi.prio.toFixed(2)} contro ${vecchi.prio.toFixed(2)}`);
+    // le mosse di cova (Colpo Fortunato, Lancio Rapido...) hanno allargato le scelte anche ai parametri vecchi: la mossa prioritaria forte non si confronta più con loro, ma deve esserci in un team su tre
+    assert.ok(nuovi.prio >= 0.3, `mosse prioritarie a team: ${nuovi.prio.toFixed(2)} (con i parametri vecchi ${vecchi.prio.toFixed(2)})`);
 });
 
 // ---------- il pivot nel doppio ----------

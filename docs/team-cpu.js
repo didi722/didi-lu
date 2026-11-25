@@ -22,12 +22,15 @@
 // Anything Goose (nessuna clausola): niente limite di tier (ci sono anche gli AG), Pokémon e strumenti si possono doppiare
 // (due Calyrex-Shadow vanno bene) e i team sono molto offensivi, con solo un po' di strategia (Tailwind, meteo, Stanza Magica).
 //
+// La personalità (cpu-personalita.js, opzione `personalita` di generaTeam, squadrePerFormato, unTeam e nuovoTeam): un team nasce per uno stile. Pesa diversamente i piani (un team
+// "velocità" parte quasi sempre da Tailwind o dalla Stanza Magica, uno "campo" dal meteo) e sposta le manopole dei ruoli (più perni, più stati, più aiuto, meno Protezioni...).
+//
 // Il Dex di @pkmn/sim arriva da fuori. Funziona nel browser (window.TeamCpu) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./formato-pool.js'), require('./consigli.js'));
-    else radice.TeamCpu = fabbrica(radice.CpuConoscenza, radice.FormatoPool, radice.Consigli);
-})(typeof self !== 'undefined' ? self : this, function (K, Pool, Consigli) {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./formato-pool.js'), require('./consigli.js'), require('./cpu-personalita.js'));
+    else radice.TeamCpu = fabbrica(radice.CpuConoscenza, radice.FormatoPool, radice.Consigli, radice.CpuPersonalita);
+})(typeof self !== 'undefined' ? self : this, function (K, Pool, Consigli, Pers) {
     'use strict';
 
     const id = K.id;
@@ -50,10 +53,31 @@
     //   bonusPerno        quanto vale in squadra avere chi ha un pivot buono (punteggio del team)
     //   pesoSpecieMeta    con la meta della lega (opzioni.meta, vedi meta-lega.js): quanto pesa, nella scelta dei membri, l'essere un Pokémon che la lega gioca
     //                     (per un Pokémon in un terzo dei team: il peso intero); pesoMossaMeta: quanto pesano le mosse che la lega gioca su quel Pokémon
-    const PARAMETRI_TEAM = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.1, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
-        probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1 };
+    //   maxStato, probStato   al massimo quanti Pokémon per team portano una mossa che dà uno stato (Onda Tuono, Glare, Fungospora, Sonnifero, Fuocopira) e la probabilità che
+    //                     il team ne abbia uno (la seconda con probabilità minore); chi la porta attacca poco (offesaMaxStato). Prima: solo paralisi e sonno, solo a chi ha poca offesa
+    //   offesaMaxStato    la statistica offensiva oltre la quale un Pokémon non spreca una mossa su uno stato
+    //   bonusFakeOut      quanto vale in squadra avere chi ha Colpo Fortunato (punteggio del team); prima 1,3
+    //   bonusStato        avere chi può dare uno stato; bonusIntimidazione: avere Prepotenza (Intimidate), che in doppio toglie attacco a due avversari ogni volta che entra
+    //   bonusRedirezione  avere chi devia gli attacchi (Furia Polvere, Mi Segui)
+    //   pesoStato         quanto vale, per ogni Pokémon del team (fino a tre) che può dare uno stato (e non ha troppo da attaccare), averlo: senza, i Pokémon con Fuocopira o Onda Tuono
+    //                     restavano in panchina, perché valgono meno degli altri per tier e statistiche
+    //   pesoVelocita, pesoCampo, pesoPerno
+    //                     (le personalità, cpu-personalita.js; di base 0) lo stesso per poter controllare la velocità (Vento in Poppa, Stanza Magica, Vento Gelato, Rete Elettrica,
+    //                     paralisi), il campo (schermi, trappole, aiuto, deviazione, meteo) o avere un perno (fino a quattro, quattro, tre)
+    //   rallentaAnche     (1 = sì) chi ha Rete Elettrica la porta come chi ha Vento Gelato (di base solo Vento Gelato); probStatoSeguenti: la probabilità di dare uno stato anche al secondo
+    //                     e al terzo Pokémon (di base 0,4 di probStato)
+    const PARAMETRI_TEAM = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.6, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
+        probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1,
+        maxStato: 2, probStato: 0.85, offesaMaxStato: 125, bonusFakeOut: 2.1, bonusStato: 1.2, bonusIntimidazione: 0.5, bonusRedirezione: 0.9,
+        pesoStato: 1, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4 };
     // com'era prima (per i confronti)
-    const PARAMETRI_TEAM_VECCHI = { maxAiuto: 99, probAiuto: 1, probProtezione: 1, maxSenzaProt: 0, priorita: 0, sogliaPriorita: 40, bonusPriorita: 0, probPerno: 0, maxPerno: 0, sogliaPerno: 50, bonusPerno: 0 };
+    const PARAMETRI_TEAM_VECCHI = { maxAiuto: 99, probAiuto: 1, probProtezione: 1, maxSenzaProt: 0, priorita: 0, sogliaPriorita: 40, bonusPriorita: 0, probPerno: 0, maxPerno: 0, sogliaPerno: 50, bonusPerno: 0,
+        maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
+        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4 };
+    // com'erano prima dei ruoli di stato, di Intimidate e del peso maggiore di Colpo Fortunato (per confrontare team vecchi e nuovi con tools/prova-team.cjs --confronto precedenti)
+    const PARAMETRI_TEAM_PRECEDENTI = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.1, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
+        probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1, maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
+        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4 };
 
     // =================================================
     // UTILITÀ
@@ -220,21 +244,25 @@
         }
         // le mosse sono retroattive: valgono le fonti di ogni generazione fino a quella del formato (anche in quelli "within")
         const raccogli = async () => {
-            const out = new Set();
+            const out = new Set(), conCova = new Set(), senzaCova = new Set();
             for (const sp of catena) {
                 let dati = await dex.learnsets.get(sp.id);
                 if ((!dati || !dati.learnset) && sp.baseSpecies && sp.baseSpecies !== sp.name) dati = await dex.learnsets.get(id(sp.baseSpecies));
                 if (!dati || !dati.learnset) continue;
                 for (const [mossa, fonti] of Object.entries(dati.learnset)) {
-                    const ok = fonti.some(src => {
+                    for (const src of fonti) {
                         const g = parseInt(src, 10);
                         const via = src.charAt(1);
-                        if (!'MLT'.includes(via)) return false;
-                        return g <= gen;
-                    });
-                    if (ok) out.add(mossa);
+                        if (g > gen) continue;
+                        // livello, MT e tutor; dalla 6ª generazione anche le mosse di cova (E): ognuno le eredita liberamente. Senza, Colpo Fortunato mancava a Incineroar, Rillaboom, Sneasler...
+                        // (ci arrivano dalla cova dello stadio precedente) e i team della CPU avevano pochissimo del gioco in doppio
+                        if ('MLT'.includes(via)) { senzaCova.add(mossa); out.add(mossa); }
+                        else if (via === 'E' && gen >= 6) { conCova.add(mossa); out.add(mossa); }
+                    }
                 }
             }
+            // quelle che si hanno solo per cova: una cova recente non si può avere insieme a certe mosse di generazioni vecchie (vedi correggiUova)
+            out.soloUova = new Set([...conCova].filter(m => !senzaCova.has(m)));
             return out;
         };
         return raccogli();
@@ -306,7 +334,7 @@
             id: voce.id, nome: base.name, specie, base, isMega, richiesto,
             tipiBase: base.types.slice(), tipi: specie.types.slice(), basi: specie.baseStats, bst: specie.bst || 0,
             tier: ctx.doppio ? specie.doublesTier : specie.tier, abilita, mosse,
-            mosseDa: new Map(mosse.map(m => [m.id, m]))
+            mosseDa: new Map(mosse.map(m => [m.id, m])), soloUova: apprese.soloUova || new Set()
         };
         cand.basi = { hp: specie.baseStats.hp, atk: specie.baseStats.atk, def: specie.baseStats.def, spa: specie.baseStats.spa, spd: specie.baseStats.spd, spe: specie.baseStats.spe };
         cand.valore = puntiTier(cand.tier) * 18 + cand.bst / 12;
@@ -353,6 +381,8 @@
     });
 
     function abilitaPossibili(cand) { return cand.abilita.map(id); }
+    // tutte le abilità che mettono un meteo (qualunque): chi le ha prepara il campo
+    const SETTER_QUALUNQUE = new Set(Object.values(SETTER).flat());
 
     // Debolezze e resistenze dei membri (per attacco di ciascun tipo)
     function tabellaTipi(dex, membri, tipi) {
@@ -398,10 +428,14 @@
         const ab = membri.map(abilitaPossibili);
         const ha = f => membri.some(f);
         if (ctx.doppio) {
-            if (ha(c => c.opz.fakeout)) s += 1.3;
+            const parQ = ctx.parametriTeam || PARAMETRI_TEAM;
+            if (ha(c => c.opz.fakeout)) s += parQ.bonusFakeOut;
             if (ha(c => c.opz.tailwind || c.opz.trickroom)) s += 1.1;
             if (membri.filter(c => c.opz.tailwind || c.opz.trickroom || c.opz.rallenta || c.opz.paralisi).length >= 2) s += 0.5;
-            if (ha(c => c.opz.redirezione)) s += 0.6;
+            if (ha(c => c.opz.redirezione)) s += parQ.bonusRedirezione;
+            // uno stato (paralisi, scottatura, sonno) da dare a chi minaccia di più: lo porta chi non ha troppo da attaccare
+            if (parQ.bonusStato > 0 && ha(c => (c.opz.paralisi || c.opz.scottatura || c.opz.sonno) && c.offesa < parQ.offesaMaxStato)) s += parQ.bonusStato;
+            if (parQ.bonusIntimidazione > 0 && ab.some(l => l.includes('intimidate'))) s += parQ.bonusIntimidazione;
             if (ha(c => c.opz.protezione)) s += 0.4;
             if (membri.filter(c => c.supporto).length > 3) s -= (membri.filter(c => c.supporto).length - 3) * 1.1;
             if (ha(c => c.opz.helpinghand)) s += 0.2;
@@ -415,6 +449,14 @@
             if (ha(c => c.opz.sonno || c.opz.paralisi || c.opz.scottatura)) s += 0.3;
             if (membri.filter(c => c.veloce).length >= 2) s += 0.4;
         }
+        // la personalità del team (cpu-personalita.js): ogni Pokémon con un ruolo di quello stile vale un po' (fino a quattro), così il team nasce intorno a quello
+        const parS = ctx.parametriTeam || PARAMETRI_TEAM;
+        const quanti = (peso, f, massimo = 4) => (peso > 0 ? peso * Math.min(massimo, membri.filter(f).length) : 0);
+        s += quanti(parS.pesoVelocita, c => c.opz.tailwind || c.opz.trickroom || c.opz.rallenta === 'icywind' || c.opz.rallenta === 'electroweb' || c.opz.paralisi);
+        s += quanti(parS.pesoCampo, c => c.opz.schermi || c.opz.helpinghand || c.opz.redirezione || c.opz.roccia || c.opz.spuntoni || c.opz.wideguard || c.opz.aurora
+            || (SETTER_QUALUNQUE.size && abilitaPossibili(c).some(a => SETTER_QUALUNQUE.has(a))));
+        s += quanti(parS.pesoStato, c => (c.opz.paralisi || c.opz.scottatura || c.opz.sonno || c.opz.tossina) && c.offesa < parS.offesaMaxStato, 3);
+        s += quanti(parS.pesoPerno, c => c.opz.pivot && c.perni[0] && c.perni[0].v >= parS.sogliaPerno && c.offesa >= 70, 3);
         // almeno un Pokémon che attacca davvero col tipo giusto: evita squadre di soli supporti
         s += Math.min(membri.filter(c => c.offesa >= 100).length, 3) * 0.5;
         // Anything Goose: team molto offensivi. Contano la potenza (attacco o attacco speciale) e la velocità di ognuno,
@@ -482,10 +524,11 @@
             if (ruolo.redirezione) supporto(o.redirezione);
             if (ruolo.schermi) { if (piano.nome === 'neve') supporto(get('auroraveil')); supporto(get('reflect')); supporto(get('lightscreen')); }
             if (ruolo.aiuto) supporto(get('helpinghand'));
-            if (ruolo.rallenta) supporto(get(o.rallenta));
-            if (ruolo.stato) supporto(get(o.paralisi) || get(o.sonno) || get('willowisp'));
-            if (ruolo.perno) supporto(o.pivot);
+            // la mossa prioritaria è un attacco: viene prima delle mosse di supporto "in più" (rallentare, uno stato, il pivot), che altrimenti la lasciano fuori dal set
             if (ruolo.priorita) aggiungi(ruolo.priorita);
+            if (ruolo.rallenta) supporto(get(o.rallenta));
+            if (ruolo.stato) supporto((ruolo.statoMossa && get(ruolo.statoMossa)) || get(o.paralisi) || get(o.sonno) || get('willowisp'));
+            if (ruolo.perno) supporto(o.pivot);
         } else {
             if (ruolo.trappola) aggiungi(get(o.roccia ? 'stealthrock' : 'spikes'));
             if (ruolo.recupero) aggiungi(o.recupero);
@@ -552,6 +595,7 @@
             r.aiuto = assegnati.aiuto.includes(cand.id);
             r.rallenta = assegnati.rallenta.includes(cand.id);
             r.stato = assegnati.stato.includes(cand.id);
+            r.statoMossa = (assegnati.statoMossa || {})[cand.id] || null;
             r.priorita = (assegnati.priorita || {})[cand.id] || null;
             r.senzaProt = (assegnati.senzaProt || []).includes(cand.id);
             r.perno = (assegnati.perni || []).includes(cand.id);
@@ -574,7 +618,7 @@
 
     // Chi fa cosa: la squadra decide quale membro ha le mosse di supporto
     function assegnaRuoli(dex, membri, ctx, piano, rnd = Math.random, par = PARAMETRI_TEAM) {
-        const a = { dex, fakeout: null, velocita: {}, redirezione: null, schermi: null, aiuto: [], rallenta: [], stato: [], priorita: {}, senzaProt: [],
+        const a = { dex, fakeout: null, velocita: {}, redirezione: null, schermi: null, aiuto: [], rallenta: [], stato: [], statoMossa: {}, priorita: {}, senzaProt: [],
             trappola: null, recupero: [], setup: {}, perno: null, perni: [] };
         const per = (lista, f) => lista.slice().sort((x, y) => f(y) - f(x));
         if (ctx.doppio) {
@@ -600,8 +644,22 @@
             for (const c of membri) {
                 if (a.aiuto.includes(c.id)) continue;
                 if (ctx.goose) continue;                       // Anything Goose: niente rallentamenti e stati, si attacca
-                else if (!preso(c) && c.opz.rallenta === 'icywind') a.rallenta.push(c.id);
-                else if (!preso(c) && (c.opz.paralisi || c.opz.sonno) && c.offesa < 100) a.stato.push(c.id);
+                else if (!preso(c) && (c.opz.rallenta === 'icywind' || (par.rallentaAnche > 0 && c.opz.rallenta === 'electroweb'))) a.rallenta.push(c.id);
+                else if (par.maxStato <= 0 && !preso(c) && (c.opz.paralisi || c.opz.sonno) && c.offesa < 100) a.stato.push(c.id);      // com'era: solo paralisi e sonno, solo a chi attacca poco
+            }
+            // gli stati (Onda Tuono, Glare, Fungospora, Sonnifero, Fuocopira): un team su due o tre ne ha uno, a volte due, e li porta chi non ha troppo da attaccare e nessun altro ruolo.
+            // Il sonno vale più di tutti, la scottatura è la risposta ai Pokémon fisici, la paralisi la risposta ai veloci
+            if (!ctx.goose && par.maxStato > 0) {
+                // chi devia gli attacchi può portare anche il sonno (Amoonguss: Furia Polvere e Fungospora): è il suo set classico
+                const adatti = membri.filter(c => (!preso(c) || (c.id === a.redirezione && c.opz.sonno)) && !a.aiuto.includes(c.id) && !a.rallenta.includes(c.id) && (c.opz.paralisi || c.opz.sonno || c.opz.scottatura) && c.offesa < par.offesaMaxStato);
+                const valeDi = c => (c.opz.sonno ? 2 : 0) + (c.opz.scottatura ? 1 : 0) + (c.opz.paralisi ? 1 : 0) + (c.robustezza > 60 ? 0.4 : 0) - c.offesa / 200 + rnd() * 0.8;
+                for (const c of per(adatti, valeDi)) {
+                    if (a.stato.length >= par.maxStato || rnd() >= par.probStato * (a.stato.length ? par.probStatoSeguenti : 1)) break;
+                    a.stato.push(c.id);
+                    // quale mossa: il sonno se c'è, altrimenti a sorte tra scottatura e paralisi (se le ha tutte e due)
+                    const scelte = c.opz.sonno ? [c.opz.sonno] : [c.opz.scottatura ? 'willowisp' : null, c.opz.paralisi].filter(Boolean);
+                    a.statoMossa[c.id] = scelte[Math.min(scelte.length - 1, Math.floor(rnd() * scelte.length))];
+                }
             }
             // la mossa prioritaria: uno, spesso due Pokémon che attaccano (chi ha già un ruolo di supporto no). Vale di più per i lenti, che non muovono mai prima.
             const conPrio = per(membri.filter(c => c.prioritarie && c.prioritarie[0] && c.prioritarie[0].v >= par.sogliaPriorita && c.offesa >= 75 && !preso(c) && !a.aiuto.includes(c.id)),
@@ -767,9 +825,29 @@
         return { evs, nat, ivs };
     }
 
+    // Una mossa di cova si eredita, ma non può stare nello stesso set di una mossa che si impara solo da una generazione vecchia (Skarmory con Brave Bird di cova della 6ª e
+    // Double-Edge del tutor della 3ª): il simulatore dice "incompatible". Un set che ha una mossa di cova (e solo per cova) si ricontrolla intero; se non regge, le mosse di cova si
+    // tolgono e si completa con i migliori attacchi che non lo sono.
+    function correggiUova(cand, mosse, ctx) {
+        const uova = cand.soloUova;
+        if (!uova || !uova.size || !ctx.validatore || !mosse.some(m => uova.has(m.id))) return mosse;
+        let legale = true;
+        try {
+            const problemi = ctx.validatore.validateSet({ name: cand.nome, species: cand.base.name, level: ctx.livello, moves: mosse.map(m => m.nome), ability: cand.abilita[0] || '', item: '', evs: {}, ivs: {}, nature: '' }, {}) || [];
+            legale = !problemi.some(p => /incompatible/i.test(p));
+        } catch (e) { legale = true; }
+        if (legale) return mosse;
+        const resto = mosse.filter(m => !uova.has(m.id));
+        for (const a of cand.attacchi) {
+            if (resto.length >= 4) break;
+            if (!uova.has(a.m.id) && !resto.some(m => m.id === a.m.id)) resto.push(a.m);
+        }
+        return resto.length ? resto : mosse;
+    }
+
     function testoSet(cand, ctx, ruolo, piano, restrizioni, usati, tera, natura) {
         const dex = ruolo.dex;
-        const mosse = mosseDelSet(cand, ruolo, ctx, piano);
+        const mosse = correggiUova(cand, mosseDelSet(cand, ruolo, ctx, piano), ctx);
         const strumento = scegliStrumento(cand, ruolo, ctx, restrizioni, usati, piano, mosse);
         if (strumento) usati.add(id(strumento));
         const abilita = scegliAbilita(cand, piano, ctx, ruolo);
@@ -1086,6 +1164,7 @@
         }
 
         ctx.parametriTeam = parametriTeam;
+        ctx.validatore = validatore;        // per ricontrollare i set che hanno una mossa di cova (correggiUova)
         return {
             insufficiente: false, avvisi, dex, ctx, restrizioni, cand, parametriTeam,
             tipi: K.tipiDellaGenerazione(dex),
@@ -1137,15 +1216,42 @@
     // Il Pokémon di un team conta per la sua specie base (due forme dello stesso Pokémon sono lo stesso Pokémon)
     const pianoDi = nome => ({ nome, pesoValore: nome === 'bilanciato' ? 1.1 : 1 });
 
+    // La personalità del team (cpu-personalita.js): i piani con il loro peso (di base 1) e le manopole dei ruoli che sposta. Senza personalità, o `equilibrata`, il team è quello di sempre.
+    function stileDelTeam(personalita) {
+        if (!Pers || !personalita || !Pers.esiste(personalita)) return null;
+        const t = Pers.team(personalita);
+        return { id: personalita, piani: t.piani || {}, parametri: t.parametri || {} };
+    }
+    // L'elenco dei piani da cui pescare, con ogni piano ripetuto per il suo peso (mezzi pesi: peso × 2 copie); se i pesi li azzerano tutti resta l'elenco com'era
+    function pianiPesati(piani, stile) {
+        if (!stile || !Object.keys(stile.piani).length) return piani;
+        const out = [];
+        for (const p of piani) {
+            const w = stile.piani[p] == null ? 1 : Number(stile.piani[p]);
+            for (let i = 0; i < Math.round(Math.max(0, w) * 2); i++) out.push(p);
+        }
+        return out.length ? out : piani;
+    }
+    // La preparazione di un formato con le manopole dei ruoli della personalità: il contesto e i parametri sono copie, quelli della sessione restano com'erano
+    function conStile(prep, stile) {
+        if (!stile || !Object.keys(stile.parametri).length) return prep;
+        const parametriTeam = Object.assign({}, prep.parametriTeam, stile.parametri);
+        const ctx = Object.assign({}, prep.ctx, { parametriTeam });
+        return Object.assign({}, prep, { parametriTeam, ctx });
+    }
+
     // Una dozzina di team (o quanti ne servono), deterministici: stesso formato e stesso seme, stessi team.
     // Restituisce { team: [{ nome, piano, strategia, testo, specie[] }], avvisi: [] }
     async function generaTeam(opzioni) {
         const quanti = opzioni.quanti || 12;
         const rnd = creaCasuale(opzioni.seme || 'cpu');
-        const prep = await preparaFormato(opzioni, rnd);
-        if (prep.insufficiente) return { team: [], avvisi: prep.avvisi };
+        const prepBase = await preparaFormato(opzioni, rnd);
+        if (prepBase.insufficiente) return { team: [], avvisi: prepBase.avvisi };
 
-        const { dex, ctx, cand, tipi, piani, assi } = prep;
+        const stile = stileDelTeam(opzioni.personalita);
+        const prep = conStile(prepBase, stile);
+        const { dex, ctx, cand, tipi, assi } = prep;
+        const piani = pianiPesati(prep.piani, stile);
         const usoGlobale = new Map();
         const massimo = Math.max(2, Math.ceil(quanti / 3));
         const team = [];
@@ -1166,11 +1272,12 @@
 
             const fatto = costruisciTeam(prep, rnd, membri, piano, asso);
             if (!fatto) continue;
+            if (stile) fatto.personalita = stile.id;
             team.push(fatto);
             firme.push(specie);
             new Set(specie).forEach(x => usoGlobale.set(x, (usoGlobale.get(x) || 0) + 1));   // un team conta una volta per specie, anche con le copie
         }
-        return { team, avvisi: prep.avvisi };
+        return { team, avvisi: prepBase.avvisi };
     }
 
     // Un team solo, a caso, da una preparazione già fatta (preparaFormato). Piano e asso sono a caso; `recenti` sono i team già
@@ -1192,8 +1299,11 @@
         }
         return false;
     }
-    function unTeam(prep, rnd, { recenti = [] } = {}) {
-        const { dex, ctx, cand, tipi, piani, assi } = prep;
+    function unTeam(prepBase, rnd, { recenti = [], personalita = null } = {}) {
+        const stile = stileDelTeam(personalita);
+        const prep = conStile(prepBase, stile);
+        const { dex, ctx, cand, tipi, assi } = prep;
+        const piani = pianiPesati(prep.piani, stile);
         const massimo = 2;
         // Prima si cerca un team che non somigli ai recenti; se il formato ha pochi Pokémon (una sola lettera, un solo tipo) può non
         // esserci, e allora ci si accontenta: meglio un team un po' simile che nessun team.
@@ -1218,6 +1328,7 @@
                 if (evita.length && troppoSimile(chiavi, evita)) continue;
                 const fatto = costruisciTeam(prep, rnd, membri, piano, asso);
                 if (!fatto) continue;
+                if (stile) fatto.personalita = stile.id;
                 if (fatto.strategia && fatto.strategia.coerente === false) { if (!ripiego) ripiego = Object.assign(fatto, { chiavi }); continue; }
                 return Object.assign(fatto, { chiavi });
             }
@@ -1320,7 +1431,7 @@
             const quantiQui = Math.min(perVariante, quanti - out.length);
             const r = await generaTeam({
                 Dex: opzioni.Dex, TeamValidator: opzioni.TeamValidator, pool, regolamento: v.regolamento,
-                quanti: quantiQui, seme: `${seme}|${i}|${v.etichetta}`, pokedexBase, consigli, parametriTeam: opzioni.parametriTeam, meta: opzioni.meta
+                quanti: quantiQui, seme: `${seme}|${i}|${v.etichetta}`, pokedexBase, consigli, parametriTeam: opzioni.parametriTeam, meta: opzioni.meta, personalita: opzioni.personalita
             });
             r.avvisi.forEach(a => avvisi.push(a));
             r.team.forEach(t => out.push(Object.assign(t, v.etichetta ? { nome: `${t.nome} (${v.etichetta})` } : {})));
@@ -1364,7 +1475,7 @@
         return sessione.preparati.get(indice);
     }
 
-    // opzioni: { seme (a caso se manca), recenti: [chiavi di team già incontrati], variantiDaProvare }
+    // opzioni: { seme (a caso se manca), recenti: [chiavi di team già incontrati], variantiDaProvare, personalita (cpu-personalita.js: lo stile per cui compone il team; il team lo riporta in `personalita`) }
     async function nuovoTeam(sessione, opzioni = {}) {
         const rnd = creaCasuale(opzioni.seme || `${Date.now()}|${Math.random()}`);
         const recenti = opzioni.recenti || [];
@@ -1376,7 +1487,7 @@
             const prep = await preparaVariante(sessione, i);
             prep.avvisi.forEach(a => { if (!avvisi.includes(a)) avvisi.push(a); });
             if (prep.insufficiente) continue;
-            const team = unTeam(prep, rnd, { recenti });
+            const team = unTeam(prep, rnd, { recenti, personalita: opzioni.personalita });
             if (!team) continue;
             const etichetta = sessione.varianti[i].etichetta;
             if (etichetta) team.nome = `${team.nome} (${etichetta})`;
@@ -1388,6 +1499,6 @@
     return {
         generaTeam, squadrePerFormato, preparaFormato, unTeam, preparaSessione, nuovoTeam,
         contestoDa, generazioneFormato, livelloFormato, formatoInDoppio, meccaniche, mosseApprese,
-        voceBannata, creaCasuale, puntiTier, datiStrumento, strategiaDelTeam, PARAMETRI_TEAM, PARAMETRI_TEAM_VECCHI
+        voceBannata, creaCasuale, puntiTier, datiStrumento, strategiaDelTeam, PARAMETRI_TEAM, PARAMETRI_TEAM_VECCHI, PARAMETRI_TEAM_PRECEDENTI, PIANI_DOPPIO, PIANI_SINGOLO
     };
 });

@@ -260,7 +260,7 @@ test('la pagina: la route, la validazione della tappa, la registrazione dell\'an
     // ogni battaglia riparte da capo e il cervello della palestra riceve il copione
     assert.match(SORGENTE, /if \(cpu\.allenamento\) Object\.assign\(cpu\.allenamento, \{ portati: null, esito: null, salvando: null, pendente: null, anticipata: false \}\);/);
     assert.match(SORGENTE, /copione: cpu\.palestra \? cpu\.palestra\.copione : null/);
-    assert.match(SORGENTE, /copione: gym\.copione \|\| null \}/, 'preparaPalestra tiene il copione del team della tappa');
+    assert.match(SORGENTE, /copione: gym\.copione \|\| null, personalita: gym\.personalita \|\| null \}/, 'preparaPalestra tiene il copione del team della tappa e lo stile della CPU');
     // il salvataggio scrive solo il copione di quel team, con una transazione
     assert.match(SEZIONE, /a\.riferimento\.transaction\(attuale => P\.fondi\(attuale, lezione\)\)/);
     assert.equal((SEZIONE.match(/\.set\(|\.update\(|\.remove\(/g) || []).length, 0, 'niente altro viene scritto nel database');
@@ -291,7 +291,7 @@ test('database e documentazione: il copione sta in players/<id>/palestraAllename
     const ts = leggi('team-sito.js');
     assert.match(ts, /players\/\$\{id\}\/palestraAllenamento\/\$\{tappa\.team\}/);
     assert.match(ts, /self\.CpuCopione\.normalizza\(/, 'quello che arriva dal database si ripulisce');
-    assert.match(ts, /musica: aspetto\.musica, copione \}/);
+    assert.match(ts, /musica: aspetto\.musica, copione, personalita \}/);
     const regole = fs.readFileSync(path.join(__dirname, '..', 'REGOLE-DATABASE.md'), 'utf8');
     assert.match(regole, /players\/<id>\/palestraAllenamento\/<team>/);
 });

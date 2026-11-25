@@ -55,7 +55,7 @@ test('temaPalestra: il carattere del capopalestra è uno della lista ammessa (Go
 test('simulatore: la musica del capopalestra prende il posto di quella di Showdown (silenziata), segue il volume del sito e se non si carica torna quella di Showdown', () => {
     const bu = leggi('docs', 'battle-ui.js');
     // team-sito.js passa la canzone insieme all'aspetto
-    assert.match(leggi('docs', 'team-sito.js'), /return \{ [\s\S]*?, aspetto, musica: aspetto\.musica(, copione)? \};/);
+    assert.match(leggi('docs', 'team-sito.js'), /return \{ [\s\S]*?, aspetto, musica: aspetto\.musica(, copione(, personalita)?)? \};/);
     // preparaPalestra la avvia dopo aver vestito la pagina e prima che parta la scena (la musica di Showdown parte con la scena)
     const prep = bu.slice(bu.indexOf('async function preparaPalestra'), bu.indexOf('function vestiPalestra'));
     assert.match(prep, /avviaMusicaPalestra\(gym\.musica\);/);

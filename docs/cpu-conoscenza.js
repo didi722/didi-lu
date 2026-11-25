@@ -66,7 +66,7 @@
         'perishsong', 'curse', 'transform', 'sketch', 'mimic', 'metronome', 'copycat', 'mirrormove', 'assist', 'sleeptalk',
         'rest', 'focuspunch', 'dreameater', 'lastresort', 'belch', 'steelroller', 'icespinner', 'poltergeist', 'synchronoise',
         'counter', 'mirrorcoat', 'metalburst', 'bide', 'endeavor', 'substitute', 'batonpass', 'rage', 'present',
-        'splash', 'celebrate', 'holdhands', 'happyhour', 'afteryou', 'allyswitch', 'instruct', 'bestow', 'trick', 'switcheroo',
+        'upperhand', 'splash', 'celebrate', 'holdhands', 'happyhour', 'afteryou', 'allyswitch', 'instruct', 'bestow', 'trick', 'switcheroo',
         'covet', 'thief', 'fling', 'naturalgift', 'spitup', 'swallow', 'stockpile', 'hiddenpower', 'return', 'frustration',
         'skydrop', 'beatup', 'psywave', 'wringout', 'crushgrip', 'electricterrain', 'grassyterrain', 'mistyterrain', 'psychicterrain',
         'raindance', 'sunnyday', 'sandstorm', 'hail', 'snowscape', 'chillyreception', 'haze', 'painsplit', 'sandattack'

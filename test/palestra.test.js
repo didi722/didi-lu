@@ -181,7 +181,7 @@ test('cablaggio: motore (vantaggio prima del turno 1), battle.html?cpu=1&palestr
     assert.match(bu, /permanenti: cpu && cpu\.palestra \? self\.Palestra\.condizioniFisse\(cpu\.palestra\.vantaggio\) : \[\]/);
     assert.match(leggi('docs', 'battle-extra.js'), /S\.permanenti\.has\(idDi\(battle\.weather\)\) \? ALL_BATTLE/);
     assert.match(mb, /self\.Palestra\.proteggi\(battle, v\.id, v\.lato \|\| 'p2', v\.nome \|\| ''\)/, 'la protezione dei boost parte prima dei Pokémon d\'apertura');
-    assert.match(leggi('docs', 'palestra.html'), /<script src="palestra\.js"><\/script>\s*<script src="palestra-stat\.js"><\/script>\s*<script src="cpu-memoria\.js"><\/script>\s*<script src="cpu-copione\.js"><\/script>\s*<script src="palestra-ui\.js"><\/script>/);
+    assert.match(leggi('docs', 'palestra.html'), /<script src="palestra\.js"><\/script>\s*<script src="palestra-stat\.js"><\/script>\s*<script src="cpu-conoscenza\.js"><\/script>\s*<script src="cpu-memoria\.js"><\/script>\s*<script src="cpu-copione\.js"><\/script>\s*<script src="cpu-personalita\.js"><\/script>\s*<script src="palestra-ui\.js"><\/script>/);
     assert.match(leggi('docs', 'style-palestra.css'), /body\.pg-palestra \{ overflow-x: hidden; overflow-y: auto; \}/);
 });
 

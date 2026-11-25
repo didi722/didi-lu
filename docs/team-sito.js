@@ -326,6 +326,9 @@ export async function caricaTappaPalestra(db, idGym, numeroTappa) {
     if (self.CpuCopione) {
         try { copione = self.CpuCopione.normalizza((await db.ref(`players/${id}/palestraAllenamento/${tappa.team}`).once('value')).val()); } catch (e) { copione = null; }
     }
+    // lo stile con cui la CPU gioca questa tappa (cpu-personalita.js): quello che il capopalestra ha scelto, oppure (se ha lasciato "auto") quello che somiglia di più a come ha
+    // allenato la CPU e alle mosse del team. Senza il modulo la CPU è quella di sempre.
+    const personalita = stileDellaTappa(tappa, testo, copione);
     // com'è fatta la sua pagina pubblica (colore, sfondo, aura, effetti): il simulatore ne veste la palestra (Palestra.temaPalestra)
     // il Pokémon compagno del capopalestra (shiny se lo è nel suo Box): sta sullo sfondo della battaglia
     let shiny = false;
@@ -333,7 +336,16 @@ export async function caricaTappaPalestra(db, idGym, numeroTappa) {
         try { shiny = !!self.Cosmetici.compagnoShiny(info, (await db.ref(`players/${id}/teams`).once('value')).val() || {}); } catch (e) { /* senza shiny */ }
     }
     const aspetto = self.Palestra.aspettoCapo(info, shiny);      // lo stesso della pagina di scelta dei team (palestra-ui.js): colori, avatar, effetti, compagno e canzone
-    return { nome: String(info.name || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria, aspetto, musica: aspetto.musica, copione };
+    return { nome: String(info.name || idGym), id, tappa, vantaggio, team: { nome: nomeTeam(team), testo }, regolamento, categoria: regolamento.categoria, aspetto, musica: aspetto.musica, copione, personalita };
+}
+
+/** Lo stile di gioco della CPU in una tappa: la scelta del capopalestra, o ("auto") il suggerimento da allenamento e team; null se non si sa (la CPU di sempre) */
+export function stileDellaTappa(tappa, testo, copione) {
+    const P = self.CpuPersonalita;
+    if (!P) return null;
+    const scelta = P.sceltaDellaTappa(tappa && tappa.personalita);
+    if (scelta !== 'auto') return scelta;
+    try { return P.suggerisci({ copione, team: P.mosseDaTesto(testo), doppio: true }).id; } catch (e) { return null; }
 }
 
 

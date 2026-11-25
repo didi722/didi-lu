@@ -267,9 +267,9 @@ test('la pagina: cpu-copione.js si carica prima di cpu-ia.js e il copione arriva
     assert.ok(partita.indexOf("import './cpu-copione.js'") > partita.indexOf("import './cpu-memoria.js'"), 'dopo la memoria, che gli serve');
     assert.ok(partita.indexOf("import './cpu-copione.js'") < partita.indexOf("import './cpu-ia.js'"), 'prima del cervello');
     assert.match(partita, /export function nuovoCervello\(lato = 'p2', \{[^}]*copione = null[^}]*\}/);
-    assert.match(partita, /CpuIa\.crea\(\{ Dex, lato, piano, meccaniche, avversario, memoria, copione \}\)/);
+    assert.match(partita, /CpuIa\.crea\(\{ Dex, lato, piano, meccaniche, avversario, memoria, copione, personalita \}\)/);
     // il modulo non usa niente di Node a parte il require della memoria (gira anche nel browser)
     const modulo = leggi('cpu-copione.js');
     assert.match(modulo, /radice\.CpuCopione = fabbrica\(radice\.CpuMemoria\)/);
-    assert.match(leggi('cpu-ia.js'), /radice\.CpuIa = fabbrica\([^)]*radice\.CpuMemoria, radice\.CpuCopione\)/);
+    assert.match(leggi('cpu-ia.js'), /radice\.CpuIa = fabbrica\([^)]*radice\.CpuMemoria, radice\.CpuCopione, radice\.CpuPersonalita\)/);
 });

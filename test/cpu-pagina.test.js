@@ -108,7 +108,7 @@ test('caricaPerProva: un team salvato senza testo originale si ricostruisce dai 
 // nuovoTeamCpu (cpu-partita.js): un team a caso a ogni sfida, la parte lenta una volta sola per pagina
 // ===================================================
 // cpu-partita.js è un modulo ES che importa i file del sito: lo si esegue qui con gli stessi file e un browser finto
-async function creaCpuPartita({ fetchFallisce = 0 } = {}) {
+async function creaCpuPartita({ fetchFallisce = 0, personalita = false } = {}) {
     const { sim } = await caricaSim();
     const src = leggi('cpu-partita.js').replace(/^import .*$/gm, '').replace(/^export (async )?function/gm, '$1function').replace(/^export const/gm, 'const');
     // il localStorage di un browser: i metodi non si elencano, le voci sì (Object.keys(localStorage) le dà)
@@ -121,7 +121,7 @@ async function creaCpuPartita({ fetchFallisce = 0 } = {}) {
     const scaricati = [];
     let fallimenti = fetchFallisce;
     const ambiente = {
-        self: { TeamCpu: T, CpuIa: require('../docs/cpu-ia.js'), CpuAvversario: require('../docs/cpu-avversario.js'), MetaLega: require('../docs/meta-lega.js') },
+        self: { TeamCpu: T, CpuIa: require('../docs/cpu-ia.js'), CpuAvversario: require('../docs/cpu-avversario.js'), MetaLega: require('../docs/meta-lega.js'), ...(personalita ? { CpuPersonalita: require('../docs/cpu-personalita.js') } : {}) },
         Dex: sim.Dex, TeamValidator: sim.TeamValidator, localStorage,
         fetch: async p => {
             scaricati.push(p);
@@ -129,7 +129,7 @@ async function creaCpuPartita({ fetchFallisce = 0 } = {}) {
             return { ok: true, json: async () => leggiJson(p) };
         }
     };
-    const modulo = new Function(...Object.keys(ambiente), src + '\nreturn { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile, caricaMetaLega };')(...Object.values(ambiente));
+    const modulo = new Function(...Object.keys(ambiente), src + '\nreturn { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile, caricaMetaLega, pescaPersonalita };')(...Object.values(ambiente));
     return { modulo, memoriaBrowser, localStorage, scaricati };
 }
 const regPiccolo = (extra = {}) => ({ ...regOU, restrizioni: { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' } } }, ...extra });
@@ -146,6 +146,36 @@ test('meccanicheDelFormato: spente se il formato non le ammette, altrimenti le d
     for (const m of ['mega', 'z', 'dynamax', 'tera']) assert.equal(spento.ammette(m), false, m);
     const acceso = modulo.nuovoCervello('p2', { meccaniche: modulo.meccanicheDelFormato({ generationalMechanics: true }) });
     for (const m of ['mega', 'z', 'dynamax', 'tera']) assert.equal(acceso.ammette(m), true, m);
+});
+
+test('lo stile di gioco: si pesca a sorte (o si dà), il team della CPU nasce per quello stile e il cervello lo gioca', { timeout: 300000 }, async () => {
+    const P = require('../docs/cpu-personalita.js');
+    const { modulo } = await creaCpuPartita({ personalita: true });
+    const visti = new Set();
+    for (let i = 0; i < 12; i++) {
+        const { team } = await modulo.nuovoTeamCpu(regPiccolo(), { seme: `stile-${i}` });
+        assert.ok(P.ELENCO.includes(team.personalita), `il team dice per quale stile è nato (${team.personalita})`);
+        visti.add(team.personalita);
+    }
+    assert.ok(visti.size >= 3, `a sorte tra gli stili (${[...visti].join(', ')})`);
+    // con lo stesso seme, lo stesso stile; uno dato vale; uno che non esiste si pesca a sorte
+    assert.equal((await modulo.nuovoTeamCpu(regPiccolo(), { seme: 'stile-3' })).team.personalita, (await modulo.nuovoTeamCpu(regPiccolo(), { seme: 'stile-3' })).team.personalita);
+    assert.equal((await modulo.nuovoTeamCpu(regPiccolo(), { seme: 'x', personalita: 'pivot' })).team.personalita, 'pivot');
+    assert.ok(P.ELENCO.includes((await modulo.nuovoTeamCpu(regPiccolo(), { seme: 'y', personalita: 'inventata' })).team.personalita));
+    // il nome del team non dice niente: "Team N", mai lo stile o il piano
+    const { team } = await modulo.nuovoTeamCpu(regPiccolo(), { seme: 'z', personalita: 'campo' });
+    assert.match(modulo.nomeNeutro(team), /^Team \d+$/);
+    // pescaPersonalita: quello dato, a sorte con i pesi; il cervello lo riceve
+    assert.equal(modulo.pescaPersonalita('aggressiva'), 'aggressiva');
+    assert.ok(P.ELENCO.includes(modulo.pescaPersonalita(null)));
+    assert.equal(modulo.pescaPersonalita(null, undefined, { equilibrata: 0, aggressiva: 0, pivot: 0, campo: 0, velocita: 100, stato: 0 }), 'velocita');
+    assert.equal(modulo.nuovoCervello('p2', { personalita: 'velocita' }).personalita, 'velocita');
+    assert.equal(modulo.nuovoCervello('p2').personalita, null, 'senza stile è la CPU di sempre');
+    // senza il modulo degli stili (pagina vecchia in cache) tutto funziona come prima
+    const senza = await creaCpuPartita();
+    const t = (await senza.modulo.nuovoTeamCpu(regPiccolo(), { seme: 'q' })).team;
+    assert.equal(t.personalita, undefined);
+    assert.equal(senza.modulo.pescaPersonalita(null), null);
 });
 
 test('nuovoCervello: con le abitudini dell\'avversario la CPU le conosce, senza è quella di sempre', async () => {
@@ -293,7 +323,7 @@ test('nomeNeutro: la CPU si presenta come "Team N", mai col piano di gioco né c
 // ===================================================
 test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori, fine partita)', () => {
     const ui = leggi('battle-ui.js');
-    assert.match(ui, /import \{ nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile \} from '\.\/cpu-partita\.js'/);
+    assert.match(ui, /import \{ nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro, caricaStile, pescaPersonalita \} from '\.\/cpu-partita\.js'/);
     assert.match(ui, /import \{ caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra, caricaAspetto \} from '\.\/team-sito\.js'/);
     assert.match(ui, /parametri\.get\('cpu'\)[\s\S]{0,700}preparaCpu\(parametri\.get\('team'\)\)/);
     assert.match(ui, /return !online && lato === 'p2' && \(!!cpu \|\| \$\('bot-p2'\)\.checked\)/, 'con la CPU il lato 2 è sempre automatico');
@@ -302,8 +332,8 @@ test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori
     assert.match(ui, /if \(cpu && lato === 'p2'\) cpu\.errori\+\+/, 'dopo un rifiuto prova la scelta successiva');
     assert.match(ui, /richiesta\.rqid !== cpu\.rqid/, 'ogni richiesta nuova riparte dalla scelta migliore');
     assert.match(ui, /else if \(cpu\) \{\s*mostraFineCpu\(vincitore\);/);
-    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2', \{ piano: cpu\.team && cpu\.team\.piano, meccaniche: meccanicheDelFormato\(cpu\.giocatore && cpu\.giocatore\.regolamento\), avversario: stileCpu\.profilo \|\| true, memoria: cpu\.conMemoria \? cpu\.memoria : null, copione: cpu\.palestra \? cpu\.palestra\.copione : null \}\)/,
-        'un cervello nuovo a ogni partita, che conosce il piano del team, le meccaniche di generazione del formato, le abitudini di chi gioca e, in palestra, come il capo l\'ha allenata');
+    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2', \{ piano: cpu\.team && cpu\.team\.piano, meccaniche: meccanicheDelFormato\(cpu\.giocatore && cpu\.giocatore\.regolamento\), avversario: stileCpu\.profilo \|\| true, memoria: cpu\.conMemoria \? cpu\.memoria : null, copione: cpu\.palestra \? cpu\.palestra\.copione : null, personalita: personalitaDellaPartita\(\) \}\)/,
+        'un cervello nuovo a ogni partita, che conosce il piano del team, le meccaniche di generazione del formato, le abitudini di chi gioca e, in palestra, come il capo l\'ha allenata, con lo stile (la personalità) della partita');
     // il giocatore non vede il team della CPU (solo le specie, come in una partita vera)
     assert.match(ui, /openSheet: false,\s*latiNoti: \['p1'\]/);
     // se la CPU va in errore si gioca una mossa valida a caso: la partita non si blocca

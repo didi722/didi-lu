@@ -35,6 +35,9 @@
 // quelle che non usa mai, e cambia più o meno spesso di lui. È uno spostamento, non una regola: una mossa chiaramente migliore vince lo stesso, e quanto conta
 // dipende da quanto è stata allenata (le lezioni). Senza l'opzione tutto è come prima.
 //
+// La personalità (cpu-personalita.js): con l'opzione `personalita` (aggressiva, pivot, campo, velocita, stato; senza o `equilibrata` è la CPU di sempre) il cervello sposta le sue
+// manopole: quanto costa proteggersi o cambiare, quanto valgono gli stati, il controllo della velocità e del campo, i perni. Non cambia il calcolo: cambia i pesi.
+//
 // Strategia del team: ogni team ha un piano (Tailwind, Stanza Magica, pioggia, sole, sabbia, neve, bilanciato...) deciso da
 // team-cpu.js. L'IA lo legge dai set (chi lo imposta, chi ne approfitta) e lo applica: in anteprima porta il nucleo del piano e
 // manda in campo per primo chi lo imposta; in battaglia valuta di più Tailwind, Stanza Magica e il proprio meteo, anche
@@ -46,9 +49,9 @@
 // Il Dex di @pkmn/sim arriva da fuori. Funziona nel browser (window.CpuIa) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'), require('./cpu-avversario.js'), require('./cpu-situazioni.js'), require('./cpu-memoria.js'), require('./cpu-copione.js'));
-    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo, radice.CpuAvversario, radice.CpuSituazioni, radice.CpuMemoria, radice.CpuCopione);
-})(typeof self !== 'undefined' ? self : this, function (K, C, Avv, Sit, Mem, Cop) {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./cpu-calcolo.js'), require('./cpu-avversario.js'), require('./cpu-situazioni.js'), require('./cpu-memoria.js'), require('./cpu-copione.js'), require('./cpu-personalita.js'));
+    else radice.CpuIa = fabbrica(radice.CpuConoscenza, radice.CpuCalcolo, radice.CpuAvversario, radice.CpuSituazioni, radice.CpuMemoria, radice.CpuCopione, radice.CpuPersonalita);
+})(typeof self !== 'undefined' ? self : this, function (K, C, Avv, Sit, Mem, Cop, Pers) {
     'use strict';
 
     const id = K.id;
@@ -119,6 +122,24 @@
     //   pesoStile           quanto la CPU si avvicina al modo di giocare delle persone della lega nelle varie situazioni (STILE_LEGA_DOPPI): ogni piano vale di più o di meno
     //                       secondo se, in quella situazione, le persone fanno più o meno spesso quella cosa (si parano, cambiano, usano una mossa di stato) di quanto la
     //                       CPU facesse. Valore del piano per ogni unità di log-moltiplicatore; 0 = come prima. Solo nel doppio
+    //   valoreFakeOut       un tentennamento (Fake Out, Prima Impressione) toglie la mossa a un avversario e dà un turno gratis al compagno: vale questo, moltiplicato per quanto pesa
+    //                       chi lo subisce (la sua minaccia). Prima era 0,3 uguale per tutti
+    //   valoreRallenta      un attacco che abbassa la velocità dei bersagli (Vento Gelato, Rete Elettrica, Fangata...): per ogni sorpasso che crea ai miei Pokémon vale questo
+    //                       (per ogni livello, per la parte di probabilità dell'effetto), quanto Tailwind a metà: dura finché il bersaglio resta in campo
+    //   bonusPerno          chi usa un pivot (U-turn, Volt Switch, Flip Turn) e fa entrare un compagno guadagna questo in più (0 = com'era: conta solo il danno e chi entra)
+    //   moltStati, moltVelocita, moltCampo
+    //                       moltiplicano quanto valgono gli stati (Fuocopira, Onda Tuono, Fungospora), il controllo della velocità (Vento in Poppa, Stanza Magica, Vento Gelato, Rete
+    //                       Elettrica, le paralisi per i sorpassi) e il controllo del campo (schermi, trappole). 1 = com'era. Sono le manopole delle personalità (cpu-personalita.js)
+    //   valorePar, valoreBrn, valoreSlp
+    //                       quanto vale dare paralisi, scottatura (a un fisico: ×1,4; a uno speciale ×0,4) o sonno al bersaglio scelto, per un Pokémon in salute che pesa nella partita
+    //                       (cala se sta per cadere): i turni che gli costa nei prossimi turni. Prima 0,3 / 0,3 / 0,65 per il migliore tra i bersagli, qualunque fosse quello scelto
+    //   valoreStatoSpeed    una paralisi (Onda Tuono, Glare) vale in più per i sorpassi che crea (velocità dimezzata) di questo per ognuno
+    //   rumoreProtezione    scarto a caso (da -x a +x) sul valore di ogni piano che contiene una protezione: nei casi dubbi non si para sempre allo stesso modo, quindi non si prevede
+    //   costoRipetizione    la stessa mossa è appena fallita (stesso Pokémon, turno prima): ripeterla costa questo (Mano Pesante senza una mossa prioritaria davanti...)
+    //   pesoFinale, pesoMateriale
+    //                       l'economia della partita, non solo il turno: chi manda KO l'ultimo Pokémon avversario vince (pesoFinale in più nel valore del piano; chi perde l'ultimo
+    //                       lo stesso in meno), e un KO vale di più quanto meno Pokémon restano a chi lo subisce: da 1 (squadra piena) a 1 + pesoMateriale (ne resta uno solo). Così
+    //                       uno scambio alla pari conviene a chi ne ha di più (2 contro 1: attaccare con tutti e due, non proteggersi). 0 = come prima, un KO vale sempre uguale
     //   pesoSituazioni      quanto contano le regole sulle situazioni imparate dai replay della lega (cpu-situazioni.js): 0 = niente, 1 = per intero
     //   spesaMossaZ         la Mossa Z si fa una volta sola per partita: costa questo (meno se restano pochi Pokémon)
     //   antFakeOut          anteprima: chi ha Fake Out vale di più sia da portare (antFakeOut / 2) sia in campo per primo, insieme a un compagno che attacca: al primo
@@ -153,11 +174,11 @@
         rispostaAlCambio: 0.4, rispostaAlCambioDoppio: 0.25, presunteDex: 0.5,
         antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
-        aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.3, sogliaRecupero: 0.25,
+        aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.5, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5, priorBloccoPriorita: 6,
-        pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
+        bonusPerno: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
         memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2,
-        copione: 1, copioneAnteprima: 0.8, copioneApertura: 0.8, copioneMosse: 0.5, copionePrimoTurno: 0.6, copioneFiducia: 2, copioneForza: 3, copioneCambi: 0.3, copioneForzaCambi: 30
+        copione: 1, copioneAnteprima: 0.8, copioneApertura: 0.8, copioneMosse: 0.5, copionePrimoTurno: 0.9, copioneFiducia: 2, copioneForza: 3, copioneCambi: 0.3, copioneForzaCambi: 30
     };
     // Abilità che agiscono quando il Pokémon entra in campo
     const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
@@ -210,13 +231,15 @@
     // CERVELLO
     // =================================================
     class Cerebro {
-        // opzioni: { Dex, lato: 'p2', casuale: () => numero tra 0 e 1 (per i pareggi), debug: bool }
+        // opzioni: { Dex, lato: 'p2', casuale: () => numero tra 0 e 1 (per i pareggi), debug: bool, personalita: id (cpu-personalita.js), parametri, piano, ... }
         constructor(opzioni) {
             this.DexSim = opzioni.Dex;
             this.lato = opzioni.lato || 'p2';
             this.casuale = opzioni.casuale || Math.random;
             this.debug = !!opzioni.debug;
-            this.par = Object.assign({}, PARAMETRI_BASE, opzioni.parametri || {});
+            // la personalità (cpu-personalita.js) sposta le manopole di base; quelle date a mano (`parametri`) vincono su tutto
+            this.personalita = Pers && opzioni.personalita && Pers.esiste(opzioni.personalita) ? opzioni.personalita : null;
+            this.par = Object.assign({}, PARAMETRI_BASE, this.personalita ? Pers.cervello(this.personalita) : {}, opzioni.parametri || {});
             this.pianoDato = opzioni.piano || null;     // il piano del team deciso da chi lo ha composto (team-cpu.js), se c'è
             // le abitudini di chi ha davanti (cpu-avversario.js): il profilo da players/<id>/stile (daStile) oppure true (la media della lega); senza, nessun modello
             this.memoria = Mem && opzioni.memoria && this.par.memoria > 0 ? Mem.normalizza(opzioni.memoria) : null;      // cosa si sa dalle partite di prima (cpu-memoria.js)
@@ -516,7 +539,7 @@
                         m.usi[mossa] = (m.usi[mossa] || 0) + 1;
                         if (this._primoTurnoInCampo(m)) m.usiT1[mossa] = (m.usiT1[mossa] || 0) + 1;
                     }
-                    m.ultimaMossa = mossa;
+                    m.ultimaMossa = mossa; m.turnoUltimaMossa = this.turno;
                     if (K.PROTEZIONI.has(mossa) || K.PROTEZIONI_DI_AREA.has(mossa)) {
                         this._registraProtezione(m);
                         if (K.PROTEZIONI.has(mossa)) m.protettoNelTurno = this.turno;
@@ -528,6 +551,9 @@
                     const m = this._mon(p[1]);
                     if (m && m.ultimaMossa && (K.PROTEZIONI.has(m.ultimaMossa) || K.PROTEZIONI_DI_AREA.has(m.ultimaMossa)) && m.ultimaProtezione === this.turno) {
                         m.protezioniDiFila = 0; m.ultimaProtezione = -9; m.protettoNelTurno = -9;
+                    } else if (m && m.ultimaMossa && m.turnoUltimaMossa === this.turno) {
+                        // una mossa che fallisce (Upper Hand senza una mossa prioritaria davanti, Pugno Scarica a vuoto...): si ricorda, per non riprovarla subito uguale
+                        m.fallita = { mossa: m.ultimaMossa, turno: this.turno };
                     }
                     break;
                 }
@@ -1184,6 +1210,11 @@
 
             // un pizzico di casualità solo tra scelte quasi pari: non essere prevedibile
             for (const x of migliori) x.val += this.casuale() * 0.02;
+            // proteggersi si fa quando conviene, ma "quando conviene" non deve essere una regola che chi gioca contro impara a memoria (si para sempre il Pokémon minacciato, sempre al primo
+            // turno...): ogni piano che ha una protezione riceve uno scarto a caso, diverso a ogni decisione. Dove la protezione è chiaramente giusta (o sbagliata) non cambia niente
+            if (this.par.rumoreProtezione > 0) {
+                for (const x of migliori) if (x.scelta.some(a => a.tipo === 'mossa' && a.mossa && a.mossa.protezione)) x.val += (this.casuale() * 2 - 1) * this.par.rumoreProtezione;
+            }
             migliori.sort((a, b) => b.val - a.val);
             // dopo un rifiuto del simulatore si passa alla seconda, terza scelta...
             let pick = migliori[Math.min(errori, migliori.length - 1)];
@@ -1608,6 +1639,7 @@
             for (const m of mosse) {
                 if (m.categoria === 'Status') continue;
                 if ((m.id === 'fakeout' || m.id === 'firstimpression') && !primoTurno) continue;       // non può più farla: non si prevede
+                if (m.id === 'upperhand') continue;       // riesce solo contro chi sta per usare una mossa prioritaria: non è quello che si prevede da chi la ha
                 let abitudine = 0;
                 if (registro && this.par.memoriaPesoMosse > 0) {
                     const q = Mem.quotaMossa(registro, m.id, primoTurno);
@@ -1738,6 +1770,13 @@
             const campoAvv = Object.assign({}, this.lati[lato2(this.lato)].campo);
             const inizio = { mie: mie.map(v => v && v.hp / v.hpMax), avv: avv.map(v => v && v.hp / v.hpMax) };
             const peso = { mie: mie.map(v => v && this._pesoMon(v)), avv: avv.map(v => v && this._pesoMon(v)) };
+            // l'economia della partita: quanti Pokémon restano a ciascuno prima di questo turno (dai miei: i vivi della squadra; dai loro: la squadra portata meno i caduti)
+            const lAvv = this.lati[lato2(this.lato)];
+            const totMiei = S.squadra.length, totLoro = lAvv.dimSquadra || lAvv.squadra.length || totMiei;
+            const viviMieiPrima = S.squadra.filter(sq => !sq.esausto).length, viviLoroPrima = Math.max(0, totLoro - lAvv.caduti);
+            const taglia = Math.max(2, totMiei, totLoro);
+            const fattoreMateriale = n => (this.par.pesoMateriale > 0 ? 1 + this.par.pesoMateriale * (taglia - Math.min(taglia, Math.max(1, n))) / (taglia - 1) : 1);
+            const kMat = { mie: fattoreMateriale(viviMieiPrima), avv: fattoreMateriale(viviLoroPrima) };
             let valore = 0;
             const flinch = { mie: [false, false], avv: [false, false] };
             const aiuto = { mie: [false, false], avv: [false, false] };
@@ -1829,6 +1868,7 @@
             // lo stato di chi agisce (sonno, congelamento, paralisi): un compagno addormentato non muove, quindi nemmeno beneficia di Helping Hand
             const perStato = { mie: mie.map(v => (v ? this._probAgire(v) : 1)), avv: avv.map(v => (v ? this._probAgire(v) : 1)) };
             const usatiDaPerno = new Set(scelta.filter(a => a.tipo === 'cambio').map(a => a.verso));
+            const statiDati = [];      // gli stati dati in questo turno (bersaglio e valore): se il bersaglio cade nello stesso turno lo stato non serve a niente
 
             // Una singola azione dell'ordine, applicata allo stato. `f` = probabilità che l'attore agisca (per i tentennamenti).
             const eseguiAzione = (x, lato, a, me, m, f) => {
@@ -1839,6 +1879,8 @@
                     bonus -= lato === 'mie' ? this.par.costoProtezione : 0.08;
                     return;
                 }
+                // la stessa mossa è appena fallita (stesso Pokémon, turno prima): di rado le condizioni sono cambiate
+                if (lato === 'mie' && me.ref && me.ref.fallita && me.ref.fallita.mossa === m.id && me.ref.fallita.turno === this.turno - 1) bonus -= this.par.costoRipetizione;
                 if (m.id === 'wideguard') { me.protettoDaDiffusi = true; bonus -= lato === 'mie' ? this.par.costoProtezione : 0.08; return; }
                 if (m.id === 'fakeout' || m.id === 'firstimpression') {
                     const primoTurno = this._primoTurnoInCampo(me.ref);
@@ -1866,7 +1908,14 @@
                     }
                     if (pBlocco >= 0.98) { bonus -= lato === 'mie' ? 0.3 : -0.3; return; }
                     const prima = bonus;
-                    bonus += this._valoreStato(m, lato, x.slot, { campoMio, campoAvv, ctx, doppio, nemici, insiemi });
+                    // la mossa che dà uno stato vale per il bersaglio che si è scelto (non per il migliore: prima un Will-O-Wisp mandato sul bersaglio sbagliato valeva lo stesso)
+                    let vittima = null;
+                    if (m.stato) {
+                        if (lato === 'mie') { const t = a.bersaglio; vittima = t != null && t > 0 ? avv[t - 1] : (avv.find(o => o && o.hp > 0) || null); }
+                        else vittima = mie[a.bersaglio] || null;
+                    }
+                    bonus += this._valoreStato(m, lato, x.slot, { campoMio, campoAvv, ctx, doppio, nemici, insiemi, vittima });
+                    if (m.stato && vittima) statiDati.push({ vittima, valore: bonus - prima });
                     if (pBlocco > 0) bonus = prima + (bonus - prima) * (1 - pBlocco) - (lato === 'mie' ? 0.3 : -0.3) * pBlocco;
                     if (m.potenziamento) {
                         for (const k of Object.keys(m.potenziamento)) me.boost[k] = Math.max(-6, Math.min(6, (me.boost[k] || 0) + m.potenziamento[k]));
@@ -1915,6 +1964,16 @@
                     if (!dif || dif.hp <= 0) continue;
                     if (dif.protetto) continue;   // la protezione ha parato l'attacco
                     if (dif.protettoDaDiffusi && tutti) continue;
+                    // mosse che riescono solo contro chi sta per attaccare (Colpo Basso, Fulmine Rapido) o per usare una mossa prioritaria (Mano Pesante): se il bersaglio fa altro
+                    // (si para, cambia, usa una mossa di stato, o muove prima) la mossa fallisce e il turno è sprecato. È ciò che impediva alla CPU di rifarla tre volte di fila a vuoto
+                    if (m.id === 'upperhand' || m.id === 'suckerpunch' || m.id === 'thunderclap') {
+                        const az = b.lato === 'avv' ? azioniAvv.find(q => q.slot === b.slot) : scelta[b.slot];
+                        const mt = az && az.tipo === 'mossa' ? az.mossa : null;
+                        const attacca = !!mt && mt.categoria !== 'Status';
+                        const prioT = attacca ? priorita({ lato: b.lato, slot: b.slot, a: az }) : 0;
+                        const riesce = m.id === 'upperhand' ? attacca && prioT > 0 : attacca && prioT < 1;
+                        if (!riesce) { bonus -= lato === 'mie' ? 0.4 : -0.4; continue; }
+                    }
                     // una mossa prioritaria contro la squadra avversaria: Armor Tail, Queenly Majesty o Dazzling (di chiunque stia in campo da quella parte) o
                     // Psychic Terrain la annullano; se l'abilità non è nota si pesa quella che la specie può avere
                     const pBlocco = b.lato !== keyL(lato) ? this._pBloccoPriorita(priorita(x), me, insiemi(b.lato), dif, ctx) : 0;
@@ -1942,7 +2001,7 @@
                     if (colpo.pKO > 0) {
                         const latoKo = b.lato;
                         const frazPrima = Math.min(1, prima / dif.hpMax);
-                        valore += (latoKo === 'avv' ? 1 : -1) * colpo.pKO * (0.7 + 0.45 * frazPrima) * (peso[latoKo][b.slot] || 1);
+                        valore += (latoKo === 'avv' ? 1 : -1) * colpo.pKO * (0.7 + 0.45 * frazPrima) * (peso[latoKo][b.slot] || 1) * kMat[latoKo];
                     }
                     if ((m.id === 'fakeout' || m.id === 'firstimpression') && dif.hp > 0) {
                         // il tentennamento non riesce a chi ha Presenza Mentale (Inner Focus) o Polvere Scudo, o Mantello Occulto: se non si sa, quanto è probabile
@@ -1951,7 +2010,7 @@
                         const kb = b.lato === 'mie' ? 'mie' : 'avv';
                         if (riesce >= 0.98) flinch[kb][b.slot] = true;
                         else if (riesce > 0.02) agisce[kb][b.slot] *= 1 - riesce;
-                        bonus += (lato === 'mie' ? 1 : -1) * 0.3 * riesce;   // un turno gratis per il compagno e niente mossa di apertura per chi è colpito
+                        bonus += (lato === 'mie' ? 1 : -1) * this.par.valoreFakeOut * (0.6 + 0.4 * (peso[b.lato][b.slot] || 1)) * riesce;   // un turno gratis per il compagno e niente mossa di apertura per chi è colpito
                     }
                     // effetti secondari
                     if (m.secondari && dif.hp > 0) {
@@ -1960,6 +2019,16 @@
                         if (sec.status && !dif.stato && p) {
                             const val = { brn: 0.25, par: 0.25, slp: 0.5, psn: 0.15, tox: 0.2, frz: 0.5 }[sec.status] || 0.1;
                             bonus += (b.lato === 'avv' ? 1 : -1) * val * p;
+                        }
+                        if (sec.boosts && p) {
+                            // le statistiche del bersaglio che calano (Vento Gelato, Rete Elettrica: velocità; Ringhio, Fuoco Mistico: attacco speciale): la velocità vale per i sorpassi che
+                            // crea ai miei Pokémon, le altre un po' (di più se è la statistica con cui attacca)
+                            const segnoB = b.lato === 'avv' ? 1 : -1;
+                            for (const [stat, liv] of Object.entries(sec.boosts)) {
+                                if (!(liv < 0)) continue;
+                                if (stat === 'spe') bonus += segnoB * this.par.valoreRallenta * this.par.moltVelocita * Math.abs(liv) * p * this._sorpassiSe(b.lato === 'avv' ? mie : avv, dif, ctx, Math.pow(2 / 3, Math.abs(liv)));
+                                else if (stat === 'atk' || stat === 'spa') bonus += segnoB * 0.12 * Math.abs(liv) * p * ((stat === 'atk') === (dif.stat.atk >= dif.stat.spa) ? 1 : 0.3) * (peso[b.lato][b.slot] || 1);
+                            }
                         }
                         if (sec.volatileStatus === 'flinch' && p) {
                             // tentenna solo chi deve ancora muovere, e solo con quella probabilità (se chi attacca agisce)
@@ -1985,7 +2054,7 @@
                         mie[x.slot] = nuovo;
                         peso.mie[x.slot] = this._pesoMon(nuovo);
                         nuovo.hp = Math.max(0, nuovo.hp - this._dannoTrappole(nuovo, campoMio, ctx));
-                        bonus += this._abilitaIngresso(nuovo, ctx, avv) - 0.05;
+                        bonus += this._abilitaIngresso(nuovo, ctx, avv) - 0.05 + this.par.bonusPerno;
                     } else bonus += 0.04;
                 }
                 // il potenziamento che accompagna l'attacco (Flame Charge...) è già nella mossa
@@ -2016,6 +2085,7 @@
                 avv.forEach((v, i) => { if (v && prima.avv[i] != null) v.hp = prima.avv[i] + f * (v.hp - prima.avv[i]); });
             }
 
+            for (const x of statiDati) if (x.vittima.hp <= 0) bonus -= x.valore;
             // 3) bilancio finale: i potenziamenti che restano a chi sopravvive (i danni sono già contati)
             for (const v of mie) if (v && v.hp > 0) bonus += this._valoreBoost(v);
             for (const v of avv) if (v && v.hp > 0) bonus -= this._valoreBoost(v);
@@ -2024,11 +2094,34 @@
             if (dinamaxQui) bonus -= this.par.spesaDinamax * this._fattoreSpesa(S);
             if (zQui) bonus -= this.par.spesaMossaZ * this._fattoreSpesa(S);
 
+            // 3b) la fine della partita: chi dopo questo turno non ha più Pokémon in piedi perde. Un KO "probabile" (>= 50%) conta come avvenuto, come nel resto della valutazione
+            if (this.par.pesoFinale > 0 && totLoro > 0) {
+                const cadutiLoro = avv.filter(v => v && v.hp <= 0).length, cadutiMiei = mie.filter(v => v && v.hp <= 0).length;
+                const loroRestano = viviLoroPrima - cadutiLoro, mieiRestano = viviMieiPrima - cadutiMiei;
+                if (loroRestano <= 0 && mieiRestano > 0) bonus += this.par.pesoFinale;
+                else if (mieiRestano <= 0 && loroRestano > 0) bonus -= this.par.pesoFinale;
+            }
+
             // 4) la posizione in cui si resta: chi minaccia chi e chi muove prima al turno dopo. È ciò che dice se conviene
             // restare in un brutto scontro o fare un cambio sicuro verso chi regge e risponde
             if (S.matrice) bonus += this.par.pesoPosizione * this._posizione(mie, avv, S);
 
             return valore + bonus;
+        }
+
+        // Quanti sorpassi in più fa ai Pokémon di `chi` abbassare la velocità del bersaglio `o` (la sua velocità × `fattore`): per ogni suo Pokémon vivo che oggi è più lento ma passerebbe
+        // (come per Tailwind, tanto più se fa davvero male al bersaglio). Se la Stanza Magica è attiva abbassare la velocità non serve a nulla (conta chi è più lento): 0, e se il bersaglio
+        // ha già la velocità abbassata o dimezzata la mossa vale meno. Un numero grosso più o meno 0..2
+        _sorpassiSe(chi, o, ctx, fattore) {
+            if (!o || ctx.stanzaMagica) return 0;
+            const vo = C.velocitaEffettiva(o, ctx);
+            let n = 0;
+            for (const x of chi) {
+                if (!x || x.hp <= 0) continue;
+                const vm = C.velocitaEffettiva(x, ctx);
+                if (vm < vo && vm > vo * fattore) n += 0.5 + 0.5 * Math.min(1, this._minaccia(x, o, ctx));
+            }
+            return n;
         }
 
         // Chi entra dopo un U-turn/Volt Switch/Flip Turn: il compagno in panchina che regge meglio gli attacchi che stanno per
@@ -2247,7 +2340,8 @@
                 return v * segno;
             }
             if (m.stato) {
-                const bersagli = avversari;
+                // un solo bersaglio: quello scelto (se non si dice, il migliore tra gli avversari)
+                const bersagli = E.vittima ? (E.vittima.hp > 0 ? [E.vittima] : []) : avversari;
                 let best = 0;
                 for (const o of bersagli) {
                     if (o.stato) continue;
@@ -2255,16 +2349,24 @@
                     if (o.immuneMosse && o.immuneMosse.has(`${me.nome}|${m.id}`)) continue;      // già provata: non ha effetto su di lui
                     if (m.stato.polvere && (o.abilita === 'overcoat' || o.strumento === 'safetygoggles')) continue;
                     if (o.abilita === 'magicbounce' || o.abilita === 'goodasgold') continue;
-                    const base = { par: 0.3, brn: 0.3, slp: 0.65, psn: 0.15, tox: 0.25 }[m.stato.stato] || 0.1;
+                    // chi con lo stato sta meglio (Grinta, Pieno Ritmo, Fiammata, Tossinfuoco, Antidoto) o lo rimanda indietro (Sincronismo) non si colpisce
+                    if (['guts', 'quickfeet', 'flareboost', 'toxicboost', 'poisonheal'].includes(o.abilita)) continue;
+                    const base = { par: this.par.valorePar, brn: this.par.valoreBrn, slp: this.par.valoreSlp, psn: 0.15, tox: 0.3 }[m.stato.stato] || 0.1;
                     let val = base;
                     if (m.stato.stato === 'brn') val *= o.stat.atk > o.stat.spa ? 1.4 : 0.4;
-                    if (m.stato.stato === 'par') val *= (C.confrontoVelocita(o, me, ctx) > 0 ? 1.4 : 0.8);
-                    const prec = m.precisione / 100;
-                    val *= prec;
+                    if (m.stato.stato === 'par') {
+                        val *= (C.confrontoVelocita(o, me, ctx) > 0 ? 1.4 : 0.8);
+                        // la velocità dimezzata: i sorpassi che crea ai miei (come Tailwind, a metà)
+                        val += this.par.valoreStatoSpeed * this.par.moltVelocita * this._sorpassiSe(mieiVivi, o, ctx, 0.5) * (m.precisione / 100);
+                    }
+                    // chi sta per cadere non ha più turni da perdere; chi pesa di più nella partita (attacca e corre) vale di più da bloccare
+                    const frazione = o.hpMax ? o.hp / o.hpMax : 1;
+                    val *= (0.4 + 0.6 * Math.min(1, frazione / 0.6)) * (0.7 + 0.3 * this._pesoMon(o));
+                    if (o.abilita === 'synchronize') val *= 0.4;
+                    val *= m.precisione / 100;
                     if (val > best) best = val;
                 }
-                // il bersaglio è scelto da chi usa la mossa; qui si prende il migliore
-                v += best;
+                v += best * this.par.moltStati;
                 return v * segno;
             }
             if (m.velocitaSquadra) {
@@ -2286,7 +2388,7 @@
                     // è il piano del team: Tailwind è ciò per cui è stato fatto, si usa appena serve a superare qualcuno
                     if (lato === 'mie' && this.strategia && this.strategia.piano === 'tailwind' && !ctx.stanzaMagica && giaPiuVeloci < mieiVivi.length * avversari.length) util = Math.max(util, this.par.utilPianoTailwind);
                     mioCampo.tailwind = 4;
-                    v += util * (mieiVivi.length >= 2 || !doppio ? 1 : 0.6);
+                    v += util * (mieiVivi.length >= 2 || !doppio ? 1 : 0.6) * this.par.moltVelocita;
                 } else if (m.id === 'trickroom') {
                     const mieiMedia = mieiVivi.reduce((s, x) => s + C.velocitaEffettiva(x, ctx), 0) / Math.max(1, mieiVivi.length);
                     const loroMedia = avversari.reduce((s, x) => s + C.velocitaEffettiva(x, ctx), 0) / Math.max(1, avversari.length);
@@ -2302,7 +2404,7 @@
                             if (conviene) bonusPiano = this.par.bonusPianoStanza;
                         }
                     }
-                    v += conviene ? 0.7 + bonusPiano : -0.5;
+                    v += conviene ? (0.7 + bonusPiano) * this.par.moltVelocita : -0.5;
                 }
                 return v * segno;
             }
@@ -2311,7 +2413,7 @@
                 if (gia > 0) return -0.2 * segno;
                 if (m.id === 'auroraveil' && this.meteo !== 'snow') return -0.3 * segno;
                 const attaccanti = avversari.filter(o => (m.id === 'reflect' ? o.stat.atk >= o.stat.spa : o.stat.spa >= o.stat.atk)).length;
-                v += 0.25 + 0.15 * attaccanti;
+                v += (0.25 + 0.15 * attaccanti) * this.par.moltCampo;
                 return v * segno;
             }
             if (m.trappola) {
@@ -2319,7 +2421,7 @@
                 if (rimasti <= 2) return 0;
                 const gia = { stealthrock: loroCampo.rocce, spikes: loroCampo.punte >= 3 ? 1 : 0, toxicspikes: loroCampo.tossine >= 2 ? 1 : 0, stickyweb: loroCampo.ragnatela }[m.id];
                 if (gia) return -0.1 * segno;
-                v += m.id === 'stealthrock' ? 0.42 : 0.28;
+                v += (m.id === 'stealthrock' ? 0.42 : 0.28) * this.par.moltCampo;
                 return v * segno;
             }
             if (m.id === 'taunt') {

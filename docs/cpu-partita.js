@@ -6,6 +6,7 @@
 //     le mosse di un centinaio di Pokémon) si fa una volta per formato e si tiene in memoria finché la pagina resta aperta:
 //     il primo team costa una frazione di secondo, quelli dopo ancora meno. Niente più team ricordati nel browser.
 //   - nuovoCervello(): chi sceglie le mosse della CPU in battaglia (cpu-ia.js), che può conoscere le abitudini di chi ha davanti.
+//   - la personalità (cpu-personalita.js): prima di comporre il team se ne pesca una a sorte; il team nasce per quello stile (`team.personalita`) e il cervello lo gioca così.
 //   - caricaStile(db, id): le abitudini di un giocatore (players/<id>/stile, le somma il workflow "Stile dei giocatori") nella forma che il cervello legge.
 //   - caricaMetaLega(db, regolamento): cosa si gioca nella lega per quel formato (settings/cpuMeta, la scrive lo stesso workflow): numeri aggregati, mai team.
 //     La CPU li usa per comporre team più vicini a quelli che si vedono nelle stagioni vere (senza copiarli).
@@ -20,6 +21,7 @@ import './cpu-avversario.js';    // self.CpuAvversario (le abitudini di chi ha d
 import './cpu-situazioni.js';    // self.CpuSituazioni (come cambiano le abitudini nelle varie situazioni, imparato dai replay della lega)
 import './cpu-memoria.js';       // self.CpuMemoria (cosa la CPU ricorda di come hai giocato con un team nelle partite di una serie)
 import './cpu-copione.js';       // self.CpuCopione (come il capopalestra gioca i suoi team: la CPU lo impara dalle partite di allenamento e ci si avvicina difendendo la palestra)
+import './cpu-personalita.js';   // self.CpuPersonalita (gli stili di gioco: aggressiva, pivot, campo, velocità, stato; si pesca prima di ogni partita)
 import './meta-lega.js';         // self.MetaLega (cosa si gioca nella lega: Pokémon, mosse, Helping Hand, Protezioni...)
 import './cpu-ia.js';            // self.CpuIa
 import './formato-pool.js';      // self.FormatoPool
@@ -65,7 +67,8 @@ function ripulisciVecchiaMemoria() {
 // Restituisce { team: { nome, piano, strategia, testo, specie[], numero } | null, avvisi: [] }
 // iniziali: iniziali del nome e del cognome del giocatore, per i formati con la regola "iniziale del nome"
 // seme: solo per le prove (di solito il team è a caso)
-export async function nuovoTeamCpu(regolamento, { iniziali = [], seme, db = null } = {}) {
+// personalita: lo stile per cui compone il team (cpu-personalita.js); senza (o sconosciuto) se ne pesca uno a sorte, e il team lo riporta in `personalita`
+export async function nuovoTeamCpu(regolamento, { iniziali = [], seme, db = null, personalita = null } = {}) {
     ripulisciVecchiaMemoria();
     const inizialiPulite = iniziali.map(x => String(x || '').trim().charAt(0).toLowerCase()).filter(Boolean);
     const firma = firmaRegolamento(regolamento, inizialiPulite);
@@ -78,12 +81,22 @@ export async function nuovoTeamCpu(regolamento, { iniziali = [], seme, db = null
     }
     const sessione = await sessioni.get(firma);
     const ultimi = recenti.get(firma) || [];
-    const { team, avvisi } = await self.TeamCpu.nuovoTeam(sessione, { recenti: ultimi, ...(seme ? { seme } : {}) });
+    const stile = pescaPersonalita(personalita, seme);
+    const { team, avvisi } = await self.TeamCpu.nuovoTeam(sessione, { recenti: ultimi, personalita: stile, ...(seme ? { seme } : {}) });
     if (team) {
         team.numero = ++contatore;
         recenti.set(firma, [...ultimi, team.chiavi].slice(-RECENTI_MAX));
     }
     return { team, avvisi };
+}
+
+// Lo stile con cui la CPU gioca la partita: quello dato (se esiste) oppure uno a sorte (con un seme, sempre lo stesso: solo per le prove). `pesi`: { id: moltiplicatore } per pescare
+// di più chi si adatta ai Pokémon che ha (cpu-personalita.js: pesiDaAffinita).
+export function pescaPersonalita(personalita, seme, pesi = null) {
+    const P = self.CpuPersonalita;
+    if (!P) return null;
+    if (P.esiste(personalita)) return personalita;
+    return P.scegli(seme ? self.TeamCpu.creaCasuale(`${seme}|personalita`) : Math.random, { pesi });
 }
 
 // Cosa si gioca nella lega per quel formato (settings/cpuMeta/formati/<chiave>, meta-lega.js). Senza database, senza dati o con un errore di rete: null, e la CPU
@@ -110,8 +123,9 @@ export async function caricaMetaLega(db, regolamento) {
 // cosa fanno di solito i tuoi Pokémon, chi porti e chi metti in apertura. Senza (null) la prima partita di una serie, o fuori dalla prova di un team.
 // `copione`: come il capopalestra gioca questo team (cpu-copione.js, solo per difendere una palestra o per allenarla): in anteprima la CPU porta e apre come lui contro quella
 // squadra, in battaglia usa di più le mosse che lui usa di solito. Quanto si fida dipende da quante lezioni ha fatto. Senza (null) la CPU è quella di sempre.
-export function nuovoCervello(lato = 'p2', { piano = null, meccaniche, avversario = null, memoria = null, copione = null } = {}) {
-    return self.CpuIa.crea({ Dex, lato, piano, meccaniche, avversario, memoria, copione });
+// `personalita`: lo stile di gioco (cpu-personalita.js): senza, o `equilibrata`, la CPU è quella di sempre.
+export function nuovoCervello(lato = 'p2', { piano = null, meccaniche, avversario = null, memoria = null, copione = null, personalita = null } = {}) {
+    return self.CpuIa.crea({ Dex, lato, piano, meccaniche, avversario, memoria, copione, personalita });
 }
 
 // Le abitudini di un giocatore, nella forma che il cervello legge (cpu-avversario.js): quelle sue tirate verso la media della lega se ha pochi set, la
