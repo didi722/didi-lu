@@ -194,3 +194,87 @@ test('rumoreProtezione: nei casi dubbi la decisione di proteggersi cambia da una
     const fermo = x => { const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => x, debug: true, parametri: { rumoreProtezione: 0 } }); ia.osserva([...logAvv(['Flutter Mane', 'Urshifu-Rapid-Strike'], { hp: 50, quanti: 2 }), ...logMia(mia, [0, 1]), '|turn|5']); ia.scegli(creaRichiesta(sim.Dex, { squadra: mia, attivi: [0, 1] })); return ia.ultimaValutazione.map(z => z.azioni.join('|')).join(';'); };
     assert.equal(fermo(0.999).split(';')[0], fermo(0.001).split(';')[0], 'senza rumore il piano migliore è sempre lo stesso');
 });
+
+// ---------------------------------------------------------------- Parting Shot
+// Parting Shot (Incineroar, Grimmsnarl...) abbassa Attacco e Att. Sp. del bersaglio e poi fa uscire chi la usa, come U-turn. Prima la CPU non la sapeva valutare (la mossa di stato
+// non aveva nessun effetto nella simulazione) e il team builder non la dava mai.
+const GRIMMSNARL = { specie: 'Grimmsnarl', item: 'Light Clay', mosse: ['Parting Shot', 'Spirit Break', 'Thunder Wave', 'Light Screen'] };
+const SQUADRA_PS = (primo = GRIMMSNARL) => [primo,
+    { specie: 'Amoonguss', mosse: ['Spore', 'Rage Powder', 'Pollen Puff', 'Protect'] },
+    { specie: 'Ursaluna', item: 'Flame Orb', mosse: ['Facade', 'Earthquake', 'Headlong Rush', 'Protect'] },
+    { specie: 'Landorus-Therian', mosse: ['Earthquake', 'U-turn', 'Rock Slide', 'Protect'] }];
+
+test('Parting Shot: il Dex non dice cosa fa (è nel codice della mossa), la conoscenza sì, ed è una mossa che il team builder può usare', async () => {
+    const { sim } = await caricaSim();
+    const dex = sim.Dex.forGen(9);
+    const d = K.descriviMossa(dex, 'partingshot');
+    assert.deepEqual(d.boostBersaglio, { atk: -1, spa: -1 });
+    assert.equal(d.perno, true);
+    assert.equal(K.mossaUsabile(dex, 'partingshot'), true);
+    // le altre mosse di stato che abbassano le statistiche del bersaglio si leggono dai dati del Dex
+    assert.deepEqual(K.descriviMossa(dex, 'charm').boostBersaglio, { atk: -2 });
+    assert.equal(K.descriviMossa(dex, 'swordsdance').boostBersaglio, null, 'un potenziamento proprio non è un calo del bersaglio');
+    assert.equal(K.descriviMossa(dex, 'uturn').boostBersaglio, null);
+});
+
+test('Parting Shot: la CPU la valuta (Grimmsnarl, più veloce con Prankster, la sceglie) e abbassa Attacco e Att. Sp. di chi la subisce', async () => {
+    const nuovo = await decidi({}, { mia: SQUADRA_PS(), opp: ['Urshifu-Rapid-Strike', 'Rillaboom'], turno: 3 });
+    assert.ok(nuovo.valutazione.some(v => v.azioni.some(t => /Parting Shot/.test(t))), `è tra i piani migliori: ${JSON.stringify(nuovo.valutazione.map(x => x.azioni))}`);
+    assert.match(nuovo.scelta.split(', ')[0], /^move 1 [12]$/, `Grimmsnarl la usa: ${nuovo.scelta}`);
+    // senza qualcuno da far entrare al suo posto il cambio non c'è e la mossa vale meno
+    const senzaPanchina = await decidi({}, { mia: SQUADRA_PS().slice(0, 2), opp: ['Urshifu-Rapid-Strike', 'Rillaboom'], turno: 3 });
+    const val = r => (r.valutazione.find(v => v.azioni.some(t => /Parting Shot/.test(t))) || { val: -9 }).val;
+    assert.ok(val(nuovo) > val(senzaPanchina), `con la panchina vale di più: ${val(nuovo)} contro ${val(senzaPanchina)}`);
+});
+
+test('Parting Shot con Prankster non ha effetto sui tipi Buio (dalla 7ª generazione): non si manda su Kingambit ma sull\'altro avversario', async () => {
+    const r = await decidi({}, { mia: SQUADRA_PS(), opp: ['Kingambit', 'Urshifu-Rapid-Strike'], turno: 3 });
+    const sulBuio = r.valutazione.filter(v => v.azioni.some(t => /^move 1 1 \[Parting Shot\]/.test(t)));
+    const sulAltro = r.valutazione.filter(v => v.azioni.some(t => /^move 1 2 \[Parting Shot\]/.test(t)));
+    assert.equal(sulBuio.length, 0, `non su Kingambit (Buio): ${JSON.stringify(r.valutazione.map(x => x.azioni))}`);
+    assert.ok(sulAltro.length > 0 || /^move 1 2/.test(r.scelta) || !/Parting Shot/.test(JSON.stringify(r.valutazione)), 'se la usa è sull\'altro');
+});
+
+test('Parting Shot: contro chi ha Spavalderia (Defiant) il calo si ritorce contro, e con Corpo Puro (Clear Body) non cambia niente e non si esce', async () => {
+    const { sim } = await caricaSim();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    const bersaglio = abilita => ({ abilita, abilitaPossibili: [abilita] });
+    const d = ia._boostSubito(bersaglio('defiant'), { atk: -1, spa: -1 });
+    assert.equal(d.boost.atk, 3, 'Spavalderia scatta per ognuna delle due statistiche calate: -1, poi +2 e +2');
+    assert.equal(d.boost.spa, -1);
+    const c = ia._boostSubito(bersaglio('clearbody'), { atk: -1, spa: -1 });
+    assert.deepEqual(c.boost, { atk: 0, spa: 0 });
+    assert.equal(c.riesce, 0, 'senza il calo chi la usa non cambia');
+    assert.equal(ia._boostSubito(bersaglio('contrary'), { atk: -1 }).boost.atk, 1, 'Contrarian: il calo è un aumento');
+    assert.equal(ia._boostSubito(bersaglio('mirrorarmor'), { atk: -1, spa: -1 }).riesce, 1, 'Mirror Armor rimanda il calo ma chi la usa cambia lo stesso');
+    // abilità ignota: si pesano quelle che la specie può avere (Metagross: Corpo Puro oppure Peso Piuma)
+    const ignoto = ia._boostSubito({ abilita: null, abilitaPossibili: ['clearbody', 'lightmetal'] }, { atk: -1, spa: -1 });
+    assert.equal(ignoto.riesce, 0.5);
+    assert.equal(ignoto.boost.atk, -0.5);
+});
+
+// ---------------------------------------------------------------- Poltergeist, Ice Spinner e Return
+// Erano fuori dai team della CPU (ESCLUSE di cpu-conoscenza.js) anche se sono tra gli attacchi più consigliati: Poltergeist in doppio e Ice Spinner (Dragonite, Chien-Pao, Azumarill), Return in
+// tutte le generazioni dalla 2ª alla 7ª (la potenza non è nei dati del Dex: dipende dall'amicizia).
+test('Poltergeist, Ice Spinner e Return sono mosse che la CPU può portare; Return vale 102 (amicizia massima)', async () => {
+    const { sim } = await caricaSim();
+    for (const [gen, mossa] of [[9, 'poltergeist'], [9, 'icespinner'], [7, 'return'], [4, 'return'], [2, 'return']]) {
+        const dex = sim.Dex.forGen(gen);
+        assert.equal(K.mossaUsabile(dex, mossa), true, `${mossa} in gen ${gen}`);
+    }
+    assert.equal(K.descriviMossa(sim.Dex.forGen(7), 'return').potenza, 102);
+    assert.equal(K.mossaUsabile(sim.Dex.forGen(9), 'frustration'), false, 'Frustration (amicizia zero) resta fuori');
+});
+
+test('Poltergeist fallisce contro chi non ha più lo strumento: se si sa che l\'ha perso la CPU non lo sceglie, se ce l\'ha sì', async () => {
+    const mia = [
+        { specie: 'Dragapult', item: 'Choice Scarf', mosse: ['Poltergeist', 'Dragon Darts', 'Protect', 'U-turn'] },
+        { specie: 'Gholdengo', item: 'Leftovers', mosse: ['Make It Rain', 'Shadow Ball', 'Protect', 'Nasty Plot'] }
+    ];
+    const conItem = await decidi({}, { mia, opp: ['Rillaboom', 'Incineroar'], turno: 4 });
+    const poltergeist = r => r.valutazione.filter(v => v.azioni.some(t => /\[Poltergeist\]/.test(t)));
+    assert.ok(poltergeist(conItem).length > 0, `con lo strumento si usa: ${JSON.stringify(conItem.valutazione.map(x => x.azioni))}`);
+    // Rillaboom ha mangiato la bacca e Incineroar l'ha perso: nessuno dei due ha più niente
+    const senza = await decidi({}, { mia, opp: ['Rillaboom', 'Incineroar'], turno: 4, extraLog: ['|-enditem|p1a: Rillaboom|Sitrus Berry|[eat]', '|-enditem|p1b: Incineroar|Safety Goggles|[from] move: Knock Off|[of] p2a: Gholdengo'] });
+    assert.equal(poltergeist(senza).length, 0, `senza strumento no: ${JSON.stringify(senza.valutazione.map(x => x.azioni))}`);
+});

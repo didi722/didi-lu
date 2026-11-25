@@ -162,7 +162,8 @@ test('team con la meta: i Pokémon e le mosse che la lega gioca si vedono di pi�
     const conta = ts => ts.reduce((n, t) => n + specieDi(t).filter(s => popolari.has(s)).length, 0) / ts.length;
     const senza = await squadre(sim);
     const con = await squadre(sim, { meta });
-    assert.ok(conta(con) > conta(senza) + 0.5, `Pokémon della lega per team: ${conta(con).toFixed(2)} contro ${conta(senza).toFixed(2)}`);
+    // (di base i team hanno già più Pokémon da VGC di prima, con 170 candidati fissi invece di 110: la meta della lega ne aggiunge comunque uno ogni tre team)
+    assert.ok(conta(con) > conta(senza) + 0.3, `Pokémon della lega per team: ${conta(con).toFixed(2)} contro ${conta(senza).toFixed(2)}`);
     // le mosse tipiche su un Pokémon della lega (Incineroar con Fake Out e Knock Off...)
     const quoteMossa = (ts, specie, mossa) => { const tutti = ts.flatMap(t => mosseDi(sim, t)).filter(s => s.specie === specie); return tutti.length ? tutti.filter(s => s.mosse.includes(mossa)).length / tutti.length : null; };
     const knockCon = quoteMossa(con, 'incineroar', 'knockoff');

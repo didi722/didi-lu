@@ -3,7 +3,7 @@
 // Compone da sola una dozzina di team sensati per un formato, partendo dal suo pool di Pokémon
 // (formato-pool.js) e dalle sue regole. Niente liste scritte a mano: un formato nuovo funziona subito.
 //
-//   1. Dal pool si tengono i Pokémon più forti del formato (tier e statistiche) più qualche scelta fuori moda.
+//   1. Dal pool si tengono i Pokémon più forti del formato (tier e statistiche: 110 nel singolo, 170 nel doppio) più qualche scelta fuori moda (fino a 170 e 260).
 //   2. Per ognuno si leggono le mosse che può imparare nella generazione del formato, si scartano
 //      quelle bandite o che la CPU non sa usare (cpu-conoscenza.js) e si classificano.
 //   3. Ogni team parte da un "asso" e si completa un Pokémon alla volta scegliendo quello che migliora
@@ -13,7 +13,8 @@
 //   4. Ai Pokémon scelti si dà un set: abilità, strumento (mai due uguali), natura, EV e quattro mosse.
 //      Ogni mossa è controllata dal validatore del simulatore. Le scelte di ruolo (chi mette Tailwind, chi ha Fake Out...) vengono
 //      prima; per il resto si preferiscono mosse, strumento e abilità che di solito si giocano su quel Pokémon (i consigli di
-//      consigli.js, gli stessi che il Team Builder mette in cima alle liste), sempre dentro ciò che la CPU sa usare.
+//      consigli.js, gli stessi che il Team Builder mette in cima alle liste), sempre dentro ciò che la CPU sa usare. Natura, EV e IV nel singolo (e in Little Cup) sono quelli dei set di
+//      Smogon che somigliano di più alle mosse scelte (campo `spread` dei consigli); nel doppio la distribuzione a ruoli, che lì rende di più (vedi le manopole probSpread).
 //
 // Tutto è deterministico: stesso formato e stesso seme, stessi team. Mai due team troppo simili,
 // e nessun Pokémon in più di un terzo dei team.
@@ -66,18 +67,34 @@
     //                     paralisi), il campo (schermi, trappole, aiuto, deviazione, meteo) o avere un perno (fino a quattro, quattro, tre)
     //   rallentaAnche     (1 = sì) chi ha Rete Elettrica la porta come chi ha Vento Gelato (di base solo Vento Gelato); probStatoSeguenti: la probabilità di dare uno stato anche al secondo
     //                     e al terzo Pokémon (di base 0,4 di probStato)
+    //   probSpread, probSpreadDoppio, genMinSpread
+    //                     con quale probabilità natura, EV e IV sono quelli dei set di Smogon (consigli.js, campo `spread`: il set che somiglia di più alle mosse scelte) invece della
+    //                     distribuzione a ruoli (252/252/4: tutto sull'attacco e sulla velocità), nel singolo e nel doppio. Misurato con coppie di team identici che cambiano solo gli EV:
+    //                     nel singolo gli spread veri vincono il 55% in Gen 9 e il 52% in Gen 7, pareggiano in Gen 5 e 6 e perdono in Gen 4 (47%: i set di quegli anni, pensati per
+    //                     altre meccaniche e per altri avversari, non servono a una CPU); nel doppio da VGC perdono (45%: lì conta far più danno, non reggere di più) e nel doppio OU
+    //                     pareggiano; in Little Cup (livello 5, qualunque generazione) vincono dal 65% al 70%. Per questo di base: singolo dalla Gen `genMinSpread` (7) in poi
+    //                     e Little Cup (probSpread 1), mai nel doppio (probSpreadDoppio 0)
+    //   probScelta, probSceltaDoppio
+    //                     con quale probabilità un Pokémon con soli attacchi (tre o quattro, nessuna Protezione né altra mossa di stato, niente Colpo Fortunato) porta lo strumento Scelta
+    //                     (Choice Band, Specs, Scarf) se i consigli ce l'hanno tra i primi tre, nel singolo e nel doppio. Misurato con coppie di team identici che cambiano solo lo strumento:
+    //                     nel singolo vince il 51% in Gen 9, il 52% in Gen 7 e il 53% in Gen 4; nel doppio da VGC pareggia (pochi Pokémon senza Protezione): di base 1 nel singolo, 0 nel doppio
+    //   candFissi, candMax, candFissiDoppio, candMaxDoppio
+    //                     i candidati da cui la CPU compone i team: i `candFissi` migliori del formato (per tier e statistiche) più, a caso, altri fino a `candMax`; nel singolo e nel doppio.
+    //                     Nel doppio i tier dicono poco (quasi tutti i Pokémon da VGC sono "(DUU)"): con 110 e 170 metà dei Pokémon da VGC (Volcarona, Iron Bundle, Heatran, Corviknight...) non usciva
+    //                     mai, con 170 e 260 i team di 300 sono 173 specie invece di 108 e hanno la stessa forza (50% contro 49%). Nel singolo OU il tier invece è una buona guida e allargare
+    //                     la scelta toglie 3,6 punti (54,8% contro 51,2%): lì restano 110 e 170. Un tetto agli Uber (provato, nel VGC) toglie sei punti: gli Uber sono davvero i più forti
     const PARAMETRI_TEAM = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.6, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
         probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1,
         maxStato: 2, probStato: 0.85, offesaMaxStato: 125, bonusFakeOut: 2.1, bonusStato: 1.2, bonusIntimidazione: 0.5, bonusRedirezione: 0.9,
-        pesoStato: 1, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4 };
+        pesoStato: 1, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 170, candMaxDoppio: 260, probSpread: 1, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 1, probSceltaDoppio: 0 };
     // com'era prima (per i confronti)
     const PARAMETRI_TEAM_VECCHI = { maxAiuto: 99, probAiuto: 1, probProtezione: 1, maxSenzaProt: 0, priorita: 0, sogliaPriorita: 40, bonusPriorita: 0, probPerno: 0, maxPerno: 0, sogliaPerno: 50, bonusPerno: 0,
         maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
-        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4 };
+        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0 };
     // com'erano prima dei ruoli di stato, di Intimidate e del peso maggiore di Colpo Fortunato (per confrontare team vecchi e nuovi con tools/prova-team.cjs --confronto precedenti)
     const PARAMETRI_TEAM_PRECEDENTI = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.1, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
         probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1, maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
-        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4 };
+        pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0 };
 
     // =================================================
     // UTILITÀ
@@ -223,7 +240,10 @@
         const t = String(tier || '').replace(/[()]/g, '').toUpperCase().trim();
         return t in PUNTI_TIER ? PUNTI_TIER[t] : 0;
     }
-
+    // Quanto vale una specie per ordinare i candidati: i punti del tier (del doppio o del singolo) più le statistiche
+    function valoreSpecie(specie, ctx) {
+        return puntiTier(ctx.doppio ? specie.doublesTier : specie.tier) * 18 + (specie.bst || 0) / 12;
+    }
     // =================================================
     // ANALISI DI UN POKÉMON DEL POOL
     // =================================================
@@ -246,18 +266,26 @@
         const raccogli = async () => {
             const out = new Set(), conCova = new Set(), senzaCova = new Set();
             for (const sp of catena) {
-                let dati = await dex.learnsets.get(sp.id);
-                if ((!dati || !dati.learnset) && sp.baseSpecies && sp.baseSpecies !== sp.name) dati = await dex.learnsets.get(id(sp.baseSpecies));
-                if (!dati || !dati.learnset) continue;
-                for (const [mossa, fonti] of Object.entries(dati.learnset)) {
-                    for (const src of fonti) {
-                        const g = parseInt(src, 10);
-                        const via = src.charAt(1);
-                        if (g > gen) continue;
-                        // livello, MT e tutor; dalla 6ª generazione anche le mosse di cova (E): ognuno le eredita liberamente. Senza, Colpo Fortunato mancava a Incineroar, Rillaboom, Sneasler...
-                        // (ci arrivano dalla cova dello stadio precedente) e i team della CPU avevano pochissimo del gioco in doppio
-                        if ('MLT'.includes(via)) { senzaCova.add(mossa); out.add(mossa); }
-                        else if (via === 'E' && gen >= 6) { conCova.add(mossa); out.add(mossa); }
+                // le forme che si assumono in battaglia o con uno strumento (Rotom-Wash e le altre cinque, Necrozma Criniera del Vespro, Zacian e Zamazenta Eroi Coronati) hanno nel Dex
+                // solo una mossa propria (Hydro Pump, Behemoth Blade...): le altre sono quelle della forma da cui cambiano (`changesFrom`), come fa il validatore. Prima non ne avevano nessuna
+                // e restavano fuori da ogni team (Rotom-Wash è tra i migliori dell'OU dalla 4ª generazione)
+                const sorgenti = [sp];
+                if (sp.changesFrom) sorgenti.push(dex.species.get(sp.changesFrom));
+                for (const sorgente of sorgenti) {
+                    let dati = await dex.learnsets.get(sorgente.id);
+                    if ((!dati || !dati.learnset) && sorgente.baseSpecies && sorgente.baseSpecies !== sorgente.name) dati = await dex.learnsets.get(id(sorgente.baseSpecies));
+                    if (!dati || !dati.learnset) continue;
+                    for (const [mossa, fonti] of Object.entries(dati.learnset)) {
+                        for (const src of fonti) {
+                            const g = parseInt(src, 10);
+                            const via = src.charAt(1);
+                            if (g > gen) continue;
+                            // livello, MT e tutor; dalla 6ª generazione anche le mosse di cova (E): ognuno le eredita liberamente. Senza, Colpo Fortunato mancava a Incineroar, Rillaboom, Sneasler...
+                            // (ci arrivano dalla cova dello stadio precedente) e i team della CPU avevano pochissimo del gioco in doppio
+                            // R = la mossa che una forma ha di suo (Hydro Pump di Rotom-Wash, Behemoth Blade di Zacian Eroe Coronato, Sunsteel Strike di Necrozma Criniera del Vespro)
+                            if ('MLTR'.includes(via)) { senzaCova.add(mossa); out.add(mossa); }
+                            else if (via === 'E' && gen >= 6) { conCova.add(mossa); out.add(mossa); }
+                        }
                     }
                 }
             }
@@ -268,6 +296,8 @@
         return raccogli();
     }
 
+    // Quanto vale Parting Shot come perno (come un U-turn da 70 di potenza: non è un attacco ma abbassa Attacco e Att. Sp. del bersaglio e fa cambiare)
+    const VALORE_PARTING_SHOT = 70;
     // Una mossa di attacco vale quanto potenza x precisione x STAB, corretta dalla categoria
     function valoreAttacco(m, cand, ctx) {
         const off = m.categoria === 'Physical' ? cand.basi.atk : cand.basi.spa;
@@ -287,7 +317,7 @@
 
     // Ciò che di solito si gioca su un Pokémon (mosse, strumenti, abilità; id, dalla più consigliata) dai dati di consigli.js
     function consigliDi(dati, cand, ctx) {
-        if (!dati || !Consigli) return { mosse: [], oggetti: [], abilita: [] };
+        if (!dati || !Consigli) return { mosse: [], oggetti: [], abilita: [], spread: [] };
         return Consigli.per(dati, cand.id, { doppio: ctx.doppio, baseId: id(cand.base.baseSpecies || cand.base.name) });
     }
 
@@ -337,11 +367,14 @@
             mosseDa: new Map(mosse.map(m => [m.id, m])), soloUova: apprese.soloUova || new Set()
         };
         cand.basi = { hp: specie.baseStats.hp, atk: specie.baseStats.atk, def: specie.baseStats.def, spa: specie.baseStats.spa, spd: specie.baseStats.spd, spe: specie.baseStats.spe };
-        cand.valore = puntiTier(cand.tier) * 18 + cand.bst / 12;
+        cand.valore = valoreSpecie(specie, ctx);
 
         const attacchi = mosse.filter(m => m.categoria !== 'Status' && m.potenza > 0 && m.id !== 'fakeout' && m.id !== 'firstimpression' && !m.perno)
             .map(m => ({ m, v: valoreAttacco(m, cand, ctx) })).sort((a, b) => b.v - a.v);
-        const perni = mosse.filter(m => m.perno && m.categoria !== 'Status').map(m => ({ m, v: valoreAttacco(m, cand, ctx) }));
+        // i perni: gli attacchi che fanno uscire chi li usa (U-turn, Volt Switch, Flip Turn) e Parting Shot, che non fa danno ma abbassa Attacco e Att. Sp. del bersaglio
+        // prima di cambiare (il pivot di Incineroar e Grimmsnarl): vale come un U-turn da 70 di potenza
+        const perni = mosse.filter(m => m.perno && (m.categoria !== 'Status' || m.id === 'partingshot'))
+            .map(m => ({ m, v: m.categoria === 'Status' ? VALORE_PARTING_SHOT : valoreAttacco(m, cand, ctx) })).sort((a, b) => b.v - a.v);
         cand.attacchi = attacchi;
         cand.perni = perni;
         // le mosse d'attacco prioritarie (Fake Out e Prima Impressione sono già un ruolo a parte; fuori dagli attacchi anche le mosse che non fanno danno vero)
@@ -510,6 +543,11 @@
         const pesoMeta = (ctx.parametriTeam || PARAMETRI_TEAM).pesoMossaMeta;
         const quotaMeta = m => (cand.metaMosse && cand.metaMosse[m.id]) || 0;
         const bonusCons = m => (posCons.has(m.id) ? Math.max(0.3, 0.9 - posCons.get(m.id) * 0.06) : 0) + pesoMeta * quotaMeta(m);
+        // il pivot del set: tra quelli che il Pokémon ha, il più consigliato (Parting Shot per Incineroar, non U-turn); senza consigli, il più forte
+        const pivotDelSet = () => {
+            const consigliato = cand.perni.filter(p => posCons.has(p.m.id)).sort((a, b) => posCons.get(a.m.id) - posCons.get(b.m.id))[0];
+            return consigliato ? consigliato.m : o.pivot;
+        };
 
         if (ctx.doppio) {
             // Le mosse di supporto non possono riempire tutti e quattro gli slot: almeno un attacco resta sempre (altrimenti, con gli schermi già su e la
@@ -528,13 +566,13 @@
             if (ruolo.priorita) aggiungi(ruolo.priorita);
             if (ruolo.rallenta) supporto(get(o.rallenta));
             if (ruolo.stato) supporto((ruolo.statoMossa && get(ruolo.statoMossa)) || get(o.paralisi) || get(o.sonno) || get('willowisp'));
-            if (ruolo.perno) supporto(o.pivot);
+            if (ruolo.perno) supporto(pivotDelSet());
         } else {
             if (ruolo.trappola) aggiungi(get(o.roccia ? 'stealthrock' : 'spikes'));
             if (ruolo.recupero) aggiungi(o.recupero);
             if (ruolo.setup) aggiungi(ruolo.setup);
             if (ruolo.stato) aggiungi(get(o.sonno) || get(o.paralisi) || get('willowisp') || get('toxic'));
-            if (ruolo.perno) aggiungi(o.pivot);
+            if (ruolo.perno) aggiungi(pivotDelSet());
         }
 
         // attacchi: i due migliori STAB, poi copertura sui tipi che ancora non si colpiscono bene
@@ -622,10 +660,10 @@
             trappola: null, recupero: [], setup: {}, perno: null, perni: [] };
         const per = (lista, f) => lista.slice().sort((x, y) => f(y) - f(x));
         if (ctx.doppio) {
-            const conVel = piano.nome === 'trickroom' ? membri.filter(c => c.opz.trickroom) : membri.filter(c => c.opz.tailwind);
+            const conVel = piano.nome === 'trickroom' ? membri.filter(puoMettereStanza) : membri.filter(c => c.opz.tailwind);
             const setterVel = per(conVel, c => (c.supporto ? 2 : 0) + (piano.nome === 'trickroom' ? -c.basi.spe / 100 : c.basi.spe / 100))[0] ||
-                per(membri.filter(c => c.opz.tailwind || c.opz.trickroom), c => (c.supporto ? 2 : 0))[0];
-            if (setterVel) a.velocita[setterVel.id] = (piano.nome === 'trickroom' && setterVel.opz.trickroom) || !setterVel.opz.tailwind ? 'trickroom' : 'tailwind';
+                per(membri.filter(c => c.opz.tailwind || puoMettereStanza(c)), c => (c.supporto ? 2 : 0))[0];
+            if (setterVel) a.velocita[setterVel.id] = (piano.nome === 'trickroom' && puoMettereStanza(setterVel)) || !setterVel.opz.tailwind ? 'trickroom' : 'tailwind';
             const fo = per(membri.filter(c => c.opz.fakeout && c.id !== (setterVel && setterVel.id)), c => (c.supporto ? 1 : 0) + (c.robustezza > 60 ? 0.3 : 0))[0] ||
                 membri.find(c => c.opz.fakeout);
             if (fo) a.fakeout = fo.id;
@@ -734,17 +772,17 @@
         return migliore;
     }
 
-    function itemValido(dex, nome, ctx, restrizioni, usati) {
+    function itemValido(dex, nome, ctx, restrizioni, usati, conScelta = false) {
         const it = dex.items.get(nome);
         // niente strumenti fuori dalla generazione (anche 'Past': in Gen 8 e 9 sono Red Orb, Blue Orb... che il validatore rifiuta)
         if (!it.exists || it.gen > ctx.gen || it.isNonstandard) return null;
-        if ((!ctx.goose && usati.has(it.id)) || K.STRUMENTI_SCELTA.has(it.id)) return null;   // Anything Goose: niente Item Clause
+        if ((!ctx.goose && usati.has(it.id)) || (K.STRUMENTI_SCELTA.has(it.id) && !conScelta)) return null;   // Anything Goose: niente Item Clause
         if (it.megaStone || it.zMove) return null;
         if (!strumentoAmmesso(it, restrizioni)) return null;
         return it.name;
     }
 
-    function scegliStrumento(cand, ruolo, ctx, restrizioni, usati, piano, mosse) {
+    function scegliStrumento(cand, ruolo, ctx, restrizioni, usati, piano, mosse, rnd) {
         const dex = ruolo.dex;
         if (ctx.gen < 2) return '';
         if (cand.isMega) return cand.richiesto || '';
@@ -754,6 +792,17 @@
         const qualunqueStato = mosse.some(m => m.categoria === 'Status');          // il Gilet d'assalto vieta anche la Protezione
         const fragile = cand.basi.hp + cand.basi.def + cand.basi.spd < 230;
         const nomi = [];
+        // lo strumento Scelta: solo a chi ha soli attacchi (la mossa bloccata non è mai una Protezione o uno stato inutile), se i consigli ce l'hanno tra i primi tre
+        const par = ctx.parametriTeam || PARAMETRI_TEAM;
+        const probScelta = ctx.doppio ? par.probSceltaDoppio : par.probScelta;
+        if (probScelta > 0 && !cand.isMega && attacchi.length === mosse.length && attacchi.length >= 3 && !mosse.some(m => m.id === 'fakeout' || m.id === 'firstimpression')
+            && (probScelta >= 1 || (rnd || Math.random)() < probScelta)) {
+            for (const k of ((cand.cons && cand.cons.oggetti) || []).slice(0, 3)) {
+                if (!K.STRUMENTI_SCELTA.has(k)) continue;
+                const v = itemValido(dex, k, ctx, restrizioni, usati, true);
+                if (v) return v;
+            }
+        }
         if (ruolo.schermi) nomi.push('Light Clay');
         if (ctx.doppio && ruolo.fakeout) nomi.push('Sitrus Berry', 'Safety Goggles', 'Mental Herb');
         // gli strumenti consigliati per questo Pokémon, se vanno d'accordo con il suo set (e con ciò che la CPU sa fare)
@@ -790,7 +839,23 @@
         return '';
     }
 
-    function distribuzione(cand, ruolo, ctx, mosse, piano, natura) {
+    // Lo spread (natura, EV, IV) dei set di Smogon che somiglia di più alle mosse scelte: quello con più mosse in comune (almeno due, la Protezione non conta),
+    // a parità il più giocato. Con la Stanza Magica serve uno spread senza velocità; senza, non uno fatto per la Stanza Magica (IV di velocità a 0).
+    function spreadVero(cand, mosse, trickRoom) {
+        const lista = (cand.cons && cand.cons.spread) || [];
+        if (!lista.length) return null;
+        const mie = new Set(mosse.filter(m => !m.protezione).map(m => m.id));
+        let migliore = null, mv = 0;
+        lista.forEach((sp, k) => {
+            if (trickRoom ? sp.e[5] > 0 : !!(sp.i && sp.i.spe === 0)) return;
+            const comuni = sp.m.filter(m => mie.has(m)).length;
+            const v = comuni - k * 0.01;
+            if (comuni >= Math.min(2, mie.size) && v > mv) { mv = v; migliore = sp; }
+        });
+        return migliore;
+    }
+
+    function distribuzione(cand, ruolo, ctx, mosse, piano, natura, rnd) {
         // natura ed EV in base a cosa fa il Pokémon
         const fisiche = mosse.filter(m => m.categoria === 'Physical' && m.id !== 'bodypress' && m.id !== 'foulplay');
         const speciali = mosse.filter(m => m.categoria === 'Special');
@@ -821,6 +886,21 @@
             evs.hp = 252; evs[attaccaFisico ? 'atk' : 'spa'] = 252; evs[attaccaFisico ? 'def' : 'spd'] = 4;
             nat = attaccaFisico ? 'Adamant' : 'Modest';
         }
+        // gli spread veri: natura, EV e IV del set di Smogon più somigliante (se ce n'è uno e la manopola lo vuole)
+        const par = ctx.parametriTeam || PARAMETRI_TEAM;
+        // a livello basso (Little Cup, livello 5) gli EV e gli IV pesano molto di più in proporzione: gli spread veri vincono dal 65% al 70% (nel doppio come nel singolo, in ogni generazione)
+        const lc = ctx.livello <= 10;
+        const probSpread = lc ? par.probSpread : (ctx.doppio ? par.probSpreadDoppio : (ctx.gen >= par.genMinSpread ? par.probSpread : 0));
+        if (probSpread > 0 && ctx.gen >= 3 && (probSpread >= 1 || (rnd || Math.random)() < probSpread)) {
+            const sp = spreadVero(cand, mosse, trickRoom);
+            if (sp) {
+                const nomi = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
+                const evsVeri = {};
+                nomi.forEach((k, j) => { if (sp.e[j] > 0) evsVeri[k] = sp.e[j]; });
+                const ivsVeri = Object.assign({}, ivs, sp.i || {});
+                return { evs: evsVeri, nat: natura || sp.n, ivs: ivsVeri };
+            }
+        }
         if (natura) nat = natura;
         return { evs, nat, ivs };
     }
@@ -845,13 +925,13 @@
         return resto.length ? resto : mosse;
     }
 
-    function testoSet(cand, ctx, ruolo, piano, restrizioni, usati, tera, natura) {
+    function testoSet(cand, ctx, ruolo, piano, restrizioni, usati, tera, natura, rnd) {
         const dex = ruolo.dex;
         const mosse = correggiUova(cand, mosseDelSet(cand, ruolo, ctx, piano), ctx);
-        const strumento = scegliStrumento(cand, ruolo, ctx, restrizioni, usati, piano, mosse);
+        const strumento = scegliStrumento(cand, ruolo, ctx, restrizioni, usati, piano, mosse, rnd);
         if (strumento) usati.add(id(strumento));
         const abilita = scegliAbilita(cand, piano, ctx, ruolo);
-        const { evs, nat, ivs } = distribuzione(cand, ruolo, ctx, mosse, piano, natura);
+        const { evs, nat, ivs } = distribuzione(cand, ruolo, ctx, mosse, piano, natura, rnd);
         const righe = [];
         righe.push(strumento ? `${cand.nome} @ ${strumento}` : cand.nome);
         if (abilita) righe.push(`Ability: ${abilita}`);
@@ -923,7 +1003,7 @@
         return nomi.filter(p => {
             if (SETTER[p]) return SETTER[p].some(x => ab.has(x));
             if (p === 'tailwind') return cand.some(c => c.opz.tailwind);
-            if (p === 'trickroom') return cand.some(c => c.opz.trickroom) && cand.some(c => c.lento && c.offesa >= 95);
+            if (p === 'trickroom') return cand.some(puoMettereStanza) && cand.some(c => c.lento && c.offesa >= 95);
             return true;
         });
     }
@@ -937,10 +1017,13 @@
         return Array.from({ length: Math.max(3, altri.length) }, () => 'offensivo').concat(altri);
     }
 
-    // Chi può impostare il piano del team: Tailwind, Stanza Magica (meglio se non troppo veloce), il meteo (abilità)
+    // La Stanza Magica la mette chi non è veloce: Calyrex-Shadow (150 di velocità) la impara, ma con la Stanza Magica perderebbe l'unica cosa che lo rende il migliore
+    const VELOCITA_MASSIMA_SETTER_STANZA = 90;
+    const puoMettereStanza = c => !!c.opz.trickroom && c.basi.spe <= VELOCITA_MASSIMA_SETTER_STANZA;
+    // Chi può impostare il piano del team: Tailwind, Stanza Magica (chi non è veloce), il meteo (abilità)
     function impostaIlPiano(piano, c) {
         if (piano.nome === 'tailwind') return !!c.opz.tailwind;
-        if (piano.nome === 'trickroom') return !!c.opz.trickroom;
+        if (piano.nome === 'trickroom') return puoMettereStanza(c);
         if (SETTER[piano.nome]) return abilitaPossibili(c).some(a => SETTER[piano.nome].includes(a));
         return false;
     }
@@ -1135,15 +1218,15 @@
         // 1) i candidati: i più forti del formato, più qualche scelta fuori dal comune
         const ordinati = opzioni.pool.map(v => {
             const s = dex.species.get(v.id);
-            const t = ctx.doppio ? s.doublesTier : s.tier;
             // Anything Goose: conta anche quanto il Pokémon colpisce forte (a parità di tier vince chi attacca di più)
             const potenza = ctx.goose ? Math.max(s.baseStats.atk, s.baseStats.spa) / 10 : 0;
             // la lega gioca questo Pokémon: tra i candidati ci entra anche se il suo tier è basso (fino a +12 punti, come un tier in più)
             const usoLega = meta && meta.specie ? (meta.specie[id(v.id)] || 0) : 0;
-            return { v, valore: puntiTier(t) * 18 + (s.bst || 0) / 12 + potenza + rnd() * 4 + Math.min(1, usoLega / 0.3) * 12 * parametriTeam.pesoSpecieMeta };
+            return { v, valore: valoreSpecie(s, ctx) + potenza + rnd() * 4 + Math.min(1, usoLega / 0.3) * 12 * parametriTeam.pesoSpecieMeta };
         }).sort((a, b) => b.valore - a.valore);
-        const MAX_CAND = 170;
-        const NUM_FISSI = ctx.goose ? 95 : 110;
+        const MAX_CAND = ctx.doppio ? parametriTeam.candMaxDoppio : parametriTeam.candMax;
+        const fissiBase = ctx.doppio ? parametriTeam.candFissiDoppio : parametriTeam.candFissi;
+        const NUM_FISSI = Math.min(MAX_CAND, ctx.goose ? Math.round(fissiBase * 0.86) : fissiBase);
         const fissi = ordinati.slice(0, Math.min(ordinati.length, NUM_FISSI));
         const resto = ordinati.slice(fissi.length);
         const extra = [];
@@ -1186,7 +1269,7 @@
             const ruolo = ruoloDi(c, ctx, piano, assegnati);
             ruolo.dex = dex;
             const tera = ctx.gen >= 9 ? scegliTera(c, mosseDelSet(c, ruolo, ctx, piano), rnd) : null;
-            const s = testoSet(c, ctx, ruolo, piano, restrizioni, usati, tera, natura);
+            const s = testoSet(c, ctx, ruolo, piano, restrizioni, usati, tera, natura, rnd);
             if (s.mosse.length < 1) return null;
             testi.push(s.testo);
             infoMembri.push({ cand: c, mosse: s.mosse, abilita: s.abilita, strumento: s.strumento });

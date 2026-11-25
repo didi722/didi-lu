@@ -24,7 +24,7 @@ const { costruisci } = require('./consigli-lib.cjs');
 const RAW = 'https://raw.githubusercontent.com/';
 const SMOGON = g => `${RAW}pkmn/smogon/main/data/sets/gen${g}.json`;
 const CASUALI = (g, file) => `${RAW}smogon/pokemon-showdown/master/data/random-battles/gen${g}/${file}`;
-const USCITA = path.join(__dirname, '..', 'docs', 'consigli');
+const USCITA = process.env.CONSIGLI_USCITA || path.join(__dirname, '..', 'docs', 'consigli');   // di base nel repository; con la variabile si scrive altrove (per confrontare)
 
 async function scarica(url) {
     const r = await fetch(url);

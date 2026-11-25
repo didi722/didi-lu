@@ -69,8 +69,8 @@ test('per: la lista del formato, il ripiego sulla specie base e sul singolo, e i
     assert.equal(C.per(dati, 'garchomp', { doppio: true }).mosse[1], 'protect');
     assert.deepEqual(C.per(dati, 'ursaluna', { doppio: true }).mosse, ['facade', 'headlongrush'], 'senza lista doppia: quella del singolo');
     assert.deepEqual(C.per(dati, 'garchompmega', { baseId: 'garchomp' }).oggetti, ['rockyhelmet'], 'la forma senza set usa la specie base');
-    assert.deepEqual(C.per(dati, 'sconosciuto'), { mosse: [], oggetti: [], abilita: [] });
-    assert.deepEqual(C.per(null, 'garchomp'), { mosse: [], oggetti: [], abilita: [] });
+    assert.deepEqual(C.per(dati, 'sconosciuto'), { mosse: [], oggetti: [], abilita: [], spread: [] });
+    assert.deepEqual(C.per(null, 'garchomp'), { mosse: [], oggetti: [], abilita: [], spread: [] });
     // lista del doppio corta: si completa con quella del singolo
     const corta = { s: { x: { m: ['a', 'b', 'c', 'd', 'e', 'f'], i: ['i1'], a: [] } }, d: { x: { m: ['b', 'z'], i: [], a: ['ab'] } } };
     assert.deepEqual(C.per(corta, 'x', { doppio: true }).mosse, ['b', 'z', 'a', 'c', 'd', 'e', 'f']);
@@ -124,4 +124,56 @@ test('Team Builder: carica i consigli della generazione, li mette in cima a moss
     assert.match(box, /data-desc="\$\{tbEsc\(tbTestoDesc\('abilita', tbToID\(a\), tbDex\.abilities/);
     // l'elenco che si apre dopo un altro non lascia il precedente aperto
     assert.match(box, /if \(tbCombo\.input && tbCombo\.input !== input\) tbChiudiCombo\(\);/);
+});
+
+// ---------------------------------------------------------------- gli spread (natura, EV, IV) dei set di Smogon
+test('costruisci: gli spread dei set (natura, EV, IV) si tengono, i più giocati e i più recenti per primi; le varianti in lista si separano', () => {
+    const smogon = {
+        Incineroar: {
+            vgc2025: { Sostegno: { moves: ['Fake Out', 'Knock Off', ['Flare Blitz', 'Taunt'], 'Parting Shot'], item: 'Safety Goggles', nature: 'Careful', evs: { hp: 228, atk: 28, def: 92, spd: 76, spe: 84 } } },
+            vgc2023: { Vecchio: { moves: ['Fake Out', 'Knock Off', 'Flare Blitz', 'U-turn'], item: 'Sitrus Berry', nature: 'Adamant', evs: { hp: 252, atk: 252, spd: 4 } } },
+            // due varianti nello stesso set: natura ed EV in lista si accoppiano per posizione
+            doublesou: { Doppia: { moves: ['Fake Out', 'Knock Off', 'Flare Blitz', 'Parting Shot'], item: 'Assault Vest', nature: ['Impish', 'Jolly'], evs: [{ hp: 252, def: 156, spd: 100 }, { hp: 244, atk: 4, spe: 252 }] } }
+        },
+        Amoonguss: { vgc2025: { Sostegno: { moves: ['Spore', 'Rage Powder', 'Pollen Puff', 'Protect'], nature: 'Bold', ivs: { spe: 27, atk: 31 }, evs: { hp: 244, def: 156, spd: 108 } } } },
+        Tauros: { ou: { Normale: { moves: ['Body Slam'], item: 'Leftovers', nature: 'Jolly', evs: { atk: 252, spe: 252, hp: 4 } } } }
+    };
+    const r = L.costruisci({ gen: 9, smogon, casualiSingoli: null, casualiDoppi: null });
+    const p = r.d.incineroar.p;
+    assert.deepEqual(p[0], { n: 'Careful', e: [228, 28, 92, 0, 76, 84], m: ['fakeout', 'knockoff', 'flareblitz', 'taunt', 'partingshot'] }, 'il più recente (vgc2025) per primo; EV nell\'ordine hp, atk, def, spa, spd, spe');
+    assert.ok(p.some(x => x.n === 'Impish' && x.e[0] === 252 && x.e[2] === 156) && p.some(x => x.n === 'Jolly' && x.e[5] === 252), 'le due varianti sono due spread');
+    assert.ok(p.length <= 3, 'al massimo tre');
+    assert.deepEqual(r.d.amoonguss.p[0].i, { spe: 27 }, 'si tengono solo gli IV che non sono 31');
+    assert.equal(r.s.tauros.p[0].n, 'Jolly');
+    assert.equal(L.costruisci({ gen: 2, smogon, casualiSingoli: null, casualiDoppi: null }).s.tauros.p, undefined, 'nelle prime due generazioni non ci sono natura ed EV');
+});
+
+test('consigli.per: restituisce anche gli spread (del tipo di formato, o in mancanza quelli dell\'altro)', () => {
+    const spread = [{ n: 'Jolly', e: [0, 252, 0, 0, 4, 252], m: ['earthquake'] }];
+    const dati = { s: { garchomp: { m: ['earthquake'], i: [], a: [], p: spread } }, d: { garchomp: { m: ['earthquake', 'protect'], i: [], a: [] } } };
+    assert.deepEqual(C.per(dati, 'garchomp', { doppio: false }).spread, spread);
+    assert.deepEqual(C.per(dati, 'garchomp', { doppio: true }).spread, spread, 'il doppio non ha spread propri: quelli del singolo');
+    assert.deepEqual(C.per(dati, 'sconosciuto').spread, []);
+});
+
+test('i file dei consigli hanno gli spread dalla 3ª generazione, ben formati (EV al massimo 252 a statistica, 510 in tutto)', () => {
+    for (let g = 3; g <= 9; g++) {
+        const dati = JSON.parse(fs.readFileSync(path.join(DATI, `gen${g}.json`), 'utf8'));
+        let conSpread = 0;
+        for (const stile of ['s', 'd']) for (const [specie, voce] of Object.entries(dati[stile])) {
+            for (const sp of voce.p || []) {
+                assert.ok(typeof sp.n === 'string' && sp.n, `gen${g} ${specie}: natura`);
+                assert.equal(sp.e.length, 6, `gen${g} ${specie}: sei EV`);
+                assert.ok(sp.e.every(x => x >= 0 && x <= 252), `gen${g} ${specie}: EV da 0 a 252`);
+                assert.ok(sp.e.reduce((a, b) => a + b, 0) <= 510, `gen${g} ${specie}: al massimo 510 EV`);
+                assert.ok(Array.isArray(sp.m), `gen${g} ${specie}: mosse del set`);
+            }
+            if (voce.p && voce.p.length) conSpread++;
+        }
+        assert.ok(conSpread >= 100, `gen${g}: spread per ${conSpread} voci`);
+    }
+    for (let g = 1; g <= 2; g++) {
+        const dati = JSON.parse(fs.readFileSync(path.join(DATI, `gen${g}.json`), 'utf8'));
+        assert.ok(Object.values(dati.s).every(v => !v.p), `gen${g}: niente spread (non ci sono natura ed EV)`);
+    }
 });
