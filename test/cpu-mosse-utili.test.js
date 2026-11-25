@@ -308,6 +308,18 @@ test('Baton Pass: con +2 Attacco e +2 Velocità la CPU la usa; senza potenziamen
     assert.doesNotMatch(mossa(liscio), /^move 2$/, `senza potenziamenti no: ${liscio.scelta}`);
 });
 
+// ---------------------------------------------------------------- Lightning Rod e Storm Drain
+test('nel doppio Lightning Rod attira le mosse Elettro: puntare l\'altro avversario non serve, e la CPU non insiste', async () => {
+    const mia = [
+        { specie: 'Raichu', abilita: 'Static', mosse: ['Thunderbolt', 'Focus Blast', 'Protect', 'Helping Hand'] },
+        { specie: 'Garchomp', abilita: 'Rough Skin', mosse: ['Earthquake', 'Dragon Claw', 'Protect', 'Rock Slide'] }
+    ];
+    const log = ['|move|p2a: Raichu|Thunderbolt|p1a: Marowak', '|-ability|p1a: Marowak|Lightning Rod|boost', '|-boost|p1a: Marowak|spa|1'];
+    const r = await decidi({ mia, opp: ['Marowak', 'Gyarados', 'Rhydon', 'Rillaboom'], extraLog: log, turno: 3 });
+    stampa(r);
+    assert.doesNotMatch(mossa(r), /^move 1\b/, `Thunderbolt finirebbe comunque sul Pokémon con Lightning Rod: ${r.scelta}`);
+});
+
 // ---------------------------------------------------------------- Hidden Power
 test('Hidden Power si gioca con il suo tipo (quello scritto nel nome della mossa), non da Normale', async () => {
     const mia = [

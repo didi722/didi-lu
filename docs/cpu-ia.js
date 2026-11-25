@@ -2258,6 +2258,12 @@
                     const latoDif = bersagli[0] && bersagli[0].lato;
                     if (latoDif && latoDif !== keyL(lato) && deviatore[latoDif] >= 0 && bersagli[0].slot !== deviatore[latoDif]) {
                         bersagli = [{ lato: latoDif, slot: deviatore[latoDif] }];
+                    } else if (latoDif && latoDif !== keyL(lato) && (m.tipo === 'Electric' || m.tipo === 'Water') && !ABILITA_IGNORA_ABILITA.has(me.abilita)) {
+                        // Lightning Rod e Storm Drain attirano le mosse Elettro e Acqua a bersaglio singolo di chi sta dall'altra parte: puntare l'altro avversario non serve, il colpo
+                        // va a chi ha l'abilità (e lì viene assorbito)
+                        const assorbe = m.tipo === 'Electric' ? 'lightningrod' : 'stormdrain';
+                        const i = insiemi(latoDif).findIndex((q, k) => q && q.hp > 0 && k !== bersagli[0].slot && q.abilita === assorbe);
+                        if (i >= 0) bersagli = [{ lato: latoDif, slot: i }];
                     }
                 }
                 const vivi = bersagli.filter(b => { const t = insiemi(b.lato === 'mie' ? 'mie' : 'avv')[b.slot]; return t && t.hp > 0; });
