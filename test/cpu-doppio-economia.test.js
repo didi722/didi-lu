@@ -65,8 +65,9 @@ test('due Pokémon contro uno: se un doppio attacco chiude la partita lo fa, non
     assert.match(b, /^move (1|4) 1$/, `anche il secondo: ${nuovo.scelta}`);
     assert.doesNotMatch(nuovo.scelta, /move 3\b/, 'nessuna protezione');
     // senza l'economia della partita (come prima) si parava con Kingambit: era il difetto segnalato
-    const vecchio = await decidi({ parametri: { pesoFinale: 0, pesoMateriale: 0 } }, { mia: KINGAMBIT_URSALUNA, opp: ['Urshifu-Rapid-Strike'], hp: 70 });
+    const vecchio = await decidi({ parametri: { pesoFinale: 0, pesoMateriale: 0, protezioneInVantaggio: 0 } }, { mia: KINGAMBIT_URSALUNA, opp: ['Urshifu-Rapid-Strike'], hp: 70 });
     assert.match(vecchio.scelta, /move 3\b/, `com'era: ${vecchio.scelta}`);
+    assert.ok(nuovo.ia.par.protezioneInVantaggio > 0, 'il costo della protezione cresce con il vantaggio quando all\'avversario restano pochi Pokémon');
 });
 
 test('la fine della partita conta solo se l\'avversario ha davvero finito i Pokémon: con tre in panchina il doppio attacco non vale il bonus', async () => {
@@ -74,6 +75,20 @@ test('la fine della partita conta solo se l\'avversario ha davvero finito i Pok�
     const { ia, valutazione } = await decidi({}, { mia: KINGAMBIT_URSALUNA, opp: ['Urshifu-Rapid-Strike', 'Incineroar', 'Rillaboom', 'Amoonguss'], hp: 70, quanti: 4 });
     const doppio = valutazione.find(x => x.azioni.every(t => /\b(Kowtow Cleave|Iron Head|Headlong Rush|Facade|Earthquake|Sucker Punch)\b/.test(t)));
     assert.ok(!doppio || doppio.val < 3, `senza il finale il valore non salta di tre punti: ${doppio && doppio.val}`);
+});
+
+test('proteggersi costa di più solo nel finale, quando si è in vantaggio: con quattro avversari vale come prima, con uno solo e due Pokémon miei costa di più', async () => {
+    const proteggono = v => v.filter(x => x.azioni.some(t => /\b(Protect|Detect)\b/.test(t))).map(x => x.val);
+    // quattro avversari: all'avversario non restano "al massimo due" Pokémon, niente cambia
+    const quattro = ['Urshifu-Rapid-Strike', 'Incineroar', 'Rillaboom', 'Amoonguss'];
+    const a = await decidi({ parametri: { protezioneInVantaggio: 0 } }, { mia: KINGAMBIT_URSALUNA, opp: quattro, hp: 70, quanti: 4 });
+    const b = await decidi({ parametri: { protezioneInVantaggio: 3 } }, { mia: KINGAMBIT_URSALUNA, opp: quattro, hp: 70, quanti: 4 });
+    assert.ok(proteggono(a.valutazione).length > 0);
+    assert.deepEqual(proteggono(b.valutazione), proteggono(a.valutazione), 'a metà partita la protezione costa quanto prima');
+    // un avversario solo e due Pokémon miei: con il vantaggio la protezione costa molto di più e, tra i cinque piani migliori, non ce n'è uno con una protezione
+    const d = await decidi({ parametri: { protezioneInVantaggio: 3 } }, { mia: KINGAMBIT_URSALUNA, opp: ['Urshifu-Rapid-Strike'], hp: 70 });
+    assert.equal(proteggono(d.valutazione).length, 0, `nessun piano con una protezione tra i migliori: ${JSON.stringify(d.valutazione.map(x => x.azioni))}`);
+    assert.doesNotMatch(d.scelta, /move 3\b/);
 });
 
 test('chi ha più Pokémon scambia volentieri: un KO vale di più quanto meno Pokémon restano (pesoMateriale), ma solo a chi lo subisce', async () => {
