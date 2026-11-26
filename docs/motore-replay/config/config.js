@@ -556,8 +556,8 @@ Config.groups = {
 }
 
 /*** Begin automatically generated configuration ***/
-Config.version = "0.11.2 (1f750744)";
-Config.translationCachebuster = "c8c897b4";
+Config.version = "0.11.2 (24c26605)";
+Config.translationCachebuster = "6c833c96";
 
 Config.routes = {
 	root: 'pokemonshowdown.com',

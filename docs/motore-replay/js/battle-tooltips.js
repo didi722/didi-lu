@@ -632,7 +632,7 @@ var text='';
 var zEffect='';
 var foeActive=[].concat(pokemon.side.foe.active).reverse();
 if(this.battle.gameType==='freeforall'){
-foeActive=[].concat(foeActive,pokemon.side.active).filter(function(active){return active!==pokemon;});
+foeActive=[].concat(foeActive.slice(),pokemon.side.active).filter(function(active){return active!==pokemon;});
 }
 
 if(pokemon.ability==='(suppressed)')serverPokemon.ability='(suppressed)';
@@ -865,9 +865,9 @@ var _failMessage=selfKO?TL(["KOs yourself if current HP is exactly ","."],selfKO
 if(selfKO===serverPokemon.hp)_failMessage="<strong class=\"message-error\">"+_failMessage+"</strong>";
 if(_failMessage)text+="<p>"+_failMessage+"</p>";
 }
-}for(var _i10=0,_foeActive4=
+}for(var _i0=0,_foeActive4=
 
-foeActive;_i10<_foeActive4.length;_i10++){var possibleTarget=_foeActive4[_i10];
+foeActive;_i0<_foeActive4.length;_i0++){var possibleTarget=_foeActive4[_i0];
 if(!possibleTarget)continue;
 var effectiveness=this.getMoveEffectiveness(pokemon,move,moveType,category,possibleTarget);
 var target=BattleLog.escapeHTML(this.getNickname(possibleTarget));
@@ -1069,12 +1069,12 @@ text+=this.renderStats(clientPokemon,serverPokemon,!isActive);
 if(serverPokemon&&!isActive){
 
 text+="<p class=\"tooltip-section\">";
-var battlePokemon=clientPokemon||this.battle.findCorrespondingPokemon(pokemon);for(var _i12=0,_serverPokemon$moves2=
-serverPokemon.moves;_i12<_serverPokemon$moves2.length;_i12++){var moveid=_serverPokemon$moves2[_i12];
+var battlePokemon=clientPokemon||this.battle.findCorrespondingPokemon(pokemon);for(var _i10=0,_serverPokemon$moves2=
+serverPokemon.moves;_i10<_serverPokemon$moves2.length;_i10++){var moveid=_serverPokemon$moves2[_i10];
 var move=this.battle.dex.moves.get(moveid);
 var moveName="&#8226; "+TL(move);
-if(battlePokemon!=null&&battlePokemon.moveTrack){for(var _i14=0,_battlePokemon$moveTr2=
-battlePokemon.moveTrack;_i14<_battlePokemon$moveTr2.length;_i14++){var row=_battlePokemon$moveTr2[_i14];
+if(battlePokemon!=null&&battlePokemon.moveTrack){for(var _i12=0,_battlePokemon$moveTr2=
+battlePokemon.moveTrack;_i12<_battlePokemon$moveTr2.length;_i12++){var row=_battlePokemon$moveTr2[_i12];
 if(move.name===row[0]){
 moveName=this.getPPUseText(row,true);
 break;
@@ -1086,16 +1086,16 @@ text+=moveName+"<br />";
 text+='</p>';
 }else if(this.battle.hardcoreMode&&clientPokemon!=null&&clientPokemon.side.openTeamSheet&&clientPokemon.moveTrack.length){
 
-text+="<p class=\"tooltip-section\">";for(var _i16=0,_clientPokemon$moveTr2=
-clientPokemon.moveTrack;_i16<_clientPokemon$moveTr2.length;_i16++){var _ref2=_clientPokemon$moveTr2[_i16];var _moveName2=_ref2[0];{
+text+="<p class=\"tooltip-section\">";for(var _i14=0,_clientPokemon$moveTr2=
+clientPokemon.moveTrack;_i14<_clientPokemon$moveTr2.length;_i14++){var _ref2=_clientPokemon$moveTr2[_i14];var _moveName2=_ref2[0];{
 var _move=this.battle.dex.moves.get(_moveName2);
 text+="&#8226; "+TL(_move)+"<br />";
 }}
 text+="</p>";
 }else if(!this.battle.hardcoreMode&&clientPokemon!=null&&clientPokemon.moveTrack.length){
 
-text+="<p class=\"tooltip-section\">";for(var _i18=0,_clientPokemon$moveTr4=
-clientPokemon.moveTrack;_i18<_clientPokemon$moveTr4.length;_i18++){var _row=_clientPokemon$moveTr4[_i18];
+text+="<p class=\"tooltip-section\">";for(var _i16=0,_clientPokemon$moveTr4=
+clientPokemon.moveTrack;_i16<_clientPokemon$moveTr4.length;_i16++){var _row=_clientPokemon$moveTr4[_i16];
 text+=this.getPPUseText(_row)+"<br />";
 }
 if(clientPokemon.moveTrack.filter(function(_ref3){var moveName=_ref3[0];
@@ -1120,8 +1120,8 @@ showFieldTooltip=function showFieldTooltip(){
 var scene=this.battle.scene;
 var buf="<table style=\"border: 0; border-collapse: collapse; vertical-align: top; padding: 0; width: 100%\"><tr>";
 
-var atLeastOne=false;for(var _i20=0,_this$battle$sides4=
-this.battle.sides;_i20<_this$battle$sides4.length;_i20++){var side=_this$battle$sides4[_i20];
+var atLeastOne=false;for(var _i18=0,_this$battle$sides4=
+this.battle.sides;_i18<_this$battle$sides4.length;_i18++){var side=_this$battle$sides4[_i18];
 var sideConditions=scene.sideConditionsLeft(side,true);
 if(sideConditions)atLeastOne=true;
 buf+="<td><p class=\"tooltip-section\"><strong>"+BattleLog.escapeHTML(side.name)+"</strong>"+(sideConditions||"<br />"+TL(["(no conditions)"]))+"</p></td>";
@@ -1144,8 +1144,8 @@ return"<p>"+buf+"</p>";
 
 pokemonHasClones=function pokemonHasClones(pokemon){
 var side=pokemon.side;
-if(side.battle.speciesClause)return false;for(var _i22=0,_side$pokemon4=
-side.pokemon;_i22<_side$pokemon4.length;_i22++){var ally=_side$pokemon4[_i22];
+if(side.battle.speciesClause)return false;for(var _i20=0,_side$pokemon4=
+side.pokemon;_i20<_side$pokemon4.length;_i20++){var ally=_side$pokemon4[_i20];
 if(pokemon!==ally&&pokemon.searchid===ally.searchid){
 return true;
 }
@@ -1156,8 +1156,8 @@ return false;
 calculateModifiedStats=function calculateModifiedStats(clientPokemon,serverPokemon,statStagesOnly){var _clientPokemon$effect,_clientPokemon$volati;
 var stats=Object.assign({},serverPokemon.stats);
 var pokemon=clientPokemon||serverPokemon;
-var isPowerTrick=clientPokemon==null?void 0:clientPokemon.volatiles['powertrick'];for(var _i24=0,_Dex$statNamesExceptH2=
-Dex.statNamesExceptHP;_i24<_Dex$statNamesExceptH2.length;_i24++){var statName=_Dex$statNamesExceptH2[_i24];
+var isPowerTrick=clientPokemon==null?void 0:clientPokemon.volatiles['powertrick'];for(var _i22=0,_Dex$statNamesExceptH2=
+Dex.statNamesExceptHP;_i22<_Dex$statNamesExceptH2.length;_i22++){var statName=_Dex$statNamesExceptH2[_i22];
 var sourceStatName=statName;
 if(isPowerTrick){
 if(statName==='atk')sourceStatName='def';
@@ -1200,8 +1200,8 @@ stats.spe=Math.floor(stats.spe*0.25);
 }
 
 
-if(this.battle.gen<=1){for(var _i26=0,_Dex$statNamesExceptH4=
-Dex.statNamesExceptHP;_i26<_Dex$statNamesExceptH4.length;_i26++){var _statName=_Dex$statNamesExceptH4[_i26];
+if(this.battle.gen<=1){for(var _i24=0,_Dex$statNamesExceptH4=
+Dex.statNamesExceptHP;_i24<_Dex$statNamesExceptH4.length;_i24++){var _statName=_Dex$statNamesExceptH4[_i24];
 if(stats[_statName]>999)stats[_statName]=999;
 }
 return stats;
@@ -1298,8 +1298,8 @@ if(ability==='orichalcumpulse'){
 stats.atk=Math.floor(stats.atk*1.3333);
 }
 var allyActive=clientPokemon==null?void 0:clientPokemon.side.active;
-if(allyActive){for(var _i28=0;_i28<
-allyActive.length;_i28++){var ally=allyActive[_i28];
+if(allyActive){for(var _i26=0;_i26<
+allyActive.length;_i26++){var ally=allyActive[_i26];
 if(!ally||ally.fainted)continue;
 var allyAbility=this.getAllyAbility(ally);
 if(allyAbility==='Flower Gift'&&(ally.getSpecies().baseSpecies==='Cherrim'||this.battle.gen<=4)){
@@ -1327,8 +1327,8 @@ speedModifiers.push(0.5);
 }
 if(ability==='unburden'&&clientPokemon.volatiles['itemremoved']&&!item){
 speedModifiers.push(2);
-}for(var _i30=0,_Dex$statNamesExceptH6=
-Dex.statNamesExceptHP;_i30<_Dex$statNamesExceptH6.length;_i30++){var _statName2=_Dex$statNamesExceptH6[_i30];
+}for(var _i28=0,_Dex$statNamesExceptH6=
+Dex.statNamesExceptHP;_i28<_Dex$statNamesExceptH6.length;_i28++){var _statName2=_Dex$statNamesExceptH6[_i28];
 if(clientPokemon.volatiles['protosynthesis'+_statName2]||clientPokemon.volatiles['quarkdrive'+_statName2]){
 if(_statName2==='spe'){
 speedModifiers.push(1.5);
@@ -1374,8 +1374,8 @@ stats.spd=Math.floor(stats.spd*1.5);
 if(clientPokemon&&(ability==='plus'||ability==='minus')){
 var _allyActive=clientPokemon.side.active;
 if(_allyActive.length>1){
-var abilityName=ability==='plus'?'Plus':'Minus';for(var _i32=0;_i32<
-_allyActive.length;_i32++){var _ally=_allyActive[_i32];
+var abilityName=ability==='plus'?'Plus':'Minus';for(var _i30=0;_i30<
+_allyActive.length;_i30++){var _ally=_allyActive[_i30];
 if(!_ally||_ally===clientPokemon||_ally.fainted)continue;
 var _allyAbility=this.getAllyAbility(_ally);
 if(_allyAbility!=='Plus'&&_allyAbility!=='Minus')continue;
@@ -1497,8 +1497,8 @@ speedModifiers.push(1.25);
 if(clientPokemon){
 if(clientPokemon.volatiles['boiled']){
 stats.spa=Math.floor(stats.spa*1.5);
-}for(var _i34=0,_Dex$statNamesExceptH8=
-Dex.statNamesExceptHP;_i34<_Dex$statNamesExceptH8.length;_i34++){var _statName3=_Dex$statNamesExceptH8[_i34];
+}for(var _i32=0,_Dex$statNamesExceptH8=
+Dex.statNamesExceptHP;_i32<_Dex$statNamesExceptH8.length;_i32++){var _statName3=_Dex$statNamesExceptH8[_i32];
 if(clientPokemon.volatiles['ultramystik']){
 if(_statName3==='spe'){
 speedModifiers.push(1.3);
@@ -1518,8 +1518,8 @@ if(sideConditions['grasspledge']){
 speedModifiers.push(0.25);
 }
 
-var chainedSpeedModifier=1;for(var _i36=0;_i36<
-speedModifiers.length;_i36++){var modifier=speedModifiers[_i36];
+var chainedSpeedModifier=1;for(var _i34=0;_i34<
+speedModifiers.length;_i34++){var modifier=speedModifiers[_i34];
 chainedSpeedModifier*=modifier;
 }
 
@@ -1569,8 +1569,8 @@ var modifiedStats=this.calculateModifiedStats(clientPokemon,serverPokemon);
 var buf='<p>';
 
 if(!short){
-var hasModifiedStat=false;for(var _i38=0,_Dex$statNamesExceptH10=
-Dex.statNamesExceptHP;_i38<_Dex$statNamesExceptH10.length;_i38++){var statName=_Dex$statNamesExceptH10[_i38];
+var hasModifiedStat=false;for(var _i36=0,_Dex$statNamesExceptH0=
+Dex.statNamesExceptHP;_i36<_Dex$statNamesExceptH0.length;_i36++){var statName=_Dex$statNamesExceptH0[_i36];
 if(this.battle.gen===1&&statName==='spd')continue;
 var statLabel=this.battle.gen===1&&statName==='spa'?'spc':statName;
 buf+=statName==='atk'?'<small>':'<small> / ';
@@ -1584,9 +1584,9 @@ if(!hasModifiedStat)return buf;
 
 buf+="<p><small>"+TL(["(After stat modifiers:)"])+"</small></p>";
 buf+='<p>';
-}for(var _i40=0,_Dex$statNamesExceptH12=
+}for(var _i38=0,_Dex$statNamesExceptH10=
 
-Dex.statNamesExceptHP;_i40<_Dex$statNamesExceptH12.length;_i40++){var _statName4=_Dex$statNamesExceptH12[_i40];
+Dex.statNamesExceptHP;_i38<_Dex$statNamesExceptH10.length;_i38++){var _statName4=_Dex$statNamesExceptH10[_i38];
 if(this.battle.gen===1&&_statName4==='spd')continue;
 var _statLabel=this.battle.gen===1&&_statName4==='spa'?'spc':_statName4;
 buf+=_statName4==='atk'?'<small>':'<small> / ';
@@ -1637,8 +1637,8 @@ return bullet+" "+TL(move)+" <small>"+range+"</small>";
 return bullet+" "+TL(move)+" "+(showKnown?" <small>"+TL(["(revealed)"])+"</small>":'');
 };_proto2.
 
-ppUsed=function ppUsed(move,pokemon){for(var _i42=0,_pokemon$moveTrack2=
-pokemon.moveTrack;_i42<_pokemon$moveTrack2.length;_i42++){var _ref5=_pokemon$moveTrack2[_i42];var moveName=_ref5[0];var _ppUsed=_ref5[1];
+ppUsed=function ppUsed(move,pokemon){for(var _i40=0,_pokemon$moveTrack2=
+pokemon.moveTrack;_i40<_pokemon$moveTrack2.length;_i40++){var _ref5=_pokemon$moveTrack2[_i40];var moveName=_ref5[0];var _ppUsed=_ref5[1];
 if(moveName.startsWith('*'))moveName=moveName.substr(1);
 if(move.name===moveName)return _ppUsed;
 }
@@ -1713,11 +1713,11 @@ max=tr(tr(tr((2*baseSpe+31)*level/100+5)*maxNatureMult)*tr((70/255/10+1)*100)/10
 if(tier.includes('No Restrictions'))max+=200;else
 if(tier.includes('Random'))max+=20;
 }else if(tier.includes('Champions')){
-min=tr(minNatureMult*(baseSpe+20));
-ev0=tr((2*baseSpe+31)*level/100)+5;
-ev84=tr((2*baseSpe+31+21)*level/100)+5;
-ev252=tr(baseSpe+32+20);
-max=tr(maxNatureMult*(baseSpe+32+20));
+ev0=Dex.getChampionsStat('spe',baseSpe,0,level);
+ev84=Dex.getChampionsStat('spe',baseSpe,11,level);
+ev252=Dex.getChampionsStat('spe',baseSpe,32,level);
+min=tr(minNatureMult*ev0);
+max=tr(maxNatureMult*ev252);
 }else if(gen<3){
 max=tr((2*baseSpe+30+63)*level/100+5);
 ev252=max;
@@ -2013,8 +2013,8 @@ otherFactor=1;
 if(!target.isGrounded()&&move.id!=='thousandarrows'&&!hardcoreMode){
 factor=0;
 }
-}for(var _i44=0;_i44<
-targetTypes.length;_i44++){var _tType$damageTaken,_tType$damageTaken2,_tType$damageTaken3,_tType$damageTaken4;var targetType=targetTypes[_i44];
+}for(var _i42=0;_i42<
+targetTypes.length;_i42++){var _tType$damageTaken,_tType$damageTaken2,_tType$damageTaken3,_tType$damageTaken4;var targetType=targetTypes[_i42];
 var tType=dex.types.get(targetType);
 
 
@@ -2147,12 +2147,12 @@ if(!pokemon)return[moveType,''];
 
 var foeActive=[].concat(pokemon.side.foe.active).reverse();
 if(this.battle.gameType==='freeforall'){
-foeActive=[].concat(foeActive,pokemon.side.active).filter(function(active){return active!==pokemon;});
+foeActive=[].concat(foeActive.slice(),pokemon.side.active).filter(function(active){return active!==pokemon;});
 }
 
 if(this.battle.hardcoreMode){
-var _tags='';for(var _i46=0,_foeActive6=
-foeActive;_i46<_foeActive6.length;_i46++){var possibleTarget=_foeActive6[_i46];
+var _tags='';for(var _i44=0,_foeActive6=
+foeActive;_i44<_foeActive6.length;_i44++){var possibleTarget=_foeActive6[_i44];
 if(!possibleTarget)continue;
 var effectiveness=this.getMoveEffectiveness(pokemon,move,moveType,category,possibleTarget);
 
@@ -2176,8 +2176,8 @@ _tags+="\u25CB";
 return[moveType,_tags];
 }
 
-var tags="\xD7";for(var _i48=0,_foeActive8=
-foeActive;_i48<_foeActive8.length;_i48++){var _possibleTarget=_foeActive8[_i48];
+var tags="\xD7";for(var _i46=0,_foeActive8=
+foeActive;_i46<_foeActive8.length;_i46++){var _possibleTarget=_foeActive8[_i46];
 if(!_possibleTarget)continue;
 var _effectiveness=this.getMoveEffectiveness(pokemon,move,moveType,category,_possibleTarget);
 if(_effectiveness!==0){
@@ -2239,9 +2239,9 @@ var accuracyModifiers=[];
 if(this.battle.hasPseudoWeather('Gravity')){
 accuracyModifiers.push(6840);
 value.modify(5/3,"Gravity");
-}for(var _i50=0,_pokemon$side$active2=
+}for(var _i48=0,_pokemon$side$active2=
 
-pokemon.side.active;_i50<_pokemon$side$active2.length;_i50++){var active=_pokemon$side$active2[_i50];
+pokemon.side.active;_i48<_pokemon$side$active2.length;_i48++){var active=_pokemon$side$active2[_i48];
 if(!active||active.fainted)continue;
 var ability=this.getAllyAbility(active);
 if(ability==='Victory Star'){
@@ -2296,8 +2296,8 @@ if(!value.value)return value;
 }
 
 
-var chain=4096;for(var _i52=0;_i52<
-accuracyModifiers.length;_i52++){var mod=accuracyModifiers[_i52];
+var chain=4096;for(var _i50=0;_i50<
+accuracyModifiers.length;_i50++){var mod=accuracyModifiers[_i50];
 if(mod!==4096){
 chain=chain*mod+2048>>12;
 }
@@ -2398,8 +2398,8 @@ if(move.id==='lastrespects'){
 value.set(Math.min(50+50*pokemon.side.faintCounter));
 }
 if(move.id==='punishment'&&target){
-var boostCount=0;for(var _i54=0,_Object$values2=
-Object.values(target.boosts);_i54<_Object$values2.length;_i54++){var boost=_Object$values2[_i54];
+var boostCount=0;for(var _i52=0,_Object$values2=
+Object.values(target.boosts);_i52<_Object$values2.length;_i52++){var boost=_Object$values2[_i52];
 if(boost>0)boostCount+=boost;
 }
 value.set(Math.min(60+20*boostCount,200));
@@ -2410,8 +2410,8 @@ value.modify(2,'Smelling Salts + Paralysis');
 }
 }
 if(['storedpower','powertrip'].includes(move.id)&&target){
-var _boostCount=0;for(var _i56=0,_Object$values4=
-Object.values(pokemon.boosts);_i56<_Object$values4.length;_i56++){var _boost=_Object$values4[_i56];
+var _boostCount=0;for(var _i54=0,_Object$values4=
+Object.values(pokemon.boosts);_i54<_Object$values4.length;_i54++){var _boost=_Object$values4[_i54];
 if(_boost>0)_boostCount+=_boost;
 }
 value.set(20+20*_boostCount);
@@ -2627,8 +2627,8 @@ value.abilityModify(1.2,'Reckless');
 
 if(move.category!=='Status'){
 var auraBoosted='';
-var auraBroken=false;for(var _i58=0,_pokemon$side$active4=
-pokemon.side.active;_i58<_pokemon$side$active4.length;_i58++){var ally=_pokemon$side$active4[_i58];
+var auraBroken=false;for(var _i56=0,_pokemon$side$active4=
+pokemon.side.active;_i56<_pokemon$side$active4.length;_i56++){var ally=_pokemon$side$active4[_i56];
 if(!ally||ally.fainted)continue;
 var allyAbility=this.getAllyAbility(ally);
 if(moveType==='Fairy'&&allyAbility==='Fairy Aura'){
@@ -2644,8 +2644,8 @@ value.modify(1.3,'Power Spot');
 }else if(allyAbility==='Steely Spirit'&&moveType==='Steel'){
 value.modify(1.5,'Steely Spirit');
 }
-}for(var _i60=0,_pokemon$side$foe$act2=
-pokemon.side.foe.active;_i60<_pokemon$side$foe$act2.length;_i60++){var foe=_pokemon$side$foe$act2[_i60];
+}for(var _i58=0,_pokemon$side$foe$act2=
+pokemon.side.foe.active;_i58<_pokemon$side$foe$act2.length;_i58++){var foe=_pokemon$side$foe$act2[_i58];
 if(!foe||foe.fainted)continue;
 if(foe.ability==='Fairy Aura'&&moveType==='Fairy'){
 auraBoosted='Fairy Aura';
@@ -2743,8 +2743,8 @@ if(move.id==='alting'&&pokemon.shiny){
 value.set(69,'Shiny');
 }
 if(move.id==='darkmooncackle'){
-var _boostCount2=0;for(var _i62=0,_Object$values6=
-Object.values(pokemon.boosts);_i62<_Object$values6.length;_i62++){var _boost2=_Object$values6[_i62];
+var _boostCount2=0;for(var _i60=0,_Object$values6=
+Object.values(pokemon.boosts);_i60<_Object$values6.length;_i60++){var _boost2=_Object$values6[_i60];
 if(_boost2>0)_boostCount2+=_boost2;
 }
 value.set(30+20*_boostCount2);
@@ -2784,18 +2784,18 @@ value.modify(1.2);
 if((target==null?void 0:target.gender)==="M"&&pokemon.getSpeciesForme().includes("Hearthflame")){
 value.abilityModify(1.3,'See No Evil, Hear No Evil, Speak No Evil');
 }
-for(var _i63=1;_i63<=5&&_i63<=pokemon.side.faintCounter;_i63++){
-if(pokemon.volatiles["fallen"+_i63]){
-value.abilityModify([1,1.15,1.3,1.45,1.6,1.75][_i63],"Hardcore Hustle");
+for(var _i61=1;_i61<=5&&_i61<=pokemon.side.faintCounter;_i61++){
+if(pokemon.volatiles["fallen"+_i61]){
+value.abilityModify([1,1.15,1.3,1.45,1.6,1.75][_i61],"Hardcore Hustle");
 }
 }
 var timeDilationBPMod=1+0.1*Math.floor(this.battle.turn/10);
 if(timeDilationBPMod>2)timeDilationBPMod=2;
 value.abilityModify(timeDilationBPMod,"Time Dilation");
 
-for(var _i64=1;_i64<=5&&_i64<=pokemon.side.faintCounter;_i64++){
-if(pokemon.volatiles["fallen"+_i64]){
-value.abilityModify(1+0.05*_i64,"The Eminence in the Shadow");
+for(var _i62=1;_i62<=5&&_i62<=pokemon.side.faintCounter;_i62++){
+if(pokemon.volatiles["fallen"+_i62]){
+value.abilityModify(1+0.05*_i62,"The Eminence in the Shadow");
 }
 }
 }
@@ -2930,8 +2930,8 @@ return this.battle.dex.species.get(pokemon.speciesForme).types;
 return pokemon.getTypeList(undefined,preterastallized);
 };_proto2.
 pokemonHasType=function pokemonHasType(pokemon,type,types){
-if(!types)types=this.getPokemonTypes(pokemon);for(var _i66=0,_types2=
-types;_i66<_types2.length;_i66++){var curType=_types2[_i66];
+if(!types)types=this.getPokemonTypes(pokemon);for(var _i64=0,_types2=
+types;_i64<_types2.length;_i64++){var curType=_types2[_i64];
 if(curType===type)return true;
 }
 return false;
@@ -2962,8 +2962,8 @@ if(species.exists&&species.abilities){
 abilityData.possibilities=Object.values(species.abilities);
 if(this.battle.rules['Frantic Fusions Mod']){
 var fusionSpecies=this.battle.dex.species.get(clientPokemon.name);
-if(fusionSpecies.exists&&fusionSpecies.name!==species.name){for(var _i68=0,_Object$values8=
-Object.values(fusionSpecies.abilities);_i68<_Object$values8.length;_i68++){var newAbility=_Object$values8[_i68];
+if(fusionSpecies.exists&&fusionSpecies.name!==species.name){for(var _i66=0,_Object$values8=
+Object.values(fusionSpecies.abilities);_i66<_Object$values8.length;_i66++){var newAbility=_Object$values8[_i66];
 if(abilityData.possibilities.includes(newAbility))continue;
 abilityData.possibilities.push(newAbility);
 }
@@ -3006,8 +3006,8 @@ var tier=this.battle.tier;
 if(!text&&abilityData.possibilities.length&&!hidePossible&&
 !(tier.includes('Almost Any Ability')||tier.includes('Hackmons')||
 tier.includes('Inheritance')||tier.includes('Metronome'))){
-var parenthetical='';for(var _i70=0,_abilityData$possibil2=
-abilityData.possibilities.map(function(ability){return TL(_this4.battle.dex.abilities.get(ability));});_i70<_abilityData$possibil2.length;_i70++){var next=_abilityData$possibil2[_i70];
+var parenthetical='';for(var _i68=0,_abilityData$possibil2=
+abilityData.possibilities.map(function(ability){return TL(_this4.battle.dex.abilities.get(ability));});_i68<_abilityData$possibil2.length;_i68++){var next=_abilityData$possibil2[_i68];
 parenthetical=parenthetical?parenthetical+TL([", ",""],next):next;
 }
 text='<small>'+TL.label(TL(["Ability"]))+'</small>'+TL(["?"])+TL([" (",")"],parenthetical);
@@ -3604,7 +3604,7 @@ getStat=function getStat(stat,set,evOverride,natureOverride){var _set$ivs,_set$e
 var species=this.dex.species.get(set.species);
 if(!species.exists)return 0;
 
-var level=set.level||100;
+var level=set.level||(this.useStatPoints?Dex.formats.get(this.formatid).defaultLevel:100);
 
 var baseStat=species.baseStats[stat];
 
@@ -3618,13 +3618,13 @@ if(evOverride!==undefined)ev=evOverride;
 
 if(stat==='hp'){
 if(baseStat===1)return 1;
-if(this.useStatPoints)return baseStat+ev+75;
+if(this.useStatPoints)return Dex.getChampionsStat(stat,baseStat,ev,level);
 if(this.supportsAVs)return~~(~~(2*baseStat+iv+100)*level/100+10)+(ev||0);
 return~~(~~(2*baseStat+iv+~~(ev/4)+100)*level/100+10);
 }
 var val=~~(~~(2*baseStat+iv+~~(ev/4))*level/100+5);
 if(this.useStatPoints){
-val=baseStat+ev+20;
+val=Dex.getChampionsStat(stat,baseStat,ev,level);
 }else if(!this.supportsEVs){
 val=~~(~~(2*baseStat+iv)*level/100+5);
 }
@@ -3657,12 +3657,12 @@ var supportsEVs=!formatid.includes('letsgo')&&!useStatPoints;
 if(!(useStatPoints||supportsEVs)||ignoreEVLimits)return null;
 
 var species=dex.species.get(set.species);
-var level=set.level||100;
+var level=set.level||(useStatPoints?Dex.formats.get(formatid).defaultLevel:100);
 var getStat=function(stat,ev,nature,statPoints){var _set$ivs2;
 var baseStat=species.baseStats[stat];
 var iv=((_set$ivs2=set.ivs)==null?void 0:_set$ivs2[stat])||31;
 var val=~~(~~(2*baseStat+iv+~~(ev/4))*level/100+5);
-if(statPoints)val=baseStat+ev+20;
+if(statPoints)val=Dex.getChampionsStat(stat,baseStat,ev,level);
 if(nature.plus===stat){
 val*=1.1;
 }else if(nature.minus===stat){
@@ -3690,8 +3690,8 @@ return ev;
 };
 
 var origSpread=Object.assign({evs:set.evs},origNature);
-var origLeftoverEVs=useStatPoints?66:508;for(var _i72=0,_Dex$statNames2=
-Dex.statNames;_i72<_Dex$statNames2.length;_i72++){var _origSpread$evs;var stat=_Dex$statNames2[_i72];
+var origLeftoverEVs=useStatPoints?66:508;for(var _i70=0,_Dex$statNames2=
+Dex.statNames;_i70<_Dex$statNames2.length;_i70++){var _origSpread$evs;var stat=_Dex$statNames2[_i70];
 origLeftoverEVs-=((_origSpread$evs=origSpread.evs)==null?void 0:_origSpread$evs[stat])||0;
 }
 
@@ -3712,8 +3712,8 @@ var bestMinusMinEVs=origSpread.evs[bestMinus];
 var savedEVs=0;
 
 
-if(!minusTooLow){for(var _i74=0,_Dex$statNamesExceptH14=
-Dex.statNamesExceptHP;_i74<_Dex$statNamesExceptH14.length;_i74++){var _stat=_Dex$statNamesExceptH14[_i74];
+if(!minusTooLow){for(var _i72=0,_Dex$statNamesExceptH12=
+Dex.statNamesExceptHP;_i72<_Dex$statNamesExceptH12.length;_i72++){var _stat=_Dex$statNamesExceptH12[_i72];
 if(origStats[_stat]<origStats[bestMinus]){
 var minEVs=getMinEVs(_stat,{minus:_stat},useStatPoints);
 if(minEVs>(useStatPoints?32:252))continue;
@@ -3727,8 +3727,8 @@ bestMinusMinEVs=minEVs;
 }
 }
 }
-if(!plusTooHigh){for(var _i76=0,_Dex$statNamesExceptH16=
-Dex.statNamesExceptHP;_i76<_Dex$statNamesExceptH16.length;_i76++){var _stat2=_Dex$statNamesExceptH16[_i76];
+if(!plusTooHigh){for(var _i74=0,_Dex$statNamesExceptH14=
+Dex.statNamesExceptHP;_i74<_Dex$statNamesExceptH14.length;_i74++){var _stat2=_Dex$statNamesExceptH14[_i74];
 
 if(_stat2!==origNature.plus&&origSpread.evs[_stat2]&&_stat2!==bestMinus){
 var _minEVs=getMinEVs(_stat2,{plus:_stat2},useStatPoints);
@@ -3769,8 +3769,8 @@ newSpread.evs[origNature.plus]=getMinEVs(origNature.plus,newSpread,useStatPoints
 }
 if(origNature.minus&&origNature.minus!==bestPlus&&origNature.minus!==bestMinus){
 newSpread.evs[origNature.minus]=getMinEVs(origNature.minus,newSpread,useStatPoints);
-}for(var _i78=0,_Dex$statNames4=
-Dex.statNames;_i78<_Dex$statNames4.length;_i78++){var _stat3=_Dex$statNames4[_i78];
+}for(var _i76=0,_Dex$statNames4=
+Dex.statNames;_i76<_Dex$statNames4.length;_i76++){var _stat3=_Dex$statNames4[_i76];
 if(!newSpread.evs[_stat3])delete newSpread.evs[_stat3];
 }
 return Object.assign({},newSpread,{savedEVs:savedEVs});
@@ -3786,8 +3786,8 @@ newSpread.evs[origNature.plus]=getMinEVs(origNature.plus,newSpread,useStatPoints
 newSpread.evs[origNature.minus]=getMinEVs(origNature.minus,newSpread,useStatPoints);
 savedEVs+=(origSpread.evs[origNature.plus]||0)-newSpread.evs[origNature.plus];
 savedEVs+=(origSpread.evs[origNature.minus]||0)-newSpread.evs[origNature.minus];
-if(savedEVs<0)return null;for(var _i80=0,_Dex$statNames6=
-Dex.statNames;_i80<_Dex$statNames6.length;_i80++){var _stat4=_Dex$statNames6[_i80];
+if(savedEVs<0)return null;for(var _i78=0,_Dex$statNames6=
+Dex.statNames;_i78<_Dex$statNames6.length;_i78++){var _stat4=_Dex$statNames6[_i78];
 if(!newSpread.evs[_stat4])delete newSpread.evs[_stat4];
 }
 return Object.assign({},newSpread,{savedEVs:savedEVs});

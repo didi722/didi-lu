@@ -253,8 +253,8 @@ TL.statShort=text.StatShortNames||(english==null?void 0:english.StatShortNames)|
 TL.statMedium=text.StatMediumNames||(english==null?void 0:english.StatMediumNames)||{};
 }
 
-function assignTextFields(target,source){for(var _i10=0,_Object$entries2=
-Object.entries(source);_i10<_Object$entries2.length;_i10++){var _ref2=_Object$entries2[_i10];var key=_ref2[0];var value=_ref2[1];
+function assignTextFields(target,source){for(var _i0=0,_Object$entries2=
+Object.entries(source);_i0<_Object$entries2.length;_i0++){var _ref2=_Object$entries2[_i0];var key=_ref2[0];var value=_ref2[1];
 if(value!==null)target[key]=value;
 }
 }
@@ -303,8 +303,8 @@ if(localizedGen&&typeof localizedGen==='object')assignTextFields(genEntry,locali
 entry[genName]=genEntry;
 }
 }
-for(var _i11=Dex.gen-1;_i11>=gen;_i11--){
-var _genName="gen"+_i11;
+for(var _i1=Dex.gen-1;_i1>=gen;_i1--){
+var _genName="gen"+_i1;
 var _englishGen=english[_genName];
 var _localizedGen=localized[_genName];
 if(_englishGen&&typeof _englishGen==='object')assignTextFields(entry,_englishGen);
@@ -597,8 +597,8 @@ return lang;
 },
 getBrowserLanguage:function(){var _navigator$languages;
 if(typeof navigator==='undefined')return'en';
-var languages=(_navigator$languages=navigator.languages)!=null&&_navigator$languages.length?navigator.languages:[navigator.language];for(var _i13=0;_i13<
-languages.length;_i13++){var language=languages[_i13];
+var languages=(_navigator$languages=navigator.languages)!=null&&_navigator$languages.length?navigator.languages:[navigator.language];for(var _i11=0;_i11<
+languages.length;_i11++){var language=languages[_i11];
 language=language.toLowerCase().replace(/_/g,'-');
 if(language==='zh'||language.startsWith('zh-')){
 return /(?:^|-)(?:hant|tw|hk|mo)(?:-|$)/.test(language)?'zh-tw':'zh-cn';
@@ -689,6 +689,15 @@ return move;
 
 
 
+
+
+
+
+
+
+
+
+
 items={
 get:function(nameOrItem){
 if(nameOrItem&&typeof nameOrItem!=='string'){
@@ -747,8 +756,8 @@ if(formid in window.BattlePokedexAltForms)return window.BattlePokedexAltForms[fo
 if(window.BattleAliases&&id in BattleAliases){
 name=BattleAliases[id];
 id=toID(name);
-}else if(window.BattlePokedex&&!(id in BattlePokedex)&&window.BattleBaseSpeciesChart){for(var _i15=0,_BattleBaseSpeciesCha2=
-BattleBaseSpeciesChart;_i15<_BattleBaseSpeciesCha2.length;_i15++){var baseSpeciesId=_BattleBaseSpeciesCha2[_i15];
+}else if(window.BattlePokedex&&!(id in BattlePokedex)&&window.BattleBaseSpeciesChart){for(var _i13=0,_BattleBaseSpeciesCha2=
+BattleBaseSpeciesChart;_i13<_BattleBaseSpeciesCha2.length;_i13++){var baseSpeciesId=_BattleBaseSpeciesCha2[_i13];
 if(formid.startsWith(baseSpeciesId)){
 id=baseSpeciesId;
 break;
@@ -788,8 +797,8 @@ species=new Species(id,name,data);
 window.BattlePokedex[id]=species;
 }
 
-if(species.cosmeticFormes){for(var _i17=0,_species$cosmeticForm2=
-species.cosmeticFormes;_i17<_species$cosmeticForm2.length;_i17++){var forme=_species$cosmeticForm2[_i17];
+if(species.cosmeticFormes){for(var _i15=0,_species$cosmeticForm2=
+species.cosmeticFormes;_i15<_species$cosmeticForm2.length;_i15++){var forme=_species$cosmeticForm2[_i15];
 if(toID(forme)===formid){
 species=new Species(formid,name,Object.assign({},
 species,{
@@ -847,7 +856,7 @@ var id=toID(name);
 if(name!==id.substr(0,1).toUpperCase()+id.substr(1))return false;
 return(_window$BattleTypeCha2=window.BattleTypeChart)==null?void 0:_window$BattleTypeCha2.hasOwnProperty(id);
 }
-};}var _proto2=_class2.prototype;_proto2.mod=function mod(modid){if(modid==='gen9')return this;if(!window.BattleTeambuilderTable)return this;if(modid in this.moddedDexes){return this.moddedDexes[modid];}this.moddedDexes[modid]=new ModdedDex(modid);return this.moddedDexes[modid];};_proto2.forGen=function forGen(gen){if(!gen)return this;return this.mod("gen"+gen);};_proto2.formatGen=function formatGen(format){return this.formats.get(format).gen;};_proto2.forFormat=function forFormat(format){return this.mod(this.formats.get(format).mod);};_proto2.resolveAvatar=function resolveAvatar(avatar){if(window.BattleAvatarNumbers&&avatar in BattleAvatarNumbers){avatar=BattleAvatarNumbers[avatar];}if(avatar.startsWith('#')){return Dex.resourcePrefix+'sprites/trainers-custom/'+toID(avatar.substr(1))+'.png';}if(avatar.includes('.')){var _window$Config;if(!((_window$Config=window.Config)!=null&&_window$Config.server)){return Dex.resourcePrefix+'sprites/trainers/unknown.png';}var protocol=Config.server.port===443?'https':'http';var server=protocol+"://"+Config.server.host+":"+Config.server.port;return server+"/avatars/"+encodeURIComponent(avatar).replace(/%3F/g,'?');}return Dex.resourcePrefix+'sprites/trainers/'+Dex.sanitizeName(avatar||'unknown')+'.png';};_proto2.sanitizeName=function sanitizeName(name){if(!name)return'';return(''+name).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').slice(0,50);};_proto2.prefs=function prefs(prop){var _window$Storage,_window$PS;return(_window$Storage=window.Storage)!=null&&_window$Storage.prefs?window.Storage.prefs(prop):(_window$PS=window.PS)==null||(_window$PS=_window$PS.prefs)==null?void 0:_window$PS[prop];};_proto2.getShortName=function getShortName(name){var shortName=name.replace(/[^A-Za-z0-9]+$/,'');if(shortName.includes('(')){shortName+=name.slice(shortName.length).replace(/[^()]+/g,'').replace(/\(\)/g,'');}return shortName;};_proto2.getEffect=function getEffect(name){name=(name||'').trim();if(name.substr(0,5)==='item:'){return Dex.items.get(name.substr(5).trim());}else if(name.substr(0,8)==='ability:'){return Dex.abilities.get(name.substr(8).trim());}else if(name.substr(0,5)==='move:'){return Dex.moves.get(name.substr(5).trim());}var id=toID(name);return new PureEffect(id,name);};_proto2.getGen3Category=function getGen3Category(type){return['Fire','Water','Grass','Electric','Ice','Psychic','Dark','Dragon'].includes(type)?'Special':'Physical';};_proto2.
+};}var _proto2=_class2.prototype;_proto2.mod=function mod(modid){if(modid==='gen9')return this;if(!window.BattleTeambuilderTable)return this;if(modid in this.moddedDexes){return this.moddedDexes[modid];}this.moddedDexes[modid]=new ModdedDex(modid);return this.moddedDexes[modid];};_proto2.forGen=function forGen(gen){if(!gen)return this;return this.mod("gen"+gen);};_proto2.formatGen=function formatGen(format){return this.formats.get(format).gen;};_proto2.forFormat=function forFormat(format){return this.mod(this.formats.get(format).mod);};_proto2.resolveAvatar=function resolveAvatar(avatar){if(window.BattleAvatarNumbers&&avatar in BattleAvatarNumbers){avatar=BattleAvatarNumbers[avatar];}if(avatar.startsWith('#')){return Dex.resourcePrefix+'sprites/trainers-custom/'+toID(avatar.substr(1))+'.png';}if(avatar.includes('.')){var _window$Config;if(!((_window$Config=window.Config)!=null&&_window$Config.server)){return Dex.resourcePrefix+'sprites/trainers/unknown.png';}var protocol=Config.server.port===443?'https':'http';var server=protocol+"://"+Config.server.host+":"+Config.server.port;return server+"/avatars/"+encodeURIComponent(avatar).replace(/%3F/g,'?');}return Dex.resourcePrefix+'sprites/trainers/'+Dex.sanitizeName(avatar||'unknown')+'.png';};_proto2.sanitizeName=function sanitizeName(name){if(!name)return'';return(''+name).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').slice(0,50);};_proto2.prefs=function prefs(prop){var _window$Storage,_window$PS;return(_window$Storage=window.Storage)!=null&&_window$Storage.prefs?window.Storage.prefs(prop):(_window$PS=window.PS)==null||(_window$PS=_window$PS.prefs)==null?void 0:_window$PS[prop];};_proto2.getShortName=function getShortName(name){var shortName=name.replace(/[^A-Za-z0-9]+$/,'');if(shortName.includes('(')){shortName+=name.slice(shortName.length).replace(/[^()]+/g,'').replace(/\(\)/g,'');}return shortName;};_proto2.getEffect=function getEffect(name){name=(name||'').trim();if(name.substr(0,5)==='item:'){return Dex.items.get(name.substr(5).trim());}else if(name.substr(0,8)==='ability:'){return Dex.abilities.get(name.substr(8).trim());}else if(name.substr(0,5)==='move:'){return Dex.moves.get(name.substr(5).trim());}var id=toID(name);return new PureEffect(id,name);};_proto2.getChampionsStat=function getChampionsStat(stat,baseStat,points){var level=arguments.length>3&&arguments[3]!==undefined?arguments[3]:50;if(stat==='hp'&&baseStat===1)return 1;if(level!==50){var value=Math.floor((2*baseStat+31+Math.max(2*points-1,0))*level/100);return value+(stat==='hp'?level+10:5);}return baseStat+points+(stat==='hp'?75:20);};_proto2.getGen3Category=function getGen3Category(type){return['Fire','Water','Grass','Electric','Ice','Psychic','Dark','Dragon'].includes(type)?'Special':'Physical';};_proto2.
 
 hasAbility=function hasAbility(species,ability){
 for(var i in species.abilities){
@@ -1037,8 +1046,8 @@ animationArray.push([BattlePokemonSprites[speciesid],'']);
 }
 if(window.BattlePokemonSpritesBW){
 animationArray.push([BattlePokemonSpritesBW[speciesid],'gen5']);
-}for(var _i19=0;_i19<
-animationArray.length;_i19++){var _ref4=animationArray[_i19];var animationData=_ref4[0];var animDir=_ref4[1];
+}for(var _i17=0;_i17<
+animationArray.length;_i17++){var _ref4=animationArray[_i17];var animationData=_ref4[0];var animDir=_ref4[1];
 if(!animationData)continue;
 if(animationData[facing+'f']&&options.gender==='F')facing+='f';
 if(!animationData[facing])continue;
@@ -1274,8 +1283,8 @@ return"<img src=\""+Dex.resourcePrefix+"sprites/categories/"+sanitizedCategory+"
 getPokeballs=function getPokeballs(){var _window;
 if(this.pokeballs)return this.pokeballs;
 this.pokeballs=[];
-(_window=window).BattleItems||(_window.BattleItems={});for(var _i21=0,_Object$values2=
-Object.values(BattleItems);_i21<_Object$values2.length;_i21++){var data=_Object$values2[_i21];
+(_window=window).BattleItems||(_window.BattleItems={});for(var _i19=0,_Object$values2=
+Object.values(BattleItems);_i19<_Object$values2.length;_i19++){var data=_Object$values2[_i19];
 if(!data.isPokeball)continue;
 this.pokeballs.push(data.name);
 }
@@ -1497,8 +1506,8 @@ return data;
 getPokeballs=function getPokeballs(){var _window2;
 if(this.pokeballs)return this.pokeballs;
 this.pokeballs=[];
-(_window2=window).BattleItems||(_window2.BattleItems={});for(var _i23=0,_Object$values4=
-Object.values(BattleItems);_i23<_Object$values4.length;_i23++){var data=_Object$values4[_i23];
+(_window2=window).BattleItems||(_window2.BattleItems={});for(var _i21=0,_Object$values4=
+Object.values(BattleItems);_i21<_Object$values4.length;_i21++){var data=_Object$values4[_i21];
 if(data.gen&&data.gen>this.gen)continue;
 if(!data.isPokeball)continue;
 this.pokeballs.push(data.name);
@@ -1919,8 +1928,8 @@ if(set.teraType){
 text+="Tera Type: "+set.teraType+"\n";
 }
 
-if(!newFormat){for(var _i10=0,_ref2=
-set.moves||[];_i10<_ref2.length;_i10++){var _move=_ref2[_i10];
+if(!newFormat){for(var _i0=0,_ref2=
+set.moves||[];_i0<_ref2.length;_i0++){var _move=_ref2[_i0];
 if(_move.startsWith('Hidden Power ')){
 var _hpType=_move.slice(13);
 _move=_move.slice(0,13);
@@ -1928,7 +1937,7 @@ _move=!newFormat?_move+"["+_hpType+"]":""+_move+_hpType;
 }
 text+="- "+_move+"\n";
 }
-for(var _i11=((_set$moves4=set.moves)==null?void 0:_set$moves4.length)||0;_i11<4;_i11++){var _set$moves4;
+for(var _i1=((_set$moves4=set.moves)==null?void 0:_set$moves4.length)||0;_i1<4;_i1++){var _set$moves4;
 text+="- \n";
 }
 }
@@ -1941,8 +1950,8 @@ return text;
 
 
 function _export(sets,dex){
-var text='';for(var _i13=0;_i13<
-sets.length;_i13++){var set=sets[_i13];
+var text='';for(var _i11=0;_i11<
+sets.length;_i11++){var set=sets[_i11];
 
 text+=Teams.exportSet(set,dex);
 }
@@ -2013,8 +2022,8 @@ set.teraType=line.slice(11);
 }else if(line.startsWith('EVs: ')){
 var evLines=line.slice(5).split('(')[0].split('/');
 set.evs={hp:0,atk:0,def:0,spa:0,spd:0,spe:0};
-var plus='',minus='';for(var _i15=0;_i15<
-evLines.length;_i15++){var evLine=evLines[_i15];
+var plus='',minus='';for(var _i13=0;_i13<
+evLines.length;_i13++){var evLine=evLines[_i13];
 evLine=evLine.trim();
 var spaceIndex=evLine.indexOf(' ');
 if(spaceIndex===-1)continue;
@@ -2028,8 +2037,8 @@ var nature=this.getNatureFromPlusMinus(plus,minus);
 if(nature)set.nature=nature;
 }else if(line.startsWith('IVs: ')){
 var ivLines=line.slice(5).split(' / ');
-set.ivs={hp:31,atk:31,def:31,spa:31,spd:31,spe:31};for(var _i17=0;_i17<
-ivLines.length;_i17++){var ivLine=ivLines[_i17];
+set.ivs={hp:31,atk:31,def:31,spa:31,spd:31,spe:31};for(var _i15=0;_i15<
+ivLines.length;_i15++){var ivLine=ivLines[_i15];
 ivLine=ivLine.trim();
 var _spaceIndex=ivLine.indexOf(' ');
 if(_spaceIndex===-1)continue;
@@ -2082,8 +2091,8 @@ while(lines.length&&!lines[lines.length-1])lines.pop();
 
 if(lines.length===1&&lines[0].includes('|')){
 return Teams.unpack(lines[0]);
-}for(var _i19=0;_i19<
-lines.length;_i19++){var line=lines[_i19];
+}for(var _i17=0;_i17<
+lines.length;_i17++){var line=lines[_i17];
 line=line.trim();
 if(line===''||line==='---'){
 curSet=null;
@@ -2206,7 +2215,7 @@ this.abilityLegality='hackmons';
 if(
 id.includes('vgc')||id.includes('bss')||id.includes('ultrasinnohclassic')||
 id.includes('battlespot')||id.includes('battlestadium')||id.includes('battlefestival')||
-this.isLetsGo||this.isChampions)
+this.isLetsGo||this.isChampions&&!this.isNatDex)
 this.defaultLevel=50;
 if(id.includes('lc'))this.defaultLevel=5;
 if(data)Object.assign(this,data);
@@ -3894,7 +3903,7 @@ global.Item=Item;
 global.Move=Move;
 global.BattleFormat=BattleFormat;
 }
-"use strict";/**
+"use strict";function _callSpread(a,e,l){return a.apply(e,l);}/**
  * Battle log
  *
  * An exercise in minimalism! This is a dependency of the client, which
@@ -4882,7 +4891,7 @@ updateScroll=function(){
 if(_this.atBottom){
 _this.elem.scrollTop=_this.elem.scrollHeight;
 }
-};this.elem=elem;innerElem||(innerElem=elem.querySelector('.inner')||undefined);if(!innerElem){elem.setAttribute('role','log');elem.innerHTML='';innerElem=document.createElement('div');innerElem.className='inner message-log';elem.appendChild(innerElem);}this.innerElem=innerElem;if(scene){this.scene=scene;var preemptElem=elem.querySelector('.inner-preempt');if(!preemptElem){preemptElem=document.createElement('div');preemptElem.className='inner-preempt message-log';elem.appendChild(preemptElem);}this.preemptElem=preemptElem;this.battleParser=new BattleTextParser();}this.className=elem.className;elem.onscroll=this.onScroll;elem.onclick=this.onClick;}var _proto=BattleLog.prototype;_proto.reset=function reset(){if(this.battleParser){this.battleParser.language=Dex.text.getLanguage();this.battleParser.lowercaseRegExp=undefined;}this.innerElem.innerHTML='';if(this.preemptElem)this.preemptElem.innerHTML='';this.atBottom=true;this.skippedLines=false;this.joinLeave=null;this.lastRename=null;};_proto.destroy=function destroy(){this.elem.onscroll=null;this.elem.innerHTML='';};_proto.addSeekEarlierButton=function addSeekEarlierButton(){var _this2=this;if(this.skippedLines)return;this.skippedLines=true;var el=document.createElement('div');el.className='chat';el.innerHTML="<button class=\"button earlier-button\"><i class=\"fa fa-caret-up\" aria-hidden=\"true\"></i><br />"+TL(["[Earlier messages]"])+"</button>";var button=el.getElementsByTagName('button')[0];button==null||button.addEventListener==null||button.addEventListener('click',function(e){var _this2$scene;e.preventDefault();(_this2$scene=_this2.scene)==null||_this2$scene.battle.seekBy(-100);});this.addNode(el);};BattleLog.renderTimestamp=function renderTimestamp(timestamp,showTimestamps){if(!showTimestamps)return'';var date=timestamp&&!isNaN(timestamp)?new Date(timestamp*1000):new Date();var components=[date.getHours(),date.getMinutes()];if(showTimestamps==='seconds')components.push(date.getSeconds());return"<small class=\"gray\">["+components.map(function(x){return x<10?"0"+x:x;}).join(':')+"] </small>";};_proto.add=function add(args,kwArgs,preempt,showTimestamps){var _this$scene,_window$app2,_window$app3,_this$getHighlight,_this$scene2,_window$app5;if(kwArgs!=null&&kwArgs.silent)return;var battle=(_this$scene=this.scene)==null?void 0:_this$scene.battle;if(battle!=null&&battle.seeking){if(battle.stepQueue.length>2000){if(battle.seeking===Infinity?battle.currentStep<battle.stepQueue.length-2000:battle.turn<battle.seeking-100){this.addSeekEarlierButton();return;}}}var divClass='chat';var divHTML='';var noNotify;if(!['name','n'].includes(args[0]))this.lastRename=null;switch(args[0]){case'chat':case'c':case'c:':var name;var message;var timestamp=0;if(args[0]==='c:'){timestamp=parseInt(args[1]);name=args[2];message=args[3];}else{name=args[1];message=args[2];}var rank=name.charAt(0);if(battle!=null&&battle.ignoreSpects&&' +'.includes(rank))return;if(battle!=null&&battle.ignoreOpponent){var _window$app,_window$PS;if("\u2605\u2606".includes(rank)&&toUserid(name)!==(((_window$app=window.app)==null||(_window$app=_window$app.user)==null?void 0:_window$app.get('userid'))||((_window$PS=window.PS)==null||(_window$PS=_window$PS.user)==null?void 0:_window$PS.userid))){return;}}var isIgnored=this.isIgnored?this.isIgnored(name):((_window$app2=window.app)==null||(_window$app2=_window$app2.ignore)==null?void 0:_window$app2[toUserid(name)])&&" +^\u2605\u2606".includes(rank);if(isIgnored)return;var timestampHtml=BattleLog.renderTimestamp(timestamp,showTimestamps);var isHighlighted=((_window$app3=window.app)==null||(_window$app3=_window$app3.rooms)==null?void 0:_window$app3[battle.roomid].getHighlight(message))||((_this$getHighlight=this.getHighlight)==null?void 0:_this$getHighlight.call(this,args));var _this$parseChatMessag=this.parseChatMessage(message,name,timestampHtml,isHighlighted);divClass=_this$parseChatMessag[0];divHTML=_this$parseChatMessag[1];noNotify=_this$parseChatMessag[2];if(!noNotify&&isHighlighted){var _window$app4;var notifyTitle=TL(["Mentioned by "," in ",""],name,(battle==null?void 0:battle.roomid)||'');(_window$app4=window.app)==null||(_window$app4=_window$app4.rooms[(battle==null?void 0:battle.roomid)||''])==null||_window$app4.notifyOnce(notifyTitle,"\""+message+"\"",'highlight');}break;case'join':case'j':case'leave':case'l':{var user=BattleTextParser.parseNameParts(args[1]);if(battle!=null&&battle.ignoreSpects&&' +'.includes(user.group))return;var formattedUser=user.group+user.name;var isJoin=args[0].startsWith('j');if(!this.joinLeave){this.joinLeave={joins:[],leaves:[],element:document.createElement('div')};this.joinLeave.element.className='chat';}if(isJoin&&this.joinLeave.leaves.includes(formattedUser)){this.joinLeave.leaves.splice(this.joinLeave.leaves.indexOf(formattedUser),1);}else{this.joinLeave[isJoin?"joins":"leaves"].push(formattedUser);}var joins=this.joinLeave.joins.length?TL([""," joined"],this.textList(this.joinLeave.joins)):'';var leaves=this.joinLeave.leaves.length?TL([""," left"],this.textList(this.joinLeave.leaves)):'';var buf=joins&&leaves?TL(["","; ",""],joins,leaves):joins||leaves;this.joinLeave.element.innerHTML="<small class=\"gray\">"+BattleLog.escapeHTML(buf)+"</small>";(preempt?this.preemptElem:this.innerElem).appendChild(this.joinLeave.element);return;}case'name':case'n':{var _user=BattleTextParser.parseNameParts(args[1]);if(toID(args[2])===toID(_user.name))return;if(!this.lastRename||toID(this.lastRename.to)!==toID(_user.name)){this.lastRename={from:args[2],to:'',element:document.createElement('div')};this.lastRename.element.className='chat';}this.lastRename.to=_user.group+_user.name;var renameTo=BattleLog.escapeHTML(this.lastRename.to);var renameFrom=BattleLog.escapeHTML(this.lastRename.from);this.lastRename.element.innerHTML="<small class=\"gray\">"+TL([""," renamed from ","."],renameTo,renameFrom)+"</small>";(preempt?this.preemptElem:this.innerElem).appendChild(this.lastRename.element);return;}case'chatmsg':case'':divHTML=BattleLog.escapeHTML(args[1]);break;case'chatmsg-raw':case'raw':case'html':divHTML=BattleLog.sanitizeHTML(args[1]);break;case'uhtml':case'uhtmlchange':this.changeUhtml(args[1],args[2],args[0]==='uhtml');return['',''];case'error':case'inactive':case'inactiveoff':divClass='chat message-error';divHTML=BattleLog.escapeHTML(args[1]);break;case'bigerror':this.message('<div class="broadcast-red">'+BattleLog.escapeHTML(args[1]).replace(/\|/g,'<br />')+'</div>');return;case'pm':if(args[3].startsWith('/text '))args[3]=args[3].slice(6);if(args[3].startsWith('/raw')||args[3].startsWith('/html')||args[3].startsWith('/uhtml')||args[3].startsWith('/uhtmlchange')){return;}var colorStyle=" style=\"color:"+BattleLog.usernameColor(toID(args[1]))+"\"";var pmTarget=BattleLog.escapeHTML(args[2]);divHTML=BattleLog.renderTimestamp(null,showTimestamps)+("<strong"+colorStyle+"> "+this.renderName(args[1])+":</strong> <span class=\"message-pm\"><i style=\"cursor:pointer\" data-href=\"dm-"+toID(args[1])+"\">"+TL(["(Private to ",")"],pmTarget)+"</i> "+BattleLog.parseMessage(args[3])+" </span>");break;case'b':case'B':{var _window$PS2;var showBattlesPref=(_window$PS2=window.PS)==null||(_window$PS2=_window$PS2.prefs)==null?void 0:_window$PS2.showbattles;if(args[0]==='B'&&showBattlesPref===false)return;var id=args[1];var format=BattleLog.escapeFormat(BattleLog.roomidToFormat(id));var battleP1="<strong style=\"color:"+BattleLog.usernameColor(toUserid(args[2]))+"\">"+BattleLog.escapeHTML(args[2])+"</strong>";var battleP2="<strong style=\"color:"+BattleLog.usernameColor(toUserid(args[3]))+"\">"+BattleLog.escapeHTML(args[3])+"</strong>";var started;if(format&&format!=='Random Battle'){started=TL([""," battle started between "," and ","."],format,battleP1,battleP2);}else if(format){started=TL([""," started between "," and ","."],format,battleP1,battleP2);}else{started=TL(["Battle started between "," and ","."],battleP1,battleP2);}divClass='notice';divHTML="<a href=\"/"+BattleLog.escapeHTML(id)+"\" class=\"ilink\">"+started+"</a>";this.joinLeave=null;break;}case'askreg':this.addDiv('chat',"<div class=\"broadcast-blue\"><b>"+TL(["Register an account to protect your ladder rating!"])+"</b><br /><button name=\"register\" value=\""+BattleLog.escapeHTML(args[1])+"\"><b>"+TL(["[Register]"])+"</b></button></div>");return;case'unlink':{var _window$PS3,_window$Dex;if((_window$PS3=window.PS)!=null&&(_window$PS3=_window$PS3.prefs)!=null&&_window$PS3.nounlink||(_window$Dex=window.Dex)!=null&&(_window$Dex=_window$Dex.prefs)!=null&&_window$Dex.nounlink)return;var _user2=toID(args[2])||toID(args[1]);this.unlinkChatFrom(_user2);if(args[2]){var lineCount=parseInt(args[3],10);this.hideChatFrom(_user2,true,lineCount);}return;}case'hidelines':{var _window$PS4,_window$Dex2;if((_window$PS4=window.PS)!=null&&(_window$PS4=_window$PS4.prefs)!=null&&_window$PS4.nounlink||(_window$Dex2=window.Dex)!=null&&(_window$Dex2=_window$Dex2.prefs)!=null&&_window$Dex2.nounlink)return;var _user3=toID(args[2]);this.unlinkChatFrom(_user3);if(args[1]!=='unlink'){var _this$canRevealMessag;var _lineCount=parseInt(args[3],10);this.hideChatFrom(_user3,args[1]==='hide'||!!((_this$canRevealMessag=this.canRevealMessages)!=null&&_this$canRevealMessag.call(this)),_lineCount);}return;}case'debug':divClass='debug';divHTML='<div class="chat"><small style="color:#999">[DEBUG] '+BattleLog.escapeHTML(args[1])+'.</small></div>';break;case'notify':var title=args[1];var body=args[2];var roomid=(_this$scene2=this.scene)==null?void 0:_this$scene2.battle.roomid;if(!roomid)break;(_window$app5=window.app)==null||_window$app5.rooms[roomid].notifyOnce(title,body,'highlight');break;case'showteam':{if(!battle)return;var team=Teams.unpack(args[2]);if(!team.length)return;var side=battle.getSide(args[1]);var exportedTeam=team.map(function(set){var buf=Teams["export"]([set],battle.dex).replace(/\n/g,'<br />');if(set.name&&set.name!==set.species){buf=buf.replace(set.name,BattleLog.sanitizeHTML("<span class=\"picon\" style=\""+Dex.getPokemonIcon(set.species)+"\"></span><br />"+set.name));}else{buf=buf.replace(set.species,"<span class=\"picon\" style=\""+Dex.getPokemonIcon(set.species)+"\"></span><br />"+set.species);}if(set.item){buf=buf.replace(set.item,set.item+" <span class=\"itemicon\" style=\""+Dex.getItemIcon(set.item)+"\"></span>");}return buf;}).join('');divHTML="<div class=\"infobox\"><details class=\"details\"><summary>"+TL(["Open team sheet for ",""],side.name)+"</summary>"+exportedTeam+"</details></div>";break;}case'seed':case'choice':case':':case'timer':case't:':case'J':case'L':case'N':case'spectator':case'spectatorleave':case'initdone':return;default:this.addBattleMessage(args,kwArgs);this.joinLeave=null;return;}if(divHTML){this.addDiv(divClass,divHTML,preempt);this.joinLeave=null;}};_proto.addBattleMessage=function addBattleMessage(args,kwArgs){var _this$battleParser$pa,_this$battleParser;switch(args[0]){case'warning':this.message("<strong>"+TL.label(TL(["Warning"]))+"</strong>"+BattleLog.escapeHTML(args[1]));this.message("Bug? Report it to <a href=\"http://www.smogon.com/forums/showthread.php?t=3453192\">the replay viewer's Smogon thread</a>");if(this.scene)this.scene.wait(1000);return;case'variation':this.addDiv('',"<small>"+TL.label(TL(["Variation"]))+"<em>"+BattleLog.escapeHTML(args[1])+'</em></small>');break;case'rule':var ruleArgs=args[1].split(': ');this.addDiv('','<small><em>'+BattleLog.escapeHTML(ruleArgs[0])+(ruleArgs[1]?':':'')+'</em> '+BattleLog.escapeHTML(ruleArgs[1]||'')+'</small>');break;case'rated':this.addDiv('rated','<strong>'+(BattleLog.escapeHTML(args[1])||TL(["Rated battle"]))+'</strong>');break;case'tier':this.addDiv('',"<small>"+TL.label(TL(["Format"]))+"</small><br /><strong>"+BattleLog.escapeHTML(args[1])+'</strong>');break;case'turn':var h2elem=document.createElement('h2');h2elem.className='battle-history';h2elem.innerHTML=BattleLog.escapeHTML(this.turnText(args[1]));if(this.battleParser)this.battleParser.curLineSection='break';this.addSpacer();this.addNode(h2elem);break;default:if(this.addAFDMessage(args,kwArgs))return;var line=(_this$battleParser$pa=(_this$battleParser=this.battleParser)==null?void 0:_this$battleParser.parseArgs(args,kwArgs||{},true))!=null?_this$battleParser$pa:null;if(line===null){this.addDiv('chat message-error','Unrecognized: |'+BattleLog.escapeHTML(args.join('|')));return;}if(line)this.messageFromLog(line);break;}};_proto.addAFDMessage=function addAFDMessage(args){var _this3=this;var kwArgs=arguments.length>1&&arguments[1]!==undefined?arguments[1]:{};if(!Dex.afdMode)return;if(!this.battleParser||!this.scene)return;var messageFromArgs=function(args1){var kwArgs1=arguments.length>1&&arguments[1]!==undefined?arguments[1]:{};_this3.messageFromLog(_this3.battleParser.parseArgs(args1,kwArgs1,true));};if(args[0]==='move'){if(kwArgs.from)return false;var moveid=toID(args[2]);if(moveid==='taunt'){messageFromArgs(args,kwArgs);var quotes=["Yo mama so fat, she 4x resists Ice- and Fire-type attacks!","Yo mama so ugly, Captivate raises her opponent's Special Attack!","Yo mama so dumb, she lowers her Special Attack when she uses Nasty Plot!","Yo mama so fat, she eats her Aguav Berry at 50% HP!","Yo Mama so stupid, she tried to count clouds one through eight!","Yo Mama so stupid, she thought Sticky Hold meant she needed to grab a stick!","Yo Mama so old, her Paradox forme would be Great Grandma!","Yo Mama so stupid, she can't learn anything from the move tutor!","Yo Mama so rude, she got Kyogre and Groudon to team up against her!","Yo Mama so fat, Focus Blast never misses her!","Yo Mama so fat, the Darkest Day is when she's tanning!","Yo Mama so stinky, her damaging moves have a 10% chance to make the opponent flinch!","Yo Mama so old, she has the NPCs from Legends Arceus in her yearbook!","Yo Mama so stupid, she's still trying to find Rhydon!","Yo Mama so stupid, she asked if the Insect Plate comes with an appetizer!","Yo Mama so bad, she got her Stunfisk paralyzed!","Yo Mama so nasty, Black Sludge heals her 1/16th!","Yo Mama so stupid, she gave her Bisharp Black Sludge!","Yo Mama so stupid, she runs a suboptimal EV spread on her Tera Poison Calm Mind Chimecho, making it faint to a Choice Banded Dragonite Tera Normal Extreme Speed!","Yo Mama so casual, she mains NatDex AG!","Yo Mama so casual, she ladders with Red's team!","Yo Mama so dumb, she scouts teams in Randbats!","Yo Mama so lazy, she loafs around every turn!","Yo Mama so fat, she changes type when holding a Dinner Plate!","Yo Mama so slow, even Trick Room won't let her go first!","Yo Mama so dumb, not even Gummis can raise her IQ!","Show me your moves!","Yo Mama so nasty, thinking about her gives a +2 Special Attack boost!","Yo Mama so broke, her deck has no energy cards so she can save on electricity!","Yo Mama so dumb, she tried using Twitch Plays Pokemon as a walkthrough guide!","Yo Mama so dumb, Slowpoke finishes her sentences!","Yo Mama so old, she babysat AZ!","Yo Mama so stupid, not even Own Tempo could prevent her from being confused!","Yo Mama so ugly, even Brock wanted nothing to do with her!","Yo Mama so stupid, she drank antifreeze to cure her status condition!","Yo Mama so trashy, they named a Wormadam forme after her!","Yo Mama so broke, her Gholdengo is made out of checkers!","Yo Mama so ugly, she killed Mimikyu when it saw her!","Yo Mama so fat, she doesn't need a Wailord to meet the Regis!","Unfortunate doesn't even begin to describe Yo Mama!","Yo Mama so dumb, she brags about using a bot to get her opponent's teams!","Yo Mama so fat, her Wishes cause integer overflows!","Yo Mama so ugly, she makes Attract fail!","Yo Mama so dumb, she makes Dondozo look aware!","Yo Mama so smelly, she KOes Nosepass without making a single move!","Yo mama so fat, she doesn't know what the item Leftovers is!","Yo Mama so ugly, she gets OHKOed by Mirror Shot!","Yo Mama so smelly, her VGC analysis pairs her with Slaking!","Yo Mama so old, she has to be extracted in Cinnabar Lab!","Yo Mama so fat, she sets Gravity on switch-in!","Yo Mama so dumb, she's immune to this move!"];var battle=this.scene.battle;var quote=quotes[((battle.p1.name.charCodeAt(2)||0)+(battle.p2.name.charCodeAt(2)||0)*19+(battle.p1.name.charCodeAt(3)||0)*61+(battle.p2.name.charCodeAt(3)||0)+battle.turn+(args[1].charCodeAt(1)||0)*109+(args[1].charCodeAt(2)||0)*113)%quotes.length];this.messageFromLog(this.battleParser.fixLowercase(this.battleParser.pokemon(args[1])+" said, \""+quote+"\""));this.scene.wait(3*this.scene.battle.messageFadeTime/this.scene.acceleration);return true;}}else if(args[0]==='-prepare'){var _moveid=toID(args[2]);if(_moveid==='chillyreception'){var dadJokes=["This should be a Fire-type move, because I'm spitting flames.","Why didn't Vigoroth evolve? Because it was Slaking on its training!","I'm going snowwhere fast!","Don't Slack Off if you wanna beat me!","Where do you buy toys for a Ground-type? Land-R-Us!","I've got half a mind to just leave. The other half belongs to my Shellder.","Why did the Slowking cross the road?","What's the best Pokemon to get rid of bugs? Flygone!","What's the best Pokemon to get rid of bugs? Heatmor. What, were you expecting a pun?","I guess you could call Heatmor an Ant-heater.","Why do they call it Enamor-us when you can only have one of them on a team?","Cloyster? I hardly know 'er!","Why do they call Shedinja invincible when I can still see it?","Dondozo? I don't think I can, that seems really cumbersome.","Appletun? No, there's only one of them.","Drilbur? I hardly know 'er!","Iron Crown? I hardly know 'er!","Shellder? I hardly know 'er!","Magnemite? I sure hope it will!","Graveler? I hardly know 'er!","Grimer? I hardly know 'er!","Baxcalibur? I hardly know 'er!","Why do they call it Kyurem when it doesn't heal anybody?","Conkeldurr? I hardly know 'er!","Weavile? No, I don't think we are.","Dragapult? Doesn't seem very efficient, don't they usually have wheels?","Dragonite? Sounds like it'd be hard with all that heavy armor.","How do you play whack-a-mole with a Fighting-type? Hit 'm on top!","I don't know who made Pokemon Go, but I'm trying to figure out how to make them Pokemon Go to the polls!","Gholdengo? Yeah, it should gholden-go somewhere else.","Some folks call me Charming, but I still feel like I take plenty of physical damage. What gives?","I learned this move in South America, they called it a Chile Reception","I had a Canadian Tyrogue. It evolved into a Hitmontreal.","Why do Venusaur's roommates wear earplugs at night? Because Venus-snores!","I bought stock in my Charmander before it evolved. Now I'm a Charmeleonaire!","Charizard? I actually think char is pretty easy!","Why doesn't Squirtle's mom buy it action figures? Because it likes to blast toys!","Why does Caterpie like Margarine so much? Because it's butter-free!","What did the Alolan Raichu say to the surfer? Nothing, it just waved!","Clefable? What's Clef able to do?","Why did the Nidorans start a revolution? Because they didn't Nidoking!","Alolan Ninetales? More like Aurora Nine-veils!","Wigglytuff? Doesn't look that tough to me.","I dug up a weird vegetable yesterday. Well, it wasn't THAT weird, just a little Oddish!","Why was the Vileplume so happy? Because it wasn't Gloom-y anymore!","What do you call three guys named Doug? A Dugtrio!","Why is it called Golduck when it's blue?","What Rock-type is the best at soccer? Goal-em!","Why is Galarian Slowbro so good at art? Because it's Quick on the Draw!","Do you like my jokes? I've got a Magne-ton of them!","Where do three-headed birds go for Carnival? Dodrio de Janeiro!","What would Muk be called if it could rap? Slime Shady!","Kingler? I hardly know 'er!","Exeggutor? I hardly know 'er!","Have you heard that Trainers who use Hypno are hip? No?","What do ghosts build at Christmastime? Gengar-bread houses!","What street does Voltorb live on? Elect Road!","I told a Hitmonlee some of my jokes. He really got a kick out of them!","What's a Hitmonchan's favorite holiday? Boxing Day!","Did you know Galarian Weezing doesn't know how to drive? It always puts the car in Neutral before stepping on the Gas!","How can you tell if a Poison-type has asthma? See if it's Weezing!","What Pokémon loves to find you when you hide? Seaking!","If we Psychic-types made a movie, it would have to Starmie!","Scyther? I hardly know 'er!","Pinsir? I hardly know 'er!","What Pokémon does Aladdin ride? A Magikarpet!","What do you get if you cut a Gyarados in half? Gyara-uno!","What do you call a Lapras carrying a gun? The Glock Ness Monster!","What's a Ditto's favorite food? Impasta!","Flareon? They should turn the flare off!","Where does a 1000-pound Snorlax sleep? Anywhere it wants!","Zapdos? Zap those what?","My Grass-type friend has been losing weight recently. It's nice to see them losing a few pounds, but I hate to see Me-gaining-'em!","What does a Fire-type wear around its neck? A Tie-phlosion!","Why do they call Ledian the Five Star Pokémon? I'd give it two stars at best!","Ariados? That's impressive, most people can't even perform one aria.","Crobat? It doesn't look like a crow at all!","Why do web developers hire Xatu to predict their profits? Because it can see their Future Sites!","What superhero lives under the sea and has Volt Absorb? The Green Lanturn!","Why should you never play cards with the Cottonweed Pokémon? Because it always Jump-bluffs!","What Pokémon comes after Espeon? T-peon!","Why did the Kartana faint to Bullet Punch? Because Scizor beats paper!","Sometimes I put lava in my gas tank. It really makes Magcargo!","I wrote my Ice-type friend a letter. I hope it gets Delibird!","What's a Mantine's favorite type of cheese? Mantaray Jack!","What kind of bird is Skarmory? A Roost-er!","My friend caught a Porygon. I also did, but he got jealous when I told him I caught a Porygon too!","What do you name a Smeargle that can't use Sketch anymore? Drew!","Why couldn't the smart Chansey evolve? Because ignorance is Blissey!","The classic Suicune set has a Water move, Calm Mind, and Sleep Talk. That's only 3 moves, but I'm sure you can figure out the Rest!","I went to one of Lugia's parties once. It was an Aero-blast!","What do pseudo-Legendaries pave their roads with? Tyrani-tar!","What's Ho-Oh's favorite food? Hot wings!","How often does Celebi travel? From time to time!","What's on a Grass-type's bathroom floor? Scep-tiles!","What's Blaziken's favorite food? Fried chicken!","Why doesn't Swampert go outside? Because it can't touch grass!","How do I know my jokes are good? I told them to a Mightyena and it couldn't stop laughing!","What kind of Poké Ball do you catch Dustox in? A mothball!","Who are Shiftry's biggest fans? Its hands!","Why was the evolving Surskit brought before a court? It was Masqu-arraigned!","Gardevoir? What's a voir and why should I guard it?","I moved in with a Breloom, but the apartment didn't have mushroom!","What's a Hariyama's favorite Pokémon games? Ultra SuMo!","I took my Delcatty to the vet because I thought it was going blind, but it had Normal-eyes!","What's Sableye's zodiac sign? Gem-in-eye!","What do you call a Medicham that's lost its pants? Yogi Bare!","Why does Aggron plant trees after a disaster? That's part of its Aggro-culture!","What happened when the Plusle and Minun fell in love? They multiplied!","I once rode on a Wailord's back. It was a whale of a time!","That Anger Point Camerupt sure has a temper. Crit it once and it'll blow its top!","What season does Spoink like the best? Spring!","I'd tell you a joke about Grumpig, but you wouldn't appreciate it. I'd be casting pearls before swine!","It takes a human 5 minutes to walk a block, but for Spinda it takes half an hour. The difference is staggering!","That cloud Pokémon acts innocent, but I know it has an Altaria motive!","Zangoose? It doesn't look like a goose at all!","What are Solrock's favorite music genres? Soul and rock!","They hate on you when you're a Barboach, but everyone wants to be your friend when you pull up Whis-cash!","What does a Lileep get from Dairy Queen? A Cra-Dilly Bar!","I know a way you can see invisible Kecleons, but that's beyond the Scope of this joke!","What does a Tropius wear over its shirt? A Har-vest!","Why is it called Walrein if it's better in snow?","I've always been a fan of ball-shaped Pokémon, but one in particular Sphealed the deal!","I'd make a joke about Luvdisc, but it's already a joke!","Why is the Iron Leg Pokémon always covered in dirt and slime? Because it's Meta-gross!","Why is Regirock called the Rock Peak Pokémon when it's so mid?","Why is Clear Body Regice such a bad liar? Because you can see right through it!","Why was Registeel fired from the convenience store? Because it would always Steel from the Regi-ster!","I'd make a joke about Latias, but that would be just plane silly!","Did you know that Rayquaza has a certain smell that it takes wherever it goes? That's right, it's Draggin' A-scent!","Did you hear about the Deoxys who took a DNA test? It got 100%!","What would the tier leader of OU be called if he was a Jirachi? Flinchinator!","I had a company that sold Infernapes, until I was told to cut out the monkey business!","Kricketunes must be my biggest fans. Every time I tell a joke, they're all I hear!","What kind of Poké Ball is best for Luxray? A Luxuray Ball!","Where does Bastiodon make all its money? Wall Street!","What kind of mystery novels does Wormadam like to read? Cloak and dagger!","Remember when Pachirisu won the World Championships? That was nuts!","Cherrim? I hardly know 'im!","Mothim? I hardly know 'im!","I used to buy Drifblim by the dozen, but we got hit with inflation and the price ballooned!","I took directions from a Mismagius, but now I don't know witch way to go!","Someone asked me if I liked Chingling. I said that I don't know, I've never chingled!","What do you do with a Bronzong you're in love with? Give it a ring!","People say they removed Chatot's sound-recording function because of profanity, but I think that's just mindless Chatter!","I have 108 jokes about Spiritomb, but not a single soul wants to hear them!","My Garchomp friend gained a lot of weight recently. He said it was pretty rough to look at the scales!","Why does Carnivine get Levitate? Because it's a Venus flying trap!","Why did Weavile drive a truck with six wheels? Because it had Triple Axles!","I got yelled at by a Lickilicky once. Talk about a tongue-lashing!","Why do they call Yanmega a dragonfly when it isn't Dragon/Flying?","My local arcade had to kick out this Ground/Flying type. He kept getting the Gligh-score and he was really toxic about it!","Why don't you ever see Mamoswines hiding in trees? Because they're really good at it!","What happens when your Porygon-Z uses Signal Beam? Software bugs!","What do you call a Gallade in a tuxedo? Sharply dressed!","Why do they call Rotom-Heat an oven when you of in the cold food of out hot eat the food?","Why does no one tell Rotom-Wash their secrets? They don't want it to air out their dirty laundry!","I had a joke about Uxie, but I forgot it!","I had a joke about Mesprit, but I don't think you're emotionally ready for it!","I had a joke about Azelf, but I don't have the willpower to tell it!","I had a joke about Dialga and time travel, but you didn't like it!","I had a joke about Palkia, but there's no space for it here!","Why couldn't Arceus go to Planet Fitness? Because it's a Judgment-free zone!","I had a joke about the Azure Flute, but you wouldn't get it!","Why does Victini always win? Beats me!","Some people think Overgrow is viable on Serperior. On the Contrary!","Once Samurott got a regional form, its usage really Spiked!","Did you hear about the Watchog that won a battle? Yeah, me neither!","I could tell a joke about Musharna, but I wouldn't dream of it!","Why does Throh never win? Because it always throws!","Cofagrigus is so cool! Don't you *cough* agree, Gus?","I wouldn't use Zoroark in OU—I have no Illusion that it's any good!","Why is Reuniclus so good at marketing? It knows what cells!","Why didn't the Ducklett evolve? It didn't Swanna!","I fought a Beartic once. It was unbearable!","Did you know it's a crime to make a Braviary sick? It's ill-eagle!","I attract Volcaronas like a moth to a flame!","I'd make a joke about Cobalion, but it's un-Justified!","What did Zekrom do when it was unhappy with its working conditions? It went on Bolt Strike!","Everyone plays Meloetta in exactly the same way. It's always the same old song and dance!","What's a Chesnaught's favorite Nature? Naughty!","Which part of Doublade is most dangerous? Da blade!","I'd say I'm a Pyroar, but I'd be lion!","Why does Talonflame laugh in the face of danger? Because it's a Brave Bird!","I stole a Delphox's wand, but it got me in a stick-y situation!","What are Aegislash's favorite Pokémon games? Sword and Shield!","What do you call it when you do a favor for a Malamar and it wants one in return? Squid pro quo!","I'm making an 8-bit game featuring Sylveon. It looks cute when it's Pixilated!","Why did Tyrantrum get its license taken away? It kept getting in T-wrecks!","Why does Goodra have such good fashion sense? Because it's always got the drip!","What do you get when you cross a Kingambit with a Gourgeist? Supreme Overgourd!","What do you call a dead Klefki? A skeleton key!","I dated a Xerneas once, but we broke up. Now it's my X!","I've never met an Yveltal. I don't know Y!","Why does Zygarde-Complete work so hard? Because it always gives 100%!","Why does Diancie have such good synergy with Ghost-types? Because diamonds are a ghoul's best friend!","What's Hoopa's favorite video game? Portal!","Why did Hoopa-Unbound get put into the Prison Bottle? Because it was armed and dangerous!","What do you call a joke about Volcanion? A wisecrack-a-toa!","Why does no one make friends with Incineroar? It's too Intimidating!","Can a Toucannon win a Double Battle? No, but two can!","What do you call your Lycanroc when it goes missing? A where-wolf!","Why are Wishiwashi so smart? They swim in schools!","What do you call it when Ribombee gets a free turn? A sticky situation!","Why are Mudsdales so strong? They have horsepower!","What's Araquanid's favorite candy? Bubble gum!","I had a Salazzle girlfriend once, but I broke it off because she was too toxic!","Why do they call it Comfey when every time someone sends it out it becomes the most stressful game of my life?","Why did the Golisopod make an emergency exit from the job interview? It made a bad First Impression!","I'm making a first-person shooting game starring Pyukumuku. It's called Duke Pyukem!","Why should you never mimic a Mimikyu? Because you're risking your neck!","Where in Alaska can you find Dhelmise? Anchorage!","Did you know that Kommo-o's scales are falling off all across the globe? It's a problem on a worldwide scale!","A Tapu Lele walks into a bar. The bartender gets nervous because there's no counter!","Did you hear that Tapu Fini's terrain is gone? It'll be mist!","Did you hear Lunala opened up a barber shop? It's called Totally Clips!","If OU doesn't suspect test Solgaleo, I'm going to go on Sunsteel Strike!","I heard they buffed Buzzwole in Pokémon Unite. I don't know why they needed to, it was already buff!","I want to ask Pheromosa out, but it strikes me as unapp-roach-able!","What do you call a Xurkitree that's only 3 feet tall? A short circuit!","What does Celesteela order when it goes to a Chinese restaurant? One-ton soup!","Why should you never invite a Kartana to poker night? Because it always knows when to fold!","Why did the Guzzlord love doing difficult jobs? Because it was a glutton for punishment!","What happened to the Necrozma that robbed a bank? It was in-prismed!","Why does Ultra Necrozma weigh less that Dusk Mane or Dawn Wings form? Because it's more light!","What attack does Stakataka learn at Level 1? Stakatackle!","Why is Blacephalon's head spherical? Because it's clowning a-round!","What is Inteleon's secret agent number? Bubble-O-7!","I'll be here all Corvi-night, folks!","What Bug/Psychic Pokémon can be found deep underground embedded in stone? Ore-beetle!","Why should you never give a Drednaw the Infinity Gauntlet? Because it's a snapping turtle!","A Flapple a day keeps the doctor away, as long as its attacks don't miss!","Why are my jokes so popular on Galar's Route 8? Because Sandaconda don't want none unless you got puns, hun!","My Cramorant was about to win a match, but then it choked!","What's Toxtricity's favorite Tera type? Rock!","Why does Centiskorch hate wearing Heavy-Duty Boots? By the time it's finished putting them all on, the battle's already over!","I've heard a lot of gossip about Polteageist, but I don't want to spill the tea!","Who hosts tea parties in Wonderland and bounces back hazard moves? The Mad Hatterene!","What kind of fur do you get from Grimmsnarl? As fur away as possible!","Of all the crimes Obstagoon's done, which one finally put it behind bars for good? Obstruction of justice!","Where do Cursola keep their gravestones? At the Great Burial Reef!","How does Sirfetch'd pass along all the insider info it knows about new Pokémon games? It leeks it!","What did the Mr. Mime say to the Mr. Rime? Nothing, silly, mimes can't talk!","I'd tell a joke about Runerigus, but the real joke is its evolution method!","Plenty of Pokémon have ridiculous numbers of alternate forms, but Alcremie takes the cake!","Can any Pokémon besides Tapu Lele set Psychic Terrain? Yes Indeedee!","What's a Copperajah's favorite kind of music? Heavy Metal!","Why did Dracovish get evicted from OU? It wouldn't pay the Fishious Rent!","Have you seen Duraludon's Gigantamax form? It really towers over you!","What's Dragapult's favorite game to play at a bar? Dragon Darts!","I'd tell you a joke about Zamazenta, but I'm pressed for time!","Why should you always run Zacian-Crowned? Because it has great STAB!","Originally the Gen 8 designers weren't going to add a generational mechanic, but Eternatus convinced them to make Dynamax canon!","What does Regieleki do to lose weight? Fast!","What do you get when you cross a Regidrago and a Klefki? Lockjaw!","I'd make a joke about Spectrier, but that would be beating a dead horse!","Make sure to never insult Ursaluna—last time I burned it, it swept my whole team!","Don't go near Ursaluna-Bloodmoon—it's a total lunatic!","You'd think Basculegion would be uncomfortable traveling forward in time hundreds of years, but don't worry—it's adaptable!","You have to use Strong Style Barb Barrage 20 times to evolve Hisuian Qwilfish? That seems like Overqwil to me!","Did you know that Meowscarada is really good at baking bread? Apparently it has a special Flour Trick!","I've got a ton of Skeledirge jokes. A skele-ton!","What do you do if you see a Quaquaval getting ready to kick you in the head? Duck!","Lokix? No thanks, I don't like using weight-based moves!","Why did the baker get a Fidough? He kneaded one!","How do you know Dachsbun has a good pedigree? It's pure bread!","Why did the Garganacl ragequit while losing a battle? Because it was salty!","You're telling me Ceruledge has dark purple armor and blue flaming swords for hands? What an edgelord!","You should try using Electromorphosis Bellibolt—its damage output is shocking!","I tried using Klawf on a stall team, but it was Klawful!","Rabsca told me its true body was inside the ball it's holding. I thought that was a load of crap!","My Shellder once spent time with an Espathra. It came back with a new Ability just called Link because Espathra takes no skill!","Why is Corviknight's natural predator so smart? Because she Thinks-a-ton!","I asked a Finizen why it worked as a sidekick for Palafin. The Finizen said it was serving a greater porpoise!","If you run in front of a Revavroom you get tired, but if you run behind it you get exhausted!","Why couldn't the Cyclizar stand up? It was two-tired!","Why does Houndstone press F? To pay its Last Respects!","Those entry hazards are nice, why not put up Glim-more-a' them?","Why did Dondozo get demonetized on YouTube? It wouldn't stop cursing!","Have you heard the joke about Farigiraf's neck? It's a long one!","What do you call a Dudunsparce that gets faster when it's hit with a Dark move? A Rattled-snake!","What do you call a Dunsparce? No, really, I'm curious.","Why do people love Donphan so much? Because it has Great Tusks!","What do you get when you cross Kingambit and Ogerpon? The Supreme Ogrelord!","What did ancient Magneton economists invest in? Sandy Stocks!","I'm starting a band featuring Slither Wing. It's called Smash Moth!","Why does the Paldean alphabet go L, M, N, Flutter Mane, Q, R? Because Flutter Mane is OP!","What did Iron Bundle's mother say when it went out in the cold? Bundle up, and be sure to cover everything!","Iron Hands is a fantastic Pokémon. Let's all give it a great big hand!","What should you do if an Iron Treads uses Autotomize? Tread lightly!","What Paradox Pokémon do you like to run? Personally, I run Thorns!","What kind of computers does Wo-Chien like to use? Tablets!","Man, that Chien-Pao OHKOing me Sword of Ruined my day!","When I saw my special attacks doing 25% less damage than usual, I knew there was some-Ting wrong!","What do you call a really old Salamence telling a really dull story? Boring Moon!","I once visited Chi-Yu's home, but it had no walls!","I don't know what the Iron Valiant set is until I look inside the box, but I can't—it's impossible to check!","Why is Miraidon banned to AG? Because it's from the future, so it's not allowed to be present!","I once met a Koraidon, so I turned around and said that the past is behind me!","What's the opposite of Walking Wake? Sleepwalking!","What does Sinistcha wear on St. Patrick's Day? A green tea-shirt!","Why are the Loyal Three always male? Toxic masculinity!","One of Ogerpon's forms got banned, but it was pretty controversial on the Internet. It started a Hearth-flame war!","You don't like Archaludon? Too bad, build a bridge and get over it!","What move can only be used by a Hydrapple that's been fermented in brine? Pickle Beam!","Why is Raging Bolt so delusional? Because it's got its head in the clouds!","Iron Boulder? Boulders aren't made of iron, silly!","Iron Crown? But my crown isn't wrinkled!","I hear Terapagos got banned from OU in less than a day. It must've had a Stellar performance!","I'd make a joke about Pecharunt's poison, but it's too confusing!","How many Pokémon fans does it take to change a lightbulb? None, they just complain about how much better the last lightbulb was!","That's the last time I try to make a call in winter, I'm getting a Chilly Reception!","Maybe I should tell spicier jokes and go for a Chili Reception instead!","Did you hear the one about the Slowking who switched out?","You've heard of stand-up comedy, but have you heard of switch-out comedy?","You bought those fossils from Clay? Did you buy them on Clay-away?","How do you get a Trainer onto a bus? Poke 'em on!","U-Turn? No, YOU turn, I'm going straight!","Does Gen 1 have a Pokémon missing? No!"];var _battle=this.scene.battle;var joke=dadJokes[((_battle.p1.name.charCodeAt(2)||0)+(_battle.p2.name.charCodeAt(2)||0)*19+(_battle.p1.name.charCodeAt(3)||0)*61+(_battle.p2.name.charCodeAt(3)||0)+_battle.turn+(args[1].charCodeAt(1)||0)*109+(args[1].charCodeAt(2)||0)*113)%dadJokes.length];messageFromArgs(args,kwArgs);this.messageFromLog("\""+joke+"\"");this.scene.wait(3*this.scene.battle.messageFadeTime/this.scene.acceleration);return true;}}if(Dex.afdMode!==true)return;if(args[0]==='faint'){if(!Dex.afdFaint){messageFromArgs(args,kwArgs);this.message('<div class="broadcast-red" style="font-size:10pt">Needed that one alive? Buy <strong>Max Revive DLC</strong>, yours for only $9.99!<br /> <a href="/trustworthy-dlc-link">CLICK HERE!</a></div>');Dex.afdFaint=true;return true;}}else if(args[0]==='-crit'){if(!Dex.afdCrit){messageFromArgs(args,kwArgs);this.message('<div class="broadcast-red" style="font-size:10pt">Crit mattered? Buy <strong>Crit Insurance DLC</strong>, yours for only $4.99!<br /> <a href="/trustworthy-dlc-link">CLICK HERE!</a></div>');Dex.afdCrit=true;return true;}}else if(args[0]==='move'){if(kwArgs.from)return false;var _moveid2=toID(args[2]);if(_moveid2==='earthquake'){if(this.scene.animating&&window.$){$('body').css({position:'absolute',left:0,right:0,top:0,bottom:0}).animate({left:-30,right:30},75).animate({left:30,right:-30},100).animate({left:-30,right:30},100).animate({left:30,right:-30},100).animate({left:0,right:0},100,function(){$('body').css({position:'static'});});}messageFromArgs(['move',args[1],'Fissure']);this.messageFromLog('Just kidding! It was **Earthquake**!');return true;}else if(_moveid2==='stealthrock'){var srNames=['Sneaky Pebbles','Sly Rubble','Subtle Sediment','Buried Bedrock','Camouflaged Cinnabar','Clandestine Cobblestones','Cloaked Clay','Concealed Ore','Covert Crags','Crafty Coal','Discreet Bricks','Disguised Debris','Espionage Pebbles','Furtive Fortress','Hush-Hush Hardware','Incognito Boulders','Invisible Quartz','Masked Minerals','Mischievous Masonry','Obscure Ornaments','Private Paragon','Secret Solitaire','Sheltered Sand','Surreptitious Sapphire','Undercover Ultramarine'];messageFromArgs(['move',args[1],srNames[Math.floor(Math.random()*srNames.length)]]);return true;}else if(_moveid2==='extremespeed'){messageFromArgs(args,kwArgs);var fastWords=['H-Hayai','Masaka','Its fast'];this.messageFromLog("**"+fastWords[Math.floor(Math.random()*fastWords.length)]+"**");return true;}else if(_moveid2==='aerialace'){messageFromArgs(['move',args[1],'Tsubame Gaeshi']);return true;}}return false;};_proto.messageFromLog=function messageFromLog(line){this.message.apply(this,BattleLog.parseLogMessage(line));};_proto.turnText=function turnText(turnNum){var _this$battleParser2;var turnMessage=(_this$battleParser2=this.battleParser)==null?void 0:_this$battleParser2.parseArgs(['turn',turnNum],{},true).trim();if(!(turnMessage!=null&&turnMessage.startsWith('=='))||!turnMessage.endsWith('==')){return"Turn "+turnNum;}return turnMessage.slice(2,-2).trim();};_proto.textList=function textList(list){var listNoDuplicates=[];for(var _i2=0;_i2<list.length;_i2++){var user=list[_i2];if(!listNoDuplicates.includes(user))listNoDuplicates.push(user);}return TL.cappedUserList(listNoDuplicates,5);};BattleLog.parseLogMessage=function parseLogMessage(message){var messages=message.split('\n').map(function(line){line=BattleLog.escapeHTML(line);line=line.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');line=line.replace(/\|\|([^|]*)\|\|([^|]*)\|\|/,'<abbr title="$1">$2</abbr>');if(line.startsWith('  '))line='<small>'+line.trim()+'</small>';return line;});return[messages.join('<br />'),messages.filter(function(line){return!line.startsWith('<small>[');}).join('<br />')];};_proto.message=function message(_message){var _this$scene3;var sceneMessage=arguments.length>1&&arguments[1]!==undefined?arguments[1]:_message;(_this$scene3=this.scene)==null||_this$scene3.message(sceneMessage);this.addDiv('battle-history',_message);};_proto.addNode=function addNode(node,preempt){(preempt?this.preemptElem:this.innerElem).appendChild(node);if(this.atBottom){this.elem.scrollTop=this.elem.scrollHeight;}};_proto.
+};this.elem=elem;innerElem||(innerElem=elem.querySelector('.inner')||undefined);if(!innerElem){elem.setAttribute('role','log');elem.innerHTML='';innerElem=document.createElement('div');innerElem.className='inner message-log';elem.appendChild(innerElem);}this.innerElem=innerElem;if(scene){this.scene=scene;var preemptElem=elem.querySelector('.inner-preempt');if(!preemptElem){preemptElem=document.createElement('div');preemptElem.className='inner-preempt message-log';elem.appendChild(preemptElem);}this.preemptElem=preemptElem;this.battleParser=new BattleTextParser();}this.className=elem.className;elem.onscroll=this.onScroll;elem.onclick=this.onClick;}var _proto=BattleLog.prototype;_proto.reset=function reset(){if(this.battleParser){this.battleParser.language=Dex.text.getLanguage();this.battleParser.lowercaseRegExp=undefined;}this.innerElem.innerHTML='';if(this.preemptElem)this.preemptElem.innerHTML='';this.atBottom=true;this.skippedLines=false;this.joinLeave=null;this.lastRename=null;};_proto.destroy=function destroy(){this.elem.onscroll=null;this.elem.innerHTML='';};_proto.addSeekEarlierButton=function addSeekEarlierButton(){var _this2=this;if(this.skippedLines)return;this.skippedLines=true;var el=document.createElement('div');el.className='chat';el.innerHTML="<button class=\"button earlier-button\"><i class=\"fa fa-caret-up\" aria-hidden=\"true\"></i><br />"+TL(["[Earlier messages]"])+"</button>";var button=el.getElementsByTagName('button')[0];button==null||button.addEventListener==null||button.addEventListener('click',function(e){var _this2$scene;e.preventDefault();(_this2$scene=_this2.scene)==null||_this2$scene.battle.seekBy(-100);});this.addNode(el);};BattleLog.renderTimestamp=function renderTimestamp(timestamp,showTimestamps){if(!showTimestamps)return'';var date=timestamp&&!isNaN(timestamp)?new Date(timestamp*1000):new Date();var components=[date.getHours(),date.getMinutes()];if(showTimestamps==='seconds')components.push(date.getSeconds());return"<small class=\"gray\">["+components.map(function(x){return x<10?"0"+x:x;}).join(':')+"] </small>";};_proto.add=function add(args,kwArgs,preempt,showTimestamps){var _this$scene,_window$app2,_window$app3,_this$getHighlight,_this$scene2,_window$app5;if(kwArgs!=null&&kwArgs.silent)return;var battle=(_this$scene=this.scene)==null?void 0:_this$scene.battle;if(battle!=null&&battle.seeking){if(battle.stepQueue.length>2000){if(battle.seeking===Infinity?battle.currentStep<battle.stepQueue.length-2000:battle.turn<battle.seeking-100){this.addSeekEarlierButton();return;}}}var divClass='chat';var divHTML='';var noNotify;if(!['name','n'].includes(args[0]))this.lastRename=null;switch(args[0]){case'chat':case'c':case'c:':var name;var message;var timestamp=0;if(args[0]==='c:'){timestamp=parseInt(args[1]);name=args[2];message=args[3];}else{name=args[1];message=args[2];}var rank=name.charAt(0);if(battle!=null&&battle.ignoreSpects&&' +'.includes(rank))return;if(battle!=null&&battle.ignoreOpponent){var _window$app,_window$PS;if("\u2605\u2606".includes(rank)&&toUserid(name)!==(((_window$app=window.app)==null||(_window$app=_window$app.user)==null?void 0:_window$app.get('userid'))||((_window$PS=window.PS)==null||(_window$PS=_window$PS.user)==null?void 0:_window$PS.userid))){return;}}var isIgnored=this.isIgnored?this.isIgnored(name):((_window$app2=window.app)==null||(_window$app2=_window$app2.ignore)==null?void 0:_window$app2[toUserid(name)])&&" +^\u2605\u2606".includes(rank);if(isIgnored)return;var timestampHtml=BattleLog.renderTimestamp(timestamp,showTimestamps);var isHighlighted=((_window$app3=window.app)==null||(_window$app3=_window$app3.rooms)==null?void 0:_window$app3[battle.roomid].getHighlight(message))||((_this$getHighlight=this.getHighlight)==null?void 0:_this$getHighlight.call(this,args));var _this$parseChatMessag=this.parseChatMessage(message,name,timestampHtml,isHighlighted);divClass=_this$parseChatMessag[0];divHTML=_this$parseChatMessag[1];noNotify=_this$parseChatMessag[2];if(!noNotify&&isHighlighted){var _window$app4;var notifyTitle=TL(["Mentioned by "," in ",""],name,(battle==null?void 0:battle.roomid)||'');(_window$app4=window.app)==null||(_window$app4=_window$app4.rooms[(battle==null?void 0:battle.roomid)||''])==null||_window$app4.notifyOnce(notifyTitle,"\""+message+"\"",'highlight');}break;case'join':case'j':case'leave':case'l':{var user=BattleTextParser.parseNameParts(args[1]);if(battle!=null&&battle.ignoreSpects&&' +'.includes(user.group))return;var formattedUser=user.group+user.name;var isJoin=args[0].startsWith('j');if(!this.joinLeave){this.joinLeave={joins:[],leaves:[],element:document.createElement('div')};this.joinLeave.element.className='chat';}if(isJoin&&this.joinLeave.leaves.includes(formattedUser)){this.joinLeave.leaves.splice(this.joinLeave.leaves.indexOf(formattedUser),1);}else{this.joinLeave[isJoin?"joins":"leaves"].push(formattedUser);}var joins=this.joinLeave.joins.length?TL([""," joined"],this.textList(this.joinLeave.joins)):'';var leaves=this.joinLeave.leaves.length?TL([""," left"],this.textList(this.joinLeave.leaves)):'';var buf=joins&&leaves?TL(["","; ",""],joins,leaves):joins||leaves;this.joinLeave.element.innerHTML="<small class=\"gray\">"+BattleLog.escapeHTML(buf)+"</small>";(preempt?this.preemptElem:this.innerElem).appendChild(this.joinLeave.element);return;}case'name':case'n':{var _user=BattleTextParser.parseNameParts(args[1]);if(toID(args[2])===toID(_user.name))return;if(!this.lastRename||toID(this.lastRename.to)!==toID(_user.name)){this.lastRename={from:args[2],to:'',element:document.createElement('div')};this.lastRename.element.className='chat';}this.lastRename.to=_user.group+_user.name;var renameTo=BattleLog.escapeHTML(this.lastRename.to);var renameFrom=BattleLog.escapeHTML(this.lastRename.from);this.lastRename.element.innerHTML="<small class=\"gray\">"+TL([""," renamed from ","."],renameTo,renameFrom)+"</small>";(preempt?this.preemptElem:this.innerElem).appendChild(this.lastRename.element);return;}case'chatmsg':case'':divHTML=BattleLog.escapeHTML(args[1]);break;case'chatmsg-raw':case'raw':case'html':divHTML=BattleLog.sanitizeHTML(args[1]);break;case'uhtml':case'uhtmlchange':this.changeUhtml(args[1],args[2],args[0]==='uhtml');return['',''];case'error':case'inactive':case'inactiveoff':divClass='chat message-error';divHTML=BattleLog.escapeHTML(args[1]);break;case'bigerror':this.message('<div class="broadcast-red">'+BattleLog.escapeHTML(args[1]).replace(/\|/g,'<br />')+'</div>');return;case'pm':if(args[3].startsWith('/text '))args[3]=args[3].slice(6);if(args[3].startsWith('/raw')||args[3].startsWith('/html')||args[3].startsWith('/uhtml')||args[3].startsWith('/uhtmlchange')){return;}var colorStyle=" style=\"color:"+BattleLog.usernameColor(toID(args[1]))+"\"";var pmTarget=BattleLog.escapeHTML(args[2]);divHTML=BattleLog.renderTimestamp(null,showTimestamps)+("<strong"+colorStyle+"> "+this.renderName(args[1])+":</strong> <span class=\"message-pm\"><i style=\"cursor:pointer\" data-href=\"dm-"+toID(args[1])+"\">"+TL(["(Private to ",")"],pmTarget)+"</i> "+BattleLog.parseMessage(args[3])+" </span>");break;case'b':case'B':{var _window$PS2;var showBattlesPref=(_window$PS2=window.PS)==null||(_window$PS2=_window$PS2.prefs)==null?void 0:_window$PS2.showbattles;if(args[0]==='B'&&showBattlesPref===false)return;var id=args[1];var format=BattleLog.escapeFormat(BattleLog.roomidToFormat(id));var battleP1="<strong style=\"color:"+BattleLog.usernameColor(toUserid(args[2]))+"\">"+BattleLog.escapeHTML(args[2])+"</strong>";var battleP2="<strong style=\"color:"+BattleLog.usernameColor(toUserid(args[3]))+"\">"+BattleLog.escapeHTML(args[3])+"</strong>";var started;if(format&&format!=='Random Battle'){started=TL([""," battle started between "," and ","."],format,battleP1,battleP2);}else if(format){started=TL([""," started between "," and ","."],format,battleP1,battleP2);}else{started=TL(["Battle started between "," and ","."],battleP1,battleP2);}divClass='notice';divHTML="<a href=\"/"+BattleLog.escapeHTML(id)+"\" class=\"ilink\">"+started+"</a>";this.joinLeave=null;break;}case'askreg':this.addDiv('chat',"<div class=\"broadcast-blue\"><b>"+TL(["Register an account to protect your ladder rating!"])+"</b><br /><button name=\"register\" value=\""+BattleLog.escapeHTML(args[1])+"\"><b>"+TL(["[Register]"])+"</b></button></div>");return;case'unlink':{var _window$PS3,_window$Dex;if((_window$PS3=window.PS)!=null&&(_window$PS3=_window$PS3.prefs)!=null&&_window$PS3.nounlink||(_window$Dex=window.Dex)!=null&&(_window$Dex=_window$Dex.prefs)!=null&&_window$Dex.nounlink)return;var _user2=toID(args[2])||toID(args[1]);this.unlinkChatFrom(_user2);if(args[2]){var lineCount=parseInt(args[3],10);this.hideChatFrom(_user2,true,lineCount);}return;}case'hidelines':{var _window$PS4,_window$Dex2;if((_window$PS4=window.PS)!=null&&(_window$PS4=_window$PS4.prefs)!=null&&_window$PS4.nounlink||(_window$Dex2=window.Dex)!=null&&(_window$Dex2=_window$Dex2.prefs)!=null&&_window$Dex2.nounlink)return;var _user3=toID(args[2]);this.unlinkChatFrom(_user3);if(args[1]!=='unlink'){var _this$canRevealMessag;var _lineCount=parseInt(args[3],10);this.hideChatFrom(_user3,args[1]==='hide'||!!((_this$canRevealMessag=this.canRevealMessages)!=null&&_this$canRevealMessag.call(this)),_lineCount);}return;}case'debug':divClass='debug';divHTML='<div class="chat"><small style="color:#999">[DEBUG] '+BattleLog.escapeHTML(args[1])+'.</small></div>';break;case'notify':var title=args[1];var body=args[2];var roomid=(_this$scene2=this.scene)==null?void 0:_this$scene2.battle.roomid;if(!roomid)break;(_window$app5=window.app)==null||_window$app5.rooms[roomid].notifyOnce(title,body,'highlight');break;case'showteam':{if(!battle)return;var team=Teams.unpack(args[2]);if(!team.length)return;var side=battle.getSide(args[1]);var exportedTeam=team.map(function(set){var buf=Teams["export"]([set],battle.dex).replace(/\n/g,'<br />');if(set.name&&set.name!==set.species){buf=buf.replace(set.name,BattleLog.sanitizeHTML("<span class=\"picon\" style=\""+Dex.getPokemonIcon(set.species)+"\"></span><br />"+set.name));}else{buf=buf.replace(set.species,"<span class=\"picon\" style=\""+Dex.getPokemonIcon(set.species)+"\"></span><br />"+set.species);}if(set.item){buf=buf.replace(set.item,set.item+" <span class=\"itemicon\" style=\""+Dex.getItemIcon(set.item)+"\"></span>");}return buf;}).join('');divHTML="<div class=\"infobox\"><details class=\"details\"><summary>"+TL(["Open team sheet for ",""],side.name)+"</summary>"+exportedTeam+"</details></div>";break;}case'seed':case'choice':case':':case'timer':case't:':case'J':case'L':case'N':case'spectator':case'spectatorleave':case'initdone':return;default:this.addBattleMessage(args,kwArgs);this.joinLeave=null;return;}if(divHTML){this.addDiv(divClass,divHTML,preempt);this.joinLeave=null;}};_proto.addBattleMessage=function addBattleMessage(args,kwArgs){var _this$battleParser$pa,_this$battleParser;switch(args[0]){case'warning':this.message("<strong>"+TL.label(TL(["Warning"]))+"</strong>"+BattleLog.escapeHTML(args[1]));this.message("Bug? Report it to <a href=\"http://www.smogon.com/forums/showthread.php?t=3453192\">the replay viewer's Smogon thread</a>");if(this.scene)this.scene.wait(1000);return;case'variation':this.addDiv('',"<small>"+TL.label(TL(["Variation"]))+"<em>"+BattleLog.escapeHTML(args[1])+'</em></small>');break;case'rule':var ruleArgs=args[1].split(': ');this.addDiv('','<small><em>'+BattleLog.escapeHTML(ruleArgs[0])+(ruleArgs[1]?':':'')+'</em> '+BattleLog.escapeHTML(ruleArgs[1]||'')+'</small>');break;case'rated':this.addDiv('rated','<strong>'+(BattleLog.escapeHTML(args[1])||TL(["Rated battle"]))+'</strong>');break;case'tier':this.addDiv('',"<small>"+TL.label(TL(["Format"]))+"</small><br /><strong>"+BattleLog.escapeHTML(args[1])+'</strong>');break;case'turn':var h2elem=document.createElement('h2');h2elem.className='battle-history';h2elem.innerHTML=BattleLog.escapeHTML(this.turnText(args[1]));if(this.battleParser)this.battleParser.curLineSection='break';this.addSpacer();this.addNode(h2elem);break;default:if(this.addAFDMessage(args,kwArgs))return;var line=(_this$battleParser$pa=(_this$battleParser=this.battleParser)==null?void 0:_this$battleParser.parseArgs(args,kwArgs||{},true))!=null?_this$battleParser$pa:null;if(line===null){this.addDiv('chat message-error','Unrecognized: |'+BattleLog.escapeHTML(args.join('|')));return;}if(line)this.messageFromLog(line);break;}};_proto.addAFDMessage=function addAFDMessage(args){var _this3=this;var kwArgs=arguments.length>1&&arguments[1]!==undefined?arguments[1]:{};if(!Dex.afdMode)return;if(!this.battleParser||!this.scene)return;var messageFromArgs=function(args1){var kwArgs1=arguments.length>1&&arguments[1]!==undefined?arguments[1]:{};_this3.messageFromLog(_this3.battleParser.parseArgs(args1,kwArgs1,true));};if(args[0]==='move'){if(kwArgs.from)return false;var moveid=toID(args[2]);if(moveid==='taunt'){messageFromArgs(args,kwArgs);var quotes=["Yo mama so fat, she 4x resists Ice- and Fire-type attacks!","Yo mama so ugly, Captivate raises her opponent's Special Attack!","Yo mama so dumb, she lowers her Special Attack when she uses Nasty Plot!","Yo mama so fat, she eats her Aguav Berry at 50% HP!","Yo Mama so stupid, she tried to count clouds one through eight!","Yo Mama so stupid, she thought Sticky Hold meant she needed to grab a stick!","Yo Mama so old, her Paradox forme would be Great Grandma!","Yo Mama so stupid, she can't learn anything from the move tutor!","Yo Mama so rude, she got Kyogre and Groudon to team up against her!","Yo Mama so fat, Focus Blast never misses her!","Yo Mama so fat, the Darkest Day is when she's tanning!","Yo Mama so stinky, her damaging moves have a 10% chance to make the opponent flinch!","Yo Mama so old, she has the NPCs from Legends Arceus in her yearbook!","Yo Mama so stupid, she's still trying to find Rhydon!","Yo Mama so stupid, she asked if the Insect Plate comes with an appetizer!","Yo Mama so bad, she got her Stunfisk paralyzed!","Yo Mama so nasty, Black Sludge heals her 1/16th!","Yo Mama so stupid, she gave her Bisharp Black Sludge!","Yo Mama so stupid, she runs a suboptimal EV spread on her Tera Poison Calm Mind Chimecho, making it faint to a Choice Banded Dragonite Tera Normal Extreme Speed!","Yo Mama so casual, she mains NatDex AG!","Yo Mama so casual, she ladders with Red's team!","Yo Mama so dumb, she scouts teams in Randbats!","Yo Mama so lazy, she loafs around every turn!","Yo Mama so fat, she changes type when holding a Dinner Plate!","Yo Mama so slow, even Trick Room won't let her go first!","Yo Mama so dumb, not even Gummis can raise her IQ!","Show me your moves!","Yo Mama so nasty, thinking about her gives a +2 Special Attack boost!","Yo Mama so broke, her deck has no energy cards so she can save on electricity!","Yo Mama so dumb, she tried using Twitch Plays Pokemon as a walkthrough guide!","Yo Mama so dumb, Slowpoke finishes her sentences!","Yo Mama so old, she babysat AZ!","Yo Mama so stupid, not even Own Tempo could prevent her from being confused!","Yo Mama so ugly, even Brock wanted nothing to do with her!","Yo Mama so stupid, she drank antifreeze to cure her status condition!","Yo Mama so trashy, they named a Wormadam forme after her!","Yo Mama so broke, her Gholdengo is made out of checkers!","Yo Mama so ugly, she killed Mimikyu when it saw her!","Yo Mama so fat, she doesn't need a Wailord to meet the Regis!","Unfortunate doesn't even begin to describe Yo Mama!","Yo Mama so dumb, she brags about using a bot to get her opponent's teams!","Yo Mama so fat, her Wishes cause integer overflows!","Yo Mama so ugly, she makes Attract fail!","Yo Mama so dumb, she makes Dondozo look aware!","Yo Mama so smelly, she KOes Nosepass without making a single move!","Yo mama so fat, she doesn't know what the item Leftovers is!","Yo Mama so ugly, she gets OHKOed by Mirror Shot!","Yo Mama so smelly, her VGC analysis pairs her with Slaking!","Yo Mama so old, she has to be extracted in Cinnabar Lab!","Yo Mama so fat, she sets Gravity on switch-in!","Yo Mama so dumb, she's immune to this move!"];var battle=this.scene.battle;var quote=quotes[((battle.p1.name.charCodeAt(2)||0)+(battle.p2.name.charCodeAt(2)||0)*19+(battle.p1.name.charCodeAt(3)||0)*61+(battle.p2.name.charCodeAt(3)||0)+battle.turn+(args[1].charCodeAt(1)||0)*109+(args[1].charCodeAt(2)||0)*113)%quotes.length];this.messageFromLog(this.battleParser.fixLowercase(this.battleParser.pokemon(args[1])+" said, \""+quote+"\""));this.scene.wait(3*this.scene.battle.messageFadeTime/this.scene.acceleration);return true;}}else if(args[0]==='-prepare'){var _moveid=toID(args[2]);if(_moveid==='chillyreception'){var dadJokes=["This should be a Fire-type move, because I'm spitting flames.","Why didn't Vigoroth evolve? Because it was Slaking on its training!","I'm going snowwhere fast!","Don't Slack Off if you wanna beat me!","Where do you buy toys for a Ground-type? Land-R-Us!","I've got half a mind to just leave. The other half belongs to my Shellder.","Why did the Slowking cross the road?","What's the best Pokemon to get rid of bugs? Flygone!","What's the best Pokemon to get rid of bugs? Heatmor. What, were you expecting a pun?","I guess you could call Heatmor an Ant-heater.","Why do they call it Enamor-us when you can only have one of them on a team?","Cloyster? I hardly know 'er!","Why do they call Shedinja invincible when I can still see it?","Dondozo? I don't think I can, that seems really cumbersome.","Appletun? No, there's only one of them.","Drilbur? I hardly know 'er!","Iron Crown? I hardly know 'er!","Shellder? I hardly know 'er!","Magnemite? I sure hope it will!","Graveler? I hardly know 'er!","Grimer? I hardly know 'er!","Baxcalibur? I hardly know 'er!","Why do they call it Kyurem when it doesn't heal anybody?","Conkeldurr? I hardly know 'er!","Weavile? No, I don't think we are.","Dragapult? Doesn't seem very efficient, don't they usually have wheels?","Dragonite? Sounds like it'd be hard with all that heavy armor.","How do you play whack-a-mole with a Fighting-type? Hit 'm on top!","I don't know who made Pokemon Go, but I'm trying to figure out how to make them Pokemon Go to the polls!","Gholdengo? Yeah, it should gholden-go somewhere else.","Some folks call me Charming, but I still feel like I take plenty of physical damage. What gives?","I learned this move in South America, they called it a Chile Reception","I had a Canadian Tyrogue. It evolved into a Hitmontreal.","Why do Venusaur's roommates wear earplugs at night? Because Venus-snores!","I bought stock in my Charmander before it evolved. Now I'm a Charmeleonaire!","Charizard? I actually think char is pretty easy!","Why doesn't Squirtle's mom buy it action figures? Because it likes to blast toys!","Why does Caterpie like Margarine so much? Because it's butter-free!","What did the Alolan Raichu say to the surfer? Nothing, it just waved!","Clefable? What's Clef able to do?","Why did the Nidorans start a revolution? Because they didn't Nidoking!","Alolan Ninetales? More like Aurora Nine-veils!","Wigglytuff? Doesn't look that tough to me.","I dug up a weird vegetable yesterday. Well, it wasn't THAT weird, just a little Oddish!","Why was the Vileplume so happy? Because it wasn't Gloom-y anymore!","What do you call three guys named Doug? A Dugtrio!","Why is it called Golduck when it's blue?","What Rock-type is the best at soccer? Goal-em!","Why is Galarian Slowbro so good at art? Because it's Quick on the Draw!","Do you like my jokes? I've got a Magne-ton of them!","Where do three-headed birds go for Carnival? Dodrio de Janeiro!","What would Muk be called if it could rap? Slime Shady!","Kingler? I hardly know 'er!","Exeggutor? I hardly know 'er!","Have you heard that Trainers who use Hypno are hip? No?","What do ghosts build at Christmastime? Gengar-bread houses!","What street does Voltorb live on? Elect Road!","I told a Hitmonlee some of my jokes. He really got a kick out of them!","What's a Hitmonchan's favorite holiday? Boxing Day!","Did you know Galarian Weezing doesn't know how to drive? It always puts the car in Neutral before stepping on the Gas!","How can you tell if a Poison-type has asthma? See if it's Weezing!","What Pokémon loves to find you when you hide? Seaking!","If we Psychic-types made a movie, it would have to Starmie!","Scyther? I hardly know 'er!","Pinsir? I hardly know 'er!","What Pokémon does Aladdin ride? A Magikarpet!","What do you get if you cut a Gyarados in half? Gyara-uno!","What do you call a Lapras carrying a gun? The Glock Ness Monster!","What's a Ditto's favorite food? Impasta!","Flareon? They should turn the flare off!","Where does a 1000-pound Snorlax sleep? Anywhere it wants!","Zapdos? Zap those what?","My Grass-type friend has been losing weight recently. It's nice to see them losing a few pounds, but I hate to see Me-gaining-'em!","What does a Fire-type wear around its neck? A Tie-phlosion!","Why do they call Ledian the Five Star Pokémon? I'd give it two stars at best!","Ariados? That's impressive, most people can't even perform one aria.","Crobat? It doesn't look like a crow at all!","Why do web developers hire Xatu to predict their profits? Because it can see their Future Sites!","What superhero lives under the sea and has Volt Absorb? The Green Lanturn!","Why should you never play cards with the Cottonweed Pokémon? Because it always Jump-bluffs!","What Pokémon comes after Espeon? T-peon!","Why did the Kartana faint to Bullet Punch? Because Scizor beats paper!","Sometimes I put lava in my gas tank. It really makes Magcargo!","I wrote my Ice-type friend a letter. I hope it gets Delibird!","What's a Mantine's favorite type of cheese? Mantaray Jack!","What kind of bird is Skarmory? A Roost-er!","My friend caught a Porygon. I also did, but he got jealous when I told him I caught a Porygon too!","What do you name a Smeargle that can't use Sketch anymore? Drew!","Why couldn't the smart Chansey evolve? Because ignorance is Blissey!","The classic Suicune set has a Water move, Calm Mind, and Sleep Talk. That's only 3 moves, but I'm sure you can figure out the Rest!","I went to one of Lugia's parties once. It was an Aero-blast!","What do pseudo-Legendaries pave their roads with? Tyrani-tar!","What's Ho-Oh's favorite food? Hot wings!","How often does Celebi travel? From time to time!","What's on a Grass-type's bathroom floor? Scep-tiles!","What's Blaziken's favorite food? Fried chicken!","Why doesn't Swampert go outside? Because it can't touch grass!","How do I know my jokes are good? I told them to a Mightyena and it couldn't stop laughing!","What kind of Poké Ball do you catch Dustox in? A mothball!","Who are Shiftry's biggest fans? Its hands!","Why was the evolving Surskit brought before a court? It was Masqu-arraigned!","Gardevoir? What's a voir and why should I guard it?","I moved in with a Breloom, but the apartment didn't have mushroom!","What's a Hariyama's favorite Pokémon games? Ultra SuMo!","I took my Delcatty to the vet because I thought it was going blind, but it had Normal-eyes!","What's Sableye's zodiac sign? Gem-in-eye!","What do you call a Medicham that's lost its pants? Yogi Bare!","Why does Aggron plant trees after a disaster? That's part of its Aggro-culture!","What happened when the Plusle and Minun fell in love? They multiplied!","I once rode on a Wailord's back. It was a whale of a time!","That Anger Point Camerupt sure has a temper. Crit it once and it'll blow its top!","What season does Spoink like the best? Spring!","I'd tell you a joke about Grumpig, but you wouldn't appreciate it. I'd be casting pearls before swine!","It takes a human 5 minutes to walk a block, but for Spinda it takes half an hour. The difference is staggering!","That cloud Pokémon acts innocent, but I know it has an Altaria motive!","Zangoose? It doesn't look like a goose at all!","What are Solrock's favorite music genres? Soul and rock!","They hate on you when you're a Barboach, but everyone wants to be your friend when you pull up Whis-cash!","What does a Lileep get from Dairy Queen? A Cra-Dilly Bar!","I know a way you can see invisible Kecleons, but that's beyond the Scope of this joke!","What does a Tropius wear over its shirt? A Har-vest!","Why is it called Walrein if it's better in snow?","I've always been a fan of ball-shaped Pokémon, but one in particular Sphealed the deal!","I'd make a joke about Luvdisc, but it's already a joke!","Why is the Iron Leg Pokémon always covered in dirt and slime? Because it's Meta-gross!","Why is Regirock called the Rock Peak Pokémon when it's so mid?","Why is Clear Body Regice such a bad liar? Because you can see right through it!","Why was Registeel fired from the convenience store? Because it would always Steel from the Regi-ster!","I'd make a joke about Latias, but that would be just plane silly!","Did you know that Rayquaza has a certain smell that it takes wherever it goes? That's right, it's Draggin' A-scent!","Did you hear about the Deoxys who took a DNA test? It got 100%!","What would the tier leader of OU be called if he was a Jirachi? Flinchinator!","I had a company that sold Infernapes, until I was told to cut out the monkey business!","Kricketunes must be my biggest fans. Every time I tell a joke, they're all I hear!","What kind of Poké Ball is best for Luxray? A Luxuray Ball!","Where does Bastiodon make all its money? Wall Street!","What kind of mystery novels does Wormadam like to read? Cloak and dagger!","Remember when Pachirisu won the World Championships? That was nuts!","Cherrim? I hardly know 'im!","Mothim? I hardly know 'im!","I used to buy Drifblim by the dozen, but we got hit with inflation and the price ballooned!","I took directions from a Mismagius, but now I don't know witch way to go!","Someone asked me if I liked Chingling. I said that I don't know, I've never chingled!","What do you do with a Bronzong you're in love with? Give it a ring!","People say they removed Chatot's sound-recording function because of profanity, but I think that's just mindless Chatter!","I have 108 jokes about Spiritomb, but not a single soul wants to hear them!","My Garchomp friend gained a lot of weight recently. He said it was pretty rough to look at the scales!","Why does Carnivine get Levitate? Because it's a Venus flying trap!","Why did Weavile drive a truck with six wheels? Because it had Triple Axles!","I got yelled at by a Lickilicky once. Talk about a tongue-lashing!","Why do they call Yanmega a dragonfly when it isn't Dragon/Flying?","My local arcade had to kick out this Ground/Flying type. He kept getting the Gligh-score and he was really toxic about it!","Why don't you ever see Mamoswines hiding in trees? Because they're really good at it!","What happens when your Porygon-Z uses Signal Beam? Software bugs!","What do you call a Gallade in a tuxedo? Sharply dressed!","Why do they call Rotom-Heat an oven when you of in the cold food of out hot eat the food?","Why does no one tell Rotom-Wash their secrets? They don't want it to air out their dirty laundry!","I had a joke about Uxie, but I forgot it!","I had a joke about Mesprit, but I don't think you're emotionally ready for it!","I had a joke about Azelf, but I don't have the willpower to tell it!","I had a joke about Dialga and time travel, but you didn't like it!","I had a joke about Palkia, but there's no space for it here!","Why couldn't Arceus go to Planet Fitness? Because it's a Judgment-free zone!","I had a joke about the Azure Flute, but you wouldn't get it!","Why does Victini always win? Beats me!","Some people think Overgrow is viable on Serperior. On the Contrary!","Once Samurott got a regional form, its usage really Spiked!","Did you hear about the Watchog that won a battle? Yeah, me neither!","I could tell a joke about Musharna, but I wouldn't dream of it!","Why does Throh never win? Because it always throws!","Cofagrigus is so cool! Don't you *cough* agree, Gus?","I wouldn't use Zoroark in OU—I have no Illusion that it's any good!","Why is Reuniclus so good at marketing? It knows what cells!","Why didn't the Ducklett evolve? It didn't Swanna!","I fought a Beartic once. It was unbearable!","Did you know it's a crime to make a Braviary sick? It's ill-eagle!","I attract Volcaronas like a moth to a flame!","I'd make a joke about Cobalion, but it's un-Justified!","What did Zekrom do when it was unhappy with its working conditions? It went on Bolt Strike!","Everyone plays Meloetta in exactly the same way. It's always the same old song and dance!","What's a Chesnaught's favorite Nature? Naughty!","Which part of Doublade is most dangerous? Da blade!","I'd say I'm a Pyroar, but I'd be lion!","Why does Talonflame laugh in the face of danger? Because it's a Brave Bird!","I stole a Delphox's wand, but it got me in a stick-y situation!","What are Aegislash's favorite Pokémon games? Sword and Shield!","What do you call it when you do a favor for a Malamar and it wants one in return? Squid pro quo!","I'm making an 8-bit game featuring Sylveon. It looks cute when it's Pixilated!","Why did Tyrantrum get its license taken away? It kept getting in T-wrecks!","Why does Goodra have such good fashion sense? Because it's always got the drip!","What do you get when you cross a Kingambit with a Gourgeist? Supreme Overgourd!","What do you call a dead Klefki? A skeleton key!","I dated a Xerneas once, but we broke up. Now it's my X!","I've never met an Yveltal. I don't know Y!","Why does Zygarde-Complete work so hard? Because it always gives 100%!","Why does Diancie have such good synergy with Ghost-types? Because diamonds are a ghoul's best friend!","What's Hoopa's favorite video game? Portal!","Why did Hoopa-Unbound get put into the Prison Bottle? Because it was armed and dangerous!","What do you call a joke about Volcanion? A wisecrack-a-toa!","Why does no one make friends with Incineroar? It's too Intimidating!","Can a Toucannon win a Double Battle? No, but two can!","What do you call your Lycanroc when it goes missing? A where-wolf!","Why are Wishiwashi so smart? They swim in schools!","What do you call it when Ribombee gets a free turn? A sticky situation!","Why are Mudsdales so strong? They have horsepower!","What's Araquanid's favorite candy? Bubble gum!","I had a Salazzle girlfriend once, but I broke it off because she was too toxic!","Why do they call it Comfey when every time someone sends it out it becomes the most stressful game of my life?","Why did the Golisopod make an emergency exit from the job interview? It made a bad First Impression!","I'm making a first-person shooting game starring Pyukumuku. It's called Duke Pyukem!","Why should you never mimic a Mimikyu? Because you're risking your neck!","Where in Alaska can you find Dhelmise? Anchorage!","Did you know that Kommo-o's scales are falling off all across the globe? It's a problem on a worldwide scale!","A Tapu Lele walks into a bar. The bartender gets nervous because there's no counter!","Did you hear that Tapu Fini's terrain is gone? It'll be mist!","Did you hear Lunala opened up a barber shop? It's called Totally Clips!","If OU doesn't suspect test Solgaleo, I'm going to go on Sunsteel Strike!","I heard they buffed Buzzwole in Pokémon Unite. I don't know why they needed to, it was already buff!","I want to ask Pheromosa out, but it strikes me as unapp-roach-able!","What do you call a Xurkitree that's only 3 feet tall? A short circuit!","What does Celesteela order when it goes to a Chinese restaurant? One-ton soup!","Why should you never invite a Kartana to poker night? Because it always knows when to fold!","Why did the Guzzlord love doing difficult jobs? Because it was a glutton for punishment!","What happened to the Necrozma that robbed a bank? It was in-prismed!","Why does Ultra Necrozma weigh less that Dusk Mane or Dawn Wings form? Because it's more light!","What attack does Stakataka learn at Level 1? Stakatackle!","Why is Blacephalon's head spherical? Because it's clowning a-round!","What is Inteleon's secret agent number? Bubble-O-7!","I'll be here all Corvi-night, folks!","What Bug/Psychic Pokémon can be found deep underground embedded in stone? Ore-beetle!","Why should you never give a Drednaw the Infinity Gauntlet? Because it's a snapping turtle!","A Flapple a day keeps the doctor away, as long as its attacks don't miss!","Why are my jokes so popular on Galar's Route 8? Because Sandaconda don't want none unless you got puns, hun!","My Cramorant was about to win a match, but then it choked!","What's Toxtricity's favorite Tera type? Rock!","Why does Centiskorch hate wearing Heavy-Duty Boots? By the time it's finished putting them all on, the battle's already over!","I've heard a lot of gossip about Polteageist, but I don't want to spill the tea!","Who hosts tea parties in Wonderland and bounces back hazard moves? The Mad Hatterene!","What kind of fur do you get from Grimmsnarl? As fur away as possible!","Of all the crimes Obstagoon's done, which one finally put it behind bars for good? Obstruction of justice!","Where do Cursola keep their gravestones? At the Great Burial Reef!","How does Sirfetch'd pass along all the insider info it knows about new Pokémon games? It leeks it!","What did the Mr. Mime say to the Mr. Rime? Nothing, silly, mimes can't talk!","I'd tell a joke about Runerigus, but the real joke is its evolution method!","Plenty of Pokémon have ridiculous numbers of alternate forms, but Alcremie takes the cake!","Can any Pokémon besides Tapu Lele set Psychic Terrain? Yes Indeedee!","What's a Copperajah's favorite kind of music? Heavy Metal!","Why did Dracovish get evicted from OU? It wouldn't pay the Fishious Rent!","Have you seen Duraludon's Gigantamax form? It really towers over you!","What's Dragapult's favorite game to play at a bar? Dragon Darts!","I'd tell you a joke about Zamazenta, but I'm pressed for time!","Why should you always run Zacian-Crowned? Because it has great STAB!","Originally the Gen 8 designers weren't going to add a generational mechanic, but Eternatus convinced them to make Dynamax canon!","What does Regieleki do to lose weight? Fast!","What do you get when you cross a Regidrago and a Klefki? Lockjaw!","I'd make a joke about Spectrier, but that would be beating a dead horse!","Make sure to never insult Ursaluna—last time I burned it, it swept my whole team!","Don't go near Ursaluna-Bloodmoon—it's a total lunatic!","You'd think Basculegion would be uncomfortable traveling forward in time hundreds of years, but don't worry—it's adaptable!","You have to use Strong Style Barb Barrage 20 times to evolve Hisuian Qwilfish? That seems like Overqwil to me!","Did you know that Meowscarada is really good at baking bread? Apparently it has a special Flour Trick!","I've got a ton of Skeledirge jokes. A skele-ton!","What do you do if you see a Quaquaval getting ready to kick you in the head? Duck!","Lokix? No thanks, I don't like using weight-based moves!","Why did the baker get a Fidough? He kneaded one!","How do you know Dachsbun has a good pedigree? It's pure bread!","Why did the Garganacl ragequit while losing a battle? Because it was salty!","You're telling me Ceruledge has dark purple armor and blue flaming swords for hands? What an edgelord!","You should try using Electromorphosis Bellibolt—its damage output is shocking!","I tried using Klawf on a stall team, but it was Klawful!","Rabsca told me its true body was inside the ball it's holding. I thought that was a load of crap!","My Shellder once spent time with an Espathra. It came back with a new Ability just called Link because Espathra takes no skill!","Why is Corviknight's natural predator so smart? Because she Thinks-a-ton!","I asked a Finizen why it worked as a sidekick for Palafin. The Finizen said it was serving a greater porpoise!","If you run in front of a Revavroom you get tired, but if you run behind it you get exhausted!","Why couldn't the Cyclizar stand up? It was two-tired!","Why does Houndstone press F? To pay its Last Respects!","Those entry hazards are nice, why not put up Glim-more-a' them?","Why did Dondozo get demonetized on YouTube? It wouldn't stop cursing!","Have you heard the joke about Farigiraf's neck? It's a long one!","What do you call a Dudunsparce that gets faster when it's hit with a Dark move? A Rattled-snake!","What do you call a Dunsparce? No, really, I'm curious.","Why do people love Donphan so much? Because it has Great Tusks!","What do you get when you cross Kingambit and Ogerpon? The Supreme Ogrelord!","What did ancient Magneton economists invest in? Sandy Stocks!","I'm starting a band featuring Slither Wing. It's called Smash Moth!","Why does the Paldean alphabet go L, M, N, Flutter Mane, Q, R? Because Flutter Mane is OP!","What did Iron Bundle's mother say when it went out in the cold? Bundle up, and be sure to cover everything!","Iron Hands is a fantastic Pokémon. Let's all give it a great big hand!","What should you do if an Iron Treads uses Autotomize? Tread lightly!","What Paradox Pokémon do you like to run? Personally, I run Thorns!","What kind of computers does Wo-Chien like to use? Tablets!","Man, that Chien-Pao OHKOing me Sword of Ruined my day!","When I saw my special attacks doing 25% less damage than usual, I knew there was some-Ting wrong!","What do you call a really old Salamence telling a really dull story? Boring Moon!","I once visited Chi-Yu's home, but it had no walls!","I don't know what the Iron Valiant set is until I look inside the box, but I can't—it's impossible to check!","Why is Miraidon banned to AG? Because it's from the future, so it's not allowed to be present!","I once met a Koraidon, so I turned around and said that the past is behind me!","What's the opposite of Walking Wake? Sleepwalking!","What does Sinistcha wear on St. Patrick's Day? A green tea-shirt!","Why are the Loyal Three always male? Toxic masculinity!","One of Ogerpon's forms got banned, but it was pretty controversial on the Internet. It started a Hearth-flame war!","You don't like Archaludon? Too bad, build a bridge and get over it!","What move can only be used by a Hydrapple that's been fermented in brine? Pickle Beam!","Why is Raging Bolt so delusional? Because it's got its head in the clouds!","Iron Boulder? Boulders aren't made of iron, silly!","Iron Crown? But my crown isn't wrinkled!","I hear Terapagos got banned from OU in less than a day. It must've had a Stellar performance!","I'd make a joke about Pecharunt's poison, but it's too confusing!","How many Pokémon fans does it take to change a lightbulb? None, they just complain about how much better the last lightbulb was!","That's the last time I try to make a call in winter, I'm getting a Chilly Reception!","Maybe I should tell spicier jokes and go for a Chili Reception instead!","Did you hear the one about the Slowking who switched out?","You've heard of stand-up comedy, but have you heard of switch-out comedy?","You bought those fossils from Clay? Did you buy them on Clay-away?","How do you get a Trainer onto a bus? Poke 'em on!","U-Turn? No, YOU turn, I'm going straight!","Does Gen 1 have a Pokémon missing? No!"];var _battle=this.scene.battle;var joke=dadJokes[((_battle.p1.name.charCodeAt(2)||0)+(_battle.p2.name.charCodeAt(2)||0)*19+(_battle.p1.name.charCodeAt(3)||0)*61+(_battle.p2.name.charCodeAt(3)||0)+_battle.turn+(args[1].charCodeAt(1)||0)*109+(args[1].charCodeAt(2)||0)*113)%dadJokes.length];messageFromArgs(args,kwArgs);this.messageFromLog("\""+joke+"\"");this.scene.wait(3*this.scene.battle.messageFadeTime/this.scene.acceleration);return true;}}if(Dex.afdMode!==true)return;if(args[0]==='faint'){if(!Dex.afdFaint){messageFromArgs(args,kwArgs);this.message('<div class="broadcast-red" style="font-size:10pt">Needed that one alive? Buy <strong>Max Revive DLC</strong>, yours for only $9.99!<br /> <a href="/trustworthy-dlc-link">CLICK HERE!</a></div>');Dex.afdFaint=true;return true;}}else if(args[0]==='-crit'){if(!Dex.afdCrit){messageFromArgs(args,kwArgs);this.message('<div class="broadcast-red" style="font-size:10pt">Crit mattered? Buy <strong>Crit Insurance DLC</strong>, yours for only $4.99!<br /> <a href="/trustworthy-dlc-link">CLICK HERE!</a></div>');Dex.afdCrit=true;return true;}}else if(args[0]==='move'){if(kwArgs.from)return false;var _moveid2=toID(args[2]);if(_moveid2==='earthquake'){if(this.scene.animating&&window.$){$('body').css({position:'absolute',left:0,right:0,top:0,bottom:0}).animate({left:-30,right:30},75).animate({left:30,right:-30},100).animate({left:-30,right:30},100).animate({left:30,right:-30},100).animate({left:0,right:0},100,function(){$('body').css({position:'static'});});}messageFromArgs(['move',args[1],'Fissure']);this.messageFromLog('Just kidding! It was **Earthquake**!');return true;}else if(_moveid2==='stealthrock'){var srNames=['Sneaky Pebbles','Sly Rubble','Subtle Sediment','Buried Bedrock','Camouflaged Cinnabar','Clandestine Cobblestones','Cloaked Clay','Concealed Ore','Covert Crags','Crafty Coal','Discreet Bricks','Disguised Debris','Espionage Pebbles','Furtive Fortress','Hush-Hush Hardware','Incognito Boulders','Invisible Quartz','Masked Minerals','Mischievous Masonry','Obscure Ornaments','Private Paragon','Secret Solitaire','Sheltered Sand','Surreptitious Sapphire','Undercover Ultramarine'];messageFromArgs(['move',args[1],srNames[Math.floor(Math.random()*srNames.length)]]);return true;}else if(_moveid2==='extremespeed'){messageFromArgs(args,kwArgs);var fastWords=['H-Hayai','Masaka','Its fast'];this.messageFromLog("**"+fastWords[Math.floor(Math.random()*fastWords.length)]+"**");return true;}else if(_moveid2==='aerialace'){messageFromArgs(['move',args[1],'Tsubame Gaeshi']);return true;}}return false;};_proto.messageFromLog=function messageFromLog(line){_callSpread(this.message,this,BattleLog.parseLogMessage(line));};_proto.turnText=function turnText(turnNum){var _this$battleParser2;var turnMessage=(_this$battleParser2=this.battleParser)==null?void 0:_this$battleParser2.parseArgs(['turn',turnNum],{},true).trim();if(!(turnMessage!=null&&turnMessage.startsWith('=='))||!turnMessage.endsWith('==')){return"Turn "+turnNum;}return turnMessage.slice(2,-2).trim();};_proto.textList=function textList(list){var listNoDuplicates=[];for(var _i2=0;_i2<list.length;_i2++){var user=list[_i2];if(!listNoDuplicates.includes(user))listNoDuplicates.push(user);}return TL.cappedUserList(listNoDuplicates,5);};BattleLog.parseLogMessage=function parseLogMessage(message){var messages=message.split('\n').map(function(line){line=BattleLog.escapeHTML(line);line=line.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');line=line.replace(/\|\|([^|]*)\|\|([^|]*)\|\|/,'<abbr title="$1">$2</abbr>');if(line.startsWith('  '))line='<small>'+line.trim()+'</small>';return line;});return[messages.join('<br />'),messages.filter(function(line){return!line.startsWith('<small>[');}).join('<br />')];};_proto.message=function message(_message){var _this$scene3;var sceneMessage=arguments.length>1&&arguments[1]!==undefined?arguments[1]:_message;(_this$scene3=this.scene)==null||_this$scene3.message(sceneMessage);this.addDiv('battle-history',_message);};_proto.addNode=function addNode(node,preempt){(preempt?this.preemptElem:this.innerElem).appendChild(node);if(this.atBottom){this.elem.scrollTop=this.elem.scrollHeight;}};_proto.
 addDiv=function addDiv(className,innerHTML,preempt){
 var el=document.createElement('div');
 el.className=className;
@@ -4925,8 +4934,8 @@ element.innerHTML=BattleLog.sanitizeHTML(htmlSrc);
 }
 this.updateScroll();
 return;
-}for(var _i10=0;_i10<
-elements.length;_i10++){var _element=elements[_i10];
+}for(var _i0=0;_i0<
+elements.length;_i0++){var _element=elements[_i0];
 _element.parentElement.removeChild(_element);
 }
 if(!htmlSrc)return;
@@ -4939,22 +4948,22 @@ this.prependDiv('notice uhtml-'+id,BattleLog.sanitizeHTML(htmlSrc));
 hideChatFrom=function hideChatFrom(userid){var showRevealButton=arguments.length>1&&arguments[1]!==undefined?arguments[1]:true;var lineCount=arguments.length>2&&arguments[2]!==undefined?arguments[2]:0;
 var classStart='chat chatmessage-'+userid+' ';
 var nodes=[];
-var buttonContainer=this.innerElem.lastChild;for(var _i12=0,_this$innerElem$child4=
-this.innerElem.childNodes;_i12<_this$innerElem$child4.length;_i12++){var node=_this$innerElem$child4[_i12];
+var buttonContainer=this.innerElem.lastChild;for(var _i10=0,_this$innerElem$child4=
+this.innerElem.childNodes;_i10<_this$innerElem$child4.length;_i10++){var node=_this$innerElem$child4[_i10];
 if(node.className&&(node.className+' ').startsWith(classStart)){
 nodes.push(node);
 }
 }
-if(this.preemptElem){for(var _i14=0,_this$preemptElem$chi4=
-this.preemptElem.childNodes;_i14<_this$preemptElem$chi4.length;_i14++){var _node2=_this$preemptElem$chi4[_i14];
+if(this.preemptElem){for(var _i12=0,_this$preemptElem$chi4=
+this.preemptElem.childNodes;_i12<_this$preemptElem$chi4.length;_i12++){var _node2=_this$preemptElem$chi4[_i12];
 if(_node2.className&&(_node2.className+' ').startsWith(classStart)){
 nodes.push(_node2);
 }
 }
 }
-if(lineCount)nodes=nodes.slice(-lineCount);for(var _i16=0,_nodes2=
+if(lineCount)nodes=nodes.slice(-lineCount);for(var _i14=0,_nodes2=
 
-nodes;_i16<_nodes2.length;_i16++){var _node3=_nodes2[_i16];
+nodes;_i14<_nodes2.length;_i14++){var _node3=_nodes2[_i14];
 _node3.style.display='none';
 _node3.className='revealed '+_node3.className;
 }
@@ -4981,15 +4990,15 @@ buttonContainer.appendChild(document.createTextNode(' '));
 buttonContainer.appendChild(button);
 };BattleLog.
 
-unlinkNodeList=function unlinkNodeList(nodeList){for(var _i18=0;_i18<
-nodeList.length;_i18++){var node=nodeList[_i18];
+unlinkNodeList=function unlinkNodeList(nodeList){for(var _i16=0;_i16<
+nodeList.length;_i16++){var node=nodeList[_i16];
 var linkList=node.getElementsByTagName('a');
 
 for(var i=linkList.length-1;i>=0;i--){
 var linkNode=linkList[i];
 var parent=linkNode.parentElement;
-if(!parent)continue;for(var _i20=0,_linkNode$childNodes2=
-linkNode.childNodes;_i20<_linkNode$childNodes2.length;_i20++){var childNode=_linkNode$childNodes2[_i20];
+if(!parent)continue;for(var _i18=0,_linkNode$childNodes2=
+linkNode.childNodes;_i18<_linkNode$childNodes2.length;_i18++){var childNode=_linkNode$childNodes2[_i18];
 parent.insertBefore(childNode,linkNode);
 }
 parent.removeChild(linkNode);
@@ -5054,7 +5063,7 @@ name=NonBattleGames[formatid];
 if(name.startsWith('gen')){
 name=name.replace(/^gen([0-9])/,'[Gen $1] ');
 }
-if(name.startsWith("[Gen "+Dex.gen+"] ")){
+if(name.startsWith("[Gen "+Dex.gen+"] ")&&!name.startsWith("[Gen "+Dex.gen+"] National Dex")){
 name=name.slice(("[Gen "+Dex.gen+"] ").length);
 }else if(name.startsWith("[Gen "+Dex.gen+" ")){
 name='['+name.slice(("[Gen "+Dex.gen+" ").length);
@@ -5633,8 +5642,8 @@ if(!el.length)return;
 var player=new window.YT.Player(id,{
 events:{
 onStateChange:function(event){
-if(event.data===window.YT.PlayerState.PLAYING){for(var _i22=0,_BattleLog$players2=
-BattleLog.players;_i22<_BattleLog$players2.length;_i22++){var curPlayer=_BattleLog$players2[_i22];
+if(event.data===window.YT.PlayerState.PLAYING){for(var _i20=0,_BattleLog$players2=
+BattleLog.players;_i20<_BattleLog$players2.length;_i20++){var curPlayer=_BattleLog$players2[_i20];
 if(player===curPlayer)continue;
 curPlayer==null||curPlayer.pauseVideo==null||curPlayer.pauseVideo();
 }
@@ -5755,7 +5764,7 @@ if(!replayFile){
 return'javascript:alert("You will need to click Download again once the replay file is at the end.");void 0';
 }
 return'data:text/plain;base64,'+encodeURIComponent(btoa(unescape(encodeURIComponent(replayFile))));
-};return BattleLog;}();BattleLog.colorCache={};BattleLog.interstice=function(){var whitelist=Config.whitelist||[];var patterns=whitelist.map(function(entry){return new RegExp("^(https?:)?//([A-Za-z0-9-]*\\.)?"+entry.replace(/\./g,'\\.')+"(/.*)?",'i');});return{isWhitelisted:function(uri){if(uri.startsWith('/')&&uri[1]!=='/'){return true;}for(var _i24=0;_i24<patterns.length;_i24++){var pattern=patterns[_i24];if(pattern.test(uri))return true;}return false;},getURI:function(uri){return"http://"+Config.routes.root+"/interstice?uri="+encodeURIComponent(uri);}};}();BattleLog.players=[];BattleLog.ytLoading=null;BattleLog.tagPolicy=null;
+};return BattleLog;}();BattleLog.colorCache={};BattleLog.interstice=function(){var whitelist=Config.whitelist||[];var patterns=whitelist.map(function(entry){return new RegExp("^(https?:)?//([A-Za-z0-9-]*\\.)?"+entry.replace(/\./g,'\\.')+"(/.*)?",'i');});return{isWhitelisted:function(uri){if(uri.startsWith('/')&&uri[1]!=='/'){return true;}for(var _i22=0;_i22<patterns.length;_i22++){var pattern=patterns[_i22];if(pattern.test(uri))return true;}return false;},getURI:function(uri){return"http://"+Config.routes.root+"/interstice?uri="+encodeURIComponent(uri);}};}();BattleLog.players=[];BattleLog.ytLoading=null;BattleLog.tagPolicy=null;
 
 
 
@@ -7141,8 +7150,8 @@ var tables=void 0;
 if(namespace.startsWith('item:'))tables=['Items','Default'];else
 if(namespace.startsWith('ability:'))tables=['Abilities','Default'];else
 if(namespace.startsWith('move:'))tables=['Moves','Default'];else
-tables=['Items','Abilities','Moves','Default'];for(var _i11=0,_tables2=
-tables;_i11<_tables2.length;_i11++){var table=_tables2[_i11];
+tables=['Items','Abilities','Moves','Default'];for(var _i1=0,_tables2=
+tables;_i1<_tables2.length;_i1++){var table=_tables2[_i1];
 var _template=this.textField(table,id,type);
 if(!_template)continue;
 if(_template.charAt(1)==='.'){
@@ -7398,25 +7407,25 @@ POKEMON:this.pokemon(_pokemon9),MOVE:this.moveName(move)
 }
 
 case'cant':{
-var _pokemon10=args[1],effect=args[2],_move=args[3];
+var _pokemon0=args[1],effect=args[2],_move=args[3];
 var _template9=this.template('cant',effect,'NODEFAULT')||
 this.template(_move?'cant':'cantNoMove');
-var _line3=this.maybeAbility(effect,kwArgs.of||_pokemon10);
+var _line3=this.maybeAbility(effect,kwArgs.of||_pokemon0);
 return _line3+this.render(_template9,{
-POKEMON:this.pokemon(_pokemon10),MOVE:this.moveName(_move)
+POKEMON:this.pokemon(_pokemon0),MOVE:this.moveName(_move)
 });
 }
 
 case'-candynamax':{
 var _side4=args[1];
 var own=this.own(_side4);
-var _template10='';
+var _template0='';
 if(this.turn===1){
-if(own)_template10=this.template('canDynamax',own);
+if(own)_template0=this.template('canDynamax',own);
 }else{
-_template10=this.template('canDynamax',own);
+_template0=this.template('canDynamax',own);
 }
-return this.render(_template10,{TRAINER:this.trainer(_side4)});
+return this.render(_template0,{TRAINER:this.trainer(_side4)});
 }
 
 case'message':{
@@ -7425,34 +7434,34 @@ return''+message+'\n';
 }
 
 case'-start':{var _kwArgs$from;
-var _pokemon11=args[1],_effect4=args[2],_arg2=args[3];
-var _line4=this.maybeAbility(_effect4,_pokemon11)||this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon11);
+var _pokemon1=args[1],_effect4=args[2],_arg2=args[3];
+var _line4=this.maybeAbility(_effect4,_pokemon1)||this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon1);
 var _id5=BattleTextParser.effectId(_effect4);
 if(_id5==='typechange'){
-var _template11=this.template('typeChange',kwArgs.from);
-return _line4+this.render(_template11,{
-POKEMON:this.pokemon(_pokemon11),TYPE:_arg2,SOURCE:this.pokemon(kwArgs.of)
+var _template1=this.template('typeChange',kwArgs.from);
+return _line4+this.render(_template1,{
+POKEMON:this.pokemon(_pokemon1),TYPE:_arg2,SOURCE:this.pokemon(kwArgs.of)
 });
 }
 if(_id5==='typeadd'){
-var _template12=this.template('typeAdd',kwArgs.from);
-return _line4+this.render(_template12,{POKEMON:this.pokemon(_pokemon11),TYPE:_arg2});
+var _template10=this.template('typeAdd',kwArgs.from);
+return _line4+this.render(_template10,{POKEMON:this.pokemon(_pokemon1),TYPE:_arg2});
 }
 if(_id5.startsWith('stockpile')){
 var _num2=_id5.slice(9);
-var _template13=this.template('start','stockpile');
-return _line4+this.render(_template13,{POKEMON:this.pokemon(_pokemon11),NUMBER:_num2});
+var _template11=this.template('start','stockpile');
+return _line4+this.render(_template11,{POKEMON:this.pokemon(_pokemon1),NUMBER:_num2});
 }
 if(_id5.startsWith('perish')){
 var _num3=_id5.slice(6);
-var _template14=this.template('activate','perishsong');
-return _line4+this.render(_template14,{POKEMON:this.pokemon(_pokemon11),NUMBER:_num3});
+var _template12=this.template('activate','perishsong');
+return _line4+this.render(_template12,{POKEMON:this.pokemon(_pokemon1),NUMBER:_num3});
 }
 if(_id5.startsWith('protosynthesis')||_id5.startsWith('quarkdrive')){
 var stat=_id5.slice(-3);
-var _template15=this.template('start',_id5.slice(0,_id5.length-3));
-return _line4+this.render(_template15,{
-POKEMON:this.pokemon(_pokemon11),STAT:this.statValue(stat)
+var _template13=this.template('start',_id5.slice(0,_id5.length-3));
+return _line4+this.render(_template13,{
+POKEMON:this.pokemon(_pokemon1),STAT:this.statValue(stat)
 });
 }
 var templateId='start';
@@ -7465,9 +7474,9 @@ if(kwArgs.upkeep)templateId='upkeep';
 if(templateId==='start'&&(_kwArgs$from=kwArgs.from)!=null&&_kwArgs$from.startsWith('item:')){
 templateId+='FromItem';
 }
-var _template16=this.template(templateId,kwArgs.from,_effect4);
-return _line4+this.render(_template16,{
-POKEMON:this.pokemon(_pokemon11),
+var _template14=this.template(templateId,kwArgs.from,_effect4);
+return _line4+this.render(_template14,{
+POKEMON:this.pokemon(_pokemon1),
 EFFECT:this.effect(_effect4),
 MOVE:this.moveName(_arg2),
 SOURCE:this.pokemon(kwArgs.of),
@@ -7476,21 +7485,21 @@ ITEM:this.effect(kwArgs.from)
 }
 
 case'-end':{var _kwArgs$from2;
-var _pokemon12=args[1],_effect5=args[2];
-var _line5=this.maybeAbility(_effect5,_pokemon12)||this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon12);
+var _pokemon10=args[1],_effect5=args[2];
+var _line5=this.maybeAbility(_effect5,_pokemon10)||this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon10);
 var _id6=BattleTextParser.effectId(_effect5);
 if(_id6==='doomdesire'||_id6==='futuresight'){
-var _template17=this.template('activate',_effect5);
-return _line5+this.render(_template17,{TARGET:this.pokemon(_pokemon12)});
+var _template15=this.template('activate',_effect5);
+return _line5+this.render(_template15,{TARGET:this.pokemon(_pokemon10)});
 }
 var _templateId='end';
-var _template18='';
+var _template16='';
 if((_kwArgs$from2=kwArgs.from)!=null&&_kwArgs$from2.startsWith('item:')){
-_template18=this.template('endFromItem',_effect5);
+_template16=this.template('endFromItem',_effect5);
 }
-if(!_template18)_template18=this.template(_templateId,_effect5);
-return _line5+this.render(_template18,{
-POKEMON:this.pokemon(_pokemon12),
+if(!_template16)_template16=this.template(_templateId,_effect5);
+return _line5+this.render(_template16,{
+POKEMON:this.pokemon(_pokemon10),
 EFFECT:this.effect(_effect5),
 SOURCE:this.pokemon(kwArgs.of),
 ITEM:this.effect(kwArgs.from)
@@ -7498,163 +7507,163 @@ ITEM:this.effect(kwArgs.from)
 }
 
 case'-ability':{
-var _pokemon13=args[1],ability=args[2],oldAbility=args[3];
+var _pokemon11=args[1],ability=args[2],oldAbility=args[3];
 var _line6='';
-if(oldAbility)_line6+=this.ability(oldAbility,_pokemon13);
-_line6+=this.ability(ability,_pokemon13);
+if(oldAbility)_line6+=this.ability(oldAbility,_pokemon11);
+_line6+=this.ability(ability,_pokemon11);
 if(kwArgs.fail){
-var _template19=this.template('block',kwArgs.from);
-return _line6+_template19;
+var _template17=this.template('block',kwArgs.from);
+return _line6+_template17;
 }
 if(kwArgs.from){
-if(!oldAbility)_line6=this.maybeAbility(kwArgs.from,_pokemon13)+_line6;
-var _template20=this.template('changeAbility',kwArgs.from);
-return _line6+this.render(_template20,{
-POKEMON:this.pokemon(_pokemon13),
+if(!oldAbility)_line6=this.maybeAbility(kwArgs.from,_pokemon11)+_line6;
+var _template18=this.template('changeAbility',kwArgs.from);
+return _line6+this.render(_template18,{
+POKEMON:this.pokemon(_pokemon11),
 ABILITY:this.abilityName(ability),
 SOURCE:this.pokemon(kwArgs.of)
 });
 }
 var _id7=BattleTextParser.effectId(ability);
 if(_id7==='unnerve'){
-var _template21=this.template('start',ability);
-return _line6+this.render(_template21,{TEAM:this.team(_pokemon13.slice(0,2),true)});
+var _template19=this.template('start',ability);
+return _line6+this.render(_template19,{TEAM:this.team(_pokemon11.slice(0,2),true)});
 }
 var _templateId2='start';
 if(_id7==='anticipation'||_id7==='sturdy')_templateId2='activate';
-var _template22=this.template(_templateId2,ability,'NODEFAULT');
-return _line6+this.render(_template22,{POKEMON:this.pokemon(_pokemon13)});
+var _template20=this.template(_templateId2,ability,'NODEFAULT');
+return _line6+this.render(_template20,{POKEMON:this.pokemon(_pokemon11)});
 }
 
 case'-endability':{
-var _pokemon14=args[1],_ability=args[2];
-if(_ability)return this.ability(_ability,_pokemon14);
-var _line7=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon14);
-var _template23=this.template('start','Gastro Acid');
-return _line7+this.render(_template23,{POKEMON:this.pokemon(_pokemon14)});
+var _pokemon12=args[1],_ability=args[2];
+if(_ability)return this.ability(_ability,_pokemon12);
+var _line7=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon12);
+var _template21=this.template('start','Gastro Acid');
+return _line7+this.render(_template21,{POKEMON:this.pokemon(_pokemon12)});
 }
 
 case'-item':{
-var _pokemon15=args[1],item=args[2];
+var _pokemon13=args[1],item=args[2];
 var _id8=BattleTextParser.effectId(kwArgs.from);
 var _target='';
 if(['magician','pickpocket'].includes(_id8)){var _ref2=
 [kwArgs.of,''];_target=_ref2[0];kwArgs.of=_ref2[1];
 }
-var _line8=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon15);
+var _line8=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon13);
 if(['thief','covet','bestow','magician','pickpocket'].includes(_id8)){
-var _template24=this.template('takeItem',kwArgs.from);
-return _line8+this.render(_template24,{
-POKEMON:this.pokemon(_pokemon15),
+var _template22=this.template('takeItem',kwArgs.from);
+return _line8+this.render(_template22,{
+POKEMON:this.pokemon(_pokemon13),
 ITEM:this.itemValue(item),
 SOURCE:this.pokemon(_target||kwArgs.of)
 });
 }
 if(_id8==='frisk'){
-var hasTarget=kwArgs.of&&_pokemon15&&kwArgs.of!==_pokemon15;
-var _template25=this.template(hasTarget?'activate':'activateNoTarget',"Frisk");
-return _line8+this.render(_template25,{
+var hasTarget=kwArgs.of&&_pokemon13&&kwArgs.of!==_pokemon13;
+var _template23=this.template(hasTarget?'activate':'activateNoTarget',"Frisk");
+return _line8+this.render(_template23,{
 POKEMON:this.pokemon(kwArgs.of),
 ITEM:this.itemValue(item),
-TARGET:this.pokemon(_pokemon15)
+TARGET:this.pokemon(_pokemon13)
 });
 }
 if(kwArgs.from){
-var _template26=this.template('addItem',kwArgs.from);
-return _line8+this.render(_template26,{
-POKEMON:this.pokemon(_pokemon15),ITEM:this.itemValue(item)
+var _template24=this.template('addItem',kwArgs.from);
+return _line8+this.render(_template24,{
+POKEMON:this.pokemon(_pokemon13),ITEM:this.itemValue(item)
 });
 }
-var _template27=this.template('start',item,'NODEFAULT');
-return _line8+this.render(_template27,{POKEMON:this.pokemon(_pokemon15)});
+var _template25=this.template('start',item,'NODEFAULT');
+return _line8+this.render(_template25,{POKEMON:this.pokemon(_pokemon13)});
 }
 
 case'-enditem':{
-var _pokemon16=args[1],_item=args[2];
-var _line9=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon16);
+var _pokemon14=args[1],_item=args[2];
+var _line9=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon14);
 if(kwArgs.eat){
-var _template28=this.template('eatItem',kwArgs.from);
-return _line9+this.render(_template28,{
-POKEMON:this.pokemon(_pokemon16),ITEM:this.itemValue(_item)
+var _template26=this.template('eatItem',kwArgs.from);
+return _line9+this.render(_template26,{
+POKEMON:this.pokemon(_pokemon14),ITEM:this.itemValue(_item)
 });
 }
 var _id9=BattleTextParser.effectId(kwArgs.from);
 if(_id9==='gem'){
-var _template29=this.template('useGem',_item);
-return _line9+this.render(_template29,{
-POKEMON:this.pokemon(_pokemon16),
+var _template27=this.template('useGem',_item);
+return _line9+this.render(_template27,{
+POKEMON:this.pokemon(_pokemon14),
 ITEM:this.itemValue(_item),
 MOVE:this.moveName(kwArgs.move)
 });
 }
 if(_id9==='stealeat'){
-var _template30=this.template('removeItem',"Bug Bite");
-return _line9+this.render(_template30,{
+var _template28=this.template('removeItem',"Bug Bite");
+return _line9+this.render(_template28,{
 SOURCE:this.pokemon(kwArgs.of),ITEM:this.itemValue(_item)
 });
 }
 if(kwArgs.from){
-var _template31=this.template('removeItem',kwArgs.from);
-return _line9+this.render(_template31,{
-POKEMON:this.pokemon(_pokemon16),
+var _template29=this.template('removeItem',kwArgs.from);
+return _line9+this.render(_template29,{
+POKEMON:this.pokemon(_pokemon14),
 ITEM:this.itemValue(_item),
 SOURCE:this.pokemon(kwArgs.of)
 });
 }
 if(kwArgs.weaken){
-var _template32=this.template('activateWeaken');
-return _line9+this.render(_template32,{
-POKEMON:this.pokemon(_pokemon16),ITEM:this.itemValue(_item)
+var _template30=this.template('activateWeaken');
+return _line9+this.render(_template30,{
+POKEMON:this.pokemon(_pokemon14),ITEM:this.itemValue(_item)
 });
 }
-var _template33=this.template('end',_item,'NODEFAULT');
-if(!_template33)_template33=this.template('activateItem');
-return _line9+this.render(_template33,{
-POKEMON:this.pokemon(_pokemon16),
+var _template31=this.template('end',_item,'NODEFAULT');
+if(!_template31)_template31=this.template('activateItem');
+return _line9+this.render(_template31,{
+POKEMON:this.pokemon(_pokemon14),
 ITEM:this.itemValue(_item),
 TARGET:this.pokemon(kwArgs.of)
 });
 }
 
 case'-status':{var _kwArgs$from3;
-var _pokemon17=args[1],status=args[2];
-var _line10=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon17);
+var _pokemon15=args[1],status=args[2];
+var _line0=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon15);
 if((_kwArgs$from3=kwArgs.from)!=null&&_kwArgs$from3.startsWith('item:')){
-var _template34=this.template('startFromItem',status);
-return _line10+this.render(_template34,{
-POKEMON:this.pokemon(_pokemon17),ITEM:this.effect(kwArgs.from)
+var _template32=this.template('startFromItem',status);
+return _line0+this.render(_template32,{
+POKEMON:this.pokemon(_pokemon15),ITEM:this.effect(kwArgs.from)
 });
 }
 if(BattleTextParser.effectId(kwArgs.from)==='rest'){
-var _template35=this.template('startFromRest',status);
-return _line10+this.render(_template35,{POKEMON:this.pokemon(_pokemon17)});
+var _template33=this.template('startFromRest',status);
+return _line0+this.render(_template33,{POKEMON:this.pokemon(_pokemon15)});
 }
-var _template36=this.template('start',status);
-return _line10+this.render(_template36,{POKEMON:this.pokemon(_pokemon17)});
+var _template34=this.template('start',status);
+return _line0+this.render(_template34,{POKEMON:this.pokemon(_pokemon15)});
 }
 
 case'-curestatus':{var _kwArgs$from4;
-var _pokemon18=args[1],_status=args[2];
+var _pokemon16=args[1],_status=args[2];
 if(BattleTextParser.effectId(kwArgs.from)==='naturalcure'){
-var _template37=this.template('activate',kwArgs.from);
-return this.render(_template37,{POKEMON:this.pokemon(_pokemon18)});
+var _template35=this.template('activate',kwArgs.from);
+return this.render(_template35,{POKEMON:this.pokemon(_pokemon16)});
 }
-var _line11=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon18);
+var _line1=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon16);
 if((_kwArgs$from4=kwArgs.from)!=null&&_kwArgs$from4.startsWith('item:')){
-var _template38=this.template('endFromItem',_status);
-return _line11+this.render(_template38,{
-POKEMON:this.pokemon(_pokemon18),ITEM:this.effect(kwArgs.from)
+var _template36=this.template('endFromItem',_status);
+return _line1+this.render(_template36,{
+POKEMON:this.pokemon(_pokemon16),ITEM:this.effect(kwArgs.from)
 });
 }
 if(kwArgs.thaw){
-var _template39=this.template('endFromMove',_status);
-return _line11+this.render(_template39,{
-POKEMON:this.pokemon(_pokemon18),MOVE:this.effect(kwArgs.from)
+var _template37=this.template('endFromMove',_status);
+return _line1+this.render(_template37,{
+POKEMON:this.pokemon(_pokemon16),MOVE:this.effect(kwArgs.from)
 });
 }
-var _template40=this.template('end',_status,'NODEFAULT');
-if(!_template40)_template40=this.template('end');
-return _line11+this.render(_template40,{POKEMON:this.pokemon(_pokemon18),EFFECT:_status});
+var _template38=this.template('end',_status,'NODEFAULT');
+if(!_template38)_template38=this.template('end');
+return _line1+this.render(_template38,{POKEMON:this.pokemon(_pokemon16),EFFECT:_status});
 }
 
 case'-cureteam':{
@@ -7662,40 +7671,40 @@ return this.template('activate',kwArgs.from);
 }
 
 case'-singleturn':case'-singlemove':{
-var _pokemon19=args[1],_effect6=args[2];
-var _line12=this.maybeAbility(_effect6,kwArgs.of||_pokemon19)||
-this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon19);
-var _id10=BattleTextParser.effectId(_effect6);
-if(_id10==='instruct'){
-var _template41=this.template('activate',_effect6);
-return _line12+this.render(_template41,{
-POKEMON:this.pokemon(kwArgs.of),TARGET:this.pokemon(_pokemon19)
+var _pokemon17=args[1],_effect6=args[2];
+var _line10=this.maybeAbility(_effect6,kwArgs.of||_pokemon17)||
+this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon17);
+var _id0=BattleTextParser.effectId(_effect6);
+if(_id0==='instruct'){
+var _template39=this.template('activate',_effect6);
+return _line10+this.render(_template39,{
+POKEMON:this.pokemon(kwArgs.of),TARGET:this.pokemon(_pokemon17)
 });
 }
-var _template42=this.template('start',_effect6,'NODEFAULT');
-if(!_template42)_template42=this.template('start');
-return _line12+this.render(_template42,{
+var _template40=this.template('start',_effect6,'NODEFAULT');
+if(!_template40)_template40=this.template('start');
+return _line10+this.render(_template40,{
 EFFECT:this.effect(_effect6),
-POKEMON:this.pokemon(_pokemon19),
+POKEMON:this.pokemon(_pokemon17),
 SOURCE:this.pokemon(kwArgs.of),
-TEAM:this.team(_pokemon19.slice(0,2))
+TEAM:this.team(_pokemon17.slice(0,2))
 });
 }
 
 case'-sidestart':{
 var _side5=args[1],_effect7=args[2];
-var _template43=this.template('start',_effect7,'NODEFAULT');
-if(!_template43)_template43=this.template('startTeamEffect');
-return this.render(_template43,{
+var _template41=this.template('start',_effect7,'NODEFAULT');
+if(!_template41)_template41=this.template('startTeamEffect');
+return this.render(_template41,{
 EFFECT:this.effect(_effect7),TEAM:this.team(_side5),PARTY:this.party(_side5)
 });
 }
 
 case'-sideend':{
 var _side6=args[1],_effect8=args[2];
-var _template44=this.template('end',_effect8,'NODEFAULT');
-if(!_template44)_template44=this.template('endTeamEffect');
-return this.render(_template44,{
+var _template42=this.template('end',_effect8,'NODEFAULT');
+if(!_template42)_template42=this.template('endTeamEffect');
+return this.render(_template42,{
 EFFECT:this.effect(_effect8),TEAM:this.team(_side6),PARTY:this.party(_side6)
 });
 }
@@ -7703,48 +7712,48 @@ EFFECT:this.effect(_effect8),TEAM:this.team(_side6),PARTY:this.party(_side6)
 case'-weather':{
 var weather=args[1];
 if(!weather||weather==='none'){
-var _template45=this.template('end',kwArgs.from,'NODEFAULT');
-if(!_template45){
+var _template43=this.template('end',kwArgs.from,'NODEFAULT');
+if(!_template43){
 return this.render(this.template('endFieldEffect'),{EFFECT:this.effect(weather)});
 }
-return _template45;
+return _template43;
 }
 if(kwArgs.upkeep){
 return this.template('upkeep',weather,'NODEFAULT');
 }
-var _line13=this.maybeAbility(kwArgs.from,kwArgs.of);
-var _template46=this.template('start',weather,'NODEFAULT');
-if(!_template46)_template46=this.template('startFieldEffect');
-return _line13+this.render(_template46,{EFFECT:this.effect(weather)});
+var _line11=this.maybeAbility(kwArgs.from,kwArgs.of);
+var _template44=this.template('start',weather,'NODEFAULT');
+if(!_template44)_template44=this.template('startFieldEffect');
+return _line11+this.render(_template44,{EFFECT:this.effect(weather)});
 }
 
 case'-fieldstart':case'-fieldactivate':{
 var _effect9=args[1];
-var _line14=this.maybeAbility(kwArgs.from,kwArgs.of);
+var _line12=this.maybeAbility(kwArgs.from,kwArgs.of);
 if(BattleTextParser.effectId(kwArgs.from)==='hadronengine'){
-return _line14+this.render(this.template('start','hadronengine'),{
+return _line12+this.render(this.template('start','hadronengine'),{
 POKEMON:this.pokemon(kwArgs.of)
 });
 }
 var _templateId3=cmd.slice(6);
 if(BattleTextParser.effectId(_effect9)==='perishsong')_templateId3='start';
-var _template47=this.template(_templateId3,_effect9,'NODEFAULT');
-if(!_template47)_template47=this.template('startFieldEffect');
-return _line14+this.render(_template47,{
+var _template45=this.template(_templateId3,_effect9,'NODEFAULT');
+if(!_template45)_template45=this.template('startFieldEffect');
+return _line12+this.render(_template45,{
 EFFECT:this.effect(_effect9),POKEMON:this.pokemon(kwArgs.of)
 });
 }
 
 case'-fieldend':{
-var _effect10=args[1];
-var _template48=this.template('end',_effect10,'NODEFAULT');
-if(!_template48)_template48=this.template('endFieldEffect');
-return this.render(_template48,{EFFECT:this.effect(_effect10)});
+var _effect0=args[1];
+var _template46=this.template('end',_effect0,'NODEFAULT');
+if(!_template46)_template46=this.template('endFieldEffect');
+return this.render(_template46,{EFFECT:this.effect(_effect0)});
 }
 
 case'-sethp':{
-var _effect11=kwArgs.from;
-return this.template('activate',_effect11);
+var _effect1=kwArgs.from;
+return this.template('activate',_effect1);
 }
 
 case'-message':{
@@ -7758,154 +7767,154 @@ return'  ('+_message2+')\n';
 }
 
 case'-activate':{
-var _pokemon20=args[1],_effect12=args[2],_target2=args[3];
-var _id11=BattleTextParser.effectId(_effect12);
-if(_id11==='celebrate'){
+var _pokemon18=args[1],_effect10=args[2],_target2=args[3];
+var _id1=BattleTextParser.effectId(_effect10);
+if(_id1==='celebrate'){
 return this.render(this.template('activate','celebrate'),{
-TRAINER:this.trainer(_pokemon20.slice(0,2))
+TRAINER:this.trainer(_pokemon18.slice(0,2))
 });
 }
 if(!_target2&&
-['hyperdrill','hyperspacefury','hyperspacehole','phantomforce','shadowforce','feint'].includes(_id11)){var _ref3=
-[kwArgs.of,_pokemon20];_pokemon20=_ref3[0];_target2=_ref3[1];
-if(!_pokemon20)_pokemon20=_target2;
+['hyperdrill','hyperspacefury','hyperspacehole','phantomforce','shadowforce','feint'].includes(_id1)){var _ref3=
+[kwArgs.of,_pokemon18];_pokemon18=_ref3[0];_target2=_ref3[1];
+if(!_pokemon18)_pokemon18=_target2;
 }
-if(!_target2)_target2=kwArgs.of||_pokemon20;
+if(!_target2)_target2=kwArgs.of||_pokemon18;
 
-var _line15=this.maybeAbility(_effect12,_pokemon20);
+var _line13=this.maybeAbility(_effect10,_pokemon18);
 
-if(_id11==='lockon'||_id11==='mindreader'){
-var _template49=this.template('start',_effect12);
-return _line15+this.render(_template49,{
-POKEMON:this.pokemon(kwArgs.of),SOURCE:this.pokemon(_pokemon20)
+if(_id1==='lockon'||_id1==='mindreader'){
+var _template47=this.template('start',_effect10);
+return _line13+this.render(_template47,{
+POKEMON:this.pokemon(kwArgs.of),SOURCE:this.pokemon(_pokemon18)
 });
 }
 
-if((_id11==='mummy'||_id11==='lingeringaroma')&&kwArgs.ability){
-_line15+=this.ability(kwArgs.ability,_target2);
-_line15+=this.ability(_id11==='mummy'?'Mummy':'Lingering Aroma',_target2);
-var _template50=this.template('changeAbility',_id11);
-return _line15+this.render(_template50,{TARGET:this.pokemon(_target2)});
+if((_id1==='mummy'||_id1==='lingeringaroma')&&kwArgs.ability){
+_line13+=this.ability(kwArgs.ability,_target2);
+_line13+=this.ability(_id1==='mummy'?'Mummy':'Lingering Aroma',_target2);
+var _template48=this.template('changeAbility',_id1);
+return _line13+this.render(_template48,{TARGET:this.pokemon(_target2)});
 }
 
-if(_id11==='commander'){
+if(_id1==='commander'){
 
 
-if(_target2===_pokemon20)return _line15;
-var _template51=this.template('activate',_id11);
-return _line15+this.render(_template51,{
-POKEMON:this.pokemon(_pokemon20),TARGET:this.pokemon(_target2)
+if(_target2===_pokemon18)return _line13;
+var _template49=this.template('activate',_id1);
+return _line13+this.render(_template49,{
+POKEMON:this.pokemon(_pokemon18),TARGET:this.pokemon(_target2)
 });
 }
 
 var _templateId4='activate';
-if(_id11==='forewarn'&&_pokemon20===_target2){
+if(_id1==='forewarn'&&_pokemon18===_target2){
 _templateId4='activateNoTarget';
 }
-if((_id11==='protosynthesis'||_id11==='quarkdrive')&&kwArgs.fromitem){
+if((_id1==='protosynthesis'||_id1==='quarkdrive')&&kwArgs.fromitem){
 _templateId4='activateFromItem';
 }
-if(_id11==='orichalcumpulse'&&kwArgs.source){
+if(_id1==='orichalcumpulse'&&kwArgs.source){
 _templateId4='start';
 }
-var _template52=this.template(_templateId4,_effect12,'NODEFAULT');
-if(!_template52){
-if(_line15)return _line15;
-_template52=this.template('activate');
-return _line15+this.render(_template52,{EFFECT:this.effect(_effect12)});
+var _template50=this.template(_templateId4,_effect10,'NODEFAULT');
+if(!_template50){
+if(_line13)return _line13;
+_template50=this.template('activate');
+return _line13+this.render(_template50,{EFFECT:this.effect(_effect10)});
 }
 
 if(kwArgs.ability){
-_line15+=this.ability(kwArgs.ability,_pokemon20);
+_line13+=this.ability(kwArgs.ability,_pokemon18);
 }
 if(kwArgs.ability2){
-_line15+=this.ability(kwArgs.ability2,_target2);
+_line13+=this.ability(kwArgs.ability2,_target2);
 }
-return _line15+this.render(_template52,{
-TEAM:_id11==='brickbreak'?this.team(_target2.slice(0,2)):undefined,
+return _line13+this.render(_template50,{
+TEAM:_id1==='brickbreak'?this.team(_target2.slice(0,2)):undefined,
 MOVE:kwArgs.move?this.moveName(kwArgs.move):undefined,
 NUMBER:kwArgs.number,
 ITEM:kwArgs.item?this.itemValue(kwArgs.item):undefined,
 NAME:kwArgs.name,
-POKEMON:this.pokemon(_pokemon20),
+POKEMON:this.pokemon(_pokemon18),
 TARGET:this.pokemon(_target2),
 SOURCE:this.pokemon(kwArgs.of)
 });
 }
 
 case'-prepare':{
-var _pokemon21=args[1],_effect13=args[2],_target3=args[3];
-var _template53=this.template('prepare',_effect13);
-return this.render(_template53,{
-POKEMON:this.pokemon(_pokemon21),TARGET:this.pokemon(_target3)
+var _pokemon19=args[1],_effect11=args[2],_target3=args[3];
+var _template51=this.template('prepare',_effect11);
+return this.render(_template51,{
+POKEMON:this.pokemon(_pokemon19),TARGET:this.pokemon(_target3)
 });
 }
 
 case'-damage':{
-var _pokemon22=args[1],percentage=args[3];
-var _template54=this.template('damage',kwArgs.from,'NODEFAULT');
-var _line16=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon22);
-var _id12=BattleTextParser.effectId(kwArgs.from);
-if(_template54){
-return _line16+this.render(_template54,{POKEMON:this.pokemon(_pokemon22)});
+var _pokemon20=args[1],percentage=args[3];
+var _template52=this.template('damage',kwArgs.from,'NODEFAULT');
+var _line14=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon20);
+var _id10=BattleTextParser.effectId(kwArgs.from);
+if(_template52){
+return _line14+this.render(_template52,{POKEMON:this.pokemon(_pokemon20)});
 }
 
 if(!kwArgs.from){
-_template54=this.template(percentage?'damagePercentage':'damage');
+_template52=this.template(percentage?'damagePercentage':'damage');
 percentage=percentage?percentage.replace(/%(\|\|)?$/,'$1'):'';
-var _message3=this.render(_template54,{
-POKEMON:this.pokemon(_pokemon22),PERCENTAGE:percentage
+var _message3=this.render(_template52,{
+POKEMON:this.pokemon(_pokemon20),PERCENTAGE:percentage
 });
 
-return _line16+_message3.replace(/\|\|([%％])/,'$1||');
+return _line14+_message3.replace(/\|\|([%％])/,'$1||');
 }
 if(kwArgs.from.startsWith('item:')){
-_template54=this.template(kwArgs.of?'damageFromPokemon':'damageFromItem');
-return _line16+this.render(_template54,{
-POKEMON:this.pokemon(_pokemon22),
+_template52=this.template(kwArgs.of?'damageFromPokemon':'damageFromItem');
+return _line14+this.render(_template52,{
+POKEMON:this.pokemon(_pokemon20),
 ITEM:this.effect(kwArgs.from),
 SOURCE:this.pokemon(kwArgs.of)
 });
 }
-if(kwArgs.partiallytrapped||_id12==='bind'||_id12==='wrap'){
-_template54=this.template('damageFromPartialTrapping');
-return _line16+this.render(_template54,{
-POKEMON:this.pokemon(_pokemon22),MOVE:this.effect(kwArgs.from)
+if(kwArgs.partiallytrapped||_id10==='bind'||_id10==='wrap'){
+_template52=this.template('damageFromPartialTrapping');
+return _line14+this.render(_template52,{
+POKEMON:this.pokemon(_pokemon20),MOVE:this.effect(kwArgs.from)
 });
 }
 
-_template54=this.template('damage');
-return _line16+this.render(_template54,{POKEMON:this.pokemon(_pokemon22)});
+_template52=this.template('damage');
+return _line14+this.render(_template52,{POKEMON:this.pokemon(_pokemon20)});
 }
 
 case'-heal':{
-var _pokemon23=args[1];
-var _template55=this.template('heal',kwArgs.from,'NODEFAULT');
-var _line17=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon23);
-if(_template55){
-return _line17+this.render(_template55,{
-POKEMON:this.pokemon(_pokemon23),
+var _pokemon21=args[1];
+var _template53=this.template('heal',kwArgs.from,'NODEFAULT');
+var _line15=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon21);
+if(_template53){
+return _line15+this.render(_template53,{
+POKEMON:this.pokemon(_pokemon21),
 SOURCE:this.pokemon(kwArgs.of),
 NICKNAME:kwArgs.wisher
 });
 }
 
 if(kwArgs.from&&!kwArgs.from.startsWith('ability:')){
-_template55=this.template('healFromEffect');
-return _line17+this.render(_template55,{
-POKEMON:this.pokemon(_pokemon23),EFFECT:this.effect(kwArgs.from)
+_template53=this.template('healFromEffect');
+return _line15+this.render(_template53,{
+POKEMON:this.pokemon(_pokemon21),EFFECT:this.effect(kwArgs.from)
 });
 }
 
-_template55=this.template('heal');
-return _line17+this.render(_template55,{POKEMON:this.pokemon(_pokemon23)});
+_template53=this.template('heal');
+return _line15+this.render(_template53,{POKEMON:this.pokemon(_pokemon21)});
 }
 
 case'-boost':case'-unboost':{var _kwArgs$from5;
-var _pokemon24=args[1],_stat2=args[2],_num4=args[3];
+var _pokemon22=args[1],_stat2=args[2],_num4=args[3];
 if(_stat2==='spa'&&this.gen===1)_stat2='spc';
 var amount=parseInt(_num4,10);
-var _line18=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon24);
+var _line16=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon22);
 var _templateId5=cmd.slice(1);
 if(amount>=3)_templateId5+='3';else
 if(amount>=2)_templateId5+='2';else
@@ -7913,65 +7922,65 @@ if(amount===0)_templateId5+='0';
 if(amount&&kwArgs.zeffect){
 _templateId5+=kwArgs.multiple?'MultipleFromZEffect':'FromZEffect';
 }else if(amount&&(_kwArgs$from5=kwArgs.from)!=null&&_kwArgs$from5.startsWith('item:')){
-var _template56=this.template(_templateId5+'FromItem',kwArgs.from);
-return _line18+this.render(_template56,{
-POKEMON:this.pokemon(_pokemon24),
+var _template54=this.template(_templateId5+'FromItem',kwArgs.from);
+return _line16+this.render(_template54,{
+POKEMON:this.pokemon(_pokemon22),
 STAT:this.statValue(_stat2),
 ITEM:this.effect(kwArgs.from)
 });
 }
-var _template57=this.template(_templateId5,kwArgs.from);
-return _line18+this.render(_template57,{
-POKEMON:this.pokemon(_pokemon24),STAT:this.statValue(_stat2)
+var _template55=this.template(_templateId5,kwArgs.from);
+return _line16+this.render(_template55,{
+POKEMON:this.pokemon(_pokemon22),STAT:this.statValue(_stat2)
 });
 }
 
 case'-setboost':{
-var _pokemon25=args[1];
-var _effect14=kwArgs.from;
-var _line19=this.maybeAbility(_effect14,kwArgs.of||_pokemon25);
-var _template58=this.template('boost',_effect14);
-return _line19+this.render(_template58,{POKEMON:this.pokemon(_pokemon25)});
+var _pokemon23=args[1];
+var _effect12=kwArgs.from;
+var _line17=this.maybeAbility(_effect12,kwArgs.of||_pokemon23);
+var _template56=this.template('boost',_effect12);
+return _line17+this.render(_template56,{POKEMON:this.pokemon(_pokemon23)});
 }
 
 case'-swapboost':{
-var _pokemon26=args[1],_target4=args[2];
-var _line20=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon26);
-var _id13=BattleTextParser.effectId(kwArgs.from);
+var _pokemon24=args[1],_target4=args[2];
+var _line18=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon24);
+var _id11=BattleTextParser.effectId(kwArgs.from);
 var _templateId6='swapBoost';
-if(_id13==='guardswap')_templateId6='swapDefensiveBoost';
-if(_id13==='powerswap')_templateId6='swapOffensiveBoost';
-var _template59=this.template(_templateId6,kwArgs.from);
-return _line20+this.render(_template59,{
-POKEMON:this.pokemon(_pokemon26),TARGET:this.pokemon(_target4)
+if(_id11==='guardswap')_templateId6='swapDefensiveBoost';
+if(_id11==='powerswap')_templateId6='swapOffensiveBoost';
+var _template57=this.template(_templateId6,kwArgs.from);
+return _line18+this.render(_template57,{
+POKEMON:this.pokemon(_pokemon24),TARGET:this.pokemon(_target4)
 });
 }
 
 case'-copyboost':{
-var _pokemon27=args[1],_target5=args[2];
-var _line21=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon27);
-var _template60=this.template('copyBoost',kwArgs.from);
-return _line21+this.render(_template60,{
-POKEMON:this.pokemon(_pokemon27),TARGET:this.pokemon(_target5)
+var _pokemon25=args[1],_target5=args[2];
+var _line19=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon25);
+var _template58=this.template('copyBoost',kwArgs.from);
+return _line19+this.render(_template58,{
+POKEMON:this.pokemon(_pokemon25),TARGET:this.pokemon(_target5)
 });
 }
 
 case'-clearboost':case'-clearpositiveboost':case'-clearnegativeboost':{
-var _pokemon28=args[1],source=args[2];
-var _line22=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon28);
+var _pokemon26=args[1],source=args[2];
+var _line20=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon26);
 var _templateId7='clearBoost';
 if(kwArgs.zeffect)_templateId7='clearBoostFromZEffect';
-var _template61=this.template(_templateId7,kwArgs.from);
-return _line22+this.render(_template61,{
-POKEMON:this.pokemon(_pokemon28),SOURCE:this.pokemon(source)
+var _template59=this.template(_templateId7,kwArgs.from);
+return _line20+this.render(_template59,{
+POKEMON:this.pokemon(_pokemon26),SOURCE:this.pokemon(source)
 });
 }
 
 case'-invertboost':{
-var _pokemon29=args[1];
-var _line23=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon29);
-var _template62=this.template('invertBoost',kwArgs.from);
-return _line23+this.render(_template62,{POKEMON:this.pokemon(_pokemon29)});
+var _pokemon27=args[1];
+var _line21=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon27);
+var _template60=this.template('invertBoost',kwArgs.from);
+return _line21+this.render(_template60,{POKEMON:this.pokemon(_pokemon27)});
 }
 
 case'-clearallboost':{
@@ -7979,7 +7988,7 @@ return this.template('clearAllBoost',kwArgs.from);
 }
 
 case'-crit':case'-supereffective':case'-resisted':{
-var _pokemon30=args[1],effectiveness=args[2];
+var _pokemon28=args[1],effectiveness=args[2];
 var _templateId8=cmd.slice(1);
 if(_templateId8==='supereffective')_templateId8='superEffective';
 if(effectiveness==='2'){
@@ -7987,76 +7996,76 @@ if(_templateId8==='superEffective')_templateId8='extremelyEffective';
 if(_templateId8==='resisted')_templateId8='mostlyIneffective';
 }
 if(kwArgs.spread)_templateId8+='Spread';
-var _template63=this.template(_templateId8);
-return this.render(_template63,{POKEMON:this.pokemon(_pokemon30)});
+var _template61=this.template(_templateId8);
+return this.render(_template61,{POKEMON:this.pokemon(_pokemon28)});
 }
 
 case'-block':{
-var _pokemon31=args[1],_effect15=args[2],_move2=args[3],attacker=args[4];
-var _line24=this.maybeAbility(_effect15,kwArgs.of||_pokemon31);
-var _template64=this.template('block',_effect15);
-return _line24+this.render(_template64,{
-POKEMON:this.pokemon(_pokemon31),
+var _pokemon29=args[1],_effect13=args[2],_move2=args[3],attacker=args[4];
+var _line22=this.maybeAbility(_effect13,kwArgs.of||_pokemon29);
+var _template62=this.template('block',_effect13);
+return _line22+this.render(_template62,{
+POKEMON:this.pokemon(_pokemon29),
 SOURCE:this.pokemon(attacker||kwArgs.of),
 MOVE:this.moveName(_move2)
 });
 }
 
 case'-fail':{
-var _pokemon32=args[1],_effect16=args[2],_stat3=args[3];
-var _id14=BattleTextParser.effectId(_effect16);
+var _pokemon30=args[1],_effect14=args[2],_stat3=args[3];
+var _id12=BattleTextParser.effectId(_effect14);
 var blocker=BattleTextParser.effectId(kwArgs.from);
-var _line25=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon32);
+var _line23=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon30);
 var _templateId9='block';
 if(['desolateland','primordialsea'].includes(blocker)&&
-!['sunnyday','raindance','sandstorm','hail','snowscape','chillyreception'].includes(_id14)){
+!['sunnyday','raindance','sandstorm','hail','snowscape','chillyreception'].includes(_id12)){
 _templateId9='blockMove';
 }else if(blocker==='uproar'&&kwArgs.msg){
 _templateId9='blockSelf';
 }
-var _template65=this.template(_templateId9,kwArgs.from);
-if(_template65){
-return _line25+this.render(_template65,{POKEMON:this.pokemon(_pokemon32)});
+var _template63=this.template(_templateId9,kwArgs.from);
+if(_template63){
+return _line23+this.render(_template63,{POKEMON:this.pokemon(_pokemon30)});
 }
 
-if(_id14==='unboost'){
-_template65=this.template('fail','unboost');
-return _line25+this.render(_template65,{
-POKEMON:this.pokemon(_pokemon32),STAT:this.statValue(_stat3)
+if(_id12==='unboost'){
+_template63=this.template('fail','unboost');
+return _line23+this.render(_template63,{
+POKEMON:this.pokemon(_pokemon30),STAT:this.statValue(_stat3)
 });
 }
 
 _templateId9='fail';
-if(['brn','frz','par','psn','slp','substitute','shedtail'].includes(_id14)){
+if(['brn','frz','par','psn','slp','substitute','shedtail'].includes(_id12)){
 _templateId9='alreadyStarted';
 }
 if(kwArgs.heavy)_templateId9='failTooHeavy';
 if(kwArgs.weak)_templateId9='fail';
 if(kwArgs.forme)_templateId9='failWrongForme';
-_template65=this.template(_templateId9,_id14);
-return _line25+this.render(_template65,{POKEMON:this.pokemon(_pokemon32)});
+_template63=this.template(_templateId9,_id12);
+return _line23+this.render(_template63,{POKEMON:this.pokemon(_pokemon30)});
 }
 
 case'-immune':{
-var _pokemon33=args[1];
-var _line26=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon33);
-var _template66=this.template('block',kwArgs.from);
-if(!_template66){
-var _templateId10=kwArgs.ohko?'immuneOHKO':'immune';
-_template66=this.template(_pokemon33?_templateId10:'immuneNoPokemon',kwArgs.from);
+var _pokemon31=args[1];
+var _line24=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon31);
+var _template64=this.template('block',kwArgs.from);
+if(!_template64){
+var _templateId0=kwArgs.ohko?'immuneOHKO':'immune';
+_template64=this.template(_pokemon31?_templateId0:'immuneNoPokemon',kwArgs.from);
 }
-return _line26+this.render(_template66,{POKEMON:this.pokemon(_pokemon33)});
+return _line24+this.render(_template64,{POKEMON:this.pokemon(_pokemon31)});
 }
 
 case'-miss':{
-var _source=args[1],_pokemon34=args[2];
-var _line27=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon34);
-if(!_pokemon34){
-var _template67=this.template('missNoPokemon');
-return _line27+this.render(_template67,{SOURCE:this.pokemon(_source)});
+var _source=args[1],_pokemon32=args[2];
+var _line25=this.maybeAbility(kwArgs.from,kwArgs.of||_pokemon32);
+if(!_pokemon32){
+var _template65=this.template('missNoPokemon');
+return _line25+this.render(_template65,{SOURCE:this.pokemon(_source)});
 }
-var _template68=this.template('miss');
-return _line27+this.render(_template68,{POKEMON:this.pokemon(_pokemon34)});
+var _template66=this.template('miss');
+return _line25+this.render(_template66,{POKEMON:this.pokemon(_pokemon32)});
 }
 
 case'-center':case'-ohko':case'-combine':{
@@ -8068,21 +8077,21 @@ return this.template('noTarget');
 }
 
 case'-mega':case'-primal':{
-var _pokemon35=args[1],species=args[2],_item2=args[3];
-var _id15='';
-var _templateId11=cmd.slice(1);
+var _pokemon33=args[1],species=args[2],_item2=args[3];
+var _id13='';
+var _templateId1=cmd.slice(1);
 if(species==='Rayquaza'){
-_id15='dragonascent';
-_templateId11='megaNoItem';
+_id13='dragonascent';
+_templateId1='megaNoItem';
 }
-if(!_item2&&cmd==='-mega')_templateId11='megaNoItem';
-var _template69=this.template(_templateId11,_id15);
-var _side7=_pokemon35.slice(0,2);
-var pokemonName=this.pokemon(_pokemon35);
+if(!_item2&&cmd==='-mega')_templateId1='megaNoItem';
+var _template67=this.template(_templateId1,_id13);
+var _side7=_pokemon33.slice(0,2);
+var pokemonName=this.pokemon(_pokemon33);
 if(cmd==='-mega'){
-_template69+=this.template('transformMega');
+_template67+=this.template('transformMega');
 }
-return this.render(_template69,{
+return this.render(_template67,{
 POKEMON:pokemonName,
 SPECIES:this.speciesName(species),
 ITEM:this.itemValue(_item2),
@@ -8091,30 +8100,30 @@ TRAINER:this.trainer(_side7)
 }
 
 case'-terastallize':{
-var _pokemon36=args[1],type=args[2];
-var _id16='';
-var _templateId12=cmd.slice(1);
-var _template70=this.template(_templateId12,_id16);
-var _pokemonName=this.pokemon(_pokemon36);
-return this.render(_template70,{POKEMON:_pokemonName,TYPE:type});
+var _pokemon34=args[1],type=args[2];
+var _id14='';
+var _templateId10=cmd.slice(1);
+var _template68=this.template(_templateId10,_id14);
+var _pokemonName=this.pokemon(_pokemon34);
+return this.render(_template68,{POKEMON:_pokemonName,TYPE:type});
 }
 
 case'-zpower':{
-var _pokemon37=args[1];
-var _template71=this.template('zPower');
-return this.render(_template71,{POKEMON:this.pokemon(_pokemon37)});
+var _pokemon35=args[1];
+var _template69=this.template('zPower');
+return this.render(_template69,{POKEMON:this.pokemon(_pokemon35)});
 }
 
 case'-burst':{
-var _pokemon38=args[1];
-var _template72=this.template('activate',"Ultranecrozium Z");
-return this.render(_template72,{POKEMON:this.pokemon(_pokemon38)});
+var _pokemon36=args[1];
+var _template70=this.template('activate',"Ultranecrozium Z");
+return this.render(_template70,{POKEMON:this.pokemon(_pokemon36)});
 }
 
 case'-zbroken':{
-var _pokemon39=args[1];
-var _template73=this.template('zBroken');
-return this.render(_template73,{POKEMON:this.pokemon(_pokemon39)});
+var _pokemon37=args[1];
+var _template71=this.template('zBroken');
+return this.render(_template71,{POKEMON:this.pokemon(_pokemon37)});
 }
 
 case'-hitcount':{
@@ -8125,10 +8134,10 @@ NUMBER:{value:_num5,category:_num5==='1'?'s':'p'}
 }
 
 case'-waiting':{
-var _pokemon40=args[1],_target6=args[2];
-var _template74=this.template('activate',"Water Pledge");
-return this.render(_template74,{
-POKEMON:this.pokemon(_pokemon40),TARGET:this.pokemon(_target6)
+var _pokemon38=args[1],_target6=args[2];
+var _template72=this.template('activate',"Water Pledge");
+return this.render(_template72,{
+POKEMON:this.pokemon(_pokemon38),TARGET:this.pokemon(_target6)
 });
 }
 
