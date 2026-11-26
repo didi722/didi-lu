@@ -120,6 +120,8 @@
     //   valoreCorsa         quanto vale un turno guadagnato con una mossa di potenziamento (Swords Dance, Dragon Dance, Calm Mind, Bulk Up...): si confrontano i turni che servono a me per
     //                       mettere KO e all'avversario per mettere KO me, prima e dopo il potenziamento (_guadagnoPotenziamento). Se col colpo di adesso si chiude già in un turno, o in due
     //                       anche con un altro potenziamento, un Swords Dance in più non serve e non si fa; senza questo Scizor a +2 lo rifaceva (7 potenziamenti su 10 erano ripetuti a vuoto: 71 su 203)
+    //   costoCuraDiFila     ogni cura di fila dello stesso Pokémon (Recover, Roost...) costa questo in più della precedente: contro chi toglie quanto si recupera si finiva con sette o otto Roost
+    //                       uno dietro l'altro (27 partite su 250 con una catena di almeno 4, ora 6) finché non finivano i PP
     //   forzaLegaAvv, forzaPartitaAvv
     //                       quanto fidarsi delle abitudini di un avversario con pochi dati (decisioni che valgono quanto la media della lega) e
     //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
@@ -198,7 +200,7 @@
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.5, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5, priorBloccoPriorita: 6,
-        protezioneInVantaggio: 1.5, bonusPerno: 0, moltUtilita: 1, costoSostituto: 0.5, costoEsplosione: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, ripeteStato: 0.5, valoreCorsa: 1.4, forzaLegaAvv: 100, forzaPartitaAvv: 40,
+        protezioneInVantaggio: 1.5, bonusPerno: 0, moltUtilita: 1, costoSostituto: 0.5, costoEsplosione: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, ripeteStato: 0.5, valoreCorsa: 1.4, costoCuraDiFila: 0.2, forzaLegaAvv: 100, forzaPartitaAvv: 40,
         memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2,
         copione: 1, copioneAnteprima: 0.8, copioneApertura: 0.8, copioneMosse: 0.5, copionePrimoTurno: 0.9, copioneFiducia: 2, copioneForza: 3, copioneCambi: 0.3, copioneForzaCambi: 30
     };
@@ -582,6 +584,7 @@
                         if (this._primoTurnoInCampo(m)) m.usiT1[mossa] = (m.usiT1[mossa] || 0) + 1;
                     }
                     { const dm = this.mossa(mossa); m.statiDiFila = dm && dm.categoria === 'Status' && !p.some(x => String(x).startsWith('[from]')) && m.turnoUltimaMossa === this.turno - 1 ? (m.statiDiFila || 0) + 1 : (dm && dm.categoria === 'Status' ? 1 : 0); }
+                    { const dm2 = this.mossa(mossa); m.curaDiFila = dm2 && dm2.recupero && !p.some(x => String(x).startsWith('[from]')) ? (m.turnoUltimaMossa === this.turno - 1 ? (m.curaDiFila || 0) + 1 : 1) : 0; }
                     m.ultimaMossa = mossa; m.turnoUltimaMossa = this.turno;
                     // Wish: chi sta in quel posto a fine del turno dopo riprende metà degli HP di chi l'ha usato
                     if (mossa === 'wish' && chi && !p.some(x => String(x).startsWith('[from]'))) this.lati[chi.lato].desiderio[chi.slot] = { turno: this.turno, da: m.nome };
@@ -2807,6 +2810,8 @@
             if (m.recupero) {
                 const mancante = Math.max(0, 1 - me.hp / me.hpMax - (lato === 'mie' ? this.par.sogliaRecupero : 0));
                 v += Math.min(0.5, mancante) * 0.9 * this._pesoMon(me);
+                // curarsi a ogni turno contro uno che toglie quanto si recupera non porta da nessuna parte (finiscono prima i PP della cura che quelli del suo attacco): ogni cura di fila costa un po' di più
+                if (lato === 'mie' && me.ref && me.ref.curaDiFila && me.ref.turnoUltimaMossa === this.turno - 1) v -= this.par.costoCuraDiFila * me.ref.curaDiFila;
                 return v * segno;
             }
             if (m.stato) {

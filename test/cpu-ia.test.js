@@ -1617,6 +1617,20 @@ test('team: chi porta Swords Dance o Bulk Up attacca con quella statistica, e lo
     assert.ok(visti > 3, `ci sono set con Swords Dance (${visti})`);
 });
 
+test('cure: curarsi a ogni turno di fila costa sempre di più (Corviknight contro Zapdos non fa otto Roost uno dietro l\'altro)', async () => {
+    const corv = { specie: 'Corviknight', item: 'Leftovers', abilita: 'Pressure', hp: 50, mosse: ['Roost', 'Iron Head', 'Brave Bird', 'U-turn'] };
+    const compagno = { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw'] };
+    const valoreRoost = async n => {
+        const extraLog = [];
+        for (let i = 0; i < n; i++) extraLog.push('|move|p2a: Corviknight|Roost|p2a: Corviknight', '|upkeep', `|turn|${i + 2}`);
+        if (!n) extraLog.push('|upkeep', '|turn|2');
+        const r = await opzioniContro({ squadra: [corv, compagno], attivi: [0], doppio: false, avversari: ['Zapdos', 'Heatran'], attiviAvv: ['Zapdos'], extraLog });
+        return Math.max(...r.piani.filter(p => p.azioni.some(a => /\[Roost\]/.test(a))).map(p => p.val));
+    };
+    const v0 = await valoreRoost(0), v1 = await valoreRoost(1), v3 = await valoreRoost(3);
+    assert.ok(v1 < v0 - 0.05 && v3 < v1 - 0.1 && v3 < v0 - 0.2, `Roost: ${v0} la prima volta, ${v1} dopo una, ${v3} dopo tre di fila`);
+});
+
 test('priorità bloccate: l\'avversario non è previsto usare Fake Out contro il Farigiraf con Armor Tail della CPU (né contro il suo compagno), mentre senza il blocco sì', async () => {
     const { sim } = await caricaSim();
     const scelte = async (squadra) => {
