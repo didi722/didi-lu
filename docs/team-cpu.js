@@ -95,6 +95,8 @@
     //                       Substitute       Gen 4 46%, Gen 7 44% (anche con costoSostituto)       -> spenta: quasi mai conviene a una scelta fatta un turno alla volta
     //                       Explosion        Gen 4 46%, Gen 7 42% (anche con costoEsplosione)      -> spenta
     //                     Il cervello le gioca tutte (anche quando le porta un team fatto da una persona): spente sono solo nei team che compone la CPU
+    //   coerenzaOffensiva (1 = sì) chi porta Swords Dance, Bulk Up, Nasty Plot o Calm Mind attacca con quella statistica (prima Iron Valiant aveva Swords Dance con Moonblast e gli EV sull'Att. Sp.),
+    //                     e uno spread fatto per l'altra statistica non va a chi attacca solo con mosse fisiche (o solo speciali): Landorus-Therian con Terremoto e Rock Slide ma EV sull'Att. Sp.
     //   hiddenPower, bonusHiddenPower
     //                     (1 = sì) nella 3ª-7ª generazione Hidden Power è un attacco del tipo che i consigli indicano ("Hidden Power Fire": gli IV seguono il tipo); prima non c'era.
     //                     bonusHiddenPower scala quanto i consigli la fanno preferire agli altri attacchi (1 = come per ogni mossa consigliata, 0 = vale solo per la copertura che dà). Misurato nel
@@ -109,17 +111,17 @@
         probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1,
         maxStato: 2, probStato: 0.85, offesaMaxStato: 125, bonusFakeOut: 2.1, bonusStato: 1.2, bonusIntimidazione: 0.5, bonusRedirezione: 0.9,
         pesoStato: 1, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 170, candMaxDoppio: 260, probSpread: 1, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 1, probSceltaDoppio: 0,
-        probEncore: 0, probTrick: 1, probSostituto: 0, probRiposo: 0, probDesiderio: 1, probPassaBoost: 1, probEsplosione: 0, probCura: 1, probCoaching: 1, utiliTop: 4, maxUtili: 3, maxEsplosione: 1, hiddenPower: 1, bonusHiddenPower: 0 };
+        probEncore: 0, probTrick: 1, probSostituto: 0, probRiposo: 0, probDesiderio: 1, probPassaBoost: 1, probEsplosione: 0, probCura: 1, probCoaching: 1, utiliTop: 4, maxUtili: 3, maxEsplosione: 1, hiddenPower: 1, bonusHiddenPower: 0, coerenzaOffensiva: 1 };
     // com'era prima (per i confronti)
     const PARAMETRI_TEAM_VECCHI = { maxAiuto: 99, probAiuto: 1, probProtezione: 1, maxSenzaProt: 0, priorita: 0, sogliaPriorita: 40, bonusPriorita: 0, probPerno: 0, maxPerno: 0, sogliaPerno: 50, bonusPerno: 0,
         maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
         pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0,
-        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1 };
+        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1, coerenzaOffensiva: 0 };
     // com'erano prima dei ruoli di stato, di Intimidate e del peso maggiore di Colpo Fortunato (per confrontare team vecchi e nuovi con tools/prova-team.cjs --confronto precedenti)
     const PARAMETRI_TEAM_PRECEDENTI = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.1, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
         probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1, maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
         pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0,
-        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1 };
+        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1, coerenzaOffensiva: 0 };
 
     // =================================================
     // UTILITÀ
@@ -647,8 +649,16 @@
         scelte.filter(m => m.categoria !== 'Status').forEach(copre);
         const liberi = 4 - scelte.length;
         const daFare = Math.max(ruolo.attacchi != null ? ruolo.attacchi : liberi, 0);
-        const usabili = cand.attacchi.filter(a => a.m.categoria !== 'Status');
-        const preferita = cand.basi.atk >= cand.basi.spa ? 'Physical' : 'Special';
+        let usabili = cand.attacchi.filter(a => a.m.categoria !== 'Status');
+        let preferita = cand.basi.atk >= cand.basi.spa ? 'Physical' : 'Special';
+        // chi porta Swords Dance, Bulk Up (Attacco) o Nasty Plot, Calm Mind (Att. Sp.) attacca con quella statistica: senza questo Iron Valiant (Attacco e Att. Sp. pari) aveva Swords Dance
+        // con Moonblast e Thunderbolt, gli EV sull'Att. Sp. e il potenziamento sprecato (60 mosse su 389 del singolo)
+        const pot = ruolo.setup && ruolo.setup.potenziamento;
+        const orient = pot ? ((pot.atk || 0) > 0 && !((pot.spa || 0) > 0) ? 'Physical' : (pot.spa || 0) > 0 && !((pot.atk || 0) > 0) ? 'Special' : null) : null;
+        if (orient && (ctx.parametriTeam || PARAMETRI_TEAM).coerenzaOffensiva > 0) {
+            const coerenti = usabili.filter(a => a.m.categoria === orient);
+            if (coerenti.length >= 2) { usabili = coerenti; preferita = orient; }
+        }
         let presi = ruolo.priorita && scelte.some(m => m.id === ruolo.priorita.id) ? 1 : 0;      // la mossa prioritaria è già un attacco
         // STAB: il migliore per ogni tipo (il valore tiene già conto della categoria)
         for (const t of cand.tipiBase) {
@@ -994,13 +1004,18 @@
 
     // Lo spread (natura, EV, IV) dei set di Smogon che somiglia di più alle mosse scelte: quello con più mosse in comune (almeno due, la Protezione non conta),
     // a parità il più giocato. Con la Stanza Magica serve uno spread senza velocità; senza, non uno fatto per la Stanza Magica (IV di velocità a 0).
-    function spreadVero(cand, mosse, trickRoom) {
+    function spreadVero(cand, mosse, trickRoom, coerente) {
         const lista = (cand.cons && cand.cons.spread) || [];
         if (!lista.length) return null;
         const mie = new Set(mosse.filter(m => !m.protezione).map(m => m.id));
+        // chi attacca solo con mosse fisiche (o solo speciali) non prende uno spread fatto per l'altra statistica (Landorus-Therian con Terremoto e Rock Slide, gli EV sull'Att. Sp. e IV Attacco 0)
+        const nFisiche = mosse.filter(m => m.categoria === 'Physical' && m.id !== 'bodypress' && m.id !== 'foulplay').length;
+        const nSpeciali = mosse.filter(m => m.categoria === 'Special').length;
         let migliore = null, mv = 0;
         lista.forEach((sp, k) => {
             if (trickRoom ? sp.e[5] > 0 : !!(sp.i && sp.i.spe === 0)) return;
+            if (coerente && nFisiche > 0 && !nSpeciali && (sp.e[3] > sp.e[1] || (sp.i && sp.i.atk === 0))) return;
+            if (coerente && nSpeciali > 0 && !nFisiche && sp.e[1] > sp.e[3]) return;
             const comuni = sp.m.filter(m => mie.has(m)).length;
             const v = comuni - k * 0.01;
             if (comuni >= Math.min(2, mie.size) && v > mv) { mv = v; migliore = sp; }
@@ -1045,7 +1060,7 @@
         const lc = ctx.livello <= 10;
         const probSpread = lc ? par.probSpread : (ctx.doppio ? par.probSpreadDoppio : (ctx.gen >= par.genMinSpread ? par.probSpread : 0));
         if (probSpread > 0 && ctx.gen >= 3 && (probSpread >= 1 || (rnd || Math.random)() < probSpread)) {
-            const sp = spreadVero(cand, mosse, trickRoom);
+            const sp = spreadVero(cand, mosse, trickRoom, par.coerenzaOffensiva > 0);
             if (sp) {
                 const nomi = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
                 const evsVeri = {};

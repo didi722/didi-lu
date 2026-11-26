@@ -117,6 +117,9 @@
     //                       e chi gioca lo sa): 1 = come sempre, 0 = mai
     //   ripeteStato         quanto è probabile che l'avversario rifaccia una mossa di stato (potenziamento, cura) dopo averla fatta il turno prima: raddoppia le probabilità
     //                       di ripeterla a ogni turno di fila. Conta per le mosse che riescono solo contro chi attacca (Sucker Punch, Thunderclap)
+    //   valoreCorsa         quanto vale un turno guadagnato con una mossa di potenziamento (Swords Dance, Dragon Dance, Calm Mind, Bulk Up...): si confrontano i turni che servono a me per
+    //                       mettere KO e all'avversario per mettere KO me, prima e dopo il potenziamento (_guadagnoPotenziamento). Se col colpo di adesso si chiude già in un turno, o in due
+    //                       anche con un altro potenziamento, un Swords Dance in più non serve e non si fa; senza questo Scizor a +2 lo rifaceva (7 potenziamenti su 10 erano ripetuti a vuoto: 71 su 203)
     //   forzaLegaAvv, forzaPartitaAvv
     //                       quanto fidarsi delle abitudini di un avversario con pochi dati (decisioni che valgono quanto la media della lega) e
     //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
@@ -195,7 +198,7 @@
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.5, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5, priorBloccoPriorita: 6,
-        protezioneInVantaggio: 1.5, bonusPerno: 0, moltUtilita: 1, costoSostituto: 0.5, costoEsplosione: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, ripeteStato: 0.5, forzaLegaAvv: 100, forzaPartitaAvv: 40,
+        protezioneInVantaggio: 1.5, bonusPerno: 0, moltUtilita: 1, costoSostituto: 0.5, costoEsplosione: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, ripeteStato: 0.5, valoreCorsa: 1.4, forzaLegaAvv: 100, forzaPartitaAvv: 40,
         memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2,
         copione: 1, copioneAnteprima: 0.8, copioneApertura: 0.8, copioneMosse: 0.5, copionePrimoTurno: 0.9, copioneFiducia: 2, copioneForza: 3, copioneCambi: 0.3, copioneForzaCambi: 30
     };
@@ -1145,6 +1148,18 @@
         }
 
         // Miglior danno atteso (frazione dell'HP del bersaglio) tra le mosse date
+        // come _miglioreSu, ma dice anche se la mossa migliore ha priorità (colpisce prima a prescindere dalla velocità)
+        _miglioreMossaSu(att, dif, mosse, ctx) {
+            let migliore = 0, prio = 0;
+            for (const m of mosse) {
+                if (!m || m.categoria === 'Status') continue;
+                const d = C.danno(this.dex, att, dif, m, ctx, {});
+                const v = d.fraz * C.precisione(att, dif, m, ctx);
+                if (v > migliore) { migliore = v; prio = m.priorita || 0; }
+            }
+            return { v: migliore, prio };
+        }
+
         _miglioreSu(att, dif, mosse, ctx) {
             let migliore = 0;
             for (const m of mosse) {
@@ -2251,7 +2266,7 @@
                         if (lato === 'mie') { const t = a.bersaglio; vittima = t != null && t > 0 ? avv[t - 1] : (avv.find(o => o && o.hp > 0) || null); }
                         else vittima = mie[a.bersaglio] || null;
                     }
-                    bonus += this._valoreStato(m, lato, x.slot, { campoMio, campoAvv, ctx, doppio, nemici, insiemi, vittima });
+                    bonus += this._valoreStato(m, lato, x.slot, { campoMio, campoAvv, ctx, doppio, nemici, insiemi, vittima, azioniAvv });
                     if (m.stato && vittima) statiDati.push({ vittima, valore: bonus - prima });
                     if (pBlocco > 0) bonus = prima + (bonus - prima) * (1 - pBlocco) - (lato === 'mie' ? 0.3 : -0.3) * pBlocco;
                     if (m.potenziamento) {
@@ -2706,6 +2721,48 @@
             return s * this._pesoMon(v);
         }
 
+        // Quanti turni fa guadagnare un potenziamento a chi lo usa, in media sugli avversari in campo: la corsa è "quanti turni servono a me per metterlo KO, quanti a lui per mettere KO me,
+        // chi muove prima". Con il potenziamento io spendo un turno (e lui mi colpisce) ma dopo servono meno turni a me e più a lui. Se con la mossa di adesso metto già KO in un turno
+        // (o in due, e col potenziamento sempre in due) un altro Swords Dance non serve: il guadagno è zero o negativo. Un avversario che dorme o non mi colpisce rende il turno quasi gratis.
+        _guadagnoPotenziamento(me, pot, nemici, ctx, azioniAvv) {
+            const mie = (me.moves || []).map(k => this.mossa(k)).filter(Boolean);
+            const dopo = Object.assign({}, me.boost);
+            for (const k of Object.keys(pot)) dopo[k] = Math.max(-6, Math.min(6, (dopo[k] || 0) + pot[k]));
+            const io0 = me, io1 = Object.assign({}, me, { boost: dopo });
+            const turni = (resto, danno) => danno > 0 ? Math.max(1, Math.min(6, Math.ceil(resto / danno - 0.1))) : 6;
+            const margine = (nMio, nLoro, primo) => Math.max(-4, Math.min(4, nLoro - nMio + (primo ? 0.6 : -0.6)));
+            let somma = 0, n = 0;
+            nemici.forEach((o, i) => {
+                if (!o || !(o.hp > 0)) return;
+                n++;
+                const resto = o.hp / o.hpMax, mioResto = me.hp / me.hpMax;
+                const mosseO = this.mosseAvversario(o);
+                // in questo scenario l'avversario attacca? se si para, cambia o fa altro, il turno del potenziamento non costa colpi subiti (e se si para un attacco andrebbe perso)
+                const az = azioniAvv && azioniAvv.find(q => q.slot === i);
+                const attacca = !az || (az.tipo === 'mossa' && az.mossa && az.mossa.categoria !== 'Status' && !az.mossa.protezione);
+                const parato = !!(az && az.tipo === 'mossa' && az.mossa && az.mossa.protezione);       // il mio colpo di adesso andrebbe perso
+                const addormentato = o.stato === 'slp' || o.stato === 'frz';
+                const m0 = this._miglioreMossaSu(io0, o, mie, ctx), m1 = this._miglioreMossaSu(io1, o, mie, ctx);
+                const fa0 = m0.v, fa1 = m1.v;
+                const prende0 = addormentato ? 0 : this._miglioreSu(o, io0, mosseO, ctx), prende1 = addormentato ? 0 : this._miglioreSu(o, io1, mosseO, ctx);
+                // chi muove prima: la velocità (per la mossa di potenziamento di questo turno), o la priorità dell'attacco migliore (Bullet Punch, Sucker Punch: colpisce prima comunque)
+                const veloce0 = C.confrontoVelocita(io0, o, ctx) > 0, veloce1 = C.confrontoVelocita(io1, o, ctx) > 0;
+                const prima0 = veloce0 || m0.prio > 0, prima1 = veloce1 || m1.prio > 0;
+                // attaccare adesso (se lui si para il colpo è perso: un turno in più)
+                const ora = margine(turni(resto, fa0) + (parato ? 1 : 0), turni(mioResto, prende0), prima0);
+                // potenziarsi: se attacca, durante il turno mi colpisce una volta; poi servono meno turni a me
+                // (se lui è più veloce, il suo colpo di questo turno è già nei miei HP)
+                const restoDopo = mioResto - (attacca && veloce0 ? prende0 : 0);
+                const lui = restoDopo <= 0 ? 0 : (prende1 > 0 ? turni(restoDopo, prende1) : 6);
+                // il turno del potenziamento è un mio turno senza attacco; ma se lui mi colpisce dopo di me quel colpo è già nei suoi turni (lui), altrimenti (ha già colpito o non attacca) no
+                const dopoPot = margine(turni(resto, fa1) + (veloce0 && attacca ? 0 : 1), lui, prima1);
+                // se non attacca, il potenziamento resta anche per chi viene dopo: un po' vale comunque
+                if (parato) somma += 0.4;
+                somma += Math.max(-1.5, Math.min(3, dopoPot - ora));
+            });
+            return n ? somma / n : 0;
+        }
+
         // Valore di una mossa di stato (non danneggia)
         _valoreStato(m, lato, slot, E) {
             const { campoMio, campoAvv, ctx, doppio, nemici, insiemi } = E;
@@ -2721,6 +2778,19 @@
                 // utile se chi lo usa non rischia di essere messo KO subito e c'è margine per potenziarsi
                 const pot = m.potenziamento;
                 const off = me.stat.atk >= me.stat.spa ? 'atk' : 'spa';
+                // la mia mossa di potenziamento (non quella che fa l'avversario nei suoi scenari): quanto fa guadagnare in turni
+                const corsa = lato === 'mie' && this.par.valoreCorsa > 0 && me.moves && avversari.length && Object.keys(pot).every(k => ['atk', 'def', 'spa', 'spd', 'spe'].includes(k))
+                    ? this._guadagnoPotenziamento(me, pot, nemici(lato), ctx, lato === 'mie' ? E.azioniAvv : null) : null;
+                if (corsa != null) {
+                    // il valore dei livelli in più è già nel bilancio finale (linearmente): qui si toglie, perché il guadagno vero dipende da quanto serve ancora
+                    let lineare = 0;
+                    for (const k of Object.keys(pot)) {
+                        const residuo = Math.max(0, Math.min(pot[k], 6 - (me.boost[k] || 0)));
+                        lineare += (pot[k] > 0 ? residuo : pot[k]) * (k === off ? 0.14 : k === 'spe' ? 0.08 : (k === 'def' || k === 'spd') ? 0.05 : 0);
+                    }
+                    v += (corsa * this.par.valoreCorsa - lineare) * this._pesoMon(me);
+                    return v * segno;
+                }
                 let guadagno = 0;
                 for (const k of Object.keys(pot)) {
                     const attuale = me.boost[k] || 0;
