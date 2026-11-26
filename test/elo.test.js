@@ -116,3 +116,16 @@ test('amministrazione: il tasto "Recalculate stats" rifà classifiche, Elo e sta
     const fine = f.slice(0, f.indexOf('\n}\n'));
     assert.match(fine, /aggiornaLeaderboard\(stagioni\[i\]\)[\s\S]*ricalcolaEloGiocatori\(\)[\s\S]*ricalcolaStatisticheGlobali\(giocatori\[i\]\)/, 'in quest\'ordine: classifiche, Elo, statistiche');
 });
+
+test('stagione Random: l\'Elo si muove di 0,75 volte (primo match 3-0 tra due da 1000: +18/-18 invece di +24/-24); una stagione normale o una cup non cambiano', () => {
+    const { calcolaEloCronologico } = caricaSito(creaDb());
+    const conTipo = tipo => ({ info: { tipo }, ...stagione(match('a', 'b', 3, 0)) });
+    assert.deepEqual(copia(calcolaEloCronologico({ s1: conTipo('random') }).elo), { a: 1018, b: 982 });
+    assert.deepEqual(copia(calcolaEloCronologico({ s1: conTipo('league') }).elo), { a: 1024, b: 976 });
+    // il margine resta: un 2-1 in una Random vale 48 x 0,8 x 0,75 x 0,5 = 14
+    const tirato = copia(calcolaEloCronologico({ s1: { info: { tipo: 'random' }, ...stagione(match('a', 'b', 2, 1)) } }).elo);
+    assert.deepEqual(tirato, { a: 1014, b: 986 });
+    // le stagioni si mescolano nello stesso Elo: prima una normale poi una Random
+    const mista = copia(calcolaEloCronologico({ s1: stagione(match('a', 'b', 3, 0, '2024-01-01')), s2: { info: { tipo: 'random' }, ...stagione(match('a', 'b', 3, 0, '2024-02-01')) } }).elo);
+    assert.ok(mista.a > 1024 && mista.a < 1048, `${mista.a}`);
+});
