@@ -111,17 +111,17 @@
         probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1,
         maxStato: 2, probStato: 0.85, offesaMaxStato: 125, bonusFakeOut: 2.1, bonusStato: 1.2, bonusIntimidazione: 0.5, bonusRedirezione: 0.9,
         pesoStato: 1, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 170, candMaxDoppio: 260, probSpread: 1, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 1, probSceltaDoppio: 0,
-        probEncore: 0, probTrick: 1, probSostituto: 0, probRiposo: 0, probDesiderio: 1, probPassaBoost: 1, probEsplosione: 0, probCura: 1, probCoaching: 1, utiliTop: 4, maxUtili: 3, maxEsplosione: 1, hiddenPower: 1, bonusHiddenPower: 0, coerenzaOffensiva: 1 };
+        probEncore: 0, probTrick: 1, probSostituto: 0, probRiposo: 0, probDesiderio: 1, probPassaBoost: 1, probEsplosione: 0, probCura: 1, probCoaching: 1, utiliTop: 4, maxUtili: 3, maxEsplosione: 1, hiddenPower: 1, bonusHiddenPower: 0, coerenzaOffensiva: 1, meteoConMosse: 1, pesoMeteo: 2 };
     // com'era prima (per i confronti)
     const PARAMETRI_TEAM_VECCHI = { maxAiuto: 99, probAiuto: 1, probProtezione: 1, maxSenzaProt: 0, priorita: 0, sogliaPriorita: 40, bonusPriorita: 0, probPerno: 0, maxPerno: 0, sogliaPerno: 50, bonusPerno: 0,
         maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
         pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0,
-        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1, coerenzaOffensiva: 0 };
+        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1, coerenzaOffensiva: 0, meteoConMosse: 0, pesoMeteo: 1 };
     // com'erano prima dei ruoli di stato, di Intimidate e del peso maggiore di Colpo Fortunato (per confrontare team vecchi e nuovi con tools/prova-team.cjs --confronto precedenti)
     const PARAMETRI_TEAM_PRECEDENTI = { maxAiuto: 1, probAiuto: 0.45, probProtezione: 0.85, maxSenzaProt: 2, priorita: 1.35, sogliaPriorita: 85, bonusPriorita: 0.1, pesoSpecieMeta: 0.6, pesoMossaMeta: 0.5,
         probPerno: 0.65, maxPerno: 1, sogliaPerno: 50, bonusPerno: 0.1, maxStato: 0, probStato: 0, offesaMaxStato: 100, bonusFakeOut: 1.3, bonusStato: 0, bonusIntimidazione: 0, bonusRedirezione: 0.6,
         pesoStato: 0, pesoVelocita: 0, pesoCampo: 0, pesoPerno: 0, rallentaAnche: 0, probStatoSeguenti: 0.4, candFissi: 110, candMax: 170, candFissiDoppio: 110, candMaxDoppio: 170, probSpread: 0, probSpreadDoppio: 0, genMinSpread: 7, probScelta: 0, probSceltaDoppio: 0,
-        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1, coerenzaOffensiva: 0 };
+        probEncore: 0, probTrick: 0, probSostituto: 0, probRiposo: 0, probDesiderio: 0, probPassaBoost: 0, probEsplosione: 0, probCura: 0, probCoaching: 0, utiliTop: 4, maxUtili: 0, maxEsplosione: 0, hiddenPower: 0, bonusHiddenPower: 1, coerenzaOffensiva: 0, meteoConMosse: 0, pesoMeteo: 1 };
 
     // =================================================
     // UTILITÀ
@@ -451,6 +451,7 @@
             taunt: ha('taunt'), rallenta: ['icywind', 'electroweb', 'bulldoze', 'rocktomb', 'snarl'].find(ha) || null,
             roccia: ha('stealthrock'), spuntoni: ha('spikes'), recupero: mosse.find(m => m.recupero) || null,
             setup: mosse.filter(m => m.potenziamento),
+            meteoMossa: { rain: ha('raindance'), sun: ha('sunnyday'), sand: ha('sandstorm'), snow: ha('snowscape') || ha('hail') },
             pivot: perni.length ? perni[0].m : null, wideguard: ha('wideguard'), aurora: ha('auroraveil'), leechseed: ha('leechseed')
         };
         cand.supporto = !!(cand.opz.fakeout || cand.opz.tailwind || cand.opz.trickroom || cand.opz.redirezione || cand.opz.helpinghand || cand.opz.schermi);
@@ -633,6 +634,7 @@
             if (ruolo.rallenta) supporto(get(o.rallenta));
             if (ruolo.stato) supporto((ruolo.statoMossa && get(ruolo.statoMossa)) || get(o.paralisi) || get(o.sonno) || get('willowisp'));
             if (ruolo.perno) supporto(pivotDelSet());
+            if (ruolo.meteoMossa) supporto(get(ruolo.meteoMossa));
             for (const m of ruolo.utili || []) supporto(m);
         } else {
             if (ruolo.trappola) aggiungi(get(o.roccia ? 'stealthrock' : 'spikes'));
@@ -640,6 +642,7 @@
             if (ruolo.setup) aggiungi(ruolo.setup);
             if (ruolo.stato) aggiungi(get(o.sonno) || get(o.paralisi) || get('willowisp') || get('toxic'));
             if (ruolo.perno) aggiungi(pivotDelSet());
+            if (ruolo.meteoMossa) aggiungi(get(ruolo.meteoMossa));
             for (const m of ruolo.utili || []) aggiungi(m);
         }
 
@@ -716,8 +719,9 @@
             r.senzaProt = (assegnati.senzaProt || []).includes(cand.id);
             r.perno = (assegnati.perni || []).includes(cand.id);
             r.utili = (assegnati.utili || {})[cand.id] || [];
+            r.meteoMossa = (assegnati.meteoMossa || {})[cand.id] || null;
             // il pivot è un attacco che fa anche cambiare: ma occupa un posto che altrimenti sarebbe di un altro attacco
-            const nSupp = [r.fakeout, r.velocita, r.redirezione, r.schermi, r.aiuto, r.rallenta, r.stato, r.perno].filter(Boolean).length + r.utili.length;
+            const nSupp = [r.fakeout, r.velocita, r.redirezione, r.schermi, r.aiuto, r.rallenta, r.stato, r.perno, r.meteoMossa].filter(Boolean).length + r.utili.length;
             // senza Protezione c'è una mossa in più per attaccare
             r.attacchi = ctx.goose ? Math.max(2, 4 - nSupp) : Math.max(1, (r.senzaProt ? 4 : 3) - nSupp);
             r.supporto = nSupp > 0;
@@ -728,7 +732,8 @@
             r.stato = assegnati.stato.includes(cand.id);
             r.perno = assegnati.perno === cand.id;
             r.utili = (assegnati.utili || {})[cand.id] || [];
-            const nUtili = [r.trappola, r.recupero, r.setup, r.stato, r.perno].filter(Boolean).length + r.utili.length;
+            r.meteoMossa = (assegnati.meteoMossa || {})[cand.id] || null;
+            const nUtili = [r.trappola, r.recupero, r.setup, r.stato, r.perno, r.meteoMossa].filter(Boolean).length + r.utili.length;
             r.attacchi = Math.max(r.utili.length ? 1 : 2, 4 - nUtili);
         }
         return r;
@@ -809,7 +814,7 @@
     // Chi fa cosa: la squadra decide quale membro ha le mosse di supporto
     function assegnaRuoli(dex, membri, ctx, piano, rnd = Math.random, par = PARAMETRI_TEAM) {
         const a = { dex, fakeout: null, velocita: {}, redirezione: null, schermi: null, aiuto: [], rallenta: [], stato: [], statoMossa: {}, priorita: {}, senzaProt: [],
-            trappola: null, recupero: [], setup: {}, perno: null, perni: [] };
+            trappola: null, recupero: [], setup: {}, perno: null, perni: [], meteoMossa: {} };
         const per = (lista, f) => lista.slice().sort((x, y) => f(y) - f(x));
         if (ctx.doppio) {
             const conVel = piano.nome === 'trickroom' ? membri.filter(puoMettereStanza) : membri.filter(c => c.opz.tailwind);
@@ -900,6 +905,12 @@
         // le mosse di utilità si scelgono con un generatore a parte, che parte dai membri (non dal generatore del team: non ne consuma estrazioni): così due team composti con manopole
         // diverse hanno gli stessi membri e cambia solo chi porta quelle mosse (il confronto a coppie di tools/duello-cpu.cjs --gemelli), e i team senza novità restano quelli di prima
         a.utili = assegnaUtili(membri, ctx, a, creaCasuale('utili|' + membri.map(c => c.id).join('|')), par);
+        // il meteo con una mossa (Rain Dance, Sunny Day, Sandstorm, Snowscape): solo se nessuno del team lo mette con l'abilità; lo porta chi regge di più tra chi la impara
+        if (SETTER[piano.nome] && piano.conMosse && !membri.some(c => mettePerAbilita(piano, c))) {
+            const w = METEO_DEL_PIANO[piano.nome];
+            const chi = per(membri.filter(c => conMossaMeteo(piano, c)), c => c.robustezza)[0];
+            if (chi) a.meteoMossa[chi.id] = w === 'rain' ? 'raindance' : w === 'sun' ? 'sunnyday' : w === 'sand' ? 'sandstorm' : (chi.opz.meteoMossa.snow && chi.mosseDa.has('snowscape') ? 'snowscape' : 'hail');
+        }
         return a;
     }
 
@@ -1095,8 +1106,14 @@
 
     function testoSet(cand, ctx, ruolo, piano, restrizioni, usati, tera, natura, rnd) {
         const dex = ruolo.dex;
-        const mosse = correggiUova(cand, mosseDelSet(cand, ruolo, ctx, piano), ctx);
+        let mosse = correggiUova(cand, mosseDelSet(cand, ruolo, ctx, piano), ctx);
         const strumento = scegliStrumento(cand, ruolo, ctx, restrizioni, usati, piano, mosse, rnd);
+        // Trick e Switcheroo servono con uno strumento Scelta: se non c'è (già preso da un altro del team, o non ammesso) la mossa si cambia con un attacco
+        if (mosse.some(m => m.utile === 'trick') && !(strumento && K.STRUMENTI_SCELTA.has(id(strumento)))) {
+            const presenti = new Set(mosse.map(m => m.id));
+            const sostituta = cand.attacchi.map(a => a.m).find(m => !presenti.has(m.id));
+            mosse = mosse.map(m => (m.utile === 'trick' ? sostituta : m)).filter(Boolean);
+        }
         if (strumento) usati.add(id(strumento));
         const abilita = scegliAbilita(cand, piano, ctx, ruolo);
         const { evs, nat, ivs } = distribuzione(cand, ruolo, ctx, mosse, piano, natura, rnd);
@@ -1176,8 +1193,24 @@
         const nomi = ctx.doppio ? PIANI_DOPPIO : PIANI_SINGOLO;
         const ab = new Set();
         cand.forEach(c => abilitaPossibili(c).forEach(a => ab.add(a)));
+        const par = ctx.parametriTeam || PARAMETRI_TEAM;
+        // un piano meteo ha senso se ci sono Pokémon che ne approfittano (almeno due, uno con l'abilità giusta: Swift Swim, Chlorophyll, Sand Rush...) e se il meteo non indebolisce
+        // il tipo che fa la maggior parte del pool (il sole in un formato monotipo Acqua, la pioggia nel Fuoco)
+        const sensato = p => {
+            const sfruttano = cand.filter(c => sfruttaIlPiano({ nome: p }, c));
+            if (sfruttano.length < 2) return false;
+            if (!sfruttano.some(c => abilitaPossibili(c).some(a => SFRUTTATORI[p].includes(a))) && sfruttano.length < 6) return false;      // senza chi ha l'abilità (Swift Swim...) ce ne vogliono molti col tipo giusto
+            const contrario = { sole: 'Water', pioggia: 'Fire' }[p];
+            return !(contrario && cand.filter(c => c.tipiBase.includes(contrario)).length >= cand.length * 0.5);
+        };
+        const perAbilita = nomi.filter(p => SETTER[p] && SETTER[p].some(x => ab.has(x)) && sensato(p));
+        // il meteo con una mossa (Rain Dance...) solo dove il meteo con l'abilità è raro (meno di due piani nel pool: formati con pochi Pokémon, monotipo, restrizioni): un posto in meno
+        // per attaccare e un turno per metterlo, dove c'è Pelipper o Tyranitar le squadre con la mossa perdevano (misura: -4 e -9 punti)
+        const conMosse = par.meteoConMosse > 0 && perAbilita.length < 2;
+        const perMossa = conMosse ? nomi.filter(p => SETTER[p] && !perAbilita.includes(p) && cand.some(c => conMossaMeteo({ nome: p, conMosse: true }, c)) && sensato(p)) : [];
+        ctx.pianiMosse = new Set(perMossa);
         return nomi.filter(p => {
-            if (SETTER[p]) return SETTER[p].some(x => ab.has(x));
+            if (SETTER[p]) return perAbilita.includes(p) || perMossa.includes(p);
             if (p === 'tailwind') return cand.some(c => c.opz.tailwind);
             if (p === 'trickroom') return cand.some(puoMettereStanza) && cand.some(c => c.lento && c.offesa >= 95);
             return true;
@@ -1187,7 +1220,11 @@
     // Anything Goose: la CPU punta sull'attacco. "Offensivo" pesa quanto tutti gli altri piani insieme (compare più volte nell'elenco,
     // da cui si pesca), gli altri restano come un po' di strategia; "bilanciato" e "bulky" non servono.
     function pianiDelFormato(cand, ctx) {
-        const piani = pianiPossibili(cand, ctx);
+        let piani = pianiPossibili(cand, ctx);
+        // i piani meteo contano `pesoMeteo` volte
+        // (solo nei formati dove il meteo è raro, cioè dove serve la mossa: nei formati con Pelipper o Tyranitar i team meteo sono già tanti e raddoppiarli faceva perdere, -4 punti in un campione)
+        const pm = ctx.pianiMosse && ctx.pianiMosse.size ? Math.round(((ctx.parametriTeam || PARAMETRI_TEAM).pesoMeteo || 1)) : 1;
+        if (pm > 1) piani = piani.concat(...Array.from({ length: pm - 1 }, () => piani.filter(p => SETTER[p])));
         if (!ctx.goose) return piani;
         const altri = piani.filter(p => p !== 'offensivo' && p !== 'bilanciato' && p !== 'bulky');
         return Array.from({ length: Math.max(3, altri.length) }, () => 'offensivo').concat(altri);
@@ -1200,9 +1237,16 @@
     function impostaIlPiano(piano, c) {
         if (piano.nome === 'tailwind') return !!c.opz.tailwind;
         if (piano.nome === 'trickroom') return puoMettereStanza(c);
-        if (SETTER[piano.nome]) return abilitaPossibili(c).some(a => SETTER[piano.nome].includes(a));
+        if (SETTER[piano.nome]) return abilitaPossibili(c).some(a => SETTER[piano.nome].includes(a)) || conMossaMeteo(piano, c);
         return false;
     }
+    // Chi può mettere il meteo con una mossa (Rain Dance, Sunny Day, Sandstorm, Snowscape/Hail): vale quando nel pool non c'è chi lo mette con l'abilità (formati con pochi Pokémon: monotype, restrizioni)
+    const METEO_DEL_PIANO = { pioggia: 'rain', sole: 'sun', sabbia: 'sand', neve: 'snow' };
+    function conMossaMeteo(piano, c) {
+        const w = METEO_DEL_PIANO[piano.nome];
+        return !!(piano.conMosse && w && c.opz && c.opz.meteoMossa && c.opz.meteoMossa[w] && c.basi.hp * (c.basi.def + c.basi.spd) / 100 >= 45);
+    }
+    const mettePerAbilita = (piano, c) => SETTER[piano.nome] && abilitaPossibili(c).some(a => SETTER[piano.nome].includes(a));
     const pianoConSetter = piano => piano.nome === 'tailwind' || piano.nome === 'trickroom' || !!SETTER[piano.nome];
     // Chi ne approfitta (e quanti ne servono): attaccanti lenti per la Stanza Magica, chi ama il meteo (abilità o tipo) per il meteo
     function sfruttaIlPiano(piano, c) {
@@ -1262,13 +1306,20 @@
         // ...e da chi ne approfitta: senza, il setter metterebbe un meteo (o una Stanza Magica) che non serve a nessuno
         // (per il meteo il setter non conta: ci vuole qualcun altro che ne approfitti)
         const abusatoriPresenti = () => membri.filter(c => sfruttaIlPiano(piano, c) && !(SETTER[piano.nome] && impostaIlPiano(piano, c))).length;
-        while (abusatoriNecessari(piano) && abusatoriPresenti() < abusatoriNecessari(piano) && membri.length < 5 && guardia++ < 100) {
+        // per il meteo basta uno che ne approfitta con l'abilità (Swift Swim, Chlorophyll, Sand Rush...) oppure due col tipo giusto; chi ha l'abilità si preferisce
+        const conAbilitaDelMeteo = c => !!SFRUTTATORI[piano.nome] && abilitaPossibili(c).some(a => SFRUTTATORI[piano.nome].includes(a));
+        const abusatoriBastano = () => {
+            if (!SETTER[piano.nome]) return abusatoriPresenti() >= abusatoriNecessari(piano);
+            const abusa = membri.filter(c => sfruttaIlPiano(piano, c) && !impostaIlPiano(piano, c));
+            return abusa.some(conAbilitaDelMeteo) || abusa.length >= 2;
+        };
+        while ((abusatoriNecessari(piano) || SETTER[piano.nome]) && !abusatoriBastano() && membri.length < 5 && guardia++ < 100) {
             let scelto = null, mv = -1e9;
             for (const c of cand) {
                 if (!sfruttaIlPiano(piano, c) || (SETTER[piano.nome] && impostaIlPiano(piano, c)) || !libero(c)) continue;
                 if (ctx.standard && eUberDi(c) && uber >= 2) continue;
                 const uso = usoGlobale.get(chiaveUso(c)) || 0;
-                const v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * pesoUso) - costoCopia(c) + bonusMeta(c);
+                const v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * pesoUso) - costoCopia(c) + bonusMeta(c) + (conAbilitaDelMeteo(c) ? 4 : 0);
                 if (v > mv) { mv = v; scelto = c; }
             }
             if (!scelto) break;
@@ -1318,10 +1369,15 @@
             abusatori = info.filter(i => attacca(i) && i.cand.lento && i.cand.offesa >= 95);
             coerente = setter.length >= 1 && abusatori.length >= 2;
         } else if (SETTER[richiesto]) {
-            setter = info.filter(i => SETTER[richiesto].includes(abil(i)));
-            abusatori = info.filter(i => !setter.includes(i) && attacca(i) && (SFRUTTATORI[richiesto].includes(abil(i)) ||
-                (i.mosse.some(m => m.categoria !== 'Status' && m.tipo === TIPO_METEO[richiesto]) && i.cand.offesa >= 80)));
-            coerente = setter.length >= 1 && abusatori.length >= 1;
+            // chi mette il meteo: con l'abilità o con la mossa (Rain Dance, Sunny Day, Sandstorm, Snowscape/Hail)
+            const mossaMeteo = { rain: ['raindance'], sun: ['sunnyday'], sand: ['sandstorm'], snow: ['snowscape', 'hail'] }[K.PIANO_METEO[richiesto]];
+            setter = info.filter(i => SETTER[richiesto].includes(abil(i)) || mosseDi(i).some(m => mossaMeteo.includes(m)));
+            // chi ne approfitta: con l'abilità giusta (Swift Swim, Chlorophyll, Sand Rush, Slush Rush...), o con attacchi del tipo rafforzato. Il piano regge con almeno uno dell'abilità
+            // o con almeno due del tipo: un team "sabbia" con attaccanti di Roccia ma nessuno con Sand Rush o Sand Force è un team come un altro
+            const conAbilita = info.filter(i => !setter.includes(i) && attacca(i) && SFRUTTATORI[richiesto].includes(abil(i)));
+            const conTipo = info.filter(i => !setter.includes(i) && attacca(i) && !conAbilita.includes(i) && i.mosse.some(m => m.categoria !== 'Status' && m.tipo === TIPO_METEO[richiesto]) && i.cand.offesa >= 80);
+            abusatori = conAbilita.concat(conTipo);
+            coerente = setter.length >= 1 && (conAbilita.length >= 1 || conTipo.length >= 2);
         } else {
             // bilanciato, offensivo, bulky: il nucleo sono i due Pokémon di maggior valore
             abusatori = info.slice().sort((a, b) => b.cand.valore - a.cand.valore).slice(0, 2);
@@ -1474,7 +1530,7 @@
     }
 
     // Il Pokémon di un team conta per la sua specie base (due forme dello stesso Pokémon sono lo stesso Pokémon)
-    const pianoDi = nome => ({ nome, pesoValore: nome === 'bilanciato' ? 1.1 : 1 });
+    const pianoDi = (nome, ctx) => ({ nome, pesoValore: nome === 'bilanciato' ? 1.1 : 1, conMosse: !!(ctx && ctx.pianiMosse && ctx.pianiMosse.has(nome)) });
 
     // La personalità del team (cpu-personalita.js): i piani con il loro peso (di base 1) e le manopole dei ruoli che sposta. Senza personalità, o `equilibrata`, il team è quello di sempre.
     function stileDelTeam(personalita) {
@@ -1519,7 +1575,7 @@
 
         for (let tentativo = 0; tentativo < quanti * 6 && team.length < quanti; tentativo++) {
             const n = team.length;
-            const piano = pianoDi(piani[(n + Math.floor(tentativo / quanti)) % piani.length]);
+            const piano = pianoDi(piani[(n + Math.floor(tentativo / quanti)) % piani.length], ctx);
             // asso: tra i migliori ancora poco usati
             const poolAssi = assi.filter(c => (usoGlobale.get(chiaveUso(c)) || 0) < massimo).slice(0, 24);
             if (!poolAssi.length) break;
@@ -1575,7 +1631,7 @@
                 for (const k of chiavi) usoGlobale.set(k, (usoGlobale.get(k) || 0) + peso);
             });
             for (let tentativo = 0; tentativo < (evita.length ? 14 : 6); tentativo++) {
-                const piano = pianoDi(piani[Math.floor(rnd() * piani.length)]);
+                const piano = pianoDi(piani[Math.floor(rnd() * piani.length)], ctx);
                 // la panchina: circa un terzo dei candidati non gioca in questo team (mai se così ne restano troppo pochi)
                 const inCampo = cand.filter(() => rnd() > 0.33);
                 const scelta = inCampo.length >= 40 ? inCampo : cand;

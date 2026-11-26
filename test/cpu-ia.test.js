@@ -1631,6 +1631,59 @@ test('cure: curarsi a ogni turno di fila costa sempre di più (Corviknight contr
     assert.ok(v1 < v0 - 0.05 && v3 < v1 - 0.1 && v3 < v0 - 0.2, `Roost: ${v0} la prima volta, ${v1} dopo una, ${v3} dopo tre di fila`);
 });
 
+test('meteo: se l\'avversario mette la pioggia sopra al sole del team la CPU è più propensa a cambiare con chi rimette il suo (guerra del meteo)', async () => {
+    const squadra = [
+        { specie: 'Venusaur', item: 'Leftovers', abilita: 'Chlorophyll', mosse: ['Giga Drain', 'Sludge Bomb', 'Sleep Powder', 'Synthesis'] },
+        { specie: 'Torkoal', item: 'Leftovers', abilita: 'Drought', mosse: ['Eruption', 'Lava Plume', 'Yawn', 'Stealth Rock'] },
+        { specie: 'Charizard', item: 'Leftovers', abilita: 'Solar Power', mosse: ['Flamethrower', 'Air Slash', 'Roost'] }
+    ];
+    // quanto il cambio con Torkoal (Drought) è meglio della migliore delle altre scelte, con e senza la pioggia messa dall'avversario
+    const margine = async meteo => {
+        const r = await opzioniContro({ squadra, attivi: [0], doppio: false, avversari: ['Dragonite', 'Garchomp'], attiviAvv: ['Dragonite'], extraLog: [...(meteo ? [`|-weather|${meteo}`] : []), '|upkeep', '|turn|2'] });
+        const cambio = Math.max(...r.piani.filter(p => p.azioni.some(a => /\[Torkoal\]/.test(a))).map(p => p.val));
+        const altre = Math.max(...r.piani.filter(p => !p.azioni.some(a => /\[Torkoal\]/.test(a))).map(p => p.val));
+        return cambio - altre;
+    };
+    const senza = await margine(null), sotto = await margine('RainDance');
+    assert.ok(sotto > senza + 0.3, `cambiare con Torkoal vale ${sotto.toFixed(2)} in più sotto la pioggia, ${senza.toFixed(2)} senza`);
+});
+
+test('meteo: le mosse Rain Dance, Sunny Day, Sandstorm e Snowscape valgono se il meteo nuovo fa comodo al team e non quando c\'è già', async () => {
+    const squadra = [
+        { specie: 'Venusaur', item: 'Leftovers', abilita: 'Chlorophyll', mosse: ['Sunny Day', 'Giga Drain', 'Sludge Bomb', 'Synthesis'] },
+        { specie: 'Charizard', item: 'Leftovers', abilita: 'Solar Power', mosse: ['Flamethrower', 'Air Slash', 'Roost'] },
+        { specie: 'Victreebel', item: 'Leftovers', abilita: 'Chlorophyll', mosse: ['Solar Beam', 'Sleep Powder'] }
+    ];
+    const valore = async meteo => {
+        const r = await opzioniContro({ squadra, attivi: [0], doppio: false, avversari: ['Corviknight', 'Garchomp'], attiviAvv: ['Corviknight'], extraLog: [...(meteo ? [`|-weather|${meteo}`] : []), '|upkeep', '|turn|2'] });
+        return Math.max(...r.piani.filter(p => p.azioni.some(a => /\[Sunny Day\]/.test(a))).map(p => p.val));
+    };
+    const senza = await valore(null), sole = await valore('SunnyDay'), pioggia = await valore('RainDance');
+    assert.ok(senza > sole + 0.2, `Sunny Day ${senza} senza meteo, ${sole} con il sole già in campo`);
+    assert.ok(pioggia > sole + 0.2, `Sunny Day ${pioggia} sotto la pioggia, ${sole} con il sole già in campo`);
+});
+
+test('team meteo: nei formati monotipo la CPU compone team a tema meteo, con chi mette il meteo (abilità o mossa) e chi ne approfitta con l\'abilità giusta (Swift Swim, Chlorophyll, Sand Rush...)', async () => {
+    const T = require('../docs/team-cpu.js');
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const { caricaRandoms } = require('./ayuda-sim.js');
+    const { sim } = await caricaRandoms();
+    const regolamento = { genRuleType: 'within', genRuleValue: '9', baseTier: 'OU', battleStyle: 'singles', strutturaSito: 'custom',
+        restrizioni: { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' }, type: { mode: 'SAME_ACROSS_TEAM', operator: 'equals' } } } };
+    const r = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento, caricaJson: async p => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', p), 'utf8')), quanti: 180, seme: 'meteo-mono' });
+    const meteo = r.team.filter(t => ['pioggia', 'sole', 'sabbia', 'neve'].includes(t.piano));
+    assert.ok(meteo.length >= r.team.length * 0.2, `team a tema meteo: ${meteo.length} su ${r.team.length}`);
+    const SETTER = /Ability: (Drizzle|Drought|Sand Stream|Snow Warning|Orichalcum Pulse|Primordial Sea|Desolate Land)|- (Rain Dance|Sunny Day|Sandstorm|Snowscape|Hail)\b/;
+    const ABUSA = { pioggia: /Ability: (Swift Swim|Rain Dish|Dry Skin|Hydration)/, sole: /Ability: (Chlorophyll|Solar Power|Leaf Guard|Flower Gift|Protosynthesis)/, sabbia: /Ability: (Sand Rush|Sand Force|Sand Veil)/, neve: /Ability: (Slush Rush|Snow Cloak|Ice Body)/ };
+    for (const t of meteo) {
+        const sets = t.testo.split('\n\n');
+        assert.ok(sets.some(x => SETTER.test(x)), `${t.nome}: chi mette il meteo`);
+        const conAbilita = sets.filter(x => ABUSA[t.piano].test(x)).length;
+        assert.ok(conAbilita >= 1 || t.strategia.abusatori.length >= 2, `${t.nome}: ${t.piano} senza sfruttatori con l'abilità né due col tipo`);
+    }
+});
+
 test('priorità bloccate: l\'avversario non è previsto usare Fake Out contro il Farigiraf con Armor Tail della CPU (né contro il suo compagno), mentre senza il blocco sì', async () => {
     const { sim } = await caricaSim();
     const scelte = async (squadra) => {

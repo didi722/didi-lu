@@ -176,8 +176,10 @@ function controllaStrategia(t, sets, dex) {
         const lenti = sets.filter(x => attacca(x) && specie(x).baseStats.spe <= 60 && Math.max(specie(x).baseStats.atk, specie(x).baseStats.spa) >= 95);
         assert.ok(lenti.length >= 2, `${t.nome}: servono almeno due attaccanti lenti (${lenti.map(x => x.species).join(', ')})`);
     } else if (meteoDelPiano) {
-        const setter = sets.filter(x => K.METEO_SETTER[meteoDelPiano].includes(id(x.ability)));
-        assert.ok(setter.length >= 1, `${t.nome}: nessuno con l'abilità che mette il meteo`);
+        // il meteo si mette con l'abilità o, dove nel formato nessuno ce l'ha (monotipo, Gen 2), con la mossa
+        const mossaDelMeteo = Object.keys(K.METEO_MOSSA).filter(k => K.METEO_MOSSA[k] === meteoDelPiano);
+        const setter = sets.filter(x => K.METEO_SETTER[meteoDelPiano].includes(id(x.ability)) || (x.moves || []).map(id).some(m => mossaDelMeteo.includes(m)));
+        assert.ok(setter.length >= 1, `${t.nome}: nessuno con l'abilità o la mossa che mette il meteo`);
         const abusatori = sets.filter(x => !setter.includes(x) && attacca(x) && (K.METEO_SFRUTTATORI[meteoDelPiano].includes(id(x.ability)) ||
             ((x.moves || []).some(m => dex.moves.get(m).category !== 'Status' && dex.moves.get(m).type === K.METEO_TIPO[meteoDelPiano]) && Math.max(specie(x).baseStats.atk, specie(x).baseStats.spa) >= 80)));
         assert.ok(abusatori.length >= 1, `${t.nome}: nessuno ne approfitta`);

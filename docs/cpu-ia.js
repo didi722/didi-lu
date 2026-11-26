@@ -122,6 +122,9 @@
     //                       anche con un altro potenziamento, un Swords Dance in più non serve e non si fa; senza questo Scizor a +2 lo rifaceva (7 potenziamenti su 10 erano ripetuti a vuoto: 71 su 203)
     //   costoCuraDiFila     ogni cura di fila dello stesso Pokémon (Recover, Roost...) costa questo in più della precedente: contro chi toglie quanto si recupera si finiva con sette o otto Roost
     //                       uno dietro l'altro (27 partite su 250 con una catena di almeno 4, ora 6) finché non finivano i PP
+    //   moltMeteo, bonusGuerraMeteo
+    //                       quanto vale cambiare il meteo (somma di chi ne approfitta e chi ne soffre, tra i miei e tra i loro) e il bonus in più per rimettere il proprio quando l'avversario
+    //                       ci ha messo sopra il suo (la guerra del meteo: si cambia con chi lo rimette, o si usa Rain Dance, Sunny Day...)
     //   forzaLegaAvv, forzaPartitaAvv
     //                       quanto fidarsi delle abitudini di un avversario con pochi dati (decisioni che valgono quanto la media della lega) e
     //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
@@ -200,12 +203,12 @@
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.5, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5, priorBloccoPriorita: 6,
-        protezioneInVantaggio: 1.5, bonusPerno: 0, moltUtilita: 1, costoSostituto: 0.5, costoEsplosione: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, ripeteStato: 0.5, valoreCorsa: 1.4, costoCuraDiFila: 0.2, forzaLegaAvv: 100, forzaPartitaAvv: 40,
+        protezioneInVantaggio: 1.5, bonusPerno: 0, moltUtilita: 1, costoSostituto: 0.5, costoEsplosione: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, ripeteStato: 0.5, valoreCorsa: 1.4, costoCuraDiFila: 0.2, moltMeteo: 0.5, bonusGuerraMeteo: 0.5, forzaLegaAvv: 100, forzaPartitaAvv: 40,
         memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2,
         copione: 1, copioneAnteprima: 0.8, copioneApertura: 0.8, copioneMosse: 0.5, copionePrimoTurno: 0.9, copioneFiducia: 2, copioneForza: 3, copioneCambi: 0.3, copioneForzaCambi: 30
     };
     // Abilità che agiscono quando il Pokémon entra in campo
-    const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
+    const ABILITA_METEO = { drizzle: 'rain', primordialsea: 'rain', drought: 'sun', orichalcumpulse: 'sun', desolateland: 'sun', sandstream: 'sand', snowwarning: 'snow' };
     const ABILITA_TERRENO = { electricsurge: 'electric', hadronengine: 'electric', grassysurge: 'grassy', psychicsurge: 'psychic', mistysurge: 'misty' };
     // Mosse che "non hanno effetto" (|-immune|) per un motivo che non è il tipo del bersaglio: dalla loro immunità non si impara
     // niente sul tipo (Mangiasogni vuole un bersaglio addormentato, Sincrorumore un tipo in comune)
@@ -946,6 +949,12 @@
             const meteoDi = d => Object.keys(K.METEO_SETTER).find(w => K.METEO_SETTER[w].includes(d.abilita)) || null;
             const setterMeteo = {};
             vivi.forEach(d => { const w = meteoDi(d); if (w) (setterMeteo[w] = setterMeteo[w] || []).push(d.indice); });
+            // il meteo con la mossa (Rain Dance, Sunny Day...) conta solo se nessuno del team lo mette con l'abilità
+            for (const k of Object.keys(K.METEO_MOSSA)) {
+                const w = K.METEO_MOSSA[k];
+                if (setterMeteo[w] && vivi.some(d => K.METEO_SETTER[w].includes(d.abilita))) continue;
+                vivi.filter(d => d.ha(k)).forEach(d => { setterMeteo[w] = setterMeteo[w] || []; if (!setterMeteo[w].includes(d.indice)) setterMeteo[w].push(d.indice); });
+            }
             const sfrutta = (d, w) => K.METEO_SFRUTTATORI[w].includes(d.abilita) || (d.tipi.includes(K.METEO_TIPO[w]) && d.offesa >= 80) ||
                 (w === 'rain' && d.ha('thunder')) || (w === 'sun' && (d.ha('solarbeam') || d.ha('weatherball')));
             const abusatori = {};
@@ -2563,6 +2572,46 @@
             return { boost, riesce };
         }
 
+        // Quanto fa comodo un meteo a un Pokémon (di chi lo gioca o di chi lo subisce): le abilità che raddoppiano la velocità (Swift Swim, Chlorophyll, Sand Rush, Slush Rush) valgono
+        // di più, le altre che ne approfittano meno; le mosse del tipo rafforzato aiutano, quelle del tipo indebolito (Acqua col sole) fanno male; la sabbia e la grandine (prima della
+        // 9ª generazione) fanno danno a chi non è immune. `mosse`: i tipi delle sue mosse, se si sanno.
+        _beneficioMeteo(w, v, mosse) {
+            if (!w) return 0;
+            const ab = v.abilita;
+            const tipi = v.tipi || [];
+            let b = 0;
+            if (ab && K.METEO_SFRUTTATORI[w].includes(ab)) b += ['swiftswim', 'chlorophyll', 'sandrush', 'slushrush'].includes(ab) ? 1.2 : 0.6;
+            const tipoForte = K.METEO_TIPO[w];
+            const usa = t => mosse ? mosse.some(m => m && m.categoria !== 'Status' && m.tipo === t) : tipi.includes(t);
+            if (w === 'rain' || w === 'sun') {
+                const debole = w === 'rain' ? 'Fire' : 'Water';
+                if (usa(tipoForte)) b += 0.4;
+                if (usa(debole) && !usa(tipoForte)) b -= 0.3;
+            }
+            if (w === 'sand') {
+                const immune = tipi.some(t => ['Rock', 'Ground', 'Steel'].includes(t)) || ['sandrush', 'sandforce', 'sandveil', 'magicguard', 'overcoat'].includes(ab);
+                if (!immune) b -= 0.3;
+                if (tipi.includes('Rock')) b += 0.3;
+            }
+            if (w === 'snow') {
+                if (tipi.includes('Ice')) b += 0.3;
+                else if (this.gen < 9 && !['icebody', 'snowcloak', 'slushrush', 'magicguard', 'overcoat'].includes(ab)) b -= 0.3;
+            }
+            return b;
+        }
+
+        // Quanto vale cambiare il meteo in `nuovo` (da ctx.meteo): somma di quanto fa comodo ai miei Pokémon (in campo e in panchina) meno quanto fa comodo ai loro in campo,
+        // rispetto al meteo di adesso. Chi gioca il piano meteo ha in più il bonus di rimetterlo (o la perdita di cederlo): _abilitaIngresso e _valoreStato.
+        _valoreMeteo(nuovo, ctx, avversari, chi) {
+            const miei = (this.squadraCorrente || []).filter(x => !x.esausto).map(x => ({ v: this.vista(x.m, x.info), mosse: (x.p && x.p.moves || []).map(k => this.mossa(k)).filter(Boolean) }));
+            if (chi && !miei.length) miei.push({ v: chi, mosse: null });
+            const somma = (w, lista) => lista.reduce((s, x) => s + this._beneficioMeteo(w, x.v, x.mosse), 0);
+            const loro = (avversari || []).filter(o => o && o.hp > 0).map(o => ({ v: o, mosse: null }));
+            const mio = (somma(nuovo, miei) - somma(ctx.meteo, miei)) / Math.max(1, miei.length);
+            const suo = (somma(nuovo, loro) - somma(ctx.meteo, loro)) / Math.max(1, loro.length);
+            return (mio - suo) * this.par.moltMeteo;
+        }
+
         // Cosa fa un Pokémon mio quando entra in campo (la simulazione lo applica a `ctx` e ai potenziamenti degli avversari):
         // meteo e terreni, Intimidazione. Restituisce il valore strategico (il meteo giusto, il meteo di squadra tolto...).
         _abilitaIngresso(v, ctx, avv) {
@@ -2573,9 +2622,9 @@
             if (meteo && ctx.meteo !== meteo) {
                 const mio = this.strategia && this.strategia.meteo;
                 // il meteo del piano rimesso in campo vale molto; togliere il proprio meteo per metterne un altro, il contrario
-                if (mio === meteo) valore += this.par.bonusPianoMeteo;
+                if (mio === meteo) valore += this.par.bonusPianoMeteo + (ctx.meteo ? this.par.bonusGuerraMeteo : 0);      // guerra del meteo: l'avversario ha messo il suo sopra al mio, si rimette il proprio
                 else if (mio && ctx.meteo === mio) valore -= this.par.bonusPianoMeteo;
-                else valore += 0.12;
+                else valore += this._valoreMeteo(meteo, ctx, avv, v);
                 ctx.meteo = meteo;
             }
             if (ABILITA_TERRENO[ab]) ctx.terreno = ABILITA_TERRENO[ab];
@@ -2777,6 +2826,16 @@
             const mieiVivi = insiemi(lato).filter(v => v && v.hp > 0);
             let v = 0;
 
+            if (m.meteoMossa) {
+                // Rain Dance, Sunny Day, Sandstorm, Snowscape/Hail: valgono se il meteo nuovo fa comodo a me più che a lui (o se è quello del piano e qualcuno l'ha tolto), non se c'è già
+                if (ctx.meteo === m.meteoMossa) return -0.3 * segno;
+                const mioPiano = lato === 'mie' && this.strategia ? this.strategia.meteo : null;
+                if (mioPiano === m.meteoMossa) v += this.par.bonusPianoMeteo + (ctx.meteo ? this.par.bonusGuerraMeteo : 0);
+                else if (mioPiano && ctx.meteo === mioPiano) v -= this.par.bonusPianoMeteo;
+                v += this._valoreMeteo(m.meteoMossa, ctx, avversari, me) * (lato === 'mie' ? 1 : -1) * 1;
+                ctx.meteo = m.meteoMossa;
+                return v * segno;
+            }
             if (m.potenziamento) {
                 // utile se chi lo usa non rischia di essere messo KO subito e c'è margine per potenziarsi
                 const pot = m.potenziamento;
