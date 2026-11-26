@@ -115,6 +115,8 @@
     //   parataCambioAvv     se l'avversario cambia, chi entra al suo posto incassa questa parte di danno in meno (di solito è scelto per reggere)
     //   protezioneDiFilaAvv quanto è probabile che l'avversario si pari di nuovo se l'ha già fatto il turno prima (la seconda riesce una volta su tre,
     //                       e chi gioca lo sa): 1 = come sempre, 0 = mai
+    //   ripeteStato         quanto è probabile che l'avversario rifaccia una mossa di stato (potenziamento, cura) dopo averla fatta il turno prima: raddoppia le probabilità
+    //                       di ripeterla a ogni turno di fila. Conta per le mosse che riescono solo contro chi attacca (Sucker Punch, Thunderclap)
     //   forzaLegaAvv, forzaPartitaAvv
     //                       quanto fidarsi delle abitudini di un avversario con pochi dati (decisioni che valgono quanto la media della lega) e
     //                       quanto di quello che fa in partita (decisioni che valgono quanto le abitudini di partenza): vedi cpu-avversario.js
@@ -193,7 +195,7 @@
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
         aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.5, sogliaRecupero: 0.25,
         bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2, antFakeOut: 0.4, temperatura: 0, pesoStile: 0.5, pesoMinaccia: 0.3, pesoSetter: 6, pesoOffesa: 0.5, priorBloccoPriorita: 6,
-        protezioneInVantaggio: 1.5, bonusPerno: 0, moltUtilita: 1, costoSostituto: 0.5, costoEsplosione: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, forzaLegaAvv: 100, forzaPartitaAvv: 40,
+        protezioneInVantaggio: 1.5, bonusPerno: 0, moltUtilita: 1, costoSostituto: 0.5, costoEsplosione: 0, moltStati: 1, moltVelocita: 1, moltCampo: 1, valorePar: 0.55, valoreBrn: 0.8, valoreSlp: 1, costoRipetizione: 0.6, rumoreProtezione: 0.5, valoreFakeOut: 0.9, valoreRallenta: 1, valoreStatoSpeed: 0.45, pesoFinale: 3, pesoMateriale: 0.6, pesoSituazioni: 1, sogliaScenario: 0.03, maxScenari: 8, parataCambioAvv: 0.45, protezioneDiFilaAvv: 0.15, ripeteStato: 0.5, forzaLegaAvv: 100, forzaPartitaAvv: 40,
         memoria: 1, memoriaPesoMosse: 1.8, memoriaFiducia: 2, memoriaForzaCategorie: 2.5, memoriaPesoPortato: 0.7, memoriaPesoLead: 2,
         copione: 1, copioneAnteprima: 0.8, copioneApertura: 0.8, copioneMosse: 0.5, copionePrimoTurno: 0.9, copioneFiducia: 2, copioneForza: 3, copioneCambi: 0.3, copioneForzaCambi: 30
     };
@@ -576,6 +578,7 @@
                         m.usi[mossa] = (m.usi[mossa] || 0) + 1;
                         if (this._primoTurnoInCampo(m)) m.usiT1[mossa] = (m.usiT1[mossa] || 0) + 1;
                     }
+                    { const dm = this.mossa(mossa); m.statiDiFila = dm && dm.categoria === 'Status' && !p.some(x => String(x).startsWith('[from]')) && m.turnoUltimaMossa === this.turno - 1 ? (m.statiDiFila || 0) + 1 : (dm && dm.categoria === 'Status' ? 1 : 0); }
                     m.ultimaMossa = mossa; m.turnoUltimaMossa = this.turno;
                     // Wish: chi sta in quel posto a fine del turno dopo riprende metà degli HP di chi l'ha usato
                     if (mossa === 'wish' && chi && !p.some(x => String(x).startsWith('[from]'))) this.lati[chi.lato].desiderio[chi.slot] = { turno: this.turno, da: m.nome };
@@ -1640,7 +1643,30 @@
                 });
                 piani.push(azioni);
             }
-            return [{ peso: 0.65, azioni: piani[0] }, { peso: 0.35, azioni: piani[1] }];
+            let scenari = [{ peso: 0.65, azioni: piani[0] }, { peso: 0.35, azioni: piani[1] }];
+            // chi ha appena fatto una mossa di stato (un potenziamento, una cura) probabilmente la rifà: in quello scenario non attacca. Senza questo la CPU insisteva con Sucker Punch
+            // contro un avversario che si potenziava da quattro turni
+            S.avv.forEach((o, i) => {
+                const p = o ? this._ripeteStato(o) : 0;
+                if (!(p > 0)) return;
+                const nuovi = [];
+                for (const sc of scenari) {
+                    nuovi.push({ peso: sc.peso * (1 - p), azioni: sc.azioni });
+                    nuovi.push({ peso: sc.peso * p, azioni: sc.azioni.map(a => a.slot === i ? { tipo: 'passa', slot: i } : a) });
+                }
+                scenari = nuovi;
+            });
+            return scenari;
+        }
+
+        // Quanto è probabile che questo avversario rifaccia una mossa di stato (non una protezione) dopo averla fatta il turno scorso: il suo potenziamento o la sua cura continuano
+        _ripeteStato(o) {
+            const r = o.ref;
+            if (!r || !r.ultimaMossa || r.turnoUltimaMossa !== this.turno - 1 || !(this.par.ripeteStato > 0)) return 0;
+            const d = this.mossa(r.ultimaMossa);
+            if (!d || d.categoria !== 'Status' || d.protezione || K.PROTEZIONI.has(d.id) || K.PROTEZIONI_DI_AREA.has(d.id)) return 0;
+            // più volte l'ha già rifatta, più è probabile che continui (un potenziamento che va avanti da tre turni non si ferma per un Sucker Punch)
+            return 1 - (1 - this.par.ripeteStato) / Math.pow(2, Math.max(0, (r.statiDiFila || 1) - 1));
         }
 
         // Gli scenari del turno secondo le abitudini dell'avversario: { peso, variante, categorie: { slot: categoria }, azioni }
@@ -1656,6 +1682,11 @@
                     const m = Sit.moltiplicatori(regole.pesi, f);
                     const e = this.par.pesoSituazioni;
                     s.moltiplicatori = e === 1 ? m : { attacco: Math.pow(m.attacco, e), protezione: Math.pow(m.protezione, e), cambio: Math.pow(m.cambio, e), altro: Math.pow(m.altro, e) };
+                }
+                const rip = this._ripeteStato(o);
+                if (rip > 0) {
+                    const m = s.moltiplicatori || { attacco: 1, protezione: 1, cambio: 1, altro: 1 };
+                    s.moltiplicatori = { attacco: m.attacco * (1 - rip), protezione: m.protezione, cambio: m.cambio, altro: m.altro * (1 + 3 * rip) };
                 }
                 // chi probabilmente sta per mettere Stanza Magica o Tailwind lo fa molto più spesso di un Pokémon qualunque che usa una mossa di stato
                 const setter = this._setterProbabile(o);

@@ -1573,6 +1573,19 @@ test('priorità bloccate: Psychic Terrain toglie valore a Sucker Punch contro ch
     assert.ok(voloLibero > -Infinity && voloPsy > voloLibero - 0.1, `volanti: ${voloPsy} con Psychic Terrain contro ${voloLibero} senza`);
 });
 
+test('mosse che riescono solo contro chi attacca: chi si è appena potenziato probabilmente lo rifà, e Sucker Punch vale meno (più ancora dopo tre turni di fila)', async () => {
+    const squadra = [{ specie: 'Kingambit', item: 'Leftovers', abilita: 'Defiant', mosse: ['Sucker Punch', 'Iron Head', 'Low Kick', 'Swords Dance'] }, { specie: 'Garchomp', item: 'Leftovers', mosse: ['Dragon Claw', 'Rock Slide'] }];
+    const calmMind = n => Array.from({ length: n }, (_, i) => ['|move|p1a: Iron Crown|Calm Mind|p1a: Iron Crown', '|-boost|p1a: Iron Crown|spa|1', '|upkeep', `|turn|${i + 2}`]).flat();
+    const con = async n => opzioniContro({ squadra, attivi: [0], doppio: false, avversari: ['Iron Crown', 'Heatran'], attiviAvv: ['Iron Crown'], extraLog: calmMind(n) });
+    const senza = await opzioniContro({ squadra, attivi: [0], doppio: false, avversari: ['Iron Crown', 'Heatran'], attiviAvv: ['Iron Crown'], extraLog: ['|upkeep', '|turn|2'] });
+    const una = await con(1), tre = await con(3);
+    assert.equal(senza.ia._ripeteStato(senza.ia.ultimoStato.stato0.avv[0]), 0, 'senza una mossa di stato appena fatta non si prevede niente di particolare');
+    const p1 = una.ia._ripeteStato(una.ia.ultimoStato.stato0.avv[0]), p3 = tre.ia._ripeteStato(tre.ia.ultimoStato.stato0.avv[0]);
+    assert.ok(p1 > 0.4 && p3 > p1 + 0.2, `dopo un turno ${p1}, dopo tre ${p3}`);
+    const v = r => valoreConSuckerPunch(r.piani);
+    assert.ok(v(una) < v(senza) - 0.05 && v(tre) < v(una) - 0.05, `Sucker Punch: ${v(senza)} senza, ${v(una)} dopo un potenziamento, ${v(tre)} dopo tre`);
+});
+
 test('priorità bloccate: l\'avversario non è previsto usare Fake Out contro il Farigiraf con Armor Tail della CPU (né contro il suo compagno), mentre senza il blocco sì', async () => {
     const { sim } = await caricaSim();
     const scelte = async (squadra) => {

@@ -7,13 +7,15 @@
 // (un tentennamento di chi subisce Fake Out è un successo, non si conta).
 // Serve a trovare i difetti che si ripetono (come Lightning Rod che assorbiva ogni mossa Elettro) senza aspettare che li veda una persona.
 //
-//   node tools/analisi-mosse-cpu.cjs --formato singolo|singolo7|singolo4|vgc|doppio|lc9 [--partite 300] [--docs cartella] [--seme A] [--min 8] [--parametri-team '{..}']
+//   node tools/analisi-mosse-cpu.cjs --formato singolo|singolo7|singolo4|vgc|doppio|lc9 [--partite 300] [--docs cartella] [--seme A] [--min 8] [--esempi Mossa [--n-esempi 6]]  (stampa il turno in cui la mossa non ha fatto niente) [--parametri-team '{..}']
 // =====================================================
 const fs = require('node:fs');
 const path = require('node:path');
 const a = process.argv.slice(2);
 const val = (n, d) => { const i = a.indexOf('--' + n); return i >= 0 && a[i + 1] && !a[i + 1].startsWith('--') ? a[i + 1] : d; };
 const FORMATO = val('formato', 'singolo'), PARTITE = parseInt(val('partite', '300'), 10), SEME = val('seme', 'A'), MIN = parseInt(val('min', '8'), 10);
+const ESEMPI = val('esempi', ''), N_ESEMPI = parseInt(val('n-esempi', '6'), 10);
+let mostrati = 0;
 const DOCS = path.resolve(val('docs', path.join(__dirname, '..', 'docs')));
 const PAR_TEAM = JSON.parse(val('parametri-team', '{}'));
 const { caricaRandoms, giocaPartita, creaCasuale } = require(path.join(__dirname, '..', 'test', 'ayuda-sim.js'));
@@ -86,6 +88,7 @@ function esito(righe, i, lato) {
             const k = nome + '|' + q[3].replace(/^Hidden Power .*/, 'Hidden Power'), s = S(k);
             s.usi++;
             const m = esito(e.righe, i, lato);
+            if (m && ESEMPI && q[3] === ESEMPI && mostrati < N_ESEMPI) { mostrati++; let t0 = i; while (t0 > 0 && !e.righe[t0].startsWith('|turn|')) t0--; console.log(`--- partita ${g}, ${m}\n` + (tA.testo.split('\n\n').concat(tB.testo.split('\n\n')).filter(x => x.includes('- ' + ESEMPI)).join('\n').slice(0, 400)) + '\n' + e.righe.slice(t0, i + 6).filter(r => /^\|(turn|move|switch|drag|-fail|-immune|-miss|-activate|cant)\|/.test(r)).join('\n')); }
             if (m) { s.nulle++; s.motivi[m] = (s.motivi[m] || 0) + 1; }
         }
     }
