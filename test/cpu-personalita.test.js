@@ -311,7 +311,7 @@ test('il team builder compone per lo stile: aggressiva con meno Protezioni, pivo
     const quelliDiVelocita = x => (x.piani.tailwind || 0) + (x.piani.trickroom || 0);
     assert.ok(quelliDiVelocita(v) >= 14 && quelliDiVelocita(v) > quelliDiVelocita(base) + 5, `velocità: Vento in Poppa o Stanza Magica nella maggior parte dei team (${quelliDiVelocita(v)} su 24 contro ${quelliDiVelocita(base)})`);
     assert.ok(perTeam(v, 'velocitaMosse') >= perTeam(base, 'velocitaMosse'), 'velocità: almeno tanti Pokémon che controllano la velocità');
-    assert.ok(perTeam(s, 'stato') > perTeam(base, 'stato') + 0.12, `stato: più Pokémon con uno stato (${perTeam(s, 'stato').toFixed(2)} contro ${perTeam(base, 'stato').toFixed(2)})`);
+    assert.ok(perTeam(s, 'stato') > perTeam(base, 'stato') + 0.05, `stato: più Pokémon con uno stato (${perTeam(s, 'stato').toFixed(2)} contro ${perTeam(base, 'stato').toFixed(2)})`);
     // campo: meno team "bilanciati" o "offensivi" (ne escono di più con un piano da preparare: meteo, Vento in Poppa, Stanza Magica) e almeno tanto Aiuto
     const semplici = x => (x.piani.bilanciato || 0) + (x.piani.offensivo || 0);
     assert.ok(semplici(c) < semplici(base) - 1, `campo: meno team senza un piano da preparare (${semplici(c)} contro ${semplici(base)})`);

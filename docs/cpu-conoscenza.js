@@ -70,7 +70,7 @@
         'upperhand', 'splash', 'celebrate', 'holdhands', 'happyhour', 'afteryou', 'allyswitch', 'instruct', 'bestow',
         'covet', 'thief', 'fling', 'naturalgift', 'spitup', 'swallow', 'stockpile', 'frustration',
         'skydrop', 'beatup', 'psywave', 'wringout', 'crushgrip', 'electricterrain', 'grassyterrain', 'mistyterrain', 'psychicterrain',
-        'raindance', 'sunnyday', 'sandstorm', 'hail', 'snowscape', 'chillyreception', 'haze', 'painsplit', 'sandattack'
+        'chillyreception', 'haze', 'painsplit', 'sandattack'
     );
     // Le mosse "di utilità" che la CPU sa giocare in battaglia (cpu-ia.js) ma che il team builder dà solo dove i consigli le hanno (team-cpu.js): ognuna con ciò che è
     //   encore        bloccare l'avversario sull'ultima mossa che ha fatto per tre turni
@@ -105,7 +105,9 @@
     // ---------- meteo di squadra ----------
     // Chi mette il meteo (abilità), chi ne approfitta (abilità) e il tipo di mossa che ne esce rafforzata.
     // Le chiavi sono quelle del log di Showdown: rain, sun, sand, snow.
-    const METEO_SETTER = { rain: ['drizzle'], sun: ['drought', 'orichalcumpulse'], sand: ['sandstream'], snow: ['snowwarning'] };
+    const METEO_SETTER = { rain: ['drizzle', 'primordialsea'], sun: ['drought', 'orichalcumpulse', 'desolateland'], sand: ['sandstream'], snow: ['snowwarning'] };
+    // Le mosse che mettono il meteo (la CPU le gioca: vedi cpu-ia.js, _valoreMeteo)
+    const METEO_MOSSA = { raindance: 'rain', sunnyday: 'sun', sandstorm: 'sand', hail: 'snow', snowscape: 'snow' };
     const METEO_SFRUTTATORI = {
         rain: ['swiftswim', 'raindish', 'dryskin', 'hydration'],
         sun: ['chlorophyll', 'solarpower', 'protosynthesis', 'leafguard', 'flowergift'],
@@ -183,7 +185,7 @@
             protezione: PROTEZIONI.has(k), recupero: RECUPERO.has(k), potenziamento: POTENZIAMENTI[k] || null,
             stato: STATI[k] || null, perno: PERNO.has(k), redirezione: REDIREZIONE.has(k), schermo: SCHERMI.has(k),
             trappola: TRAPPOLE.has(k), velocitaSquadra: VELOCITA_DI_SQUADRA.has(k), terra: MOSSE_TERRA.has(k),
-            colpisceAlleato: TARGET_CON_ALLEATO.has(m.target), dueTurni: DUE_TURNI.has(k), esclusa: ESCLUSE.has(k)
+            colpisceAlleato: TARGET_CON_ALLEATO.has(m.target), dueTurni: DUE_TURNI.has(k), esclusa: ESCLUSE.has(k), meteoMossa: METEO_MOSSA[k] || null
         };
     }
 
@@ -194,7 +196,7 @@
     const NEUTRE = {
         secondari: null, assorbe: null, rinculo: null, rinculoMax: 0, multi: null, dannoFisso: null, ohko: false, ricarica: false, dueTurni: false,
         perno: false, boostSelf: null, boostBersaglio: null, autoKo: false, utile: null, curaAltri: 0, boostAlleato: null, flags: {}, stato: null, potenziamento: null, recupero: false, redirezione: false, schermo: false,
-        trappola: false, velocitaSquadra: false, terra: false, colpisceAlleato: false, esclusa: false, protezione: false
+        trappola: false, velocitaSquadra: false, terra: false, colpisceAlleato: false, esclusa: false, protezione: false, meteoMossa: null
     };
     // Se il Dex non dà la potenza (mosse di partenza a potenza variabile): le tabelle di Showdown
     function potenzaMaxDaTabella(potenza, tipo) {
@@ -266,7 +268,7 @@
         if (d.categoria === 'Status') {
             return d.protezione || !!d.potenziamento || d.recupero || !!d.stato || d.velocitaSquadra || d.schermo || d.trappola
                 || d.redirezione || ['helpinghand', 'taunt', 'leechseed', 'wideguard', 'partingshot'].includes(d.id)
-                || !!d.utile || d.curaAltri > 0 || !!d.boostAlleato;
+                || !!d.utile || d.curaAltri > 0 || !!d.boostAlleato || !!d.meteoMossa;
         }
         return d.potenza > 0;
     }
@@ -286,7 +288,7 @@
         id, TIPI, PROTEZIONI, PROTEZIONI_DI_AREA, POTENZIAMENTI, RECUPERO, STATI, VELOCITA_DI_SQUADRA, SCHERMI, TRAPPOLE,
         REDIREZIONE, PERNO, ESCLUSE, MOSSE_UTILI, CURA_ALTRI, DUE_TURNI, MOSSE_TERRA, IMMUNITA_ABILITA, ABILITA_PERICOLOSE, ABILITA_SCARTATE,
         STRUMENTI_OFFENSIVI, STRUMENTI_TIPO, STRUMENTI_SCELTA, POTENZA_STIMATA,
-        METEO_SETTER, METEO_SFRUTTATORI, METEO_TIPO, PIANO_METEO,
+        METEO_SETTER, METEO_SFRUTTATORI, METEO_TIPO, PIANO_METEO, METEO_MOSSA,
         moltiplicatoreTipo, tipiDellaGenerazione, descriviMossa, mossaUsabile, mossaMax, mossaZ, maxGuard, potenzaMaxDaTabella, potenzaZDaTabella, MOSSE_MAX
     };
 });
