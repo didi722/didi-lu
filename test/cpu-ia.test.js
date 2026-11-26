@@ -249,7 +249,7 @@ test('Illusion, con il simulatore vero: contro lo Zorua di Hisui travestito da M
     const buneary = 'Buneary @ Leftovers\nAbility: Klutz\n- Drain Punch\n- Ice Punch\n- Quick Attack\n- Swords Dance';
     const e = await giocaPartita({
         sim, formato: 'gen9customgame', team1: zorua, team2: buneary, seme: [1, 2, 3, 4], maxTurni: 5,
-        agente1: { tipo: 'script', gestore: r => (r.teamPreview ? 'team 12' : 'move 1') }, agente2: { tipo: 'cpu', cerebro },
+        agente1: { tipo: 'script', gestore: r => (r.teamPreview ? 'team 12' : r.forceSwitch ? 'switch 2' : 'move 1') }, agente2: { tipo: 'cpu', cerebro },
         fermaDopo: x => x.turni >= 5
     });
     assert.deepEqual(e.errori, [], 'nessuna scelta rifiutata');
@@ -1584,6 +1584,37 @@ test('mosse che riescono solo contro chi attacca: chi si è appena potenziato pr
     assert.ok(p1 > 0.4 && p3 > p1 + 0.2, `dopo un turno ${p1}, dopo tre ${p3}`);
     const v = r => valoreConSuckerPunch(r.piani);
     assert.ok(v(una) < v(senza) - 0.05 && v(tre) < v(una) - 0.05, `Sucker Punch: ${v(senza)} senza, ${v(una)} dopo un potenziamento, ${v(tre)} dopo tre`);
+});
+
+test('potenziamenti: Scizor si potenzia con Swords Dance una volta, a +2 attacca (un secondo non serve: il Bullet Punch a +2 fa già abbastanza)', async () => {
+    const scizor = { specie: 'Scizor', item: 'Leftovers', abilita: 'Technician', mosse: ['Swords Dance', 'Bullet Punch', 'U-turn', 'Roost'] };
+    const compagno = { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw'] };
+    const contro = async boost => (await opzioniContro({ squadra: [scizor, compagno], attivi: [0], doppio: false, avversari: ['Dragonite', 'Heatran'], attiviAvv: ['Dragonite'],
+        extraLog: boost ? [`|-boost|p2a: Scizor|atk|${boost}`, '|upkeep', '|turn|2'] : ['|upkeep', '|turn|2'] })).scelta;
+    assert.equal(await contro(0), 'move 1', 'a +0 si potenzia');
+    for (const b of [2, 4]) assert.notEqual(await contro(b), 'move 1', `a +${b} non rifà Swords Dance`);
+});
+
+test('team: chi porta Swords Dance o Bulk Up attacca con quella statistica, e lo spread non è fatto per l\'altra', async () => {
+    const T = require('../docs/team-cpu.js');
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const { caricaRandoms } = require('./ayuda-sim.js');
+    const { sim } = await caricaRandoms();
+    const permessi = { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' } } };
+    const r = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: { genRuleType: 'within', genRuleValue: '9', baseTier: 'OU', battleStyle: 'singles', strutturaSito: 'custom', restrizioni: permessi },
+        caricaJson: async p => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', p), 'utf8')), quanti: 120, seme: 'coerenza' });
+    let visti = 0;
+    for (const t of r.team) for (const set of t.testo.split('\n\n')) {
+        const mosse = set.split('\n').filter(l => l.startsWith('- ')).map(l => sim.Dex.moves.get(l.slice(2)));
+        const evs = (/EVs: (.*)/.exec(set) || [])[1] || '';
+        const atk = +(/(\d+) Atk/.exec(evs) || [0, 0])[1], spa = +(/(\d+) SpA/.exec(evs) || [0, 0])[1];
+        const fisiche = mosse.filter(m => m.category === 'Physical' && m.id !== 'bodypress' && m.id !== 'foulplay').length, speciali = mosse.filter(m => m.category === 'Special').length;
+        if (mosse.some(m => m.id === 'swordsdance') && evs && !/HP.*SpD|SpD.*HP/.test(evs.replace(/ \/ \d+ Spe/, ''))) { visti++; assert.ok(atk >= spa, `${set.split('\n')[0]}: Swords Dance con ${evs}`); }
+        if (fisiche > 0 && !speciali) assert.ok(spa <= atk, `${set.split('\n')[0]}: solo attacchi fisici ma ${evs}`);
+        if (speciali > 0 && !fisiche) assert.ok(atk <= spa, `${set.split('\n')[0]}: solo attacchi speciali ma ${evs}`);
+    }
+    assert.ok(visti > 3, `ci sono set con Swords Dance (${visti})`);
 });
 
 test('priorità bloccate: l\'avversario non è previsto usare Fake Out contro il Farigiraf con Armor Tail della CPU (né contro il suo compagno), mentre senza il blocco sì', async () => {

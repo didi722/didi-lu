@@ -7,7 +7,7 @@
 // (un tentennamento di chi subisce Fake Out è un successo, non si conta).
 // Serve a trovare i difetti che si ripetono (come Lightning Rod che assorbiva ogni mossa Elettro) senza aspettare che li veda una persona.
 //
-//   node tools/analisi-mosse-cpu.cjs --formato singolo|singolo7|singolo4|vgc|doppio|lc9 [--partite 300] [--docs cartella] [--seme A] [--min 8] [--esempi Mossa [--n-esempi 6]]  (stampa il turno in cui la mossa non ha fatto niente) [--parametri-team '{..}']
+//   node tools/analisi-mosse-cpu.cjs --formato singolo|singolo7|singolo4|vgc|doppio|lc9 [--partite 300] [--docs cartella] [--seme A] [--min 8] [--esempi Mossa [--n-esempi 6]]  (stampa il turno in cui la mossa non ha fatto niente) [--parametri-team '{..}'] [--parametri '{..}' (manopole del cervello)]
 // =====================================================
 const fs = require('node:fs');
 const path = require('node:path');
@@ -17,7 +17,7 @@ const FORMATO = val('formato', 'singolo'), PARTITE = parseInt(val('partite', '30
 const ESEMPI = val('esempi', ''), N_ESEMPI = parseInt(val('n-esempi', '6'), 10);
 let mostrati = 0;
 const DOCS = path.resolve(val('docs', path.join(__dirname, '..', 'docs')));
-const PAR_TEAM = JSON.parse(val('parametri-team', '{}'));
+const PAR_TEAM = JSON.parse(val('parametri-team', '{}')), PAR_CERVELLO = JSON.parse(val('parametri', '{}'));
 const { caricaRandoms, giocaPartita, creaCasuale } = require(path.join(__dirname, '..', 'test', 'ayuda-sim.js'));
 const IA = require(path.join(DOCS, 'cpu-ia.js'));
 const T = require(path.join(DOCS, 'team-cpu.js'));
@@ -64,12 +64,13 @@ function esito(righe, i, lato) {
         piano: t.piano, testo: t.testo,
         sets: t.testo.split('\n\n').map(s => { const righe = s.split('\n'); return { specie: righe[0].replace(/ @ .*/, '').replace(/ \(.*\)$/, ''), mosse: righe.filter(l => l.startsWith('- ')).map(l => l.slice(2)) }; })
     }));
+    const curaHp = {};
     const stat = {};                 // "Specie|Mossa" -> { disp, usi, motivi: {} }
     const S = k => stat[k] || (stat[k] = { disp: 0, usi: 0, nulle: 0, motivi: {} });
     let errori = 0;
     for (let g = 0; g < PARTITE; g++) {
         const tA = team[(g * 5) % team.length], tB = team[(g * 11 + 3) % team.length];
-        const cA = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(g * 13 + 1), piano: tA.piano }), cB = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(g * 17 + 2), piano: tB.piano });
+        const cA = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(g * 13 + 1), piano: tA.piano, parametri: PAR_CERVELLO }), cB = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(g * 17 + 2), piano: tB.piano, parametri: PAR_CERVELLO });
         const e = await giocaPartita({ sim, formato: formatoSim(FORMATO), team1: tA.testo, team2: tB.testo,
             agente1: { tipo: 'cpu', cerebro: cA, anteprima: q => cA.scegli(q, { errori: 0 }) }, agente2: { tipo: 'cpu', cerebro: cB, anteprima: q => cB.scegli(q, { errori: 0 }) },
             casuale: creaCasuale(g * 11 + 5), seme: [g + 1, 7, 11, 13] });
@@ -78,15 +79,20 @@ function esito(righe, i, lato) {
         const inCampo = { p1: new Set(), p2: new Set() };
         for (const riga of e.righe) { const q = riga.split('|'); if (q[1] === 'switch' || q[1] === 'drag') inCampo[q[2].slice(0, 2)].add(q[3].split(',')[0]); }
         for (const [lato, tm] of [['p1', tA], ['p2', tB]]) for (const s of tm.sets) if (inCampo[lato].has(s.specie)) for (const m of s.mosse) S(s.specie + '|' + m.replace(/^Hidden Power .*/, 'Hidden Power')).disp++;
-        const specieDi = {};
+        const specieDi = {}, ultima = {}, pct = {};
+        const CURE = new Set(['Recover', 'Roost', 'Soft-Boiled', 'Slack Off', 'Milk Drink', 'Synthesis', 'Moonlight', 'Morning Sun', 'Shore Up', 'Heal Order', 'Rest']);
         for (const riga of e.righe) { const q = riga.split('|'); if (q[1] === 'switch' || q[1] === 'drag') specieDi[q[2].replace(/^(p\d)[abc]: /, '$1: ')] = q[3].split(',')[0]; }
         for (let i = 0; i < e.righe.length; i++) {
             const q = e.righe[i].split('|');
+            if (['switch', 'drag', '-damage', '-heal', 'replace'].includes(q[1]) && q[2]) { const m = /(\d+)\/(\d+)/.exec(q[q[1] === 'switch' || q[1] === 'drag' ? 4 : 3] || ''); if (m) pct[q[2].replace(/^(p\d)[abc]: /, '$1: ')] = 100 * m[1] / m[2]; else if (/fnt/.test(q[q[1] === 'switch' || q[1] === 'drag' ? 4 : 3] || '')) pct[q[2].replace(/^(p\d)[abc]: /, '$1: ')] = 0; }
             if (q[1] !== 'move' || e.righe[i].includes('[from]')) continue;
             const chi = q[2], lato = chi.slice(0, 2), nome = specieDi[chi.replace(/^(p\d)[abc]: /, '$1: ')];
             if (!nome) continue;
             const k = nome + '|' + q[3].replace(/^Hidden Power .*/, 'Hidden Power'), s = S(k);
             s.usi++;
+            if (ultima[chi] && ultima[chi] === q[3]) s.uguali = (s.uguali || 0) + 1;      // la stessa mossa due volte di fila dallo stesso Pokémon
+            ultima[chi] = q[3];
+            if (CURE.has(q[3])) { const hp = pct[chi.replace(/^(p\d)[abc]: /, '$1: ')]; if (hp != null) { const b = hp <= 35 ? '<=35%' : hp <= 50 ? '36-50%' : hp <= 65 ? '51-65%' : hp <= 80 ? '66-80%' : hp < 100 ? '81-99%' : '100%'; curaHp[b] = (curaHp[b] || 0) + 1; } }
             const m = esito(e.righe, i, lato);
             if (m && ESEMPI && q[3] === ESEMPI && mostrati < N_ESEMPI) { mostrati++; let t0 = i; while (t0 > 0 && !e.righe[t0].startsWith('|turn|')) t0--; console.log(`--- partita ${g}, ${m}\n` + (tA.testo.split('\n\n').concat(tB.testo.split('\n\n')).filter(x => x.includes('- ' + ESEMPI)).join('\n').slice(0, 400)) + '\n' + e.righe.slice(t0, i + 6).filter(r => /^\|(turn|move|switch|drag|-fail|-immune|-miss|-activate|cant)\|/.test(r)).join('\n')); }
             if (m) { s.nulle++; s.motivi[m] = (s.motivi[m] || 0) + 1; }
@@ -100,6 +106,22 @@ function esito(righe, i, lato) {
     for (const x of righe.filter(x => x.usi >= MIN && x.nullo >= 0.25).sort((p, q) => q.nulle - p.nulle).slice(0, 40)) {
         console.log(`${x.k.padEnd(34)} ${String(x.usi).padStart(3)} usi, ${String(Math.round(100 * x.nullo)).padStart(3)}% nulle: ${Object.entries(x.motivi).sort((p, q) => q[1] - p[1]).map(([m, n]) => `${m} ${n}`).join(', ')}`);
     }
+    // per categoria: quanto si usano, in media, le mosse di potenziamento, di cura, le trappole e gli stati (usi per partita in cui il Pokémon c'era)
+    const categoria = nome => {
+        const d = sim.Dex.moves.get(nome);
+        if (!d.exists || d.category !== 'Status') return null;
+        if (d.boosts && (d.target === 'self') && Object.values(d.boosts).some(x => x > 0)) return 'potenziamento';
+        if (d.heal || d.flags.heal) return 'cura';
+        if (d.sideCondition && /Rock|Spikes|Web/.test(d.name)) return 'trappole';
+        if (d.status || d.volatileStatus === 'confusion') return 'stato al bersaglio';
+        if (/Protect|Detect|Shield|Guard|Bulwark|Trap/.test(d.name) && d.stallingMove) return 'protezione';
+        return null;
+    };
+    const cat = {};
+    for (const x of righe) { const c = categoria(x.k.split('|')[1]); if (!c) continue; const t = cat[c] || (cat[c] = { disp: 0, usi: 0, mai: 0, n: 0 }); t.disp += x.disp; t.usi += x.usi; t.uguali = (t.uguali || 0) + (x.uguali || 0); t.n++; if (x.disp >= MIN && x.usi === 0) t.mai++; }
+    console.log('\n== Per categoria (usi ogni 100 partite col Pokémon in campo; mosse mai usate / mosse diverse)');
+    for (const [c, t] of Object.entries(cat)) console.log(`${c.padEnd(20)} ${(100 * t.usi / Math.max(1, t.disp)).toFixed(1).padStart(6)} usi/100 partite   mai usate ${t.mai}/${t.n}   ripetute di fila ${t.uguali} su ${t.usi}`);
+    console.log('\n== HP di chi usa una mossa di cura, quando la usa: ' + ['<=35%', '36-50%', '51-65%', '66-80%', '81-99%', '100%'].map(b => `${b} ${curaHp[b] || 0}`).join(', '));
     const tot = righe.reduce((s, x) => s + x.usi, 0), nulle = righe.reduce((s, x) => s + x.nulle, 0);
     const motiviTot = {};
     for (const x of righe) for (const [m, n] of Object.entries(x.motivi)) motiviTot[m.replace(/^assorbita da .*/, 'assorbita da un\'abilità')] = (motiviTot[m.replace(/^assorbita da .*/, 'assorbita da un\'abilità')] || 0) + n;
