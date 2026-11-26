@@ -12,6 +12,7 @@
 // È la stessa regola di tipo-stagione.js (TipoStagione.faStatistica): qui è scritta per intero perché questo file gira anche nelle Cloud
 // Functions, senza gli altri moduli del sito (un test controlla che le due regole dicano la stessa cosa).
 const eUnaCup = info => String((info && info.tipo) || '').toLowerCase().trim() === 'cup';
+const eRandomStagione = info => String((info && info.tipo) || '').toLowerCase().trim() === 'random';
 
 
 // Punti classifica in base ai set vinti.
@@ -519,6 +520,7 @@ function calcolaUsoPokemon(partite, tipiDi, teamDi) {
 //   Variazione        round(K x margine x (risultato - E)), risultato 1 = match vinto, 0 = perso
 //   K                 ELO_K_INIZIALE (48) per i primi ELO_MATCH_INIZIALI (8) match del giocatore, poi ELO_K (32): all'inizio il
 //                     rating si assesta più in fretta
+//   Peso random       x 0,75 per i match di una stagione Random (ELO_PESO_RANDOM): meno fortuna da pesare, stesso margine e stesso K
 //   Margine           0,7 + 0,3 x (set vinti - set persi) / set giocati. Un match si gioca SEMPRE per intero (3 set, o 5 se la
 //                     stagione è al meglio dei 5), quindi: con 3 set un 3-0 vale 1 e un 2-1 vale 0,8; con 5 set un 5-0 vale 1,
 //                     un 4-1 0,88 e un 3-2 0,76
@@ -535,6 +537,7 @@ const ELO_K = 32;
 const ELO_K_INIZIALE = 48;
 const ELO_MATCH_INIZIALI = 8;
 const ELO_MARGINE_MIN = 0.7;
+const ELO_PESO_RANDOM = 0.75;        // una stagione Random (team dati da Showdown, più fortuna) muove l'Elo il 25% in meno di una normale
 
 function moltiplicatoreMargine(setVinti, setPersi) {
     const totale = setVinti + setPersi;
@@ -570,7 +573,7 @@ function calcolaEloCronologico(seasons) {
                 const p1 = String(m.player1Id || '').toLowerCase().trim(), p2 = String(m.player2Id || '').toLowerCase().trim();
                 if (!p1 || !p2 || p1 === p2) continue;
                 elenco.push({
-                    percorso: `${sId}/showdowns/${sdId}/matches/${mKey}`, beta: sId === 'sbeta', stagione: sId, showdown: sdId,
+                    percorso: `${sId}/showdowns/${sdId}/matches/${mKey}`, beta: sId === 'sbeta', random: eRandomStagione(stagione && stagione.info), stagione: sId, showdown: sdId,
                     numero: parseInt(String(mKey).replace(/\D/g, ''), 10) || 0, data: dataPerElo(m.data || infoData),
                     p1, p2, s1: Number(m.p1score) || 0, s2: Number(m.p2score) || 0, vincitore: String(m.winnerId || '').toLowerCase().trim()
                 });
@@ -591,7 +594,7 @@ function calcolaEloCronologico(seasons) {
         const vince1 = m.vincitore === m.p1 || (m.vincitore !== m.p2 && m.s1 > m.s2);
         const risultato1 = pari ? 0.5 : vince1 ? 1 : 0;
         const atteso1 = 1 / (1 + Math.pow(10, (pre2 - pre1) / 400));
-        const margine = moltiplicatoreMargine(Math.max(m.s1, m.s2), Math.min(m.s1, m.s2));
+        const margine = moltiplicatoreMargine(Math.max(m.s1, m.s2), Math.min(m.s1, m.s2)) * (m.random ? ELO_PESO_RANDOM : 1);
         const d1 = Math.round(k(m.p1) * margine * (risultato1 - atteso1));
         const d2 = Math.round(k(m.p2) * margine * ((1 - risultato1) - (1 - atteso1)));
         match[m.percorso] = { p1EloAtMatch: pre1, p2EloAtMatch: pre2, p1DeltaElo: d1, p2DeltaElo: d2 };
