@@ -520,7 +520,7 @@ function calcolaUsoPokemon(partite, tipiDi, teamDi) {
 //   Variazione        round(K x margine x (risultato - E)), risultato 1 = match vinto, 0 = perso
 //   K                 ELO_K_INIZIALE (48) per i primi ELO_MATCH_INIZIALI (8) match del giocatore, poi ELO_K (32): all'inizio il
 //                     rating si assesta più in fretta
-//   Peso random       x 0,75 per i match di una stagione Random (ELO_PESO_RANDOM): meno fortuna da pesare, stesso margine e stesso K
+//   Peso random       x 0,66 per i match di una stagione Random (ELO_PESO_RANDOM): meno fortuna da pesare, stesso margine e stesso K
 //   Margine           0,7 + 0,3 x (set vinti - set persi) / set giocati. Un match si gioca SEMPRE per intero (3 set, o 5 se la
 //                     stagione è al meglio dei 5), quindi: con 3 set un 3-0 vale 1 e un 2-1 vale 0,8; con 5 set un 5-0 vale 1,
 //                     un 4-1 0,88 e un 3-2 0,76
@@ -537,7 +537,7 @@ const ELO_K = 32;
 const ELO_K_INIZIALE = 48;
 const ELO_MATCH_INIZIALI = 8;
 const ELO_MARGINE_MIN = 0.7;
-const ELO_PESO_RANDOM = 0.75;        // una stagione Random (team dati da Showdown, più fortuna) muove l'Elo il 25% in meno di una normale
+const ELO_PESO_RANDOM = 0.66;        // una stagione Random (team dati da Showdown, più fortuna) muove l'Elo un terzo in meno di una normale
 
 function moltiplicatoreMargine(setVinti, setPersi) {
     const totale = setVinti + setPersi;
