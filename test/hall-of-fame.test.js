@@ -162,3 +162,35 @@ test('cablaggio: la pagina si chiama Hall of Fame (titolo e menu), ha le quattro
         assert.ok(!/fa-trophy"><\/i> ARCHIVE/.test(t), `${f}: il menu dice ancora ARCHIVE`);
     }
 });
+
+test('una serie ancora in corso mostra "ongoing" al posto della data; una chiusa o un pareggio col record di prima no', () => {
+    const H = require('../docs/hall-of-fame.js');
+    const S = require('../docs/statistiche.js');
+    const voce = (inCorso, quando) => ({ nome: 'A', sotto: '', valore: '7', specie: '', colore: '#fff', avatar: '', link: '', quando, inCorso });
+    const h = H.htmlRecords([{ id: 'x', gruppo: 'Trainers', titolo: 'T', voci: [voce(true, '2026-10-29'), voce(false, '2026-10-29')] }]);
+    assert.match(h, /<span class="hof-quando"><span class="hof-incorso"[^>]*>ongoing<\/span><\/span>/, 'in corso: ongoing');
+    assert.equal((h.match(/ongoing/g) || []).length, 1, 'solo la prima');
+    assert.match(h, /<time datetime="2026-10-29">/, 'la seconda ha la data');
+    // dai match veri (vedi serie-dai-match.test.js): Didi vince 4 match di fila e non ha ancora perso, Lukiani ha chiuso la sua serie
+});
+
+test('Statistiche: "in corso" solo per la serie del record che non si è interrotta', () => {
+    const S = require('../docs/statistiche.js');
+    const m = (id, p1, p2, a, b, data) => ({ player1Id: p1, player2Id: p2, player1: p1, player2: p2, winnerId: a > b ? p1 : p2, team1: '', team2: '', p1score: a, p2score: b, p1points: 0, p2points: 0, data });
+    const showdowns = {
+        sd1: { info: { categoria: 'VGC', data: '2026-01-01', vincitoreShowdown: 'a' }, matches: { match1: m(1, 'a', 'b', 3, 0, '2026-01-01'), match2: m(2, 'a', 'b', 3, 0, '2026-01-01'), match3: m(3, 'a', 'b', 0, 3, '2026-01-01') } },
+        sd2: { info: { categoria: 'VGC', data: '2026-01-02' }, matches: { match1: m(4, 'a', 'b', 3, 0, '2026-01-02'), match2: m(5, 'a', 'b', 3, 0, '2026-01-02') } }
+    };
+    const players = { a: { info: { name: 'A' } }, b: { info: { name: 'B' } } };
+    const r = S.calcola({ players, seasons: { s1: { info: { name: 'S', status: 'playing' }, showdowns } } }, { stagione: 'all' });
+    const a = r.players.find(p => p.id === 'a').serie, b = r.players.find(p => p.id === 'b').serie;
+    // A: V V P V V -> record 2 (il primo, già chiuso), la serie attuale lo pareggia ma non è quella del record
+    assert.deepEqual([a.vittorieMax, a.vittorieAttuale, a.vittorieMaxInCorso], [2, 2, false]);
+    // B: P P V P P (i match 1-2 persi, 3 vinto, 4-5 persi): record 1, chiuso
+    assert.equal(b.vittorieMaxInCorso, false);
+    // una serie che continua: A vince anche i match successivi e supera il record
+    showdowns.sd2.matches.match3 = m(6, 'a', 'b', 3, 0, '2026-01-02');
+    const r2 = S.calcola({ players, seasons: { s1: { info: { name: 'S', status: 'playing' }, showdowns } } }, { stagione: 'all' });
+    const a2 = r2.players.find(p => p.id === 'a').serie;
+    assert.deepEqual([a2.vittorieMax, a2.vittorieAttuale, a2.vittorieMaxInCorso], [3, 3, true]);
+});

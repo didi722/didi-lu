@@ -207,19 +207,20 @@
     // Le serie di un giocatore o di un team, dai suoi match in ordine di data [{ vinto, setP, data? }]:
     // vittorieMax/vittorieAttuale = match vinti di fila; cleanSweep = match vinti senza perdere set; pulitaMax = quelli di fila.
     // vittorieMaxData / pulitaMaxData: il giorno del match che ha portato la serie al suo record (vuoto se i match non hanno la data).
+    // vittorieMaxInCorso / pulitaMaxInCorso: la serie del record non si è ancora interrotta (è quella che sta andando avanti).
     function serieDi(elenco) {
-        const serie = { vittorieMax: 0, vittorieAttuale: 0, vittorieMaxData: '', cleanSweep: 0, pulitaMax: 0, pulitaAttuale: 0, pulitaMaxData: '' };
+        const serie = { vittorieMax: 0, vittorieAttuale: 0, vittorieMaxData: '', vittorieMaxInCorso: false, cleanSweep: 0, pulitaMax: 0, pulitaAttuale: 0, pulitaMaxData: '', pulitaMaxInCorso: false };
         let corrente = 0, pulita = 0;
         for (const m of elenco) {
             if (m.vinto) {
                 corrente++;
-                if (corrente > serie.vittorieMax) { serie.vittorieMax = corrente; serie.vittorieMaxData = m.data || ''; }
+                if (corrente > serie.vittorieMax) { serie.vittorieMax = corrente; serie.vittorieMaxData = m.data || ''; serie.vittorieMaxInCorso = true; }
                 if (m.setP === 0) {
                     serie.cleanSweep++;
                     pulita++;
-                    if (pulita > serie.pulitaMax) { serie.pulitaMax = pulita; serie.pulitaMaxData = m.data || ''; }
-                } else pulita = 0;
-            } else { corrente = 0; pulita = 0; }
+                    if (pulita > serie.pulitaMax) { serie.pulitaMax = pulita; serie.pulitaMaxData = m.data || ''; serie.pulitaMaxInCorso = true; }
+                } else { pulita = 0; serie.pulitaMaxInCorso = false; }
+            } else { corrente = 0; pulita = 0; serie.vittorieMaxInCorso = false; serie.pulitaMaxInCorso = false; }
         }
         serie.vittorieAttuale = corrente;
         serie.pulitaAttuale = pulita;
@@ -299,7 +300,7 @@
             id, ...nuovoRisultati(), azioni: vuotoAzioni(),
             stagioni: new Set(), stagioniVinte: new Set(),
             formati: {}, teams: {}, elenco: [], eloDopo: [], delta: 0,
-            sdAttuale: 0, sdMax: 0, sdMaxData: ''   // showdown vinti di fila (solo quelli decisi), come per i team
+            sdAttuale: 0, sdMax: 0, sdMaxData: '', sdMaxInCorso: false   // showdown vinti di fila (solo quelli decisi), come per i team
         });
         const info = id => players[id]?.info || {};
         const rosterDi = (id, nomeTeam) => {
@@ -316,7 +317,7 @@
                     ...nuovoRisultati(),
                     stagioni: new Set(), stagioniVinte: new Set(), sdVisti: new Set(), ultimoUso: '',
                     elenco: [],   // i suoi match in ordine di data: servono alle serie
-                    sdAttuale: 0, sdMax: 0, sdMaxData: ''   // showdown vinti di fila (solo quelli decisi) e il giorno del record
+                    sdAttuale: 0, sdMax: 0, sdMaxData: '', sdMaxInCorso: false   // showdown vinti di fila (solo quelli decisi) e il giorno del record
                 };
             }
             if (formato && !squadre[chiave].formato) squadre[chiave].formato = formato;
@@ -461,15 +462,15 @@
                 if (s.vinto) {
                     g.showdown.vinti++; g.punti += 1;
                     g.sdAttuale++;
-                    if (g.sdAttuale > g.sdMax) { g.sdMax = g.sdAttuale; g.sdMaxData = s.data || ''; }
-                } else { g.showdown.persi++; g.sdAttuale = 0; }
+                    if (g.sdAttuale > g.sdMax) { g.sdMax = g.sdAttuale; g.sdMaxData = s.data || ''; g.sdMaxInCorso = true; }
+                } else { g.showdown.persi++; g.sdAttuale = 0; g.sdMaxInCorso = false; }
             }
             for (const nome of s.teams) {
                 const t = squadra(s.io, nome, '');
                 t.showdown.giocati++;
                 if (s.deciso) {
-                    if (s.vinto) { t.showdown.vinti++; t.sdAttuale++; if (t.sdAttuale > t.sdMax) { t.sdMax = t.sdAttuale; t.sdMaxData = s.data || ''; } }
-                    else { t.showdown.persi++; t.sdAttuale = 0; }
+                    if (s.vinto) { t.showdown.vinti++; t.sdAttuale++; if (t.sdAttuale > t.sdMax) { t.sdMax = t.sdAttuale; t.sdMaxData = s.data || ''; t.sdMaxInCorso = true; } }
+                    else { t.showdown.persi++; t.sdAttuale = 0; t.sdMaxInCorso = false; }
                 }
             }
         }
@@ -500,7 +501,7 @@
             const elo = stagioneScelta === 'all'
                 ? (dbElo != null ? num(dbElo) : ELO_INIZIALE + g.delta)
                 : (eloStagione != null ? eloStagione : ELO_INIZIALE);
-            const serie = { ...serieDi(g.elenco), showdownMax: g.sdMax, showdownAttuale: g.sdAttuale, showdownMaxData: g.sdMaxData };
+            const serie = { ...serieDi(g.elenco), showdownMax: g.sdMax, showdownAttuale: g.sdAttuale, showdownMaxData: g.sdMaxData, showdownMaxInCorso: g.sdMaxInCorso };
             return {
                 id: g.id,
                 nome: info(g.id).name || g.id,
@@ -530,7 +531,7 @@
         });
 
         const elencoTeams = Object.values(squadre).map(t => ({
-            serie: { ...serieDi(t.elenco), showdownMax: t.sdMax, showdownAttuale: t.sdAttuale, showdownMaxData: t.sdMaxData },
+            serie: { ...serieDi(t.elenco), showdownMax: t.sdMax, showdownAttuale: t.sdAttuale, showdownMaxData: t.sdMaxData, showdownMaxInCorso: t.sdMaxInCorso },
             chiave: t.chiave, player: t.player,
             playerNome: info(t.player).name || t.player,
             colore: info(t.player).color || '',
