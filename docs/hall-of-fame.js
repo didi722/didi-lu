@@ -41,17 +41,17 @@
     // ---------------------------------------------------------------- i record
     // Ogni record: da quale elenco (players | teams | pokemon), che numero conta (più alto = meglio), chi può entrare e come si scrive.
     const DEFINIZIONI = [
-        { id: 'serie-allenatore', gruppo: 'Trainers', titolo: 'Longest winning streak', nota: 'Matches won in a row', da: 'players', val: x => num(x.serie && x.serie.vittorieMax), testo: v => String(v), quando: x => x.serie && x.serie.vittorieMaxData },
-        { id: 'pulita-allenatore', gruppo: 'Trainers', titolo: 'Longest clean streak', nota: 'Matches won without losing a set, in a row', da: 'players', val: x => num(x.serie && x.serie.pulitaMax), testo: v => String(v), quando: x => x.serie && x.serie.pulitaMaxData },
-        { id: 'sd-allenatore', gruppo: 'Trainers', titolo: 'Longest showdown streak', nota: 'Showdowns won in a row', da: 'players', val: x => num(x.serie && x.serie.showdownMax), testo: v => String(v), quando: x => x.serie && x.serie.showdownMaxData },
+        { id: 'serie-allenatore', gruppo: 'Trainers', titolo: 'Longest winning streak', nota: 'Matches won in a row', da: 'players', val: x => num(x.serie && x.serie.vittorieMax), testo: v => String(v), quando: x => x.serie && x.serie.vittorieMaxData, inCorso: x => !!(x.serie && x.serie.vittorieMaxInCorso) },
+        { id: 'pulita-allenatore', gruppo: 'Trainers', titolo: 'Longest clean streak', nota: 'Matches won without losing a set, in a row', da: 'players', val: x => num(x.serie && x.serie.pulitaMax), testo: v => String(v), quando: x => x.serie && x.serie.pulitaMaxData, inCorso: x => !!(x.serie && x.serie.pulitaMaxInCorso) },
+        { id: 'sd-allenatore', gruppo: 'Trainers', titolo: 'Longest showdown streak', nota: 'Showdowns won in a row', da: 'players', val: x => num(x.serie && x.serie.showdownMax), testo: v => String(v), quando: x => x.serie && x.serie.showdownMaxData, inCorso: x => !!(x.serie && x.serie.showdownMaxInCorso) },
         { id: 'elo', gruppo: 'Trainers', titolo: 'Highest Elo ever', nota: 'The best rating reached', da: 'players', val: x => (x.eloPicco == null ? 0 : num(x.eloPicco)), testo: v => String(Math.round(v)), filtro: x => x.eloPicco != null && x.classificato !== false },
         { id: 'showdown', gruppo: 'Trainers', titolo: 'Most showdowns won', da: 'players', val: x => num(x.showdown && x.showdown.vinti), testo: v => String(v) },
         { id: 'match', gruppo: 'Trainers', titolo: 'Most matches won', da: 'players', val: x => num(x.match && x.match.vinti), testo: v => String(v) },
         { id: 'percentuale', gruppo: 'Trainers', titolo: 'Best win rate', nota: `Matches won, from ${MIN_MATCH_ALLENATORE} matches played`, da: 'players', val: x => num(x.percMatch), testo: v => `${v}%`, filtro: x => num(x.match && x.match.giocati) >= MIN_MATCH_ALLENATORE, sotto: x => `${num(x.match.vinti)}W · ${num(x.match.persi)}L` },
         { id: 'stagioni', gruppo: 'Trainers', titolo: 'Most seasons won', da: 'players', val: x => num(x.stagioniVinte), testo: v => String(v) },
         { id: 'mvp', gruppo: 'Trainers', titolo: 'Most MVP titles', nota: "Titles won by the trainer's Pokémon", da: 'players', val: x => num(x.mvpVinti), testo: v => String(v) },
-        { id: 'serie-team', gruppo: 'Teams', titolo: 'Longest winning streak', nota: 'Matches won in a row', da: 'teams', val: x => num(x.serie && x.serie.vittorieMax), testo: v => String(v), quando: x => x.serie && x.serie.vittorieMaxData },
-        { id: 'sd-team', gruppo: 'Teams', titolo: 'Longest showdown streak', nota: 'Showdowns won in a row', da: 'teams', val: x => num(x.serie && x.serie.showdownMax), testo: v => String(v), quando: x => x.serie && x.serie.showdownMaxData },
+        { id: 'serie-team', gruppo: 'Teams', titolo: 'Longest winning streak', nota: 'Matches won in a row', da: 'teams', val: x => num(x.serie && x.serie.vittorieMax), testo: v => String(v), quando: x => x.serie && x.serie.vittorieMaxData, inCorso: x => !!(x.serie && x.serie.vittorieMaxInCorso) },
+        { id: 'sd-team', gruppo: 'Teams', titolo: 'Longest showdown streak', nota: 'Showdowns won in a row', da: 'teams', val: x => num(x.serie && x.serie.showdownMax), testo: v => String(v), quando: x => x.serie && x.serie.showdownMaxData, inCorso: x => !!(x.serie && x.serie.showdownMaxInCorso) },
         { id: 'percentuale-team', gruppo: 'Teams', titolo: 'Best win rate', nota: `Matches won, from ${MIN_MATCH_TEAM} matches played`, da: 'teams', val: x => num(x.percMatch), testo: v => `${v}%`, filtro: x => num(x.match && x.match.giocati) >= MIN_MATCH_TEAM, sotto: x => `${num(x.match.vinti)}W · ${num(x.match.persi)}L` },
         { id: 'ko', gruppo: 'Pokémon', titolo: 'Most KOs', nota: 'Opponents knocked out', da: 'pokemon', val: x => num(x.koFatti), testo: v => String(v) },
         { id: 'ko-per-set', gruppo: 'Pokémon', titolo: 'Most KOs per set', nota: `Average, from ${MIN_SET_POKEMON} sets played`, da: 'pokemon', val: x => num(x.koPerSet), testo: v => v.toFixed(1), filtro: x => num(x.portato) >= MIN_SET_POKEMON && x.koPerSet != null },
@@ -72,7 +72,8 @@
             avatar: def.da === 'players' ? String(x.avatar || '') : '',
             idGiocatore: def.da === 'players' ? idDi(x.id || x.nome) : idDi(x.player || chi),      // di chi è la scheda (un allenatore, o il proprietario del team / del Pokémon)
             link: def.da === 'players' ? pagina(x.nome) : (chi ? pagina(chi) : ''),
-            quando: def.quando ? String(def.quando(x) || '') : ''
+            quando: def.quando ? String(def.quando(x) || '') : '',
+            inCorso: !!(def.inCorso && def.inCorso(x))        // la serie del record sta ancora andando avanti: al posto della data si scrive "ongoing"
         };
     }
 
@@ -150,7 +151,7 @@
                     const cornice = stileCard((giocatori[v.idGiocatore] || giocatori[idDi(v.nome)] || {}).stileCard);
                     return `<li class="hof-voce${i === 0 ? ' hof-primo' : ''}"${cornice ? ` data-stile-card="${cornice}"` : ''} style="--c:${esc(v.colore)}"><span class="hof-pos">${i + 1}</span>${testa}`
                         + `<span class="hof-chi">${nome}${v.sotto ? `<small>${esc(v.sotto)}</small>` : ''}</span>`
-                        + `<span class="hof-quando">${v.quando ? `<time datetime="${esc(v.quando)}">${dataRecord(v.quando)}</time>` : ''}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
+                        + `<span class="hof-quando">${v.inCorso ? '<span class="hof-incorso" title="This streak is still going">ongoing</span>' : (v.quando ? `<time datetime="${esc(v.quando)}">${dataRecord(v.quando)}</time>` : '')}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
                 }).join('') + '</ol></article>').join('') + '</div></section>').join('');
     }
 

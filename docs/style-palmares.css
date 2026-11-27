@@ -114,6 +114,10 @@ a.hof-nome:hover { background: #fff; color: #000; }
 /* la data di un record sta nello spazio tra il nome e il numero (se è poco va a capo dopo il mese) */
 .hof-quando { min-width: 0; text-align: center; font: 800 .72rem/1.15 var(--nb-font-testo, 'Montserrat', sans-serif); }
 .hof-quando time { display: block; }
+/* una serie ancora in corso: al posto della data c'è "ongoing", in evidenza */
+.hof-incorso { display: inline-block; padding: .12em .45em; border: 2px solid currentColor; border-radius: 99px; text-transform: uppercase; letter-spacing: .04em; font-size: .62rem; animation: hof-incorso-pulsa 1.6s ease-in-out infinite; }
+@keyframes hof-incorso-pulsa { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .hof-incorso { animation: none; } }
 .hof-chi small { font: 700 .66rem/1.25 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
 .hof-valore { max-width: 4.6em; text-align: right; font: 900 1.05rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
 
