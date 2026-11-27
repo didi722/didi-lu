@@ -151,7 +151,7 @@
                     const cornice = stileCard((giocatori[v.idGiocatore] || giocatori[idDi(v.nome)] || {}).stileCard);
                     return `<li class="hof-voce${i === 0 ? ' hof-primo' : ''}"${cornice ? ` data-stile-card="${cornice}"` : ''} style="--c:${esc(v.colore)}"><span class="hof-pos">${i + 1}</span>${testa}`
                         + `<span class="hof-chi">${nome}${v.sotto ? `<small>${esc(v.sotto)}</small>` : ''}</span>`
-                        + `<span class="hof-quando">${v.inCorso ? '<span class="hof-incorso" title="This streak is still going">ongoing</span>' : (v.quando ? `<time datetime="${esc(v.quando)}">${dataRecord(v.quando)}</time>` : '')}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
+                        + `<span class="hof-quando">${v.inCorso ? '<span class="hof-incorso">ongoing</span>' : (v.quando ? `<time datetime="${esc(v.quando)}">${dataRecord(v.quando)}</time>` : '')}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
                 }).join('') + '</ol></article>').join('') + '</div></section>').join('');
     }
 

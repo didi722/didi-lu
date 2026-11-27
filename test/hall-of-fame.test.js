@@ -168,7 +168,7 @@ test('una serie ancora in corso mostra "ongoing" al posto della data; una chiusa
     const S = require('../docs/statistiche.js');
     const voce = (inCorso, quando) => ({ nome: 'A', sotto: '', valore: '7', specie: '', colore: '#fff', avatar: '', link: '', quando, inCorso });
     const h = H.htmlRecords([{ id: 'x', gruppo: 'Trainers', titolo: 'T', voci: [voce(true, '2026-10-29'), voce(false, '2026-10-29')] }]);
-    assert.match(h, /<span class="hof-quando"><span class="hof-incorso"[^>]*>ongoing<\/span><\/span>/, 'in corso: ongoing');
+    assert.match(h, /<span class="hof-quando"><span class="hof-incorso">ongoing<\/span><\/span>/, 'in corso: ongoing');
     assert.equal((h.match(/ongoing/g) || []).length, 1, 'solo la prima');
     assert.match(h, /<time datetime="2026-10-29">/, 'la seconda ha la data');
     // dai match veri (vedi serie-dai-match.test.js): Didi vince 4 match di fila e non ha ancora perso, Lukiani ha chiuso la sua serie
