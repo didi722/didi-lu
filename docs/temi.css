@@ -44,6 +44,34 @@
     --nb-motivo-dim: 14px 14px;
 }
 
+/* Le anteprime del selettore dei temi partono dai valori del Neubrutal: un tema che non definisce una variabile (Arcade non ha --nb-raggio) la ereditava dal tema attivo, e
+   con Soft attivo l'anteprima di Arcade usciva con gli angoli arrotondati. :where() = specificità zero, poi ogni tema cambia ciò che gli serve. */
+:where(.tm-opzione[data-tema]) {
+    --nb-ink: #000;
+    --nb-testo: #000;
+    --nb-carta: #fff;
+    --nb-sfondo: #efe9da;
+    --nb-tinta: 14%;
+    --nb-punti: rgba(0, 0, 0, .13);
+    --nb-fantasma: rgba(0, 0, 0, .075);
+    --nb-giallo: #ffbd44;
+    --nb-rosso: #ff4444;
+    --nb-verde: #47ea6a;
+    --nb-raggio: 0px;
+    --nb-kx: 1;
+    --nb-ky: 1;
+    --nb-bk: 0;
+    --nb-shcol: var(--nb-ink);
+    --nb-shcol-titolo: rgba(0, 0, 0, .3);
+    --nb-sh-tag: none;
+    --nb-rot: 1;
+    --nb-font-titoli: 'Josefin Sans', sans-serif;
+    --nb-font-testo: 'Montserrat', sans-serif;
+    --nb-spaziatura: .04em;
+    --nb-motivo: radial-gradient(var(--nb-punti) 1.3px, transparent 1.6px);
+    --nb-motivo-dim: 14px 14px;
+}
+
 /* ---------- Tema 2 · STICKER (più storto, colori pieni, ombre grosse) ---------- */
 [data-tema="sticker"] {
     --nb-sfondo: #ffe7a6;
