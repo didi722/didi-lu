@@ -103,6 +103,9 @@ body.nb :is(
     /* Profilo */
     .pf-gruppo, .pf-barra, .pf-formato, .pf-v, .pf-live, .pf-p, .pf-avatar, .pf-barra-record
 ) { border-radius: var(--nb-raggio, 0px); }
+/* la barra vittorie/sconfitte dei rivali: gli angoli li arrotonda la barra (che ritaglia), i due segmenti restano dritti dove si incontrano */
+.pf-barra-record { overflow: hidden; }
+.pf-barra-record > .pf-v, .pf-barra-record > .pf-p { border-radius: 0; }
 
 /* ---------- Fumetto con la spiegazione della voce evidenziata (data-desc sulle <option>) ---------- */
 .ts-fumetto {
